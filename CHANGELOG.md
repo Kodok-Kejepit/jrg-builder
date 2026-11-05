@@ -167,6 +167,11 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Diperbaiki
 
+- Biner `--emit-llvm`: method `Option`/`Result` (`x.is_some()`, `x.unwrap_or(0)`) atas variabel yang bisa berisi
+  jenis apa pun berhenti dengan pesan bahwa method itu "ditulis tanpa `()`" — sekarang dijawab seperti di
+  interpreter.
+- Biner `--emit-llvm` menerima variabel `Option` yang diisi ulang dengan isi berjenis lain (`o = Some(o)`, atau
+  `None` lalu `Some("t")`); dulu ditolak saat kompilasi.
 - Biner `--emit-llvm`: fungsi yang menumbuhkan array dari array lain yang juga sedang tumbuh (`std/csv::from_dicts`
   atas hasil `csv::to_dicts`) bisa dikompilasi dengan tipe kembalian yang berbeda antara pemanggil dan fungsinya,
   tergantung urutan acak di dalam kompilator — sebagian kompilasi berhenti dengan "tag nilai tidak dikenal" atau

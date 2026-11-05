@@ -204,25 +204,7 @@ impl Codegen {
                     ForStmt::Classic { body, .. } =>
                         self.kumpul_calon(body, lokal, subst, nama_diri, calon, ditugasi),
                     ForStmt::Range { vars, iter, body, .. } => {
-                        for (k, nama) in vars.iter().enumerate() {
-                            let t = if k == 0 {
-                                match self.tipe_var_loop_pertama(iter, lokal, subst, nama_diri) {
-                                    Some(t) => t,
-                                    None => { lokal.remove(nama); continue }
-                                }
-                            } else {
-                                match self.tipe_ekspresi(iter, lokal, subst, nama_diri) {
-                                    Some(JrgType::Array(e, _)) | Some(JrgType::Slice(e)) => *e,
-                                    Some(JrgType::Str) => JrgType::Rune,
-                                    // `for k, v in d`: yang pertama kunci,
-                                    // yang kedua NILAINYA.
-                                    Some(JrgType::Dict(v)) => *v,
-                                    Some(JrgType::DictCampur(_)) => JrgType::Any,
-                                    _ => continue,
-                                }
-                            };
-                            lokal.insert(nama.clone(), t);
-                        }
+                        self.ikat_var_loop(vars, iter, lokal, subst, nama_diri);
                         self.kumpul_calon(body, lokal, subst, nama_diri, calon, ditugasi)
                     }
                 },
@@ -398,4 +380,32 @@ pub fn blok_punya_return_bernilai(b: &crate::parser::Block) -> bool {
         }
     }
     b.stmts.iter().any(di_stmt) || b.tail.as_deref().map_or(false, di_ekspr)
+}
+
+impl Codegen {
+    /// Tipe variabel `for a, b in iter` di penyimpul; yang tak diketahui dilupakan.
+    pub(crate) fn ikat_var_loop(
+        &self, vars: &[String], iter: &Expr, lokal: &mut Lokal, subst: &TypeSubst, nama_diri: &str,
+    ) {
+        for (k, nama) in vars.iter().enumerate() {
+            let t = if k == 0 {
+                self.tipe_var_loop_pertama(iter, lokal, subst, nama_diri)
+            } else {
+                match self.tipe_ekspresi(iter, lokal, subst, nama_diri) {
+                    Some(JrgType::Array(e, _)) | Some(JrgType::Slice(e)) => Some(*e),
+                    Some(JrgType::Str) => Some(JrgType::Rune),
+                    // `for k, v in d`: yang pertama kunci, yang kedua NILAINYA.
+                    Some(JrgType::Dict(v)) => Some(*v),
+                    Some(JrgType::DictCampur(_)) => Some(JrgType::Any),
+                    _ => None,
+                }
+            };
+            match t {
+                Some(t) => { lokal.insert(nama.clone(), t); }
+                // Perilaku lama: cuma variabel pertama yang dilupakan.
+                None if k == 0 => { lokal.remove(nama); }
+                None => {}
+            }
+        }
+    }
 }

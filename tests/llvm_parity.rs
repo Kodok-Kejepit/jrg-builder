@@ -4230,6 +4230,33 @@ fn main() {
     }
 }
 "#),
+    // Fase OPSI-GANTI (#973–#974): lokal `Option` berganti isi jadi nilai bertag; method `Option` atas nilai bertag.
+    ("opsi: lokal Option berganti isi", r#"package main
+pub fn main() {
+    var o = Some(1)
+    o = Some(o)
+    o = Some(o)
+    wok(o)
+    match o { Some(v) => wok(v), None => wok("n") }
+    var p = Some(1)
+    p = None
+    p = Some("t")
+    wok(p, p.is_some())
+    var q = Some(3)
+    q = None
+    wok(q, q.is_none())
+    var w = Some(1)
+    for i in 0..3 { if i == 1 { w = Some([i]) } }
+    wok(w)
+    var x = nil
+    x = Some(4)
+    wok(x.is_some(), x.unwrap(), x.unwrap_or(0))
+    x = Ok("a")
+    wok(x.is_ok(), x.is_err(), x.unwrap())
+    x = None
+    wok(x.is_none(), x.unwrap_or(9))
+}
+"#),
     // Fase PANGKAT-TEPAT (#970–#971): `float ** int` dibulatkan tepat di tiga mesin; `**` atas nilai bertag.
     ("pangkat: pecahan dibulatkan tepat, nilai bertag", r#"package main
 fn f(x: float, n: int) -> float { return x ** n }

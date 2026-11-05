@@ -1013,11 +1013,13 @@ impl Codegen {
                 // Nilai bertag (handle `py::`, kanvas titipan, …): method-nya dicari saat jalan di `jrgc`.
                 if oty == JrgType::Any {
                     let v = self.load_place(&optr, &oty);
-                    if let Some(r) = self.metode_bawaan_bertag(&v, method, args, span) { return r; }
-                    if self.ada_metode_program(method, args.len()) {
-                        return self.panggil_metode_dinamis(&v, method, args);
-                    }
-                    return self.metode_titipan(&v, method, args, span);
+                    return self.metode_keluarga_bertag(&v, method, args, span, |cg| {
+                        if let Some(r) = cg.metode_bawaan_bertag(&v, method, args, span) { return r; }
+                        if cg.ada_metode_program(method, args.len()) {
+                            return cg.panggil_metode_dinamis(&v, method, args);
+                        }
+                        cg.metode_titipan(&v, method, args, span)
+                    });
                 }
                 // Method sah menurut acuan yang belum punya pintu method di sini: lewat bentuk namespace.
                 let metode_sah = ns.map_or(false, |n| crate::interpreter::calon_method(n).iter().any(|c| c == method));

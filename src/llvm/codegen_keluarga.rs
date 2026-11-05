@@ -48,6 +48,11 @@ impl Codegen {
     /// Instans `F<any, ..>` untuk pola berkeluarga generik, plus nama pengubahnya.
     pub(crate) fn keluarga_pola(&mut self, pty: &TypeExpr, varian: &str) -> Option<(JrgType, String)> {
         let d = self.dasar_keluarga(pty, varian)?;
+        self.keluarga_dari_dasar(d)
+    }
+
+    /// Instans `F<any, ..>` untuk keluarga `d`, plus nama pengubahnya (didaftar sekali).
+    pub(crate) fn keluarga_dari_dasar(&mut self, d: String) -> Option<(JrgType, String)> {
         let sasaran = match d.as_str() {
             "Option" => self.instantiate_option(&JrgType::Any),
             "Result" => self.instantiate_result(&JrgType::Any, &JrgType::Any),
@@ -132,5 +137,46 @@ impl Codegen {
             out.push_str(&format!("{} ]\n{}tidak:\n  ret i1 false\n}}\n", kepala, badan));
         }
         out
+    }
+}
+
+impl Codegen {
+    /// `x.m(..)` atas nilai bertag yang mungkin `Option`/`Result`: isinya diubah ke `F<any, ..>` lewat
+    /// `@kel.F` dan method-nya diturunkan seperti biasa; isi lain lewat `lain` (jalur bertag yang lama).
+    pub(crate) fn metode_keluarga_bertag(
+        &mut self, v: &super::codegen::Val, nama: &str, args: &[Expr], span: crate::lexer::Span,
+        lain: impl FnOnce(&mut Self) -> Result<super::codegen::Val, String>,
+    ) -> Result<super::codegen::Val, String> {
+        let keluarga: Vec<&str> = ["Option", "Result"].into_iter()
+            .filter(|f| crate::vm::ada_builtin(&format!("{}::{}", f, nama))).collect();
+        if keluarga.is_empty() { return lain(self); }
+        let slot = self.alloca_typed("mkb.", &JrgType::Any);
+        let akhir = self.fresh_label("mkb.end.");
+        for f in keluarga {
+            let Some((ty, sym)) = self.keluarga_dari_dasar(f.to_string()) else { continue };
+            let o = self.alloca_typed("mkb.", &ty);
+            let c = self.fresh("mkb.");
+            self.emit(format!("{} = call i1 @{}(%JrgAny {}, ptr {})", c, sym, v.text, o));
+            let (ya, terus) = (self.fresh_label("mkb.ya."), self.fresh_label("mkb.b."));
+            self.terminate(format!("br i1 {}, label %{}, label %{}", c, ya, terus));
+            self.start_block(ya);
+            let penerima = self.lokal_sementara(o, ty.clone(), span);
+            let r = self.codegen_method(&penerima, nama, args, None, span)?;
+            if !self.is_terminated() {
+                let r = if matches!(r.ty, JrgType::Unit | JrgType::Never) { super::codegen::Val::unit() } else { r };
+                let k = self.coerce(&r, &JrgType::Any);
+                self.emit(format!("store %JrgAny {}, ptr {}", k.text, slot));
+                self.terminate(format!("br label %{}", akhir));
+            }
+            self.start_block(terus);
+        }
+        let r = lain(self)?;
+        if !self.is_terminated() {
+            let k = self.coerce(&r, &JrgType::Any);
+            self.emit(format!("store %JrgAny {}, ptr {}", k.text, slot));
+            self.terminate(format!("br label %{}", akhir));
+        }
+        self.start_block(akhir);
+        Ok(self.load_place(&slot, &JrgType::Any))
     }
 }

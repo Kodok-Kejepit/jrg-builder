@@ -202,6 +202,10 @@ pub fn panggil_metode(nama: &str, args: &[VmValue]) -> Result<VmValue, String> {
         return Vm::new().metode_asing_vm(nama, args).map_err(|e| e.msg);
     }
     let Some(obj) = args.first() else { return Err(format!("method `{}` dipanggil tanpa penerimanya", nama)) };
+    // `Option`/`Result`: method-nya builtin `Option::m`; pintu field menolaknya sebagai "tanpa kurung".
+    if let Some((tipe @ ("Option" | "Result"), _, _)) = obj.bagian_enum() {
+        if let Some(VmValue::NativeFn(f)) = bawaan::bawaan(&format!("{}::{}", tipe, nama)) { return f(args); }
+    }
     thread_local! { static MESIN: std::cell::RefCell<Vm> = std::cell::RefCell::new(Vm::new()); }
     let f = MESIN.with(|m| m.borrow().get_field_pintu(obj, nama, None, true)).map_err(|e| e.msg)?;
     match f {

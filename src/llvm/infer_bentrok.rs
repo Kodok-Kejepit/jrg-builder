@@ -129,6 +129,7 @@ pub fn lokal_skalar_bentrok(
                             | Some(JrgType::Rune) | Some(JrgType::Nil) | Some(JrgType::Array(..))
                             | Some(JrgType::Slice(_)) | Some(JrgType::Dict(_)) | Some(JrgType::DictCampur(_)))
                             || matches!(&t, Some(x) if x.is_numeric())
+                            || matches!(&t, Some(JrgType::Enum(n)) if n.contains('$'))
                         {
                             lahir.push(v.name.clone());
                             catat(tipe, &v.name, t.clone());
@@ -166,8 +167,11 @@ pub fn lokal_skalar_bentrok(
                 Stmt::While(w) => jelajah(cg, &w.body, lokal, subst, lahir, tipe),
                 Stmt::Loop(l) => jelajah(cg, &l.body, lokal, subst, lahir, tipe),
                 Stmt::For(f) => match f {
-                    ForStmt::Classic { body, .. } | ForStmt::Range { body, .. } =>
-                        jelajah(cg, body, lokal, subst, lahir, tipe),
+                    ForStmt::Classic { body, .. } => jelajah(cg, body, lokal, subst, lahir, tipe),
+                    ForStmt::Range { vars, iter, body, .. } => {
+                        cg.ikat_var_loop(vars, iter, lokal, subst, "");
+                        jelajah(cg, body, lokal, subst, lahir, tipe)
+                    }
                 },
                 // `if` di posisi pernyataan diurai jadi `Stmt::Expr(Expr::If)`, BUKAN
                 // `Stmt::If` — yang terakhir dipakai bentuk lain.
@@ -208,6 +212,12 @@ pub fn lokal_skalar_bentrok(
 
     let skalar = |t: &JrgType| !matches!(t, JrgType::Array(..) | JrgType::Slice(_)
         | JrgType::Dict(_) | JrgType::DictCampur(_));
+    // Separuh `Option`/`Result` (`None`, `Err(e)` tanpa sisi lain) bukan jenis tersendiri: ia
+    // mengikuti instans yang lengkap. Dua instans lengkap yang berbeda (`Some(1)` lalu `Some(o)`) bentrok.
+    let separuh = |t: &JrgType| matches!(t, JrgType::Enum(n) if n.contains('$') && t.mangle_frag().contains("never"));
+    for v in tipe.values_mut() {
+        if v.iter().any(|t| !separuh(t)) { v.retain(|t| !separuh(t)); }
+    }
     tipe.into_iter()
         .filter(|(_, v)| v.len() > 1 && (v.iter().all(skalar)
             || v.iter().fold(JrgType::Never, |a, t| super::codegen_any::satukan_jenis(&a, t)) == JrgType::Any))
