@@ -73,7 +73,7 @@ impl Codegen {
             if let Some(en) = nt.package.clone().filter(|e| nt.args.is_empty()
                 && (self.types.enums.contains_key(e) || self.param_enum(e).is_some())) {
                 self.harapan_ktor = expected.cloned();
-                return self.literal_varian_berfield(&en, &nt.name, fields, spread.is_some(), span);
+                return self.literal_varian_berfield(&en, &nt.name, fields, spread.as_deref(), span);
             }
             // `V { a: 1 }` telanjang: struct bernama `V` menang, lalu varian ber-field satu enum.
             if nt.package.is_none() && nt.args.is_empty() && !self.tables.structs.contains_key(&nt.name) {
@@ -85,7 +85,7 @@ impl Codegen {
                     0 => {}
                     1 => {
                         self.harapan_ktor = expected.cloned();
-                        return self.literal_varian_berfield(&pemilik[0], &nt.name, fields, spread.is_some(), span);
+                        return self.literal_varian_berfield(&pemilik[0], &nt.name, fields, spread.as_deref(), span);
                     }
                     _ => return Err(super::galat::tandai(span, format!(
                         "`{}` ambigu — varian ber-field dengan nama itu ada di {}\nbantuan: tulis lengkap, mis. `{}::{}`",
@@ -449,7 +449,7 @@ impl Codegen {
              atau tipe nilainya berbeda dari field yang ditulis\nbantuan: jalankan tanpa `--emit-llvm` (interpreter) atau dengan `--vm`".to_string()) })
     }
 
-    fn literal_varian_berfield(&mut self, en: &str, varian: &str, fields: &[FieldInit], sebar: bool, span: Span) -> Result<Val, String> {
+    fn literal_varian_berfield(&mut self, en: &str, varian: &str, fields: &[FieldInit], sebar: Option<&Expr>, span: Span) -> Result<Val, String> {
         let tandai = |m: String| super::galat::tandai(span, m);
         let harap = self.harapan_ktor.take();
         // Enum generik: tata letaknya dari instans yang diharapkan, kalau ada; selain itu bertag
@@ -469,10 +469,14 @@ impl Codegen {
         if nama.is_empty() {
             return Err(tandai(format!("varian `{}::{}` tidak punya field bernama — tulis `{}::{}(..)` atau `{}::{}`", en, varian, en, varian, en, varian)));
         }
-        if sebar {
-            return Err(tandai(format!(
-                "spread (`...x`) di literal varian `{}::{}` belum didukung backend `--emit-llvm`\n\
-                 bantuan: tulis tiap field-nya, atau jalankan tanpa `--emit-llvm`", en, varian)));
+        if let Some(basis) = sebar {
+            if generik {
+                return Err(tandai(format!(
+                    "spread (`...x`) di literal varian enum generik `{}::{}` belum didukung backend `--emit-llvm`\n\
+                     bantuan: tulis tiap field-nya, atau jalankan tanpa `--emit-llvm`", en, varian)));
+            }
+            self.harapan_ktor = harap;
+            return self.literal_varian_sebar(en, varian, fields, basis, span);
         }
         let tipe: Vec<JrgType> = v.payload.field_types().iter().map(|t| t.tanpa_kotak()).collect();
         let mut tempat: HashMap<String, Expr> = HashMap::new();
@@ -493,6 +497,115 @@ impl Codegen {
         }
         self.harapan_ktor = harap;
         self.construct_user_enum_variant(en, varian, &urut, span)
+    }
+
+    /// `E::V { a: 1, ...b }`: basis dulu, lalu field tertulis; field basis di luar `V` dan field `V` yang
+    /// tidak terisi gagal SAAT JALAN dengan kalimat acuan. Basis enum yang sama dipilih variannya saat jalan.
+    fn literal_varian_sebar(&mut self, en: &str, varian: &str, fields: &[FieldInit], basis: &Expr, span: Span) -> Result<Val, String> {
+        use crate::interpreter::galat_index as gi;
+        let tandai = |m: String| super::galat::tandai(span, m);
+        let layout = self.types.enums.get(en).cloned().ok_or_else(|| tandai(format!("enum `{}` tidak dikenal", en)))?;
+        let v = layout.variant(varian).cloned().ok_or_else(|| tandai(format!("enum `{}` tidak punya varian `{}`", en, varian)))?;
+        let milik = v.payload.field_names();
+        let sebutan = format!("varian `{}::{}`", super::modul::tampil(en), varian);
+        let b = self.codegen_expr(basis, None)?;
+        let bty = b.ty.clone();
+        let tempat_b = self.spill_to_place(&b);
+        // Isi satu varian sasaran dari daftar field basis yang diketahui di cabang ini.
+        let rakit = |cg: &mut Self, dari_basis: &[(String, Expr)]| -> Result<Val, String> {
+            let punya: Vec<String> = dari_basis.iter().map(|(n, _)| n.clone()).collect();
+            if let Some(f) = gi::field_sebar_liar(punya.iter(), &milik) {
+                cg.panik(&gi::sebar_field_liar(&sebutan, f));
+                return Ok(Val::unit());
+            }
+            let tipe: Vec<JrgType> = v.payload.field_types().iter().map(|t| t.tanpa_kotak()).collect();
+            let mut isi: HashMap<String, Expr> = dari_basis.iter().cloned().collect();
+            for fi in fields {
+                let i = v.payload.field_index_by_name(&fi.name).ok_or_else(|| tandai(format!(
+                    "varian `{}::{}` tidak punya field `{}` (yang ada: {})", en, varian, fi.name, milik.join(", "))))?;
+                let x = cg.codegen_expr(&fi.value, Some(&tipe[i]))?;
+                let x = cg.coerce(&x, &tipe[i]);
+                let ty = x.ty.clone();
+                let p = cg.spill_to_place(&x);
+                isi.insert(fi.name.clone(), cg.lokal_sementara(p, ty, span));
+            }
+            let mut urut = Vec::with_capacity(milik.len());
+            for n in &milik {
+                match isi.remove(n) {
+                    Some(e) => urut.push(e),
+                    None => {
+                        cg.panik(&gi::field_wajib_varian(&format!("{}::{}", super::modul::tampil(en), varian), n));
+                        return Ok(Val::unit());
+                    }
+                }
+            }
+            cg.construct_user_enum_variant(en, varian, &urut, span)
+        };
+        match &bty {
+            JrgType::Struct(sn) => {
+                // Field privat ikut tersalin, seperti di acuan: dibaca lewat tempatnya, bukan `b.f`.
+                let fs = self.types.structs.get(sn).map(|l| l.fields.clone()).unwrap_or_default();
+                let mut dari = Vec::with_capacity(fs.len());
+                for (idx, (f, fty)) in fs.into_iter().enumerate() {
+                    let r = self.fresh("sebar.f.");
+                    self.emit(format!("{} = getelementptr {}, ptr {}, i32 0, i32 {}", r, bty.llvm_ty(), tempat_b, idx));
+                    let (p, t) = match fty { JrgType::Kotak(t) => (self.isi_kotak(&r), *t), t => (r, t) };
+                    dari.push((f, self.lokal_sementara(p, t, span)));
+                }
+                let hasil_ty = JrgType::Enum(en.to_string());
+                let slot = self.alloca_typed("sebar.", &hasil_ty);
+                let akhir = self.fresh_label("sebar.end.");
+                let r = rakit(self, &dari)?;
+                if !self.is_terminated() {
+                    let r = self.coerce(&r, &hasil_ty);
+                    self.emit(format!("store {} {}, ptr {}", hasil_ty.llvm_ty(), r.text, slot));
+                    self.terminate(format!("br label %{}", akhir));
+                }
+                self.start_block(akhir);
+                Ok(self.load_place(&slot, &hasil_ty))
+            }
+            JrgType::Enum(bn) if bn == en => {
+                let hasil_ty = JrgType::Enum(en.to_string());
+                let slot = self.alloca_typed("sebar.", &hasil_ty);
+                let tag = self.get_tag(&tempat_b, &bty);
+                let akhir = self.fresh_label("sebar.end.");
+                let label: Vec<String> = layout.variants.iter().map(|_| self.fresh_label("sebar.v.")).collect();
+                let kasus: Vec<String> = layout.variants.iter().zip(&label).map(|(w, l)| format!("i32 {}, label %{}", w.tag, l)).collect();
+                let mustahil = self.fresh_label("sebar.x.");
+                self.terminate(format!("switch i32 {}, label %{} [ {} ]", tag, mustahil, kasus.join(" ")));
+                for (w, l) in layout.variants.iter().zip(label) {
+                    self.start_block(l);
+                    let nama = w.payload.field_names();
+                    let r = if nama.is_empty() {
+                        self.panik(&crate::interpreter::pesan_sebar_bukan_wadah(&format!("enum:{}", super::modul::tampil(en))));
+                        Val::unit()
+                    } else {
+                        let sl = w.payload.as_llvm_struct();
+                        let mut dari = Vec::with_capacity(nama.len());
+                        for (i, (f, ft)) in nama.iter().zip(w.payload.field_types()).enumerate() {
+                            let x = self.get_payload_field(&tempat_b, &bty, &sl, i, &ft);
+                            let ty = x.ty.clone();
+                            let p = self.spill_to_place(&x);
+                            dari.push((f.clone(), self.lokal_sementara(p, ty, span)));
+                        }
+                        rakit(self, &dari)?
+                    };
+                    if !self.is_terminated() {
+                        let r = self.coerce(&r, &hasil_ty);
+                        self.emit(format!("store {} {}, ptr {}", hasil_ty.llvm_ty(), r.text, slot));
+                        self.terminate(format!("br label %{}", akhir));
+                    }
+                }
+                self.start_block(mustahil);
+                self.terminate("unreachable".to_string());
+                self.start_block(akhir);
+                Ok(self.load_place(&slot, &hasil_ty))
+            }
+            _ => Err(tandai(format!(
+                "spread (`...x`) di literal varian `{}::{}` dari `{}` belum didukung backend `--emit-llvm` — yang bisa: \
+                 struct, atau varian enum `{}` yang sama\nbantuan: tulis tiap field-nya, atau jalankan tanpa `--emit-llvm`",
+                en, varian, bty.display_name(), en))),
+        }
     }
 
     pub(crate) fn construct_user_enum_variant(&mut self, enum_name: &str, variant_name: &str, args: &[Expr], span: Span) -> Result<Val, String> {

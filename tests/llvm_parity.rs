@@ -4230,6 +4230,23 @@ fn main() {
     }
 }
 "#),
+    // Fase SEBAR-VARIAN (#975): sebar di literal varian ber-field dari struct atau varian enum yang sama.
+    ("sebar di literal varian: dari struct dan varian enum", r#"package main
+enum E { V { a: int, b: int }, W { a: int }, U, T(int), X { z: string } }
+struct P { a: int, b: int }
+struct Q { a: int }
+fn ambil(e: E) -> E { E::V { a: 7, ...e } }
+pub fn main() {
+    let x = E::V { a: 1, b: 2 }
+    wok(E::V { a: 5, ...x })
+    wok(E::V { ...x })
+    wok(E::V { b: 9, ...E::W { a: 3 } })
+    wok(E::V { b: 1, ...P { a: 4, b: 6 } })
+    wok(E::V { b: 1, ...Q { a: 8 } })
+    wok(ambil(x))
+    wok(E::W { ...E::W { a: 2 } })
+}
+"#),
     // Fase OPSI-GANTI (#973–#974): lokal `Option` berganti isi jadi nilai bertag; method `Option` atas nilai bertag.
     ("opsi: lokal Option berganti isi", r#"package main
 pub fn main() {
@@ -5651,6 +5668,15 @@ fn llvm_lebih_permisif_masih_tercatat_akurat() {
 // ─── Tabel 5: pesan gagal SAAT JALAN harus sama ───────────────────────────
 
 const GAGAL_SAAT_JALAN: &[(&str, &str, &str, &str)] = &[
+    // Fase SEBAR-VARIAN (#975): basis sebar yang tidak cocok dengan varian sasaran gagal saat jalan.
+    ("sebar varian: field wajib tidak dibawa basis", "package main\nenum E { V { a: int, b: int }, W { a: int } }\npub fn main() {\n wok(\"mulai\")\n wok(E::V { a: 1, ...E::W { a: 3 } })\n}",
+     "mulai", "varian `E::V` butuh field `b`"),
+    ("sebar varian: basis membawa field liar", "package main\nenum E { V { a: int }, X { z: string } }\npub fn main() {\n wok(\"mulai\")\n wok(E::V { a: 1, ...E::X { z: \"q\" } })\n}",
+     "mulai", "basis `...` membawa field `z` yang tidak dideklarasikan varian `E::V`"),
+    ("sebar varian: basis varian tanpa field", "package main\nenum E { V { a: int }, U }\nfn f(e: E) -> E { E::V { ...e } }\npub fn main() {\n wok(f(E::V { a: 1 }))\n wok(f(E::U))\n}",
+     "E::V(V {a: 1})", "dapat `enum:E`, yang tidak punya field untuk disalin"),
+    ("sebar varian: struct membawa field liar", "package main\nenum E { V { a: int } }\nstruct P { a: int, c: int }\npub fn main() {\n wok(\"mulai\")\n wok(E::V { ...P { a: 1, c: 2 } })\n}",
+     "mulai", "basis `...` membawa field `c` yang tidak dideklarasikan varian `E::V`"),
     // Fase TAMBAH-TEKS (#969): operator aritmetika atas nilai bertag yang golongannya salah — kalimat acuan.
     ("bertag: array + int", "package main\npub fn main() {\n var x = nil\n x = [1]\n wok(\"a\")\n wok(x + 5)\n}",
      "a", "tidak bisa `+` antara `array` dan `int`"),

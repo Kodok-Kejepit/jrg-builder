@@ -167,6 +167,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Diperbaiki
 
+- Biner `--emit-llvm` menerima sebar di literal varian ber-field (`E::V { a: 5, ...x }`), dari struct atau dari
+  varian enum yang sama; dulu ditolak saat kompilasi.
 - Biner `--emit-llvm`: method `Option`/`Result` (`x.is_some()`, `x.unwrap_or(0)`) atas variabel yang bisa berisi
   jenis apa pun berhenti dengan pesan bahwa method itu "ditulis tanpa `()`" — sekarang dijawab seperti di
   interpreter.
