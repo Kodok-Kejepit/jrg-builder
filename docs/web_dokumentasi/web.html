@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web dan data — Dokumentasi JRG</title>
+<meta name="description" content="Server HTTP, template, cookie dan sesi, WebSocket, klien HTTP, dan SQLite.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a class="aktif" aria-current="page" href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Pustaka</p>
+<h1>Web dan data</h1>
+<p class="ringkas">Server HTTP, template, cookie dan sesi, WebSocket, klien HTTP, dan SQLite.</p>
+<p>Semua yang dibutuhkan aplikasi web ada di namespace <code>dok::</code> dan <code>http::</code>, tanpa pustaka tambahan.</p>
+<h2 id="server"><a class="jangkar" href="#server">Server</a></h2>
+<figure class="kode"><figcaption><span>server.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> main
+
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> r = <span class="k-ns">dok</span>::<span class="k-fn">router_new</span>()
+
+    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">html</span>(<span class="k-str">&quot;&lt;h1&gt;Halo dari JRG&lt;/h1&gt;&quot;</span>))
+    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/sapa/:nama&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">text</span>(<span class="k-str">&quot;halo, &quot;</span> + req.params.nama))
+    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/api/kuadrat&quot;</span>, |req| {
+        <span class="k-kunci">let</span> n = <span class="k-tipe">int</span>(<span class="k-ns">dok</span>::<span class="k-fn">query_get</span>(req.query, <span class="k-str">&quot;n&quot;</span>) ?? <span class="k-str">&quot;0&quot;</span>)
+        <span class="k-kunci">return</span> <span class="k-ns">dok</span>::<span class="k-fn">json_response</span>({<span class="k-str">&quot;n&quot;</span>: n, <span class="k-str">&quot;kuadrat&quot;</span>: n * n})
+    })
+    <span class="k-ns">dok</span>::<span class="k-fn">router_post</span>(r, <span class="k-str">&quot;/gema&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">text</span>(req.body))
+    <span class="k-ns">dok</span>::<span class="k-fn">router_static</span>(r, <span class="k-str">&quot;/aset&quot;</span>, <span class="k-str">&quot;./publik&quot;</span>)
+
+    <span class="k-ns">dok</span>::<span class="k-fn">serve</span>(r, <span class="k-ang">8080</span>)
+}</code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ curl localhost:8080/sapa/Ani
+halo, Ani
+$ curl &quot;localhost:8080/api/kuadrat?n=12&quot;
+{&quot;kuadrat&quot;:144,&quot;n&quot;:12}</code></pre></figure>
+<p><code>dok::serve</code> memblokir dan menangani tiap koneksi di thread-nya sendiri. Argumen ketiga mengatur alamat (bawaannya <code>0.0.0.0</code>; pakai <code>&quot;127.0.0.1&quot;</code> supaya cuma bisa diakses dari mesin sendiri).</p>
+<div class="tabel"><table><thead><tr><th>Request (<code>req</code>)</th><th>Isi</th></tr></thead><tbody><tr><td><code>method</code>, <code>path</code></td><td><code>&quot;GET&quot;</code>, <code>&quot;/sapa/Ani&quot;</code></td></tr><tr><td><code>params</code></td><td>bagian <code>:nama</code> dari pola rute, dibaca <code>req.params.nama</code></td></tr><tr><td><code>query</code></td><td>pasangan dari <code>?a=1&amp;b=2</code>; ambil dengan <code>dok::query_get(req.query, &quot;a&quot;)</code></td></tr><tr><td><code>headers</code></td><td>ambil dengan <code>dok::header_get(req.headers, &quot;Content-Type&quot;)</code></td></tr><tr><td><code>body</code>, <code>body_bytes</code></td><td>badan sebagai teks; kalau bukan teks UTF-8, <code>body</code> bernilai <code>nil</code> dan isinya di <code>body_bytes</code></td></tr></tbody></table></div>
+<p>Handler boleh mengembalikan teks (jadi <code>200 text/plain</code>), hasil <code>dok::text</code>, <code>dok::html</code>, <code>dok::json_response</code>, <code>dok::redirect</code>, <code>dok::response(kode, isi)</code>, <code>dok::binary(byte)</code>, atau <code>Result</code> (<code>Err</code> jadi 500).</p>
+<h3 id="middleware"><a class="jangkar" href="#middleware">Middleware</a></h3>
+<p><code>dok::router_use</code> berjalan sebelum rute dicari; mengembalikan <code>nil</code> berarti lanjut, mengembalikan respons berarti berhenti di situ. <code>dok::router_after</code> berjalan sesudah handler dan boleh mengubah responsnya.</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">dok</span>::<span class="k-fn">router_use</span>(r, |req| {
+    <span class="k-kunci">if</span> <span class="k-ns">str</span>::<span class="k-fn">starts_with</span>(req.path, <span class="k-str">&quot;/admin&quot;</span>) &amp;&amp; <span class="k-ns">dok</span>::<span class="k-fn">cookie_get</span>(req, <span class="k-str">&quot;sesi&quot;</span>).<span class="k-fn">is_none</span>() {
+        <span class="k-kunci">return</span> <span class="k-ns">dok</span>::<span class="k-fn">response</span>(<span class="k-ang">401</span>, <span class="k-str">&quot;perlu masuk dulu&quot;</span>)
+    }
+    <span class="k-kunci">return</span> <span class="k-kunci">nil</span>
+})
+<span class="k-ns">dok</span>::<span class="k-fn">router_after</span>(r, |req, resp| <span class="k-ns">dok</span>::<span class="k-fn">header_set</span>(resp, <span class="k-str">&quot;X-Frame-Options&quot;</span>, <span class="k-str">&quot;DENY&quot;</span>))</code></pre></figure>
+<h2 id="template"><a class="jangkar" href="#template">Template</a></h2>
+<p><code>dok::render</code> mengisi <code>{{ nama }}</code> dan meloloskan HTML-nya, jadi isian dari pengguna aman ditampilkan. <code>{{&amp; nama }}</code> menyisipkan apa adanya. Ada juga <code>{{#if}}…{{else}}…{{/if}}</code> dan <code>{{#each}}…{{/each}}</code>.</p>
+<figure class="kode" data-jalan><figcaption><span>template.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> t = <span class="k-str">&quot;&lt;h1&gt;Halo {{nama}}&lt;/h1&gt;&lt;ul&gt;{{#each item}}&lt;li&gt;{{@index}}. {{.}}&lt;/li&gt;{{/each}}&lt;/ul&gt;&quot;</span>
+<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">render</span>(t, {<span class="k-str">&quot;nama&quot;</span>: <span class="k-str">&quot;&lt;Ani&gt;&quot;</span>, <span class="k-str">&quot;item&quot;</span>: [<span class="k-str">&quot;kopi&quot;</span>, <span class="k-str">&quot;teh&quot;</span>]}) {
+    <span class="k-fn">Ok</span>(html) =&gt; <span class="k-fn">wok</span>(html),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;gagal:&quot;</span>, e),
+}</code></pre><pre class="keluaran"><code>&lt;h1&gt;Halo &amp;lt;Ani&amp;gt;&lt;/h1&gt;&lt;ul&gt;&lt;li&gt;0. kopi&lt;/li&gt;&lt;li&gt;1. teh&lt;/li&gt;&lt;/ul&gt;</code></pre></figure>
+<p>Pelolosan HTML cuma melindungi teks dan nilai atribut berkutip, jadi <code>dok::render</code> membaca di mana sebuah <code>{{ nama }}</code> duduk. Nilai di atribut URL (<code>href</code>, <code>src</code>, <code>action</code>, …) yang berskema selain <code>http</code>, <code>https</code>, <code>mailto</code>, <code>tel</code> diganti <code>#jrg-url-ditolak</code>. Nilai di dalam <code>&lt;script&gt;</code>/<code>&lt;style&gt;</code>, di atribut <code>on*</code>/<code>style</code>, di atribut tanpa tanda kutip, atau di tempat nama atribut adalah <code>Err</code>: taruh datanya di atribut <code>data-*</code> yang berkutip.</p>
+<figure class="kode" data-jalan><figcaption><span>konteks.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> d = {<span class="k-str">&quot;u&quot;</span>: <span class="k-str">&quot;javascript:alert(1)&quot;</span>, <span class="k-str">&quot;nama&quot;</span>: <span class="k-str">&quot;Ani&quot;</span>}
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">render</span>(<span class="k-str">&quot;&lt;a href=\&quot;{{u}}\&quot;&gt;{{nama}}&lt;/a&gt;&quot;</span>, d).<span class="k-fn">unwrap</span>())
+<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">render</span>(<span class="k-str">&quot;&lt;p title={{nama}}&gt;&quot;</span>, d) {
+    <span class="k-fn">Ok</span>(html) =&gt; <span class="k-fn">wok</span>(html),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;ditolak:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">contains</span>(e, <span class="k-str">&quot;tanpa tanda kutip&quot;</span>)),
+}</code></pre><pre class="keluaran"><code>&lt;a href=&quot;#jrg-url-ditolak&quot;&gt;Ani&lt;/a&gt;
+ditolak: true</code></pre></figure>
+<p><code>dok::render_file(berkas, data)</code> membaca templatnya dari berkas.</p>
+<h2 id="cookie-sesi-dan-sandi"><a class="jangkar" href="#cookie-sesi-dan-sandi">Cookie, sesi, dan sandi</a></h2>
+<figure class="kode" data-jalan><figcaption><span>sesi.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> <span class="k-tipe">KUNCI</span> = <span class="k-str">&quot;kunci-sesi-yang-panjang-dan-acak&quot;</span>
+
+<span class="k-kunci">let</span> cookie = <span class="k-ns">dok</span>::<span class="k-fn">session_encode</span>({<span class="k-str">&quot;user&quot;</span>: <span class="k-str">&quot;budi&quot;</span>}, <span class="k-tipe">KUNCI</span>)
+<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">session_decode</span>(cookie, <span class="k-tipe">KUNCI</span>) {
+    <span class="k-fn">Ok</span>(d) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;masuk sebagai&quot;</span>, d.user),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;ditolak:&quot;</span>, e),
+}
+
+<span class="k-kunci">let</span> simpanan = <span class="k-ns">dok</span>::<span class="k-fn">password_hash</span>(<span class="k-str">&quot;sandi123&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">password_verify</span>(<span class="k-str">&quot;sandi123&quot;</span>, simpanan), <span class="k-ns">dok</span>::<span class="k-fn">password_verify</span>(<span class="k-str">&quot;tebakan&quot;</span>, simpanan))</code></pre><pre class="keluaran"><code>masuk sebagai budi
+true false</code></pre></figure>
+<ul><li>Sesi <strong>ditandatangani</strong>, tidak dienkripsi: isinya bisa dibaca siapa pun, tapi tidak bisa diubah tanpa kuncinya. Simpan kuncinya di variabel lingkungan, bukan di kode.</li><li><code>password_hash</code> memakai PBKDF2-HMAC-SHA256 dengan garam acak per sandi.</li><li><code>dok::cookie_set(resp, nama, nilai, opsi)</code> memasang cookie dengan <code>HttpOnly</code> dan <code>SameSite=Lax</code> secara bawaan; <code>dok::cookie_get(req, nama)</code> membacanya.</li></ul>
+<h3 id="token-csrf"><a class="jangkar" href="#token-csrf">Token CSRF</a></h3>
+<p>Formulir yang mengubah sesuatu (<code>POST</code>, <code>PUT</code>, <code>DELETE</code>) membawa token yang dibuat server untuk sesi itu. Situs lain bisa membuat peramban korban mengirim formulir, tapi tidak bisa membaca tokennya.</p>
+<figure class="kode" data-jalan><figcaption><span>csrf.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> <span class="k-tipe">RAHASIA</span> = <span class="k-str">&quot;rahasia-csrf-yang-panjangnya-32b&quot;</span>
+
+<span class="k-kunci">let</span> token = <span class="k-ns">dok</span>::<span class="k-fn">csrf_token</span>(<span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-ani&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">csrf_verify</span>(token, <span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-ani&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">csrf_verify</span>(token, <span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-budi&quot;</span>))</code></pre><pre class="keluaran"><code>true
+false</code></pre></figure>
+<ul><li>Argumen ketiganya, <strong>ikatan</strong>, adalah id sesi: token sesi lain ditolak, jadi penyerang tidak bisa memakai token dari sesinya sendiri. Ikatan kosong ditolak.</li><li>Token berumur 12 jam; argumen keempat <code>csrf_verify</code> mengubahnya (dalam detik).</li><li>Rahasianya paling sedikit 32 byte. Taruh tokennya di <code>&lt;input type=&quot;hidden&quot;&gt;</code> lewat <code>dok::render</code>, dan periksa sebelum mengerjakan permintaan.</li></ul>
+<h2 id="websocket"><a class="jangkar" href="#websocket">WebSocket</a></h2>
+<p>Rute WebSocket hidup di router yang sama dengan rute HTTP biasa.</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">dok</span>::<span class="k-fn">router_ws</span>(r, <span class="k-str">&quot;/gema&quot;</span>, |koneksi, req| {
+    <span class="k-kunci">while</span> <span class="k-kunci">true</span> {
+        <span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">ws_recv</span>(koneksi) {
+            <span class="k-fn">Some</span>(pesan) =&gt; <span class="k-ns">dok</span>::<span class="k-fn">ws_send</span>(koneksi, <span class="k-str">&quot;gema: &quot;</span> + pesan),
+            <span class="k-tipe">None</span> =&gt; { <span class="k-kunci">break</span> }
+        }
+    }
+})</code></pre></figure>
+<p><code>ws_recv</code> menunggu pesan berikutnya dan menjawab <code>None</code> saat koneksinya ditutup. Pesan biner datang sebagai array byte.</p>
+<h2 id="klien-http"><a class="jangkar" href="#klien-http">Klien HTTP</a></h2>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">match</span> <span class="k-ns">http</span>::<span class="k-fn">get</span>(<span class="k-str">&quot;https://api.github.com/repos/Kodok-Kejepit/jrg&quot;</span>) {
+    <span class="k-fn">Ok</span>(r) =&gt; <span class="k-fn">wok</span>(r.status, <span class="k-ns">json</span>::<span class="k-fn">parse</span>(r.body)[<span class="k-str">&quot;stargazers_count&quot;</span>]),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;gagal:&quot;</span>, e),
+}
+
+<span class="k-ns">http</span>::<span class="k-fn">post</span>(<span class="k-str">&quot;https://contoh.org/api&quot;</span>, <span class="k-ns">json</span>::<span class="k-fn">stringify</span>({<span class="k-str">&quot;a&quot;</span>: <span class="k-ang">1</span>}), <span class="k-str">&quot;application/json&quot;</span>)
+<span class="k-ns">http</span>::<span class="k-fn">unduh</span>(<span class="k-str">&quot;https://contoh.org/besar.zip&quot;</span>, <span class="k-str">&quot;besar.zip&quot;</span>)</code></pre></figure>
+<p><code>http::get</code>, <code>post</code>, <code>put</code>, <code>delete</code>, dan <code>request</code> menjawab <code>Result</code> berisi <code>status</code>, <code>headers</code>, <code>body</code>, dan <code>ok</code>. HTTPS memakai libssl milik sistem. <code>http::unduh</code> menulis langsung ke berkas, jadi aman untuk unduhan besar, dan tidak mengikuti pengalihan dari <code>https://</code> ke <code>http://</code>.</p>
+<p>Kalau URL-nya datang dari pemakai (pratinjau tautan, webhook, pengunduh gambar), nyalakan penjaga SSRF sekali di awal:</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">http</span>::<span class="k-fn">hanya_publik</span>(<span class="k-kunci">true</span>)
+<span class="k-ns">http</span>::<span class="k-fn">get</span>(<span class="k-str">&quot;http://169.254.169.254/latest/meta-data/&quot;</span>)   <span class="k-kom">// Err: alamat link-local, metadata awan</span></code></pre></figure>
+<p>Sesudahnya alamat loopback, privat, link-local dan metadata awan ditolak. Yang diperiksa alamat hasil DNS yang benar-benar disambungi, juga di tiap pengalihan, jadi nama yang menunjuk <code>127.0.0.1</code> tidak lolos.</p>
+<h2 id="sqlite"><a class="jangkar" href="#sqlite">SQLite</a></h2>
+<p>Driver SQLite dimuat dari <code>libsqlite3</code> milik sistem. <code>dok::db_tersedia()</code> memberi tahu apakah pustakanya ada.</p>
+<figure class="kode"><figcaption><span>sqlite.jrg</span><span class="lokal" title="Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban">jalankan dengan jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> db = <span class="k-ns">dok</span>::<span class="k-fn">db_open</span>(<span class="k-str">&quot;:memory:&quot;</span>)?
+<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;CREATE TABLE murid(id INTEGER PRIMARY KEY, nama TEXT, nilai REAL)&quot;</span>)?
+<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;INSERT INTO murid(nama, nilai) VALUES (?, ?)&quot;</span>, [<span class="k-str">&quot;budi&quot;</span>, <span class="k-ang">8.5</span>])?
+<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;INSERT INTO murid(nama, nilai) VALUES (?, ?)&quot;</span>, [<span class="k-str">&quot;ani&quot;</span>, <span class="k-ang">9.25</span>])?
+
+<span class="k-kunci">for</span> _, m <span class="k-kunci">in</span> <span class="k-ns">dok</span>::<span class="k-fn">db_query</span>(db, <span class="k-str">&quot;SELECT nama, nilai FROM murid ORDER BY nilai DESC&quot;</span>)? {
+    <span class="k-fn">wok</span>(m.nama, m.nilai)
+}
+
+<span class="k-kunci">let</span> jahat = <span class="k-str">&quot;budi&#x27;; DROP TABLE murid; --&quot;</span>
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">db_query</span>(db, <span class="k-str">&quot;SELECT * FROM murid WHERE nama = ?&quot;</span>, [jahat])?)
+<span class="k-ns">dok</span>::<span class="k-fn">db_close</span>(db)</code></pre><pre class="keluaran"><code>ani 9.25
+budi 8.5
+[]</code></pre></figure>
+<p>Nilai selalu diikat lewat <code>?</code>, jadi teks dari pengguna tidak pernah dibaca sebagai perintah SQL. Satu baris hasil adalah dict, dan kolomnya dibaca dengan namanya.</p>
+<h2 id="jaringan-tingkat-rendah"><a class="jangkar" href="#jaringan-tingkat-rendah">Jaringan tingkat rendah</a></h2>
+<p><code>dok::tcp_listen</code>, <code>tcp_accept</code>, <code>tcp_connect</code>, <code>tcp_send</code>, <code>tcp_recv_line</code> untuk TCP, dan <code>dok::udp_bind</code>, <code>udp_send_to</code>, <code>udp_recv_from</code> untuk UDP. <code>dok::log_info</code> dan kawan-kawannya mencetak log bertingkat, dengan warna di terminal.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="pustaka.html"><small>Sebelumnya</small><strong>Pustaka bawaan</strong></a><a class="ke-kanan" href="grafis.html"><small>Berikutnya</small><strong>Kanvas, suara, numerik</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#server">Server</a></li><li><a href="#template">Template</a></li><li><a href="#cookie-sesi-dan-sandi">Cookie, sesi, dan sandi</a></li><li><a href="#websocket">WebSocket</a></li><li><a href="#klien-http">Klien HTTP</a></li><li><a href="#sqlite">SQLite</a></li><li><a href="#jaringan-tingkat-rendah">Jaringan tingkat rendah</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

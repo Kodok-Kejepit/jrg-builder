@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Option, Result, dan galat — Dokumentasi JRG</title>
+<meta name="description" content="Cara JRG menyatakan &quot;mungkin tidak ada&quot; dan &quot;mungkin gagal&quot;, dan cara menghentikan program dengan sengaja.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a class="aktif" aria-current="page" href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Bahasa</p>
+<h1>Option, Result, dan galat</h1>
+<p class="ringkas">Cara JRG menyatakan "mungkin tidak ada" dan "mungkin gagal", dan cara menghentikan program dengan sengaja.</p>
+<h2 id="option"><a class="jangkar" href="#option">Option</a></h2>
+<p><code>Option</code> adalah jawaban yang mungkin kosong: <code>Some(nilai)</code> atau <code>None</code>. Fungsi bawaan yang bisa tidak menemukan sesuatu (<code>first</code>, <code>get</code>, <code>find</code>, <code>pop</code>, <code>dict::get</code>, <code>env::get</code>, <code>str::find</code>) mengembalikan <code>Option</code>, tidak pernah <code>nil</code> atau <code>-1</code>.</p>
+<figure class="kode" data-jalan><figcaption><span>option.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> ada = [<span class="k-ang">4</span>, <span class="k-ang">8</span>, <span class="k-ang">15</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">5</span>)
+<span class="k-kunci">let</span> kosong = [<span class="k-ang">4</span>, <span class="k-ang">8</span>, <span class="k-ang">15</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">50</span>)
+<span class="k-fn">wok</span>(ada, kosong)
+<span class="k-fn">wok</span>(ada.<span class="k-fn">is_some</span>(), kosong.<span class="k-fn">is_none</span>())
+<span class="k-fn">wok</span>(ada.<span class="k-fn">unwrap</span>(), kosong.<span class="k-fn">unwrap_or</span>(<span class="k-ang">0</span>), kosong ?? -<span class="k-ang">1</span>)
+<span class="k-fn">wok</span>(ada.<span class="k-fn">map</span>(|x| x * <span class="k-ang">2</span>), kosong.<span class="k-fn">map</span>(|x| x * <span class="k-ang">2</span>))</code></pre><pre class="keluaran"><code>Option::Some(8) Option::None
+true true
+8 0 -1
+Option::Some(16) Option::None</code></pre></figure>
+<p><code>unwrap()</code> atas <code>None</code> adalah galat. Pakai <code>unwrap_or</code>, <code>??</code>, atau <code>match</code> kalau kekosongannya wajar.</p>
+<h2 id="result"><a class="jangkar" href="#result">Result</a></h2>
+<p><code>Result</code> adalah jawaban yang mungkin gagal: <code>Ok(nilai)</code> atau <code>Err(alasan)</code>. Fungsi yang menyentuh dunia luar (<code>fs::try_read</code>, <code>http::get</code>, FFI, basis data) mengembalikan <code>Result</code>, dan fungsimu sendiri juga boleh.</p>
+<figure class="kode" data-jalan><figcaption><span>result.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bagi</span>(a, b) -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
+    <span class="k-kunci">if</span> b == <span class="k-ang">0</span> {
+        <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;pembagi nol&quot;</span>)
+    }
+    <span class="k-kunci">return</span> <span class="k-fn">Ok</span>(a / b)
+}
+
+<span class="k-fn">wok</span>(<span class="k-fn">bagi</span>(<span class="k-ang">10</span>, <span class="k-ang">2</span>), <span class="k-fn">bagi</span>(<span class="k-ang">1</span>, <span class="k-ang">0</span>))
+
+<span class="k-kunci">match</span> <span class="k-fn">bagi</span>(<span class="k-ang">9</span>, <span class="k-ang">0</span>) {
+    <span class="k-fn">Ok</span>(v) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;hasil&quot;</span>, v),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;gagal:&quot;</span>, e),
+}
+
+<span class="k-fn">wok</span>(<span class="k-fn">bagi</span>(<span class="k-ang">8</span>, <span class="k-ang">2</span>).<span class="k-fn">unwrap_or</span>(-<span class="k-ang">1</span>), <span class="k-fn">bagi</span>(<span class="k-ang">8</span>, <span class="k-ang">0</span>).<span class="k-fn">unwrap_or</span>(-<span class="k-ang">1</span>))</code></pre><pre class="keluaran"><code>Result::Ok(5) Result::Err(pembagi nol)
+gagal: pembagi nol
+4 -1</code></pre></figure>
+<h2 id="meneruskan-kegagalan-dengan"><a class="jangkar" href="#meneruskan-kegagalan-dengan">Meneruskan kegagalan dengan ?</a></h2>
+<p><code>ekspresi?</code> membuka <code>Ok</code>, atau langsung mengembalikan <code>Err</code>-nya dari fungsi yang sedang berjalan. Berlaku juga untuk <code>Option</code>: <code>None</code> diteruskan.</p>
+<figure class="kode" data-jalan><figcaption><span>tanya.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bagi</span>(a, b) -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
+    <span class="k-kunci">if</span> b == <span class="k-ang">0</span> { <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;pembagi nol&quot;</span>) }
+    <span class="k-kunci">return</span> <span class="k-fn">Ok</span>(a / b)
+}
+
+<span class="k-kunci">fn</span> <span class="k-fn">hitung</span>(a, b, c) -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
+    <span class="k-kunci">let</span> x = <span class="k-fn">bagi</span>(a, b)?
+    <span class="k-kunci">let</span> y = <span class="k-fn">bagi</span>(x, c)?
+    <span class="k-kunci">return</span> <span class="k-fn">Ok</span>(y)
+}
+
+<span class="k-fn">wok</span>(<span class="k-fn">hitung</span>(<span class="k-ang">100</span>, <span class="k-ang">5</span>, <span class="k-ang">2</span>))
+<span class="k-fn">wok</span>(<span class="k-fn">hitung</span>(<span class="k-ang">100</span>, <span class="k-ang">0</span>, <span class="k-ang">2</span>))</code></pre><pre class="keluaran"><code>Result::Ok(10)
+Result::Err(pembagi nol)</code></pre></figure>
+<h2 id="kalau-main-gagal"><a class="jangkar" href="#kalau-main-gagal">Kalau main gagal</a></h2>
+<p><code>main</code> boleh mengembalikan <code>Result</code>. <code>Err</code> yang keluar dari <code>main</code> dilaporkan sebagai galat dan program berhenti dengan kode 1.</p>
+<figure class="kode" data-jalan><figcaption><span>main-gagal.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
+    <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;berkas konfigurasi tidak ada&quot;</span>)
+}</code></pre><pre class="keluaran"><code>error: program berhenti karena `Result::Err` merambat keluar dari `main`: berkas konfigurasi tidak ada — tangani dengan `match` di dalam `main`, atau pakai `.unwrap_or(...)`, kalau kegagalan ini memang boleh terjadi</code></pre></figure>
+<h2 id="menghentikan-program"><a class="jangkar" href="#menghentikan-program">Menghentikan program</a></h2>
+<p><code>panik(pesan)</code> menghentikan program dengan galat. Pakai untuk keadaan yang seharusnya mustahil; untuk kegagalan yang wajar, kembalikan <code>Result</code>.</p>
+<figure class="kode" data-jalan><figcaption><span>panik.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">umur_valid</span>(n) {
+    <span class="k-kunci">if</span> n &lt; <span class="k-ang">0</span> {
+        <span class="k-fn">panik</span>(<span class="k-str">&quot;umur tidak boleh negatif&quot;</span>)
+    }
+    <span class="k-kunci">return</span> n
+}
+
+<span class="k-fn">wok</span>(<span class="k-fn">umur_valid</span>(<span class="k-ang">5</span>))
+<span class="k-fn">wok</span>(<span class="k-fn">umur_valid</span>(-<span class="k-ang">1</span>))</code></pre><pre class="keluaran"><code>5
+error: umur tidak boleh negatif
+ --&gt; panik.jrg:3:9
+  |
+3 |         panik(&quot;umur tidak boleh negatif&quot;)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = jejak: `umur_valid` dipanggil di panik.jrg:9:5</code></pre></figure>
+<p>Baris <code>jejak:</code> menunjukkan dari mana fungsi itu dipanggil. <code>exit(kode)</code> mengakhiri program dengan kode keluar 0–255 tanpa pesan.</p>
+<h2 id="memeriksa-asumsi"><a class="jangkar" href="#memeriksa-asumsi">Memeriksa asumsi</a></h2>
+<p><code>assert(syarat)</code> dan <code>assert_eq(a, b)</code> menghentikan program kalau asumsinya salah. Di dalam tes (lihat <a href="tur.html#menulis-tes">Tur singkat</a>), kegagalan assert menandai tes itu gagal.</p>
+<figure class="kode" data-jalan><figcaption><span>assert.jrg</span></figcaption><pre><code><span class="k-fn">assert</span>(<span class="k-ang">1</span> + <span class="k-ang">1</span> == <span class="k-ang">2</span>)
+<span class="k-fn">assert_eq</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>], [<span class="k-ang">1</span>, <span class="k-ang">2</span>])
+<span class="k-fn">assert_eq</span>(<span class="k-ang">2</span> + <span class="k-ang">2</span>, <span class="k-str">&quot;4&quot;</span>)</code></pre><pre class="keluaran"><code>error: assert_eq gagal — kiri `4` (int), kanan `4` (string)
+ --&gt; assert.jrg:3:1
+  |
+3 | assert_eq(2 + 2, &quot;4&quot;)
+  | ^^^^^^^^^^^^^^^^^^^^^
+  |</code></pre></figure>
+<p>Pesannya menyebut tipe kedua sisi, karena <code>4</code> dan <code>&quot;4&quot;</code> tercetak sama.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="pola.html"><small>Sebelumnya</small><strong>Pola</strong></a><a class="ke-kanan" href="modul.html"><small>Berikutnya</small><strong>Modul</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#option">Option</a></li><li><a href="#result">Result</a></li><li><a href="#meneruskan-kegagalan-dengan">Meneruskan kegagalan dengan ?</a></li><li><a href="#kalau-main-gagal">Kalau main gagal</a></li><li><a href="#menghentikan-program">Menghentikan program</a></li><li><a href="#memeriksa-asumsi">Memeriksa asumsi</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

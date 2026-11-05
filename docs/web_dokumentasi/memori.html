@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model memori — Dokumentasi JRG</title>
+<meta name="description" content="Nilai tidak pernah berbagi tempat, dan salinan baru dibuat saat ada yang menulis.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a class="aktif" aria-current="page" href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Di balik layar</p>
+<h1>Model memori</h1>
+<p class="ringkas">Nilai tidak pernah berbagi tempat, dan salinan baru dibuat saat ada yang menulis.</p>
+<h2 id="nilai-tidak-pernah-berbagi"><a class="jangkar" href="#nilai-tidak-pernah-berbagi">Nilai tidak pernah berbagi</a></h2>
+<p>Menugaskan, mengoper ke fungsi, mengembalikan, atau membaca dari koleksi selalu menghasilkan nilai yang berdiri sendiri. Mengubah salinan tidak pernah mengubah aslinya.</p>
+<figure class="kode" data-jalan><figcaption><span>salinan.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> a = [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>]
+<span class="k-kunci">var</span> b = a
+b[<span class="k-ang">0</span>] = <span class="k-ang">99</span>
+
+<span class="k-kunci">fn</span> <span class="k-fn">ubah</span>(xs) {
+    <span class="k-kunci">var</span> ys = xs
+    ys[<span class="k-ang">1</span>] = <span class="k-ang">0</span>
+    <span class="k-kunci">return</span> ys
+}
+
+<span class="k-kunci">let</span> c = <span class="k-fn">ubah</span>(a)
+<span class="k-fn">wok</span>(a, b, c)</code></pre><pre class="keluaran"><code>[1, 2, 3] [99, 2, 3] [1, 0, 3]</code></pre></figure>
+<p>Karena tiap nilai punya tepat satu pemilik, umurnya sama dengan umur variabel pemiliknya. JRG tidak butuh pengumpul sampah, dan tidak ada pointer yang menggantung untuk nilai biasa.</p>
+<h2 id="menyalin-itu-murah"><a class="jangkar" href="#menyalin-itu-murah">Menyalin itu murah</a></h2>
+<p>Salinan sebenarnya baru dibuat saat ada yang menulis. <code>var b = a</code> tidak menyalin apa pun; <code>b[0] = 99</code> baru menyalin. Akibatnya:</p>
+<ul><li>mengoper array besar ke fungsi yang cuma membacanya tidak menyalin apa pun;</li><li><code>a = a.push(x)</code>, <code>a = a + [x]</code>, dan <code>d = dict::set(d, k, v)</code> mengubah di tempat, jadi menambah elemen satu per satu tetap linear;</li><li><code>a[i] = v</code> tidak bergantung pada ukuran <code>a</code>.</li></ul>
+<p>Yang memang mahal: menambah di depan (<code>a = [x] + a</code>), karena itu memindahkan semua elemen. Untuk antrean dua ujung, pakai <code>std/deque</code>.</p>
+<h2 id="yang-sengaja-berbagi"><a class="jangkar" href="#yang-sengaja-berbagi">Yang sengaja berbagi</a></h2>
+<p>Ada beberapa hal yang memang dirancang untuk berbagi, dan semuanya terlihat jelas di kode:</p>
+<div class="tabel"><table><thead><tr><th>Apa</th><th>Contoh</th></tr></thead><tbody><tr><td>variabel yang ditangkap closure</td><td><code>let naik = || { n += 1 }</code> mengubah <code>n</code> milik luar</td></tr><tr><td>pegangan sinkronisasi</td><td><code>Atomic</code>, <code>Mutex</code>, channel</td></tr><tr><td>pegangan eksplisit</td><td><code>ptr::new(nilai)</code></td></tr><tr><td>alokasi manual</td><td><code>jawa::alloc</code> dan <code>jawir::free</code></td></tr><tr><td>objek bahasa lain</td><td>handle <code>py::</code>, <code>js::</code>, <code>jvm::</code></td></tr></tbody></table></div>
+<figure class="kode" data-jalan><figcaption><span>pegangan.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> p = <span class="k-ns">ptr</span>::<span class="k-fn">new</span>(<span class="k-ang">0</span>)
+<span class="k-kunci">let</span> q = p
+<span class="k-ns">ptr</span>::<span class="k-fn">set</span>(q, <span class="k-ang">42</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">ptr</span>::<span class="k-fn">get</span>(p))
+
+<span class="k-kunci">let</span> m = <span class="k-ns">jawa</span>::<span class="k-fn">alloc</span>(<span class="k-ang">7</span>)
+<span class="k-ns">jawir</span>::<span class="k-fn">free</span>(m)
+<span class="k-fn">wok</span>(<span class="k-ns">jawa</span>::<span class="k-fn">is_valid</span>(m))</code></pre><pre class="keluaran"><code>42
+false</code></pre></figure>
+<p><code>jawa::</code> meniru malloc/free tanpa pointer mentah: memakai sesudah <code>free</code> atau <code>free</code> dua kali menghasilkan pesan galat yang jelas, bukan crash.</p>
+<h2 id="satu-kebocoran-yang-diketahui"><a class="jangkar" href="#satu-kebocoran-yang-diketahui">Satu kebocoran yang diketahui</a></h2>
+<p>Closure yang memanggil dirinya sendiri lewat variabel yang ia tangkap membentuk lingkaran kepemilikan yang tidak pernah dibebaskan. Untuk rekursi, pakai <code>fn</code> bernama.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="mesin.html"><small>Sebelumnya</small><strong>Tiga mesin</strong></a><a class="ke-kanan" href="diagnostik.html"><small>Berikutnya</small><strong>Diagnostik</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#nilai-tidak-pernah-berbagi">Nilai tidak pernah berbagi</a></li><li><a href="#menyalin-itu-murah">Menyalin itu murah</a></li><li><a href="#yang-sengaja-berbagi">Yang sengaja berbagi</a></li><li><a href="#satu-kebocoran-yang-diketahui">Satu kebocoran yang diketahui</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

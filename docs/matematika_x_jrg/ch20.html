@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proyek: Kalkulator Rapor — Matematika × JRG</title>
+<meta name="description" content="Titik kumpul dari seluruh perjalanan. Proyek ini menggabungkan statistik (Bab 11), fungsi (Bab 9), dan variabel (Bab 8) jadi satu alat yang benar-benar berguna: kalkulator rapor ot">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="mtk">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a class="aktif" aria-current="page" href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel kelas" data-bab="ch20">
+<p class="rel">Bab 20 · Proyek Akhir</p>
+<h1>Proyek: Kalkulator Rapor</h1>
+<p class="ringkas">Titik kumpul dari seluruh perjalanan. Proyek ini menggabungkan <strong>statistik</strong> (Bab 11), <strong>fungsi</strong> (Bab 9), dan <strong>variabel</strong> (Bab 8) jadi satu alat yang benar-benar berguna: kalkulator rapor otomatis.</p>
+
+<h2 id="apa-yang-akan-dihitung"><span class="lencana">Konsep</span>Apa yang akan dihitung?</h2>
+<p>Masukkan beberapa nilai ujian dipisah koma. Alat ini akan menghitung <strong>rata-rata (mean)</strong>, <strong>median</strong>, nilai <strong>tertinggi &amp; terendah</strong>, lalu menentukan <strong>grade huruf</strong> berdasarkan rata-rata — semua konsep yang sudah kamu kuasai satu per satu di bab-bab sebelumnya, sekarang bekerja bersama.</p>
+<div class="tabel"><table><thead><tr><th>Rata-rata</th><th>Grade</th></tr></thead><tbody><tr><td>≥ 90</td><td><span class="badge bgg">A — Luar Biasa</span></td></tr><tr><td>80 – 89</td><td><span class="badge bgb">B — Bagus</span></td></tr><tr><td>70 – 79</td><td><span class="badge bgo">C — Cukup</span></td></tr><tr><td>60 – 69</td><td><span class="badge bgo">D — Perlu Perbaikan</span></td></tr><tr><td>&lt; 60</td><td><span class="badge bgr">E — Belum Lulus</span></td></tr></tbody></table></div>
+<h2 id="kalkulator-rapor-dalam-jrg"><span class="lencana">Kode JRG</span>Kalkulator rapor dalam JRG</h2>
+<p>Program ini memakai konsep dari Bab 8, 9, dan 11 sekaligus: fungsi, perulangan, rata-rata, dan median.</p>
+<figure class="kode" data-jalan><figcaption><span>kalkulator_rapor.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">hitungMean</span>(data: []<span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
+    <span class="k-kunci">let</span> <span class="k-kunci">mut</span> total = <span class="k-ang">0.0</span>
+    <span class="k-kunci">for</span> _, n <span class="k-kunci">in</span> data { total += n }
+    <span class="k-kunci">return</span> total / data.<span class="k-fn">len</span>() <span class="k-kunci">as</span> <span class="k-tipe">float</span>
+}
+
+<span class="k-kunci">fn</span> <span class="k-fn">tentukanGrade</span>(rata: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">string</span> {
+    <span class="k-kunci">if</span> rata &gt;= <span class="k-ang">90.0</span> { <span class="k-kunci">return</span> <span class="k-str">&quot;A - Luar Biasa&quot;</span> }
+    <span class="k-kunci">else</span> <span class="k-kunci">if</span> rata &gt;= <span class="k-ang">80.0</span> { <span class="k-kunci">return</span> <span class="k-str">&quot;B - Bagus&quot;</span> }
+    <span class="k-kunci">else</span> <span class="k-kunci">if</span> rata &gt;= <span class="k-ang">70.0</span> { <span class="k-kunci">return</span> <span class="k-str">&quot;C - Cukup&quot;</span> }
+    <span class="k-kunci">else</span> <span class="k-kunci">if</span> rata &gt;= <span class="k-ang">60.0</span> { <span class="k-kunci">return</span> <span class="k-str">&quot;D - Perlu Perbaikan&quot;</span> }
+    <span class="k-kunci">else</span> { <span class="k-kunci">return</span> <span class="k-str">&quot;E - Belum Lulus&quot;</span> }
+}
+
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> nilai = [<span class="k-ang">78.0</span>, <span class="k-ang">85.0</span>, <span class="k-ang">92.0</span>, <span class="k-ang">67.0</span>, <span class="k-ang">88.0</span>]
+    <span class="k-kunci">let</span> rata = <span class="k-fn">hitungMean</span>(nilai)
+
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Rata-rata:&quot;</span>, rata)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Median:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">median</span>(nilai))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Grade:&quot;</span>, <span class="k-fn">tentukanGrade</span>(rata))
+}</code></pre><pre class="keluaran"><code>Rata-rata: 82.0
+Median: 85.0
+Grade: B - Bagus</code></pre></figure>
+<aside class="catatan catatan-tip"><p class="catatan-judul">Coba dengan nilaimu sendiri</p><div>Tekan <strong>Ubah</strong>, ganti isi <code>nilai</code> dengan nilai rapormu, lalu tekan <strong>Jalankan</strong>. Kalau sudah, tandai proyek ini selesai dengan tombol di bawah.</div></aside>
+<aside class="catatan catatan-fun"><p class="catatan-judul">Selamat menyelesaikan seluruh materi!</p><div>Dari mengenal angka di Bab 1 sampai menghitung grade otomatis di sini, kamu sudah melewati 20 bab penuh — aritmatika, aljabar, statistik, geometri 2D &amp; 3D, eksponen, logaritma, probabilitas, barisan, dan trigonometri. Yang lebih penting: setiap konsep sudah kamu lihat dua kali — sebagai matematika <em>dan</em> sebagai kode yang benar-benar bisa jalan. Simpan kebiasaan ini — matematika dan logika pemrograman akan terus saling menguatkan ke mana pun kamu lanjut belajar.</div></aside>
+<aside class="catatan catatan-real"><p class="catatan-judul">Butuh mengulang rumus?</p><div>Halaman Referensi &amp; Glosarium di bagian paling bawah sidebar merangkum SEMUA rumus dari 20 bab dalam satu tempat — cocok untuk belajar cepat sebelum ulangan.</div></aside>
+<p class="selesai-proyek"><button class="tombol" type="button" data-proyek="ch20">Tandai proyek selesai</button></p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="ch19.html"><small>Bab sebelumnya</small><strong>Trigonometri Dasar</strong></a><a class="ke-kanan" href="referensi.html"><small>Bab berikutnya</small><strong>Referensi &amp; Glosarium</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+<script src="../aset/kelas-data.js"></script>
+<script src="../aset/kelas.js"></script>
+</body>
+</html>

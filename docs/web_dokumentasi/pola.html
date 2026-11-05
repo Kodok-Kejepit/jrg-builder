@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pola dan match — Dokumentasi JRG</title>
+<meta name="description" content="Membongkar nilai dan memilih cabang berdasarkan bentuknya.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a class="aktif" aria-current="page" href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Bahasa</p>
+<h1>Pola dan match</h1>
+<p class="ringkas">Membongkar nilai dan memilih cabang berdasarkan bentuknya.</p>
+<h2 id="match"><a class="jangkar" href="#match">match</a></h2>
+<p><code>match</code> mencoba tiap cabang dari atas dan menjalankan yang pertama cocok. <code>_</code> cocok dengan apa saja.</p>
+<figure class="kode" data-jalan><figcaption><span>match.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">jelaskan</span>(x) {
+    <span class="k-kunci">return</span> <span class="k-kunci">match</span> x {
+        <span class="k-ang">0</span> =&gt; <span class="k-str">&quot;nol&quot;</span>,
+        n @ <span class="k-ang">1</span>..=<span class="k-ang">9</span> =&gt; <span class="k-str">&quot;satu digit: &quot;</span> + <span class="k-fn">str</span>(n),
+        n <span class="k-kunci">if</span> n &lt; <span class="k-ang">0</span> =&gt; <span class="k-str">&quot;negatif&quot;</span>,
+        _ =&gt; <span class="k-str">&quot;besar&quot;</span>,
+    }
+}
+<span class="k-fn">wok</span>(<span class="k-fn">jelaskan</span>(<span class="k-ang">0</span>), <span class="k-fn">jelaskan</span>(<span class="k-ang">7</span>), <span class="k-fn">jelaskan</span>(-<span class="k-ang">3</span>), <span class="k-fn">jelaskan</span>(<span class="k-ang">42</span>))</code></pre><pre class="keluaran"><code>nol satu digit: 7 negatif besar</code></pre></figure>
+<div class="tabel"><table><thead><tr><th>Pola</th><th>Cocok dengan</th></tr></thead><tbody><tr><td><code>0</code>, <code>&quot;teks&quot;</code>, <code>&#x27;a&#x27;</code>, <code>true</code></td><td>nilai itu persis</td></tr><tr><td><code>1..=9</code>, <code>&#x27;a&#x27;..=&#x27;z&#x27;</code></td><td>nilai di dalam rentang</td></tr><tr><td><code>a | b</code></td><td>salah satunya</td></tr><tr><td><code>n</code></td><td>apa saja, dan mengikatnya ke <code>n</code></td></tr><tr><td><code>n @ pola</code></td><td><code>pola</code>, dan mengikat seluruh nilainya ke <code>n</code></td></tr><tr><td><code>pola if syarat</code></td><td><code>pola</code>, kalau <code>syarat</code> benar</td></tr><tr><td><code>(a, b)</code></td><td>tuple dua elemen</td></tr><tr><td><code>[a, b]</code>, <code>[]</code>, <code>[kepala, ...sisa]</code>, <code>[a, ..., z]</code></td><td>array dengan bentuk itu</td></tr><tr><td><code>Titik { x, y: 0 }</code></td><td>struct dengan field <code>y</code> bernilai 0</td></tr><tr><td><code>Bentuk::Lingkaran(r)</code>, <code>Some(v)</code>, <code>Err(e)</code></td><td>varian enum, sekaligus membongkar isinya</td></tr></tbody></table></div>
+<h2 id="pola-array"><a class="jangkar" href="#pola-array">Pola array</a></h2>
+<figure class="kode" data-jalan><figcaption><span>pola-array.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bentuk</span>(a) {
+    <span class="k-kunci">return</span> <span class="k-kunci">match</span> a {
+        [] =&gt; <span class="k-str">&quot;kosong&quot;</span>,
+        [x] =&gt; <span class="k-str">&quot;satu: &quot;</span> + <span class="k-fn">str</span>(x),
+        [pertama, ..., terakhir] =&gt; <span class="k-fn">str</span>(pertama) + <span class="k-str">&quot; sampai &quot;</span> + <span class="k-fn">str</span>(terakhir),
+    }
+}
+<span class="k-fn">wok</span>(<span class="k-fn">bentuk</span>([]))
+<span class="k-fn">wok</span>(<span class="k-fn">bentuk</span>([<span class="k-ang">5</span>]))
+<span class="k-fn">wok</span>(<span class="k-fn">bentuk</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>, <span class="k-ang">4</span>]))</code></pre><pre class="keluaran"><code>kosong
+satu: 5
+1 sampai 4</code></pre></figure>
+<h2 id="pola-di-let-dan-for"><a class="jangkar" href="#pola-di-let-dan-for">Pola di let dan for</a></h2>
+<p>Pola juga dipakai di <code>let</code>, di kepala <code>for</code>, dan di parameter fungsi.</p>
+<figure class="kode" data-jalan><figcaption><span>bongkar.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> (a, b) = (<span class="k-ang">1</span>, <span class="k-ang">2</span>)
+<span class="k-kunci">let</span> [p, q, ...sisa] = [<span class="k-ang">10</span>, <span class="k-ang">20</span>, <span class="k-ang">30</span>, <span class="k-ang">40</span>]
+<span class="k-fn">wok</span>(a, b, p, q, sisa)
+
+<span class="k-kunci">let</span> nilai = [(<span class="k-str">&quot;Ani&quot;</span>, <span class="k-ang">90</span>), (<span class="k-str">&quot;Budi&quot;</span>, <span class="k-ang">75</span>)]
+<span class="k-kunci">for</span> _, (nama, skor) <span class="k-kunci">in</span> nilai {
+    <span class="k-fn">wok</span>(nama, skor &gt;= <span class="k-ang">80</span> $ <span class="k-str">&quot;A&quot;</span> : <span class="k-str">&quot;B&quot;</span>)
+}
+
+<span class="k-kunci">struct</span> <span class="k-tipe">Titik</span> { <span class="k-kunci">pub</span> x: <span class="k-tipe">int</span>, <span class="k-kunci">pub</span> y: <span class="k-tipe">int</span> }
+<span class="k-kunci">let</span> <span class="k-tipe">Titik</span> { x, y } = <span class="k-tipe">Titik</span> { x: <span class="k-ang">3</span>, y: <span class="k-ang">4</span> }
+<span class="k-fn">wok</span>(x * y)</code></pre><pre class="keluaran"><code>1 2 10 20 [30, 40]
+Ani A
+Budi B
+12</code></pre></figure>
+<h2 id="let-else"><a class="jangkar" href="#let-else">let … else</a></h2>
+<p>Kalau polanya mungkin tidak cocok, <code>let pola = nilai else { … }</code> menjalankan blok <code>else</code>. Blok itu harus keluar dari alurnya (<code>return</code>, <code>break</code>, atau <code>continue</code>), jadi sesudah baris itu nama-namanya pasti terisi.</p>
+<figure class="kode" data-jalan><figcaption><span>let-else.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">harga</span>(menu, nama) {
+    <span class="k-kunci">let</span> <span class="k-fn">Some</span>(h) = <span class="k-ns">dict</span>::<span class="k-fn">get</span>(menu, nama) <span class="k-kunci">else</span> {
+        <span class="k-kunci">return</span> <span class="k-str">&quot;tidak ada &quot;</span> + nama
+    }
+    <span class="k-kunci">return</span> nama + <span class="k-str">&quot; Rp&quot;</span> + <span class="k-fn">str</span>(h)
+}
+
+<span class="k-kunci">let</span> menu = {<span class="k-str">&quot;bakso&quot;</span>: <span class="k-ang">15000</span>, <span class="k-str">&quot;soto&quot;</span>: <span class="k-ang">12000</span>}
+<span class="k-fn">wok</span>(<span class="k-fn">harga</span>(menu, <span class="k-str">&quot;soto&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-fn">harga</span>(menu, <span class="k-str">&quot;rendang&quot;</span>))</code></pre><pre class="keluaran"><code>soto Rp12000
+tidak ada rendang</code></pre></figure>
+<h2 id="bagian"><a class="jangkar" href="#bagian">??</a></h2>
+<p><code>a ?? b</code> membuka sebuah <code>Option</code>: isinya kalau <code>Some</code>, <code>b</code> kalau <code>None</code>. Sisi kanan cuma dihitung kalau dibutuhkan.</p>
+<figure class="kode" data-jalan><figcaption><span>cadangan.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> warna = {<span class="k-str">&quot;langit&quot;</span>: <span class="k-str">&quot;biru&quot;</span>}
+<span class="k-fn">wok</span>(<span class="k-ns">dict</span>::<span class="k-fn">get</span>(warna, <span class="k-str">&quot;langit&quot;</span>) ?? <span class="k-str">&quot;?&quot;</span>, <span class="k-ns">dict</span>::<span class="k-fn">get</span>(warna, <span class="k-str">&quot;rumput&quot;</span>) ?? <span class="k-str">&quot;?&quot;</span>)
+<span class="k-fn">wok</span>([<span class="k-ang">3</span>, <span class="k-ang">9</span>, <span class="k-ang">4</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">5</span>) ?? <span class="k-ang">0</span>, [<span class="k-ang">1</span>, <span class="k-ang">2</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">5</span>) ?? <span class="k-ang">0</span>)</code></pre><pre class="keluaran"><code>biru ?
+9 0</code></pre></figure>
+<h2 id="varian-telanjang"><a class="jangkar" href="#varian-telanjang">Varian telanjang</a></h2>
+<p>Di dalam berkas yang mendeklarasikan sebuah enum, variannya boleh ditulis tanpa nama tipenya, asal tidak ada enum lain di berkas itu yang punya varian bernama sama.</p>
+<figure class="kode" data-jalan><figcaption><span>telanjang.jrg</span></figcaption><pre><code><span class="k-kunci">enum</span> <span class="k-tipe">Lampu</span> { <span class="k-tipe">Merah</span>, <span class="k-tipe">Kuning</span>, <span class="k-tipe">Hijau</span> }
+
+<span class="k-kunci">fn</span> <span class="k-fn">boleh_jalan</span>(l) {
+    <span class="k-kunci">return</span> <span class="k-kunci">match</span> l {
+        <span class="k-tipe">Hijau</span> =&gt; <span class="k-kunci">true</span>,
+        _ =&gt; <span class="k-kunci">false</span>,
+    }
+}
+<span class="k-fn">wok</span>(<span class="k-fn">boleh_jalan</span>(<span class="k-tipe">Hijau</span>), <span class="k-fn">boleh_jalan</span>(<span class="k-ns">Lampu</span>::<span class="k-tipe">Merah</span>))</code></pre><pre class="keluaran"><code>true false</code></pre></figure>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="tipe.html"><small>Sebelumnya</small><strong>Struct, enum, trait</strong></a><a class="ke-kanan" href="galat.html"><small>Berikutnya</small><strong>Option dan Result</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#match">match</a></li><li><a href="#pola-array">Pola array</a></li><li><a href="#pola-di-let-dan-for">Pola di let dan for</a></li><li><a href="#let-else">let … else</a></li><li><a href="#bagian">??</a></li><li><a href="#varian-telanjang">Varian telanjang</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

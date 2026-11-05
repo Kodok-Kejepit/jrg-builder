@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perkalian &amp; Pembagian — Matematika × JRG</title>
+<meta name="description" content="Perkalian adalah &quot;penjumlahan berulang yang dipercepat&quot;. Pembagian punya satu konsep tersembunyi yang sangat sering dipakai dalam pemrograman: sisa bagi.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="mtk">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a class="aktif" aria-current="page" href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel kelas" data-bab="ch3">
+<p class="rel">Bab 3 · Aritmatika Dasar</p>
+<h1>Perkalian &amp; Pembagian</h1>
+<p class="ringkas">Perkalian adalah "penjumlahan berulang yang dipercepat". Pembagian punya satu konsep tersembunyi yang sangat sering dipakai dalam pemrograman: <strong>sisa bagi</strong>.</p>
+
+<h2 id="perkalian-sebagai-penjumlahan-berulang"><span class="lencana">Konsep</span>Perkalian sebagai penjumlahan berulang</h2>
+<div class="rumus"><div class="rumus-persamaan">4 × 3 = 3 + 3 + 3 + 3 = 12</div><div class="rumus-langkah">"4 kelompok berisi 3" <span>atau "3 kelompok berisi 4" — hasilnya selalu sama (komutatif)</span></div></div>
+<p>Sama seperti penjumlahan, perkalian juga komutatif (a×b=b×a), asosiatif ((a×b)×c=a×(b×c)), dan punya identitas — tapi identitasnya adalah <strong>1</strong>, bukan 0, karena <code>a × 1 = a</code>.</p>
+<aside class="catatan catatan-tip"><p class="catatan-judul">Trik kali 9</p><div>Untuk <code>9 × n</code> (n = 1 sampai 10): jawabannya selalu <code>(n−1)</code> di depan, lalu <code>(10−n)</code> di belakang. Contoh <code>9×7</code>: depan = 6, belakang = 3 → <strong>63</strong>. Coba <code>9×4</code>: depan=3, belakang=6 → <strong>36</strong>. ✓</div></aside>
+<h2 id="pembagian-hasil-bagi-vs-sisa-bagi">Pembagian: hasil bagi vs sisa bagi</h2>
+<p>Ketika 17 dibagi 5, hasilnya bukan bilangan bulat rapi. Ada dua cara memandangnya:</p>
+<div class="daftar-bentuk"><div class="bentuk"><b>Pembagian biasa</b><span>17 ÷ 5 = 3.4</span></div><div class="bentuk"><b>Hasil bagi (quotient)</b><span>17 ÷ 5 = 3 sisa 2</span></div><div class="bentuk"><b>Sisa bagi (modulo)</b><span>17 mod 5 = 2</span></div></div>
+<p><strong>Sisa bagi (modulo)</strong> adalah "apa yang tersisa" setelah dibagi rata sebanyak mungkin. Ini konsep yang akan terus kamu pakai — untuk cek genap/ganjil, membagi giliran, mengatur jam (24 jam berulang), dan banyak lagi.</p>
+<div class="rumus"><div class="rumus-persamaan">17 mod 5 = 2</div><div class="rumus-langkah">5 masuk ke 17 sebanyak <span>3 kali</span> (=15)</div><div class="rumus-langkah">Sisanya: 17 − 15 = <span>2</span></div></div>
+<aside class="catatan catatan-warn"><p class="catatan-judul">Kesalahan umum</p><div>Membagi dengan nol. Secara matematika, <code>a ÷ 0</code> <strong>tidak terdefinisi</strong> — bukan "tak terhingga", bukan "nol", benar-benar tidak punya jawaban. Program yang mencoba ini biasanya akan crash atau melempar error, bukan diam-diam memberi hasil aneh.</div></aside>
+<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Berapa hasil bagi dan sisa bagi dari <code>29 ÷ 6</code>?</p>
+      <p><strong>2.</strong> Apakah 234 adalah bilangan genap? Bagaimana cara cek pakai modulo?</p>
+      <div class="math-box">
+        <div class="math-step"><span>Jawaban 1:</span> Hasil bagi = 4, sisa = 5 (karena 6×4=24, 29−24=5)</div>
+        <div class="math-step"><span>Jawaban 2:</span> Genap. 234 mod 2 = 0 → kalau sisa bagi 2 adalah 0, berarti genap.</div>
+      </div></div></details>
+<h2 id="operator-untuk-cek-genap-ganjil"><span class="lencana">Kode JRG</span>Operator <code>%</code> untuk cek genap-ganjil</h2>
+<p>Di JRG (seperti kebanyakan bahasa pemrograman), simbol modulo adalah <code>%</code>. Ini salah satu operator paling sering dipakai — jauh lebih sering daripada kelihatannya di kelas matematika.</p>
+<figure class="kode" data-jalan><figcaption><span>genap_ganjil.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">cekGenap</span>(n: <span class="k-tipe">int</span>) -&gt; <span class="k-tipe">bool</span> {
+    <span class="k-kunci">return</span> n % <span class="k-ang">2</span> == <span class="k-ang">0</span>
+}
+
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> angka = <span class="k-ang">234</span>
+    <span class="k-kunci">let</span> hasilBagi = angka / <span class="k-ang">6</span>
+    <span class="k-kunci">let</span> sisaBagi = angka % <span class="k-ang">6</span>
+
+    <span class="k-fn">wok</span>(angka, <span class="k-str">&quot;/ 6 = &quot;</span>, hasilBagi, <span class="k-str">&quot;sisa&quot;</span>, sisaBagi)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Apakah genap?&quot;</span>, <span class="k-fn">cekGenap</span>(angka))
+}</code></pre><pre class="keluaran"><code>234 / 6 =  39 sisa 0
+Apakah genap? true</code></pre></figure>
+<aside class="catatan catatan-fun"><p class="catatan-judul">Dipakai di mana lagi?</p><div>Jam analog "berputar" tiap 12 — itu modulo 12. Grid game yang "wrap around" ke sisi lain — itu modulo lebar grid. Membagi rata giliran pemain — modulo jumlah pemain. Sekali paham, kamu akan melihatnya di mana-mana.</div></aside>
+<div class="kuis" data-kuis="q3_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Berapa hasil dari 22 mod 7?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>3</button><button type="button" data-benar="1"><span>B</span>1</button><button type="button" data-benar="0"><span>C</span>0</button></div><p class="kuis-umpan benar" hidden>Tepat! 7×3=21, sisanya 22−21=1.</p><p class="kuis-umpan salah" hidden>Coba lagi — 7 masuk ke 22 berapa kali, dan berapa sisanya?</p></div>
+<div class="kuis" data-kuis="q3_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Kenapa 9 × 6 = 54 bisa dihitung cepat sebagai "5, 4"?</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span>Depan = 6−1 = 5, belakang = 10−6 = 4</button><button type="button" data-benar="0"><span>B</span>Kebetulan saja</button><button type="button" data-benar="0"><span>C</span>Depan = 9−6, belakang = 9+6</button></div><p class="kuis-umpan benar" hidden>Benar, itu pola trik kali 9 yang konsisten untuk 1–10.</p><p class="kuis-umpan salah" hidden>Lihat lagi rumusnya di bagian trik kali 9 di atas.</p></div>
+<div class="kuis" data-kuis="q3_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Apa yang terjadi kalau kita membagi dengan 0?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>Hasilnya 0</button><button type="button" data-benar="0"><span>B</span>Hasilnya tak terhingga</button><button type="button" data-benar="1"><span>C</span>Tidak terdefinisi / program biasanya error</button></div><p class="kuis-umpan benar" hidden>Tepat! Pembagian dengan nol tidak punya jawaban matematis yang sah.</p><p class="kuis-umpan salah" hidden>Belum tepat — baca kembali callout "Kesalahan umum" di atas.</p></div>
+<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke Bab 4</p><div>Kalau dalam satu soal ada tambah, kurang, kali, DAN bagi sekaligus — mana yang dihitung dulu? Itu topik bab selanjutnya: urutan operasi.</div></aside>
+
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="ch2.html"><small>Bab sebelumnya</small><strong>Penjumlahan &amp; Pengurangan</strong></a><a class="ke-kanan" href="ch4.html"><small>Bab berikutnya</small><strong>Urutan Operasi</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+<script src="../aset/kelas-data.js"></script>
+<script src="../aset/kelas.js"></script>
+</body>
+</html>

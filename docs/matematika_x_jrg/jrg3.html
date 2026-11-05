@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operator &amp; Hitungan — Matematika × JRG</title>
+<meta name="description" content="Semua cara menghitung di JRG, termasuk sisa bagi yang ternyata jauh lebih berguna daripada kelihatannya.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="mtk">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a class="aktif" aria-current="page" href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel kelas" data-bab="jrg3">
+<p class="rel">JRG 3 · Dasar JRG</p>
+<h1>Operator &amp; Hitungan</h1>
+<p class="ringkas">Semua cara menghitung di JRG, termasuk sisa bagi yang ternyata jauh lebih berguna daripada kelihatannya.</p>
+
+<h2 id="operator-aritmatika"><span class="lencana">hitung</span>Operator aritmatika</h2>
+<div class="tabel"><table><thead><tr><th>Operator</th><th>Arti</th><th>Contoh</th><th>Hasil</th></tr></thead><tbody><tr><td><code>+</code></td><td>Tambah</td><td><code>7 + 2</code></td><td><code>9</code></td></tr><tr><td><code>-</code></td><td>Kurang</td><td><code>7 - 2</code></td><td><code>5</code></td></tr><tr><td><code>*</code></td><td>Kali</td><td><code>7 * 2</code></td><td><code>14</code></td></tr><tr><td><code>/</code></td><td>Bagi</td><td><code>7 / 2</code></td><td><code>3</code> &mdash; keduanya int!</td></tr><tr><td><code>%</code></td><td>Sisa bagi</td><td><code>7 % 2</code></td><td><code>1</code></td></tr><tr><td><code>**</code></td><td>Pangkat</td><td><code>2 ** 10</code></td><td><code>1024</code></td></tr></tbody></table></div>
+<figure class="kode" data-jalan><figcaption><span>operator.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-fn">wok</span>(<span class="k-ang">7</span> + <span class="k-ang">2</span>, <span class="k-ang">7</span> - <span class="k-ang">2</span>, <span class="k-ang">7</span> * <span class="k-ang">2</span>)
+    <span class="k-fn">wok</span>(<span class="k-ang">7</span> / <span class="k-ang">2</span>, <span class="k-ang">7</span> % <span class="k-ang">2</span>, <span class="k-ang">2</span> ** <span class="k-ang">10</span>)
+}</code></pre><pre class="keluaran"><code>9 5 14
+3 1 1024</code></pre></figure>
+<h2 id="sisa-bagi-itu-alat-serbaguna">Sisa bagi (<code>%</code>) itu alat serbaguna</h2>
+<p>Sisa bagi menjawab: “kalau dibagi rata, berapa yang tersisa?” Dari satu operator ini lahir banyak trik.</p>
+<div class="rumus"><div class="rumus-persamaan">17 % 5 = 2</div><div class="rumus-langkah">17 dibagi 5 = 3 kelompok, sisa <span>2</span></div></div>
+<figure class="kode" data-jalan><figcaption><span>modulo.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> n = <span class="k-ang">18</span>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Genap?&quot;</span>, n % <span class="k-ang">2</span> == <span class="k-ang">0</span>)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Habis dibagi 3?&quot;</span>, n % <span class="k-ang">3</span> == <span class="k-ang">0</span>)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Digit terakhir:&quot;</span>, n % <span class="k-ang">10</span>)
+}</code></pre><pre class="keluaran"><code>Genap? true
+Habis dibagi 3? true
+Digit terakhir: 8</code></pre></figure>
+<aside class="catatan catatan-tip"><p class="catatan-judul">Pola yang layak diingat</p><div><code>n % 2 == 0</code> &rarr; genap. <code>n % k == 0</code> &rarr; habis dibagi k. <code>n % 10</code> &rarr; digit terakhir. Ketiganya muncul terus di soal pemrograman.</div></aside>
+<h2 id="urutan-pengerjaan">Urutan pengerjaan</h2>
+<p>Sama seperti di matematika: pangkat dulu, lalu kali/bagi, baru tambah/kurang. Kurung mengalahkan semuanya.</p>
+<figure class="kode" data-jalan><figcaption><span>urutan.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-fn">wok</span>(<span class="k-ang">2</span> + <span class="k-ang">3</span> * <span class="k-ang">4</span>)      <span class="k-kom">// kali dulu</span>
+    <span class="k-fn">wok</span>((<span class="k-ang">2</span> + <span class="k-ang">3</span>) * <span class="k-ang">4</span>)    <span class="k-kom">// kurung dulu</span>
+    <span class="k-fn">wok</span>(<span class="k-ang">2</span> ** <span class="k-ang">3</span> ** <span class="k-ang">2</span>)    <span class="k-kom">// pangkat dari kanan: 2 ** 9</span>
+}</code></pre><pre class="keluaran"><code>14
+20
+512</code></pre></figure>
+<aside class="catatan catatan-warn"><p class="catatan-judul">Pangkat mengikat dari kanan</p><div><code>2 ** 3 ** 2</code> berarti <code>2 ** (3 ** 2)</code> = <code>2 ** 9</code> = 512, bukan <code>(2**3)**2</code> = 64. Ini sama dengan aturan matematika, dan berbeda dari operator lain yang mengikat dari kiri.</div></aside>
+<h2 id="membandingkan">Membandingkan</h2>
+<div class="tabel"><table><thead><tr><th>Operator</th><th>Arti</th></tr></thead><tbody><tr><td><code>==</code></td><td>Sama dengan</td></tr><tr><td><code>!=</code></td><td>Tidak sama dengan</td></tr><tr><td><code>&lt;</code> <code>&gt;</code></td><td>Lebih kecil / lebih besar</td></tr><tr><td><code>&lt;=</code> <code>&gt;=</code></td><td>Lebih kecil / besar atau sama dengan</td></tr></tbody></table></div>
+<figure class="kode" data-jalan><figcaption><span>banding.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-fn">wok</span>(<span class="k-ang">7</span> &gt; <span class="k-ang">2</span>, <span class="k-ang">7</span> == <span class="k-ang">7.0</span>, <span class="k-str">&quot;a&quot;</span> == <span class="k-str">&quot;a&quot;</span>)
+    <span class="k-fn">wok</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>] == [<span class="k-ang">1</span>, <span class="k-ang">2</span>])   <span class="k-kom">// array dibandingkan isinya</span>
+}</code></pre><pre class="keluaran"><code>true true true
+true</code></pre></figure>
+<h2 id="menggabung-syarat">Menggabung syarat</h2>
+<p><code>&amp;&amp;</code> berarti “dan” (dua-duanya harus benar). <code>||</code> berarti “atau” (salah satu cukup). <code>!</code> membalik.</p>
+<figure class="kode" data-jalan><figcaption><span>logika.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> umur = <span class="k-ang">17</span>
+    <span class="k-kunci">let</span> punyaKtp = <span class="k-kunci">false</span>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Boleh masuk?&quot;</span>, umur &gt;= <span class="k-ang">17</span> &amp;&amp; punyaKtp)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Perlu diproses?&quot;</span>, umur &lt; <span class="k-ang">17</span> || !punyaKtp)
+}</code></pre><pre class="keluaran"><code>Boleh masuk? false
+Perlu diproses? true</code></pre></figure>
+<h2 id="operator-gabungan">Operator gabungan</h2>
+<p>Menulis <code>skor = skor + 10</code> terasa panjang. Ada bentuk pendeknya:</p>
+<figure class="kode" data-jalan><figcaption><span>gabungan.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">var</span> n = <span class="k-ang">10</span>
+    n += <span class="k-ang">5</span>   
+    n -= <span class="k-ang">3</span>   
+    n *= <span class="k-ang">2</span>   
+    n /= <span class="k-ang">4</span>   
+    <span class="k-fn">wok</span>(n)
+}</code></pre><pre class="keluaran"><code>6</code></pre></figure>
+<div class="kuis" data-kuis="qj3_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Berapa <code>17 % 5</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>3</button><button type="button" data-benar="1"><span>B</span>2</button><button type="button" data-benar="0"><span>C</span>3.4</button></div><p class="kuis-umpan benar" hidden>Tepat. 17 = 3&times;5 + 2, jadi sisanya 2.</p><p class="kuis-umpan salah" hidden>Sisa bagi menjawab yang <em>tersisa</em>, bukan hasil baginya.</p></div>
+<div class="kuis" data-kuis="qj3_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Berapa <code>2 + 3 * 4</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>20</button><button type="button" data-benar="1"><span>B</span>14</button><button type="button" data-benar="0"><span>C</span>24</button></div><p class="kuis-umpan benar" hidden>Betul, perkalian dikerjakan lebih dulu: 2 + 12.</p><p class="kuis-umpan salah" hidden>Kali dan bagi selalu didahulukan dari tambah dan kurang.</p></div>
+<div class="kuis" data-kuis="qj3_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Bagaimana cara mengecek sebuah bilangan <code>n</code> itu ganjil?</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span><code>n % 2 == 1</code></button><button type="button" data-benar="0"><span>B</span><code>n / 2 == 0</code></button><button type="button" data-benar="0"><span>C</span><code>n ** 2 == 1</code></button></div><p class="kuis-umpan benar" hidden>Tepat &mdash; sisa bagi 2 pasti 0 atau 1, dan 1 berarti ganjil.</p><p class="kuis-umpan salah" hidden>Coba pikirkan lagi: yang menandai ganjil adalah <em>sisa</em>-nya.</p></div>
+<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Cetak apakah 91 habis dibagi 7.</p><p><strong>2.</strong> Hitung <code>3 ** 4</code> tanpa memakai <code>**</code>.</p><div class="math-box"><div class="math-step"><span>Jawaban 1:</span> <code>wok(91 % 7 == 0)</code> &rarr; <code>true</code>.</div><div class="math-step"><span>Jawaban 2:</span> <code>3 * 3 * 3 * 3</code> = 81, atau <code>math::pow(3, 4)</code> yang menjawab <code>81.0</code>.</div></div></div></details>
+<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke JRG 4</p><div>Menghitung saja belum cukup. Berikutnya: membuat program <em>memilih</em> jalan berdasarkan keadaan.</div></aside>
+
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="jrg2.html"><small>Bab sebelumnya</small><strong>Variabel &amp; Tipe</strong></a><a class="ke-kanan" href="jrg4.html"><small>Bab berikutnya</small><strong>Percabangan: if &amp; match</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+<script src="../aset/kelas-data.js"></script>
+<script src="../aset/kelas.js"></script>
+</body>
+</html>

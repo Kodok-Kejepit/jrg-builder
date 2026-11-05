@@ -1,0 +1,22 @@
+# web/Cargo.toml — interpreter JRG yang sama dengan `jrgc`, untuk peramban.
+# Crate terpisah supaya build native tidak ikut membangun cdylib wasm.
+[package]
+name = "jrg_web"
+version     = "0.2.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+jrgc = { path = "..", default-features = false }
+
+# Ukuran, bukan kecepatan: berkasnya diunduh pembaca situs. Panik di target
+# ini selalu jadi trap, jadi `abort` cuma menyatakan yang memang terjadi.
+[profile.release]
+opt-level     = "s"
+lto           = true
+codegen-units = 1
+panic         = "abort"

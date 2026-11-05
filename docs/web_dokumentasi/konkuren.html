@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konkurensi — Dokumentasi JRG</title>
+<meta name="description" content="Goroutine, channel, select, Future, dan alat sinkronisasi.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a class="aktif" aria-current="page" href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Bahasa</p>
+<h1>Konkurensi</h1>
+<p class="ringkas">Goroutine, channel, select, Future, dan alat sinkronisasi.</p>
+<p>Model konkurensi JRG mirip Go: kerjakan sesuatu di goroutine, lalu berkomunikasi lewat channel. Tiap goroutine adalah thread sistem operasi sungguhan, jadi cocok untuk puluhan sampai ratusan tugas, bukan jutaan.</p>
+<h2 id="spawn-dan-channel"><a class="jangkar" href="#spawn-dan-channel">spawn dan channel</a></h2>
+<p><code>spawn { … }</code> (atau <code>go f(x)</code>) menjalankan blok di goroutine baru. <code>make_chan(tipe, kapasitas)</code> membuat channel; <code>c &lt;- v</code> mengirim, <code>&lt;-c</code> menerima.</p>
+<figure class="kode"><figcaption><span>channel.jrg</span><span class="lokal" title="Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban">jalankan dengan jrgc</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">berat</span>(n) { <span class="k-kunci">return</span> n * n }
+
+<span class="k-kunci">let</span> c = <span class="k-fn">make_chan</span>(<span class="k-tipe">int</span>, <span class="k-ang">2</span>)
+<span class="k-kunci">spawn</span> { c &lt;- <span class="k-fn">berat</span>(<span class="k-ang">3</span>) }
+<span class="k-kunci">spawn</span> { c &lt;- <span class="k-fn">berat</span>(<span class="k-ang">4</span>) }
+<span class="k-fn">wok</span>(&lt;-c + &lt;-c)</code></pre><pre class="keluaran"><code>25</code></pre></figure>
+<p>Variabel yang dipakai di dalam <code>spawn</code> disalin saat goroutine dibuat. Program menunggu semua goroutine selesai sebelum berakhir, jadi tidak ada keluaran yang hilang karena <code>main</code> selesai duluan.</p>
+<h2 id="select"><a class="jangkar" href="#select">select</a></h2>
+<p><code>select</code> menunggu beberapa channel sekaligus dan mengambil yang pertama siap. Cabang <code>default</code> membuatnya tidak menunggu.</p>
+<figure class="kode"><figcaption><span>select.jrg</span><span class="lokal" title="Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban">jalankan dengan jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> hasil = <span class="k-fn">make_chan</span>(<span class="k-tipe">string</span>, <span class="k-ang">0</span>)
+<span class="k-kunci">let</span> selesai = <span class="k-fn">make_chan</span>(<span class="k-tipe">bool</span>, <span class="k-ang">0</span>)
+
+<span class="k-kunci">spawn</span> {
+    <span class="k-kunci">for</span> _, kata <span class="k-kunci">in</span> [<span class="k-str">&quot;satu&quot;</span>, <span class="k-str">&quot;dua&quot;</span>, <span class="k-str">&quot;tiga&quot;</span>] {
+        hasil &lt;- kata
+    }
+    selesai &lt;- <span class="k-kunci">true</span>
+}
+
+<span class="k-kunci">var</span> jalan = <span class="k-kunci">true</span>
+<span class="k-kunci">while</span> jalan {
+    <span class="k-kunci">select</span> {
+        case k := &lt;-hasil: { <span class="k-fn">wok</span>(<span class="k-str">&quot;terima&quot;</span>, k) }
+        case _ := &lt;-selesai: { jalan = <span class="k-kunci">false</span> }
+    }
+}</code></pre><pre class="keluaran"><code>terima satu
+terima dua
+terima tiga</code></pre></figure>
+<h2 id="future-dan-task"><a class="jangkar" href="#future-dan-task">Future dan Task</a></h2>
+<p>Untuk pola "mulai sekarang, ambil hasilnya nanti", pakai <code>Future::new(fungsi, argumen…)</code> lalu <code>future::await</code>.</p>
+<figure class="kode"><figcaption><span>future.jrg</span><span class="lokal" title="Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban">jalankan dengan jrgc</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">hitung</span>(n) {
+    <span class="k-kunci">var</span> t = <span class="k-ang">0</span>
+    <span class="k-kunci">for</span> _, i <span class="k-kunci">in</span> <span class="k-ang">0</span>..n { t += i }
+    <span class="k-kunci">return</span> t
+}
+
+<span class="k-kunci">let</span> a = <span class="k-ns">Future</span>::<span class="k-fn">new</span>(hitung, <span class="k-ang">1000</span>)
+<span class="k-kunci">let</span> b = <span class="k-ns">Future</span>::<span class="k-fn">new</span>(hitung, <span class="k-ang">2000</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">future</span>::<span class="k-fn">await</span>(a) + <span class="k-ns">future</span>::<span class="k-fn">await</span>(b))</code></pre><pre class="keluaran"><code>2498500</code></pre></figure>
+<p>Hasil sebuah Future cuma bisa diambil sekali; mengambilnya lagi adalah galat. Fungsi lain di keluarga ini: <code>future::all</code>, <code>future::race</code>, <code>future::timeout</code>, <code>future::try_get</code>, <code>future::is_done</code>, <code>Task::spawn</code>, dan <code>task::join</code>. Kalau fungsi di dalam Future gagal, galatnya muncul di tempat hasilnya diambil.</p>
+<h2 id="atomic-dan-mutex"><a class="jangkar" href="#atomic-dan-mutex">Atomic dan Mutex</a></h2>
+<p>Nilai biasa tidak pernah berbagi, jadi untuk keadaan bersama antar-goroutine JRG punya dua pegangan: <code>Atomic</code> (bilangan bulat yang aman ditambah dari banyak thread) dan <code>Mutex</code> (kunci).</p>
+<figure class="kode"><figcaption><span>atomic.jrg</span><span class="lokal" title="Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban">jalankan dengan jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> n = <span class="k-ns">Atomic</span>::<span class="k-fn">new</span>(<span class="k-ang">0</span>)
+<span class="k-kunci">var</span> tugas = []
+<span class="k-kunci">for</span> _, i <span class="k-kunci">in</span> <span class="k-ang">0</span>..<span class="k-ang">4</span> {
+    tugas = tugas.<span class="k-fn">push</span>(<span class="k-ns">Task</span>::<span class="k-kunci">spawn</span>(|| {
+        <span class="k-kunci">for</span> _, j <span class="k-kunci">in</span> <span class="k-ang">0</span>..<span class="k-ang">1000</span> { n.<span class="k-fn">add</span>(<span class="k-ang">1</span>) }
+    }))
+}
+<span class="k-kunci">for</span> _, t <span class="k-kunci">in</span> tugas { <span class="k-ns">task</span>::<span class="k-fn">join</span>(t) }
+<span class="k-fn">wok</span>(n.<span class="k-fn">get</span>())
+
+<span class="k-kunci">let</span> kunci = <span class="k-ns">Mutex</span>::<span class="k-fn">new</span>()
+<span class="k-ns">mutex</span>::<span class="k-fn">with_lock</span>(kunci, || <span class="k-fn">wok</span>(<span class="k-str">&quot;di dalam kunci&quot;</span>))</code></pre><pre class="keluaran"><code>4000
+di dalam kunci</code></pre></figure>
+<p>Menyalin <code>Atomic</code> atau <code>Mutex</code> menyalin pegangannya, jadi semua salinan menunjuk keadaan yang sama. <code>with_lock</code> melepas kuncinya sendiri, termasuk kalau fungsinya gagal.</p>
+<h2 id="yang-tidak-ada"><a class="jangkar" href="#yang-tidak-ada">Yang tidak ada</a></h2>
+<p>JRG tidak punya <code>async</code>/<code>await</code>. Goroutine-nya thread sungguhan, bukan tugas ringan, dan sintaks <code>async</code> akan menjanjikan biaya yang tidak sesuai kenyataannya. Untuk menunggu banyak hal sekaligus, pakai channel, <code>select</code>, atau <code>future::all</code>.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="modul.html"><small>Sebelumnya</small><strong>Modul</strong></a><a class="ke-kanan" href="pustaka.html"><small>Berikutnya</small><strong>Pustaka bawaan</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#spawn-dan-channel">spawn dan channel</a></li><li><a href="#select">select</a></li><li><a href="#future-dan-task">Future dan Task</a></li><li><a href="#atomic-dan-mutex">Atomic dan Mutex</a></li><li><a href="#yang-tidak-ada">Yang tidak ada</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

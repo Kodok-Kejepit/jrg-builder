@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kanvas, suara, dan numerik — Dokumentasi JRG</title>
+<meta name="description" content="Menggambar dan menyimpan PNG, membuat bunyi, dan menghitung dengan array numerik.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a class="aktif" aria-current="page" href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Pustaka</p>
+<h1>Kanvas, suara, dan numerik</h1>
+<p class="ringkas">Menggambar dan menyimpan PNG, membuat bunyi, dan menghitung dengan array numerik.</p>
+<h2 id="kanvas"><a class="jangkar" href="#kanvas">Kanvas</a></h2>
+<p><code>Canvas::new(lebar, tinggi)</code> membuat bidang gambar. Warna ditulis <code>0xRRGGBB</code>, dan titik (0, 0) ada di kiri atas.</p>
+<figure class="kode"><figcaption><span>kanvas.jrg</span><span class="lokal" title="Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban">jalankan dengan jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> c = <span class="k-ns">Canvas</span>::<span class="k-fn">new</span>(<span class="k-ang">200</span>, <span class="k-ang">120</span>)
+c.<span class="k-fn">clear</span>(<span class="k-ang">0xF4EFE4</span>)
+c.<span class="k-fn">fill_round_rect</span>(<span class="k-ang">10</span>, <span class="k-ang">10</span>, <span class="k-ang">180</span>, <span class="k-ang">100</span>, <span class="k-ang">14</span>, <span class="k-ang">0xA94F28</span>)
+c.<span class="k-fn">fill_circle</span>(<span class="k-ang">60</span>, <span class="k-ang">60</span>, <span class="k-ang">28</span>, <span class="k-ang">0xFFFFFF</span>)
+c.<span class="k-fn">draw_text</span>(<span class="k-ang">110</span>, <span class="k-ang">52</span>, <span class="k-str">&quot;JRG&quot;</span>, <span class="k-ang">0xFFFFFF</span>)
+c.<span class="k-fn">save_png</span>(<span class="k-str">&quot;kartu.png&quot;</span>)
+
+<span class="k-kunci">let</span> lagi = <span class="k-ns">Canvas</span>::<span class="k-fn">load_png</span>(<span class="k-str">&quot;kartu.png&quot;</span>)
+<span class="k-fn">wok</span>(lagi.<span class="k-fn">width</span>(), lagi.<span class="k-fn">height</span>(), lagi.<span class="k-fn">get_pixel</span>(<span class="k-ang">60</span>, <span class="k-ang">60</span>))
+<span class="k-ns">fs</span>::<span class="k-fn">delete</span>(<span class="k-str">&quot;kartu.png&quot;</span>)</code></pre><pre class="keluaran"><code>200 120 Warna {a: 255, b: 255, g: 255, r: 255}</code></pre></figure>
+<p>Yang tersedia (57 fungsi, semuanya juga bisa dipanggil sebagai method):</p>
+<ul><li><strong>Bentuk:</strong> garis (biasa dan anti-alias), persegi, persegi bersudut tumpul, lingkaran, elips, busur, segitiga, poligon, kurva Bezier, dan teks berskala.</li><li><strong>Isian:</strong> warna polos, gradien linear, dan gradien radial.</li><li><strong>Transformasi:</strong> <code>translate</code>, <code>rotate</code>, <code>scale</code>, dengan tumpukan <code>push</code>/<code>pop</code>, dan pemotongan <code>clip</code>.</li><li><strong>Gambar:</strong> <code>save_png</code>, <code>save_bmp</code>, <code>Canvas::load_png</code>, serta <code>blit</code>/<code>blit_region</code> untuk menempel kanvas lain (sprite, petak).</li><li><strong>Masukan:</strong> tombol keyboard, tetikus, dan sentuhan, untuk kanvas yang punya jendela.</li></ul>
+<h3 id="jendela"><a class="jangkar" href="#jendela">Jendela</a></h3>
+<p>Argumen keempat <code>Canvas::new</code> memilih tempat tampilnya:</p>
+<div class="tabel"><table><thead><tr><th>Mode</th><th>Hasil</th></tr></thead><tbody><tr><td><code>&quot;polos&quot;</code> (bawaan)</td><td>tanpa jendela; gambar disimpan ke berkas</td></tr><tr><td><code>&quot;tab&quot;</code></td><td>jendela desktop (butuh build <code>--features canvas</code>)</td></tr><tr><td><code>&quot;web&quot;</code></td><td>tampil di peramban lewat server lokal</td></tr><tr><td><code>&quot;png&quot;</code></td><td>tiap bingkai ditulis jadi berkas PNG</td></tr></tbody></table></div>
+<p>Putaran animasinya: selama <code>c.is_open()</code>, gambar, lalu panggil <code>c.update()</code>. <code>c.delta_time()</code> memberi lama bingkai terakhir dalam detik. Untuk game, lebih enak memakai <a href="game.html">mesin game</a>.</p>
+<h2 id="suara"><a class="jangkar" href="#suara">Suara</a></h2>
+<p><code>suara::</code> membuat bunyi sebagai array sampel (mono, 44.100 Hz), menyimpannya sebagai WAV, dan memutarnya lewat PulseAudio atau PipeWire.</p>
+<figure class="kode"><figcaption><span>suara.jrg</span><span class="lokal" title="Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban">jalankan dengan jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> do_ = <span class="k-ns">suara</span>::<span class="k-fn">nada</span>(<span class="k-ang">261.6</span>, <span class="k-ang">300</span>)
+<span class="k-kunci">let</span> mi = <span class="k-ns">suara</span>::<span class="k-fn">nada</span>(<span class="k-ang">329.6</span>, <span class="k-ang">300</span>)
+<span class="k-kunci">let</span> lagu = <span class="k-ns">suara</span>::<span class="k-fn">sambung</span>(<span class="k-ns">suara</span>::<span class="k-fn">sambung</span>(do_, <span class="k-ns">suara</span>::<span class="k-fn">sunyi</span>(<span class="k-ang">100</span>)), mi)
+<span class="k-ns">suara</span>::<span class="k-fn">simpan_wav</span>(lagu, <span class="k-str">&quot;lagu.wav&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">suara</span>::<span class="k-fn">durasi_ms</span>(lagu), <span class="k-str">&quot;ms&quot;</span>)
+<span class="k-ns">fs</span>::<span class="k-fn">delete</span>(<span class="k-str">&quot;lagu.wav&quot;</span>)</code></pre><pre class="keluaran"><code>700.0 ms</code></pre></figure>
+<p><code>suara::putar(bunyi)</code> memutar tanpa menunggu, <code>putar_tunggu</code> menunggu sampai selesai. <code>suara::tersedia()</code> memberi tahu apakah ada keluaran audio. Fungsi lain: <code>derau</code>, <code>selubung</code> (fade in/out), dan <code>muat_wav</code>.</p>
+<h2 id="numerik-wokwok"><a class="jangkar" href="#numerik-wokwok">Numerik: wokwok</a></h2>
+<p><code>wokwok::</code> punya array n-dimensi sendiri yang isinya disimpan rapat dalam satu jenis angka. Untuk perhitungan elemen per elemen atas data besar, ia jauh lebih cepat daripada array biasa.</p>
+<figure class="kode" data-jalan><figcaption><span>wokwok.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> a = <span class="k-ns">wokwok</span>::<span class="k-fn">arange</span>(<span class="k-ang">0.0</span>, <span class="k-ang">1.0</span>, <span class="k-ang">0.25</span>)
+<span class="k-fn">wok</span>(a, <span class="k-ns">wokwok</span>::<span class="k-fn">sum</span>(a), <span class="k-ns">wokwok</span>::<span class="k-fn">mean</span>(a))
+
+<span class="k-kunci">let</span> m = <span class="k-ns">wokwok</span>::<span class="k-fn">array</span>([[<span class="k-ang">1.0</span>, <span class="k-ang">2.0</span>], [<span class="k-ang">3.0</span>, <span class="k-ang">4.0</span>]])
+<span class="k-fn">wok</span>(<span class="k-ns">wokwok</span>::<span class="k-fn">matmul</span>(m, m), <span class="k-ns">wokwok</span>::<span class="k-fn">det</span>(m), <span class="k-ns">wokwok</span>::<span class="k-fn">shape</span>(m))
+<span class="k-fn">wok</span>(<span class="k-ns">wokwok</span>::<span class="k-fn">mul</span>(<span class="k-ns">wokwok</span>::<span class="k-fn">linspace</span>(<span class="k-ang">0.0</span>, <span class="k-ang">1.0</span>, <span class="k-ang">5</span>), <span class="k-ang">10.0</span>))</code></pre><pre class="keluaran"><code>[0.0, 0.25, 0.5, 0.75] 1.5 0.375
+[[7.0, 10.0], [15.0, 22.0]] -2.0 [2, 2]
+[0.0, 2.5, 5.0, 7.5, 10.0]</code></pre></figure>
+<p>Ada 86 fungsi: pembuat array (<code>zeros</code>, <code>ones</code>, <code>eye</code>, <code>linspace</code>, <code>random</code>), operasi elemen per elemen, agregat (<code>sum</code>, <code>mean</code>, <code>std</code>, <code>var</code>, <code>argmax</code>), bentuk (<code>reshape</code>, <code>transpose</code>, <code>flatten</code>), dan aljabar linear (<code>dot</code>, <code>matmul</code>, <code>inv</code>, <code>det</code>, <code>solve</code>). Penjumlahannya memakai cara berpasangan, jadi sejuta angka <code>0.1</code> berjumlah tepat <code>100000</code>.</p>
+<h3 id="statistik-dan-matriks-kecil"><a class="jangkar" href="#statistik-dan-matriks-kecil">Statistik dan matriks kecil</a></h3>
+<p>Untuk data yang berupa array biasa, <code>dok::</code> punya statistik (<code>stat_percentile</code>, <code>stat_linreg</code>, <code>stat_correlation</code>, <code>stat_normal_cdf</code>), vektor (<code>vec_dot</code>, <code>vec_cross</code>, <code>vec_normalize</code>), matriks (<code>mat_mul</code>, <code>mat_inverse</code>, <code>mat_det</code>), dan teori bilangan (<code>num_is_prime</code>, <code>num_prime_factors</code>, <code>num_mod_pow</code>).</p>
+<figure class="kode" data-jalan><figcaption><span>statistik.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">stat_percentile</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>, <span class="k-ang">4</span>, <span class="k-ang">5</span>], <span class="k-ang">50</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">stat_linreg</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>], [<span class="k-ang">2</span>, <span class="k-ang">4</span>, <span class="k-ang">6</span>]))
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">num_prime_factors</span>(<span class="k-ang">360</span>))</code></pre><pre class="keluaran"><code>3.0
+DokLinReg {intercept: 0.0, r2: 1.0, slope: 2.0}
+[2, 2, 2, 3, 3, 5]</code></pre></figure>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="web.html"><small>Sebelumnya</small><strong>Web dan data</strong></a><a class="ke-kanan" href="game.html"><small>Berikutnya</small><strong>Mesin game</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#kanvas">Kanvas</a></li><li><a href="#suara">Suara</a></li><li><a href="#numerik-wokwok">Numerik: wokwok</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

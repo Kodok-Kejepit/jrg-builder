@@ -1,0 +1,18 @@
+// contoh
+package main
+
+import "std/fmt"
+
+pub fn main() {
+    fmt::wok("Uji Coba lagi")
+    wok(826323)
+    wok"wokwokwok"
+    wok"jawa jawa jawa jawa jawa jawa"
+    wok 1234
+
+    // ini contoh syntax error anomaly
+    wokwokwok
+    wok fmt::wok() wok wok wok wok kodok
+    anjayyyy
+    satu dua
+}

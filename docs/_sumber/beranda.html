@@ -1,0 +1,89 @@
+<section class="pahlawan">
+  <div>
+    <span class="label-versi">JRG {VERSI}</span>
+    <h1 class="judul-gambar"><img class="terang-saja" src="aset/hero.png" alt="JRG++, bahasa pemrograman Indonesia" width="550" height="142"><img class="gelap-saja" src="aset/hero-gelap.png" alt="JRG++, bahasa pemrograman Indonesia" width="550" height="142"></h1>
+    <ul class="ciri-kecil" aria-label="Ciri JRG">
+      <li>Galat berbahasa Indonesia</li>
+      <li>Tiga mesin, satu hasil</li>
+      <li>Tanpa pengumpul sampah</li>
+      <li>{BUILTIN} fungsi bawaan</li>
+      <li>FFI ke 12 bahasa</li>
+      <li>Sampai ke Android</li>
+    </ul>
+    <p class="lead">JawaRustGo++ (JRG) adalah bahasa pemrograman dengan pesan galat berbahasa Indonesia. Ditulis dengan Rust,
+    bentuk kodenya mirip Rust dan Go. Satu program bisa dijalankan lewat interpreter, mesin virtual, atau dikompilasi
+    jadi program native, dan hasilnya sama.</p>
+    <div class="baris-tombol">
+      <a class="tombol" href="web_dokumentasi/pasang.html">Pasang JRG</a>
+      <a class="tombol biasa" href="web_dokumentasi/tur.html">Tur singkat</a>
+      <a class="tombol biasa" href="matematika_x_jrg/index.html">Belajar dari nol</a>
+    </div>
+  </div>
+  <div>
+```jrg rapor.jrg
+struct Murid { pub nama: string, pub nilai: int }
+
+pub fn main() {
+    let kelas = [
+        Murid { nama: "Ani", nilai: 92 },
+        Murid { nama: "Budi", nilai: 78 },
+        Murid { nama: "Citra", nilai: 85 },
+    ]
+    for _, m in kelas.filter(|m| m.nilai >= 80) {
+        wok("""${m.nama} lulus dengan ${m.nilai}""")
+    }
+    let rata = arr::sum(kelas.map(|m| m.nilai)) / len(kelas)
+    wok("rata-rata kelas:", rata)
+}
+```
+```keluaran
+Ani lulus dengan 92
+Citra lulus dengan 85
+rata-rata kelas: 85
+```
+  </div>
+</section>
+
+<section class="bagian-beranda">
+  <h2>Dua pintu masuk</h2>
+  <p>Pilih sesuai kebutuhan. Bilah di atas tiap halaman memindahkanmu antara keduanya.</p>
+  <div class="kartu-kartu">
+    <a class="kartu" href="web_dokumentasi/index.html">
+      <h3>Dokumentasi</h3>
+      <p>Rujukan bahasa untuk yang sudah biasa memprogram: sintaks, tipe, pustaka, perkakas, FFI, dan cara kerja mesinnya.</p>
+      <span class="lanjut">Buka dokumentasi →</span>
+    </a>
+    <a class="kartu" href="matematika_x_jrg/index.html">
+      <h3>Matematika × JRG</h3>
+      <p>Kelas dari nol untuk yang belum pernah memprogram. 12 bab dasar JRG dan 20 bab matematika, lengkap dengan kuis dan kode yang bisa dijalankan di sini.</p>
+      <span class="lanjut">Mulai belajar →</span>
+    </a>
+  </div>
+</section>
+
+<section class="bagian-beranda">
+  <h2>Galat yang bisa dibaca</h2>
+  <p>Pesannya menyebut letak masalah, apa yang salah, dan jalan keluarnya.</p>
+```sh
+$ jrgc harga.jrg
+kepentok di baris 2 waktu jalan. keterangannya di bawah.
+error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2, atau -1..-3 kalau mau hitung dari belakang)
+ --> harga.jrg:2:5
+  |
+2 | wok(harga[3])
+  |     ^^^^^^^^
+```
+</section>
+
+<section class="bagian-beranda">
+  <h2>Isi kotaknya</h2>
+  <p>Yang kamu dapat sesudah memasang JRG.</p>
+  <div class="ciri">
+    <div><h3>Tiga mesin</h3><p>Interpreter untuk coba-coba, VM bytecode (<code>--vm</code>) yang lebih cepat, dan kompilasi native lewat LLVM (<code>--emit-llvm</code>).</p></div>
+    <div><h3>{BUILTIN} fungsi bawaan</h3><p>Teks, koleksi, berkas, waktu, JSON, regex, HTTP, SQLite, kanvas, suara, dan numerik. Cari dengan <code>jrgc --cari</code>.</p></div>
+    <div><h3>Pustaka std/</h3><p>14 modul (set, antrean, heap, CSV, uang, tabel…) plus mesin game 2D, semuanya ditulis dalam JRG.</p></div>
+    <div><h3>Bahasa lain</h3><p>Panggil C, C++, Rust, Go, Python, JavaScript, PHP, Lua, Java, Kotlin, .NET, dan WebAssembly.</p></div>
+    <div><h3>Proyek dan paket</h3><p><code>jrgm</code> membuat proyek, mengurus dependensi lewat git, menjalankan tes, merapikan, dan memeriksa kode.</p></div>
+    <div><h3>Sampai ke HP</h3><p>Bungkus program jadi APK Android dengan <code>jrgm apk</code>. Ada juga JRG IDE yang jalan di HP.</p></div>
+  </div>
+</section>

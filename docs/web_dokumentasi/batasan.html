@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yang belum jadi — Dokumentasi JRG</title>
+<meta name="description" content="Kekurangan JRG 0.2.0 yang sudah diketahui.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a class="aktif" aria-current="page" href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Di balik layar</p>
+<h1>Yang belum jadi</h1>
+<p class="ringkas">Kekurangan JRG 0.2.0 yang sudah diketahui.</p>
+<h2 id="bahasa"><a class="jangkar" href="#bahasa">Bahasa</a></h2>
+<ul><li><strong>Diskriminan enum</strong> (<code>enum E { A = 5 }</code>) belum ada. Pemetaan varian ke angka ditulis dengan <code>match</code>.</li><li><strong>Tidak ada <code>async</code>/<code>await</code>.</strong> Konkurensi memakai goroutine dan channel; tiap goroutine adalah thread sistem, jadi cocok untuk puluhan sampai ratusan tugas, bukan jutaan.</li><li><strong>Anotasi tipe tidak ditegakkan.</strong> Nama tipenya diperiksa, isinya tidak.</li><li><strong><code>for</code> dengan satu nama memberi indeks</strong>, juga untuk rentang. Ini disengaja, tapi sering mengejutkan; lihat <a href="kendali.html#for">Kendali alur</a>.</li><li><strong>Closure yang memanggil dirinya sendiri</strong> tidak pernah dibebaskan dari memori. Pakai <code>fn</code> bernama.</li></ul>
+<h2 id="backend-llvm"><a class="jangkar" href="#backend-llvm">Backend LLVM</a></h2>
+<p>Interpreter dan VM menjalankan seluruh bahasa. Backend LLVM menjalankan semua berkas konformans, dan menolak (dengan alasannya) beberapa bentuk:</p>
+<ul><li>sebar di pemanggilan (<code>f(...v)</code>) dan argumen bernama (<code>f(a: 1)</code>);</li><li>konstruktor varian sebagai nilai (<code>let f = Some</code>);</li><li>mewarisi struct generik;</li><li>sebagian modul <code>std/</code> yang ditulis sangat dinamis;</li><li>bilangan bulat di atas 64 bit.</li></ul>
+<p>Program kanvas yang dibungkus jadi APK memakai backend ini, jadi batasan yang sama berlaku di sana.</p>
+<h2 id="pustaka"><a class="jangkar" href="#pustaka">Pustaka</a></h2>
+<ul><li><strong>Waktu selalu UTC.</strong> <code>time::format</code> belum mengenal zona waktu.</li><li><strong>Jendela kanvas</strong> butuh build dengan <code>--features canvas</code>; bawaannya menggambar ke berkas atau ke peramban.</li><li><strong>Belum ada registri paket pusat.</strong> Dependensi diambil dari folder lokal atau repositori git.</li><li><strong>FFI Java/Kotlin belum tersedia di dalam APK.</strong></li></ul>
+<h2 id="perkakas-dan-platform"><a class="jangkar" href="#perkakas-dan-platform">Perkakas dan platform</a></h2>
+<ul><li><strong>Termux</strong>: biner <code>android-aarch64</code> ikut rilis sejak 0.2.0 dan dipasang lewat pemasang yang sama, tapi belum pernah dicoba di HP sungguhan.</li><li><strong>Windows</strong>: biner dibangun dan diuji di CI, tapi editor terminal dan penyuntingan baris REPL di Windows belum pernah dicoba di mesin sungguhan.</li><li><strong>JRG IDE di HP</strong>: mesin Native cuma ada di versi Terminal (lewat clang di Ubuntu), dan belum mendukung <code>dok::</code>, <code>crypto::</code>, <code>re::</code>, dan <code>ptr::</code> di mesin itu.</li></ul>
+<p>Kalau kamu menemukan perilaku yang salah tanpa pesan galat, itu dianggap bug serius. Laporkan di <a href="https://github.com/Kodok-Kejepit/jrg/issues">GitHub</a> beserta programnya.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="benchmark.html"><small>Sebelumnya</small><strong>Benchmark</strong></a><a class="ke-kanan" href="rilis.html"><small>Berikutnya</small><strong>Catatan rilis</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#bahasa">Bahasa</a></li><li><a href="#backend-llvm">Backend LLVM</a></li><li><a href="#pustaka">Pustaka</a></li><li><a href="#perkakas-dan-platform">Perkakas dan platform</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

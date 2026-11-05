@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Array &amp; Teks — Matematika × JRG</title>
+<meta name="description" content="Menyimpan banyak nilai dalam satu nama, dan mengolah kalimat. Dua tipe yang paling sering kamu pakai sesudah angka.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="mtk">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a class="aktif" aria-current="page" href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel kelas" data-bab="jrg7">
+<p class="rel">JRG 7 · Dasar JRG</p>
+<h1>Array &amp; Teks</h1>
+<p class="ringkas">Menyimpan banyak nilai dalam satu nama, dan mengolah kalimat. Dua tipe yang paling sering kamu pakai sesudah angka.</p>
+
+<h2 id="array-deretan-nilai"><span class="lencana">koleksi</span>Array: deretan nilai</h2>
+<figure class="kode" data-jalan><figcaption><span>array.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> nilai = [<span class="k-ang">70</span>, <span class="k-ang">85</span>, <span class="k-ang">90</span>, <span class="k-ang">65</span>]
+    <span class="k-fn">wok</span>(nilai)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Jumlah data:&quot;</span>, <span class="k-fn">len</span>(nilai))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Yang pertama:&quot;</span>, nilai[<span class="k-ang">0</span>])
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Yang terakhir:&quot;</span>, nilai[<span class="k-fn">len</span>(nilai) - <span class="k-ang">1</span>])
+}</code></pre><pre class="keluaran"><code>[70, 85, 90, 65]
+Jumlah data: 4
+Yang pertama: 70
+Yang terakhir: 65</code></pre></figure>
+<aside class="catatan catatan-info"><p class="catatan-judul">Nomor mulai dari nol</p><div>Elemen pertama ada di posisi <code>0</code>, bukan <code>1</code>. Jadi array berisi 4 elemen punya posisi 0, 1, 2, 3 &mdash; dan <code>nilai[4]</code> adalah galat.</div></aside>
+<p>JRG punya jalan pintas untuk posisi dari belakang: angka negatif.</p>
+<figure class="kode" data-jalan><figcaption><span>negatif.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> a = [<span class="k-ang">10</span>, <span class="k-ang">20</span>, <span class="k-ang">30</span>, <span class="k-ang">40</span>]
+    <span class="k-fn">wok</span>(a[-<span class="k-ang">1</span>], a[-<span class="k-ang">2</span>])     <span class="k-kom">// dari belakang</span>
+}</code></pre><pre class="keluaran"><code>40 30</code></pre></figure>
+<figure class="kode" data-jalan><figcaption><span>luar-batas.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> a = [<span class="k-ang">10</span>, <span class="k-ang">20</span>]
+    <span class="k-fn">wok</span>(a[<span class="k-ang">5</span>])
+}</code></pre><pre class="keluaran"><code>error: index [5] di luar batas — array ini isinya 2 elemen (index valid: 0..1, atau -1..-2 kalau mau hitung dari belakang)
+ --&gt; luar-batas.jrg:3:9
+  |
+3 |     wok(a[5])
+  |         ^^^^
+  |</code></pre></figure>
+<aside class="catatan catatan-warn"><p class="catatan-judul">Di luar jangkauan selalu galat</p><div>JRG tidak pernah diam-diam mengembalikan nilai kosong untuk posisi yang tidak ada. Ia berhenti dan menyebutkan panjang sebenarnya &mdash; jauh lebih baik daripada program yang lanjut membawa nilai palsu.</div></aside>
+<h2 id="mengiris-array">Mengiris array</h2>
+<figure class="kode" data-jalan><figcaption><span>iris.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> a = [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>, <span class="k-ang">4</span>, <span class="k-ang">5</span>, <span class="k-ang">6</span>]
+    <span class="k-fn">wok</span>(a[<span class="k-ang">0</span>:<span class="k-ang">3</span>])      <span class="k-kom">// tiga pertama</span>
+    <span class="k-fn">wok</span>(a[<span class="k-ang">3</span>:])       <span class="k-kom">// dari posisi 3 sampai habis</span>
+    <span class="k-fn">wok</span>(a[:<span class="k-ang">2</span>])       <span class="k-kom">// sampai sebelum posisi 2</span>
+}</code></pre><pre class="keluaran"><code>[1, 2, 3]
+[4, 5, 6]
+[1, 2]</code></pre></figure>
+<h2 id="fungsi-bawaan-untuk-array">Fungsi bawaan untuk array</h2>
+<div class="tabel"><table><thead><tr><th>Fungsi</th><th>Hasilnya</th><th>Catatan</th></tr></thead><tbody><tr><td><code>arr::sum(a)</code></td><td>Jumlah semua isi</td><td>int kalau isinya int</td></tr><tr><td><code>arr::mean(a)</code></td><td>Rata-rata</td><td>selalu float</td></tr><tr><td><code>arr::max(a)</code> / <code>min</code></td><td>Terbesar / terkecil</td><td>mempertahankan tipe</td></tr><tr><td><code>arr::sort(a)</code></td><td>Urutan menaik</td><td>menghasilkan array <em>baru</em></td></tr><tr><td><code>arr::contains(a, x)</code></td><td>Ada isinya atau tidak</td><td>true/false</td></tr><tr><td><code>arr::push(a, x)</code></td><td>Array baru + satu elemen</td><td>yang lama tidak berubah</td></tr></tbody></table></div>
+<figure class="kode" data-jalan><figcaption><span>arr.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> n = [<span class="k-ang">8</span>, <span class="k-ang">3</span>, <span class="k-ang">10</span>, <span class="k-ang">1</span>]
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Jumlah :&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">sum</span>(n))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Rata2  :&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">mean</span>(n))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Terbesar:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">max</span>(n))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Urut   :&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">sort</span>(n))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Asli   :&quot;</span>, n)
+}</code></pre><pre class="keluaran"><code>Jumlah : 22
+Rata2  : 5.5
+Terbesar: 10
+Urut   : [1, 3, 8, 10]
+Asli   : [8, 3, 10, 1]</code></pre></figure>
+<aside class="catatan catatan-bug"><p class="catatan-judul">Array tidak pernah berubah diam-diam</p><div>Lihat baris terakhir: sesudah <code>arr::sort</code>, isi <code>n</code> masih seperti semula. Di JRG setiap nilai dimiliki satu nama; fungsi menghasilkan array <em>baru</em>. Kalau mau menyimpan hasilnya, tugaskan kembali: <code>n = arr::sort(n)</code>.</div></aside>
+<figure class="kode" data-jalan><figcaption><span>tugaskan.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">var</span> n = [<span class="k-ang">8</span>, <span class="k-ang">3</span>, <span class="k-ang">10</span>, <span class="k-ang">1</span>]
+    n = <span class="k-ns">arr</span>::<span class="k-fn">sort</span>(n)
+    n = <span class="k-ns">arr</span>::<span class="k-fn">push</span>(n, <span class="k-ang">99</span>)
+    <span class="k-fn">wok</span>(n)
+}</code></pre><pre class="keluaran"><code>[1, 3, 8, 10, 99]</code></pre></figure>
+<h2 id="teks-string">Teks (string)</h2>
+<figure class="kode" data-jalan><figcaption><span>teks.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> s = <span class="k-str">&quot;Belajar JRG&quot;</span>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Panjang     :&quot;</span>, <span class="k-fn">len</span>(s))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Huruf besar :&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">upper</span>(s))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Ada &#x27;JRG&#x27;?  :&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">contains</span>(s, <span class="k-str">&quot;JRG&quot;</span>))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Ganti       :&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">replace</span>(s, <span class="k-str">&quot;JRG&quot;</span>, <span class="k-str">&quot;matematika&quot;</span>))
+}</code></pre><pre class="keluaran"><code>Panjang     : 11
+Huruf besar : BELAJAR JRG
+Ada &#x27;JRG&#x27;?  : true
+Ganti       : Belajar matematika</code></pre></figure>
+<p>Menyambung teks memakai <code>+</code>. Kalau salah satu sisinya angka, angkanya diubah jadi teks.</p>
+<figure class="kode" data-jalan><figcaption><span>sambung-teks.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> nama = <span class="k-str">&quot;Sari&quot;</span>
+    <span class="k-kunci">let</span> umur = <span class="k-ang">17</span>
+    <span class="k-fn">wok</span>(nama + <span class="k-str">&quot; berumur &quot;</span> + umur + <span class="k-str">&quot; tahun&quot;</span>)
+}</code></pre><pre class="keluaran"><code>Sari berumur 17 tahun</code></pre></figure>
+<h2 id="menyusun-teks-rapi-dengan-str-format">Menyusun teks rapi dengan <code>str::format</code></h2>
+<p>Tanda <code>{}</code> diisi berurutan oleh nilai-nilai sesudahnya. Untuk membatasi angka di belakang koma, pakai <code>{:.N}</code>.</p>
+<figure class="kode" data-jalan><figcaption><span>format.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> harga = <span class="k-ang">12500.0</span>
+    <span class="k-kunci">let</span> jumlah = <span class="k-ang">3</span>
+    <span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{} barang x Rp{} = Rp{}&quot;</span>, jumlah, harga, harga * <span class="k-ang">3.0</span>))
+    <span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;Nilai rata-rata: {:.2}&quot;</span>, <span class="k-ang">79.28571</span>))
+}</code></pre><pre class="keluaran"><code>3 barang x Rp12500.0 = Rp37500.0
+Nilai rata-rata: 79.29</code></pre></figure>
+<aside class="catatan catatan-tip"><p class="catatan-judul">Kapan pakai <code>{:.2}</code></p><div>Setiap kali kamu menampilkan uang, nilai rapor, atau ukuran. Tanpa itu <code>1/3</code> tampil sebagai <code>0.3333333333333333</code> &mdash; benar, tapi tidak enak dibaca.</div></aside>
+<h2 id="memecah-dan-menggabung">Memecah dan menggabung</h2>
+<figure class="kode" data-jalan><figcaption><span>pecah.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> baris = <span class="k-str">&quot;sari,budi,tono&quot;</span>
+    <span class="k-kunci">let</span> nama = <span class="k-ns">str</span>::<span class="k-fn">split</span>(baris, <span class="k-str">&quot;,&quot;</span>)
+    <span class="k-fn">wok</span>(nama)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Ada&quot;</span>, <span class="k-fn">len</span>(nama), <span class="k-str">&quot;nama&quot;</span>)
+    <span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">join</span>(nama, <span class="k-str">&quot; &amp; &quot;</span>))
+}</code></pre><pre class="keluaran"><code>[sari, budi, tono]
+Ada 3 nama
+sari &amp; budi &amp; tono</code></pre></figure>
+<div class="kuis" data-kuis="qj7_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Posisi elemen pertama sebuah array adalah?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>1</button><button type="button" data-benar="1"><span>B</span>0</button><button type="button" data-benar="0"><span>C</span>-1</button></div><p class="kuis-umpan benar" hidden>Tepat. Elemen pertama ada di posisi 0.</p><p class="kuis-umpan salah" hidden>Di JRG (seperti kebanyakan bahasa) penomoran dimulai dari nol.</p></div>
+<div class="kuis" data-kuis="qj7_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Sesudah <code>arr::sort(n)</code>, apakah isi <code>n</code> ikut terurut?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>Ya, langsung berubah</button><button type="button" data-benar="1"><span>B</span>Tidak &mdash; hasilnya array baru</button><button type="button" data-benar="0"><span>C</span>Tergantung isinya</button></div><p class="kuis-umpan benar" hidden>Betul. Simpan hasilnya kalau kamu memerlukannya: <code>n = arr::sort(n)</code>.</p><p class="kuis-umpan salah" hidden>Coba jalankan contoh <code>arr.jrg</code> di atas dan lihat baris terakhirnya.</p></div>
+<div class="kuis" data-kuis="qj7_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Apa hasil <code>str::format("{:.1}", 3.456)</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>3.456</code></button><button type="button" data-benar="1"><span>B</span><code>3.5</code></button><button type="button" data-benar="0"><span>C</span><code>3.4</code></button></div><p class="kuis-umpan benar" hidden>Tepat &mdash; satu angka di belakang koma, dan nilainya dibulatkan.</p><p class="kuis-umpan salah" hidden><code>{:.1}</code> membulatkan ke satu angka di belakang koma.</p></div>
+<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Dari <code>[12, 7, 25, 3]</code>, cetak selisih terbesar dan terkecil.</p><p><strong>2.</strong> Hitung berapa huruf pada kalimat "Saya belajar JRG" tanpa menghitung spasi.</p><div class="math-box"><div class="math-step"><span>Jawaban 1:</span> <code>arr::max(a) - arr::min(a)</code> &rarr; 22.</div><div class="math-step"><span>Jawaban 2:</span> <code>len(str::replace(s, " ", ""))</code> &rarr; 14.</div></div></div></details>
+<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke JRG 8</p><div>Berikutnya: membuat <em>tipe datamu sendiri</em> dengan <code>struct</code>, supaya nilai-nilai yang berhubungan tidak berkeliaran terpisah.</div></aside>
+
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="jrg6.html"><small>Bab sebelumnya</small><strong>Fungsi</strong></a><a class="ke-kanan" href="jrg8.html"><small>Bab berikutnya</small><strong>Struct &amp; Method</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+<script src="../aset/kelas-data.js"></script>
+<script src="../aset/kelas.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+[package]
+name    = "jrg-ide"
+version = "0.14.0"
+entry   = "src/main.jrg"
+
+# JRG IDE sebagai aplikasi Android: `jrgm apk`. Di laptop: `jrgm run`, lalu buka http://127.0.0.1:8080
+[android]
+nama     = "JRG IDE"
+paket    = "id.jrg.ide"
+tampilan = "web"
+ikon     = "aset/ikon.png"
+# Ikon adaptif (Android 8+): logo di zona aman lapisan depan, latarnya warna tepi logo.
+ikon_depan = "aset/ikon-depan.png"
+ikon_latar = "#402CDC"
+port     = 8080
+abi      = ["arm64-v8a"]
+# Izin yang ditanyakan lewat dialog saat dipakai (Lainnya > Perangkat), bukan saat memasang.
+izin     = ["kamera", "mikrofon", "lokasi", "getar"]
+# Penjalan bahasa lain yang ikut di APK; jrgm mengunduh sumbernya sekali dan mengompilasinya.
+bahasa   = ["lua", "js", "sql"]
+# Yang dipakai saat membangun atau menguji saja, tidak ikut ke APK. Versi Terminal membawa bagian Linux-nya sendiri.
+abaikan  = ["uji", "varian", "linux/proot", "linux/tamu", "linux/jrglinux.c", "linux/jrg-lang.tar.gz", "bangun_apk.sh", "tanda_tangan.sh", "README.md"]

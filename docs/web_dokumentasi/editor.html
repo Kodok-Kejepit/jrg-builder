@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor, REPL, dan IDE — Dokumentasi JRG</title>
+<meta name="description" content="Penyunting di terminal, server bahasa untuk editor favoritmu, dan JRG IDE yang jalan di peramban dan HP.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a class="aktif" aria-current="page" href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Perkakas</p>
+<h1>Editor, REPL, dan IDE</h1>
+<p class="ringkas">Penyunting di terminal, server bahasa untuk editor favoritmu, dan JRG IDE yang jalan di peramban dan HP.</p>
+<h2 id="jrgedit"><a class="jangkar" href="#jrgedit">jrgedit</a></h2>
+<p><code>jrgc --sunting</code> membuka penyunting layar penuh bergaya nano. Penyunting ini ditulis dalam JRG dan ikut di dalam <code>jrgc</code>, jadi selalu tersedia.</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc --sunting program.jrg
+jrgc --sunting a.jrg b.jrg:120    <span class="k-kom"> # beberapa berkas; buka b.jrg di baris 120</span>
+jrgc --sunting proyek/            <span class="k-kom"> # jelajahi isi folder</span></code></pre></figure>
+<div class="tabel"><table><thead><tr><th>Tombol</th><th>Gunanya</th></tr></thead><tbody><tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd> / <kbd>Ctrl</kbd>+<kbd>Q</kbd></td><td>simpan / keluar</td></tr><tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>urung / ulang</td></tr><tr><td><kbd>Ctrl</kbd>+<kbd>F</kbd> / <kbd>Ctrl</kbd>+<kbd>P</kbd></td><td>cari / ganti</td></tr><tr><td><kbd>Ctrl</kbd>+<kbd>R</kbd></td><td>simpan lalu jalankan; sesudahnya kursor pindah ke letak galat</td></tr><tr><td><kbd>Alt</kbd>+<kbd>P</kbd></td><td>periksa tanpa menjalankan</td></tr><tr><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>buka berkas lain; <kbd>Alt</kbd>+panah pindah berkas</td></tr><tr><td><kbd>Shift</kbd>+panah, <kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>X</kbd>/<kbd>V</kbd></td><td>pilih, salin, potong, tempel</td></tr><tr><td><kbd>F1</kbd> atau <kbd>Esc</kbd></td><td>daftar tombol lengkap</td></tr></tbody></table></div>
+<p>Ada penyorotan sintaks, kurung yang menutup sendiri, indentasi yang mengikuti baris sebelumnya, dan tetikus.</p>
+<h2 id="repl"><a class="jangkar" href="#repl">REPL</a></h2>
+<p><code>jrgc</code> tanpa argumen membuka REPL. Panah atas/bawah menelusuri riwayat, blok yang belum tertutup dilanjutkan otomatis, dan galat tidak mengakhiri sesi.</p>
+<div class="tabel"><table><thead><tr><th>Perintah</th><th>Gunanya</th></tr></thead><tbody><tr><td><code>:cari kata</code>, <code>:doc nama</code>, <code>:daftar ns</code></td><td>menemukan fungsi bawaan</td></tr><tr><td><code>:tipe ekspresi</code></td><td>tipe tanpa mencetak nilainya</td></tr><tr><td><code>:simpan berkas.jrg</code></td><td>tulis sesi jadi program yang bisa dijalankan</td></tr><tr><td><code>:riwayat</code>, <code>:hapus</code>, <code>:keluar</code></td><td>riwayat, mulai ulang, keluar</td></tr></tbody></table></div>
+<h2 id="server-bahasa-lsp"><a class="jangkar" href="#server-bahasa-lsp">Server bahasa (LSP)</a></h2>
+<p><code>jrgc --lsp</code> (atau <code>jrgm lsp</code>) adalah server Language Server Protocol. Editor yang mendukung LSP mendapat: galat dan peringatan sambil mengetik, pelengkapan nama (termasuk seluruh fungsi bawaan), keterangan saat kursor di atas nama, lompat ke definisi, dan daftar simbol berkas.</p>
+<p>Contoh untuk Neovim:</p>
+<figure class="kode"><figcaption><span>teks</span></figcaption><pre><code>vim.lsp.start({ name = &quot;jrg&quot;, cmd = { &quot;jrgc&quot;, &quot;--lsp&quot; }, root_dir = vim.fn.getcwd() })</code></pre></figure>
+<p>Di VS Code, pakai ekstensi LSP generik dengan perintah <code>jrgc --lsp</code> untuk berkas <code>*.jrg</code>.</p>
+<h2 id="jrg-ide"><a class="jangkar" href="#jrg-ide">JRG IDE</a></h2>
+<p>JRG IDE adalah lingkungan pengembangan di peramban, dan dibuat dengan JRG sendiri. Isinya penyunting dengan penyorotan dan pelengkapan, panel Masalah (galat dan peringatan lint), terminal, pohon berkas, proyek <code>jrgm</code>, dan tombol Jalankan untuk JRG serta bahasa lain.</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>cd ide &amp;&amp; jrgm run      <span class="k-kom"> # buka http://127.0.0.1:8080</span></code></pre></figure>
+<p>Di HP ada dua versi APK:</p>
+<div class="tabel"><table><thead><tr><th></th><th>JRG IDE</th><th>JRG IDE Terminal</th></tr></thead><tbody><tr><td>untuk</td><td>Play Store</td><td>dipasang langsung</td></tr><tr><td>bahasa yang jalan</td><td>JRG, Lua, JavaScript, SQL, ditambah Python dan Ruby di halaman</td><td>semuanya, plus apa pun yang dipasang di Ubuntu</td></tr><tr><td>Linux</td><td>tidak ada</td><td>Ubuntu di dalam aplikasi (<code>pkg install gcc</code>, <code>rustc</code>, <code>python3</code>, …)</td></tr><tr><td>mesin Native (LLVM)</td><td>tidak ada</td><td>sesudah <code>pkg install clang</code> di Ubuntu</td></tr><tr><td>jalan di latar</td><td>tidak</td><td>ya, dengan notifikasi</td></tr></tbody></table></div>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="jrgm.html"><small>Sebelumnya</small><strong>jrgm</strong></a><a class="ke-kanan" href="android.html"><small>Berikutnya</small><strong>Aplikasi Android</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#jrgedit">jrgedit</a></li><li><a href="#repl">REPL</a></li><li><a href="#server-bahasa-lsp">Server bahasa (LSP)</a></li><li><a href="#jrg-ide">JRG IDE</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

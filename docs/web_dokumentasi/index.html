@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JawaRustGo++ — Dokumentasi</title>
+<meta name="description" content="Bahasa pemrograman dengan pesan galat berbahasa Indonesia, tiga mesin eksekusi, dan pustaka yang cukup untuk membuat aplikasi sungguhan.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a class="aktif" aria-current="page" href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Mulai</p>
+<h1>JawaRustGo++</h1>
+<p class="ringkas">Bahasa pemrograman dengan pesan galat berbahasa Indonesia, tiga mesin eksekusi, dan pustaka yang cukup untuk membuat aplikasi sungguhan.</p>
+<p>JawaRustGo++, disingkat JRG, adalah bahasa pemrograman yang ditulis dengan Rust. Bentuk kodenya mirip Rust dan Go, diketik dinamis, dan semua pesannya berbahasa Indonesia. Dokumentasi ini untuk versi <strong>0.2.0</strong>.</p>
+<figure class="kode" data-jalan><figcaption><span>halo.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> nama = <span class="k-str">&quot;Nusantara&quot;</span>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;&quot;sugeng rawuh, ${nama}!&quot;&quot;&quot;</span>)
+}</code></pre><pre class="keluaran"><code>sugeng rawuh, Nusantara!</code></pre></figure>
+<p><code>wok</code> mencetak ke layar. Tombol <strong>Jalankan</strong> di atas blok kode menjalankan contohnya langsung di peramban, dan <strong>Ubah</strong> membuatnya bisa disunting.</p>
+<h2 id="yang-ada-di-dalamnya"><a class="jangkar" href="#yang-ada-di-dalamnya">Yang ada di dalamnya</a></h2>
+<ul><li><strong>Tiga mesin.</strong> Interpreter (bawaan), VM bytecode (<code>--vm</code>), dan kompilasi native lewat LLVM (<code>--emit-llvm</code>). Program yang sama memberi keluaran yang sama di ketiganya.</li><li><strong>Nilai tidak pernah berbagi.</strong> Menyalin, mengoper, dan mengembalikan nilai selalu menghasilkan salinan, jadi tidak ada pengumpul sampah dan tidak ada perubahan dari jauh yang mengejutkan.</li><li><strong>Galat yang bisa dibaca.</strong> Tiap galat menyebut berkas, baris, kolom, potongan kodenya, dan biasanya jalan keluarnya.</li><li><strong>Pustaka yang lengkap.</strong> 864 fungsi bawaan dan 14 modul <code>std/</code>: teks, koleksi, berkas, JSON, HTTP, server web, SQLite, kanvas, suara, numerik, dan mesin game 2D.</li><li><strong>Bahasa lain.</strong> Panggil C, C++, Rust, Go, Python, JavaScript, PHP, Lua, Java, Kotlin, .NET, dan WebAssembly.</li><li><strong>Perkakas.</strong> <code>jrgm</code> untuk proyek, dependensi, tes, format, dan lint; editor terminal; REPL; server bahasa (LSP); dan pembungkus APK Android.</li></ul>
+<h2 id="mulai-dari-mana"><a class="jangkar" href="#mulai-dari-mana">Mulai dari mana</a></h2>
+<div class="tabel"><table><thead><tr><th>Kalau kamu…</th><th>Baca</th></tr></thead><tbody><tr><td>baru mau mencoba</td><td><a href="pasang.html">Pasang</a>, lalu <a href="tur.html">Tur singkat</a></td></tr><tr><td>sudah bisa bahasa lain</td><td><a href="nilai.html">Nilai dan tipe</a> sampai <a href="konkuren.html">Konkurensi</a></td></tr><tr><td>belum pernah memprogram</td><td>kelas <a href="../matematika_x_jrg/index.html">Matematika × JRG</a></td></tr><tr><td>mencari fungsi tertentu</td><td><a href="pustaka.html">Pustaka bawaan</a>, atau tekan <kbd>/</kbd> untuk mencari</td></tr><tr><td>mau membuat proyek</td><td><a href="jrgm.html">jrgm</a></td></tr></tbody></table></div>
+<h2 id="status"><a class="jangkar" href="#status">Status</a></h2>
+<p>JRG masih muda. Interpreter dan VM menjalankan seluruh bahasa; backend LLVM sudah menjalankan semua berkas konformans tapi belum seluruh pustaka. Daftar lengkap yang belum jadi ada di <a href="batasan.html">Yang belum jadi</a>, dan perubahan versi ini di <a href="rilis.html">Catatan rilis</a>.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><span></span><a class="ke-kanan" href="pasang.html"><small>Berikutnya</small><strong>Pasang</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#yang-ada-di-dalamnya">Yang ada di dalamnya</a></li><li><a href="#mulai-dari-mana">Mulai dari mana</a></li><li><a href="#status">Status</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

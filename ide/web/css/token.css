@@ -1,0 +1,121 @@
+/* JRG IDE — css/token.css
+   Sumber tunggal nilai desain: huruf, warna antarmuka, warna kode. Di <html>: data-mode="dark|light"
+   dan data-tema="mint|air|laut|senja|mawar". Semua huruf dibundel, jadi jalan tanpa internet. */
+@font-face {
+  font-family: 'Chakra Petch';
+  src: url('../aset/huruf/chakra-petch-600-latin.woff2') format('woff2');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('../aset/huruf/jetbrains-mono-400-600-latin.woff2') format('woff2');
+  font-weight: 400 600; font-style: normal; font-display: block;
+}
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('../aset/huruf/plus-jakarta-sans-400-800-latin.woff2') format('woff2');
+  font-weight: 200 800; font-style: normal; font-display: swap;
+}
+
+:root {
+  --font-display: 'Chakra Petch', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Roboto Mono', 'Droid Sans Mono', monospace;
+  --fs-2xs: 11px; --fs-xs: 12px; --fs-sm: 13.5px; --fs-md: 15px; --fs-lg: 18px;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px;
+  --r-xs: 6px; --r-sm: 10px; --r-md: 16px; --r-lg: 24px; --r-pill: 999px;
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --topbar-h: 52px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+
+/* Tema bawaan "mint": abu gelap netral dengan hijau mint, mengikuti tombol jalankan-nya. */
+:root, [data-mode="dark"] {
+  color-scheme: dark;
+  --bg: #14171C; --bg-2: #1A1E24; --bg-3: #232830; --bg-4: #2D333D;
+  --line: #272D36; --line-2: #39414D;
+  --ink: #E7EBF0; --ink-2: #B0B9C5; --ink-3: #7D8896;
+  --scrim: rgba(6, 8, 11, .66);
+  --good: #7CE3A8; --warn: #FFC66B; --bad: #FF7586;
+  --accent: #9EF0C1; --accent-2: #C4F7DA; --accent-ink: #0C2418;
+  --accent-soft: rgba(158, 240, 193, .12); --accent-line: rgba(158, 240, 193, .42);
+  --glow: rgba(158, 240, 193, .55);
+  --shadow-lift: 0 18px 48px -18px rgba(0, 0, 0, .75);
+  --c-bg: #12151A; --c-bg2: #181C21; --c-ink: #DCE2EA; --c-line: #20252C;
+  --c-kw: #84B9EC; --c-str: #F1CB80; --c-num: #F5A77C; --c-com: #66717F; --c-fn: #9EF0C1;
+  --c-ty: #C9ACF2; --c-val: #F392B0; --c-ns: #7FDCDF; --c-op: #A5B0BD; --c-err: #FF7586;
+  --c-sel: rgba(132, 185, 236, .28); --c-hi: rgba(255, 255, 255, .035);
+}
+[data-mode="light"] {
+  color-scheme: light;
+  --bg: #F1F4F3; --bg-2: #FFFFFF; --bg-3: #E7ECEA; --bg-4: #DAE1DE;
+  --line: #D9E0DD; --line-2: #BFCAC5;
+  --ink: #17201C; --ink-2: #3F4B46; --ink-3: #64716B;
+  --scrim: rgba(20, 30, 26, .38);
+  --good: #0F7F4B; --warn: #A86400; --bad: #C8203F;
+  --accent: #0E8A55; --accent-2: #18A769; --accent-ink: #FFFFFF;
+  --accent-soft: rgba(14, 138, 85, .10); --accent-line: rgba(14, 138, 85, .38);
+  --glow: rgba(14, 138, 85, .35);
+  --shadow-lift: 0 18px 44px -20px rgba(20, 50, 40, .35);
+  --c-bg: #FAFCFB; --c-bg2: #F0F4F2; --c-ink: #222C28; --c-line: #E1E8E5;
+  --c-kw: #1F5FBF; --c-str: #8A5A00; --c-num: #B34A12; --c-com: #7C8983; --c-fn: #0B7A4A;
+  --c-ty: #7A3FB8; --c-val: #B8235A; --c-ns: #0E7C80; --c-op: #56635D; --c-err: #C8203F;
+  --c-sel: rgba(31, 95, 191, .18); --c-hi: rgba(20, 50, 40, .045);
+}
+/* Tema lain cuma mengganti warna aksen; "mawar" (tampilan 0.1 sampai 0.4) juga latarnya. */
+/* "air" mengikuti logo: biru malam dengan kilau kaca (perak kebiruan, ungu pelangi). */
+[data-tema="air"] {
+  --bg: #0B1230; --bg-2: #101A3E; --bg-3: #18234F; --bg-4: #212E62;
+  --line: #1E2A58; --line-2: #2F3D74;
+  --ink: #E9EEFF; --ink-2: #B4BEE0; --ink-3: #8390BC;
+  --accent: #B8CCFF; --accent-2: #DCE6FF; --accent-ink: #0B1230;
+  --accent-soft: rgba(184, 204, 255, .13); --accent-line: rgba(184, 204, 255, .45); --glow: rgba(150, 175, 255, .6);
+  --c-bg: #091029; --c-bg2: #0E1737; --c-ink: #E2E8FF; --c-line: #18224A;
+  --c-kw: #A8B8FF; --c-str: #9FE6F0; --c-num: #F5B8E8; --c-com: #6E7AA6; --c-fn: #D2C4FF;
+  --c-ty: #8FD3FF; --c-val: #FFB3C7; --c-ns: #7FE0E6; --c-op: #A9B4D8;
+}
+[data-tema="air"][data-mode="light"] {
+  --bg: #EEF2FC; --bg-2: #FFFFFF; --bg-3: #E2E8F8; --bg-4: #D3DCF2;
+  --line: #D6DEF2; --line-2: #BAC6E6;
+  --ink: #111A3A; --ink-2: #3A4570; --ink-3: #5F6A95;
+  --accent: #3550C8; --accent-2: #4F6BE0; --accent-ink: #FFFFFF;
+  --accent-soft: rgba(53, 80, 200, .10); --accent-line: rgba(53, 80, 200, .38); --glow: rgba(53, 80, 200, .35);
+  --c-bg: #FAFBFF; --c-bg2: #F0F3FC; --c-ink: #1C2547; --c-line: #E0E6F6;
+  --c-kw: #3550C8; --c-str: #0E7480; --c-num: #A8357F; --c-com: #7A84A8; --c-fn: #6B3FC4;
+  --c-ty: #1A6FB0; --c-val: #B8235A; --c-ns: #0E7C80; --c-op: #4F5880;
+}
+[data-tema="laut"] { --accent: #7CC8FF; --accent-2: #B0DEFF; --accent-ink: #06202F; --accent-soft: rgba(124, 200, 255, .12); --accent-line: rgba(124, 200, 255, .42); --glow: rgba(124, 200, 255, .55); --c-fn: #7CC8FF; --c-kw: #9EF0C1; }
+[data-tema="laut"][data-mode="light"] { --accent: #1668B8; --accent-2: #2B84DB; --accent-ink: #FFFFFF; --accent-soft: rgba(22, 104, 184, .10); --accent-line: rgba(22, 104, 184, .38); --glow: rgba(22, 104, 184, .35); --c-fn: #1668B8; --c-kw: #0B7A4A; }
+[data-tema="senja"] { --accent: #FFC078; --accent-2: #FFD9AB; --accent-ink: #2B1703; --accent-soft: rgba(255, 192, 120, .12); --accent-line: rgba(255, 192, 120, .42); --glow: rgba(255, 192, 120, .55); --c-fn: #FFC078; --c-str: #9EF0C1; }
+[data-tema="senja"][data-mode="light"] { --accent: #B25A00; --accent-2: #D0700A; --accent-ink: #FFFFFF; --accent-soft: rgba(178, 90, 0, .10); --accent-line: rgba(178, 90, 0, .38); --glow: rgba(178, 90, 0, .35); --c-fn: #B25A00; --c-str: #0B7A4A; }
+[data-tema="mawar"] {
+  --bg: #120F22; --bg-2: #19152F; --bg-3: #221C3E; --bg-4: #2B2450;
+  --line: #2C2550; --line-2: #3D3469;
+  --ink: #EFEAFB; --ink-2: #BDB4DA; --ink-3: #8C82B0;
+  --accent: #FF5C7A; --accent-2: #FF8FA3; --accent-ink: #1C0E18;
+  --accent-soft: rgba(255, 92, 122, .15); --accent-line: rgba(255, 92, 122, .45); --glow: rgba(255, 92, 122, .55);
+  --c-bg: #0F0C1E; --c-bg2: #151129; --c-ink: #E6E0F8; --c-line: #231D40;
+  --c-kw: #FF8FB1; --c-str: #9BE3A6; --c-num: #FFB86B; --c-com: #7C74A0; --c-fn: #8FB8FF;
+  --c-ty: #F5D76E; --c-val: #FF9F7A; --c-ns: #7FE0D0; --c-op: #B7AEDB;
+}
+[data-tema="mawar"][data-mode="light"] {
+  --bg: #F3F1FA; --bg-2: #FFFFFF; --bg-3: #EAE6F5; --bg-4: #DFD9EF;
+  --line: #DCD6EB; --line-2: #C6BDDD;
+  --ink: #1A152E; --ink-2: #463F63; --ink-3: #6A6290;
+  --accent: #D6204B; --accent-2: #F0567A; --accent-ink: #FFFFFF;
+  --accent-soft: rgba(214, 32, 75, .10); --accent-line: rgba(214, 32, 75, .38); --glow: rgba(214, 32, 75, .35);
+  --c-bg: #FBFAFE; --c-bg2: #F3F0FA; --c-ink: #2A2340; --c-line: #E4DFF1;
+  --c-kw: #B8235A; --c-str: #1F7A3A; --c-num: #B35A00; --c-com: #857EA3; --c-fn: #1F5FBF;
+  --c-ty: #856500; --c-val: #C24A12; --c-ns: #0E7C70; --c-op: #5A5378;
+}
+.hk, .hx { color: var(--c-kw); }
+.hs { color: var(--c-str); }
+.hn { color: var(--c-num); }
+.hc { color: var(--c-com); }
+.hf { color: var(--c-fn); }
+.ht, .ha { color: var(--c-ty); }
+.hv { color: var(--c-val); }
+.hd { color: var(--c-ns); }
+.ho { color: var(--c-op); }
+.he { color: var(--c-err); }

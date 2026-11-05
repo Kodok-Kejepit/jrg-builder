@@ -1,0 +1,52 @@
+# Keluaran build jrgc/jrgm
+/target/
+
+# Keluaran build runtime LLVM (`jrgrt`).
+#
+# Dibangun ULANG otomatis oleh `llvm::ensure_runtime` kalau tidak ada atau
+# sumbernya lebih baru, jadi menyimpannya di git tidak memberi apa pun —
+# selain 10,5 MB dan satu berkas biner yang tidak pernah bisa di-review.
+/runtime/target/
+
+# Keluaran build mesin Praktik JRG (crate `web/`, WebAssembly). Yang terbit
+# hasil akhirnya, `docs/aset/jrg-web.js`, dibangun `perkakas/bangun_praktik.sh`.
+/web/target/
+
+# Biner hasil kompilasi contoh LLVM (`--emit-llvm` menulis `a.out`).
+a.out
+# IR yang dipancarkan di sebelahnya. Dulu KEDUANYA terlacak — dan yang di
+# akar repo ditulis ulang tiap kali `--emit-llvm` jalan, jadi menjalankan
+# suite saja bisa mengotori `git status` dan sebuah artefak bisa ikut
+# ter-commit tanpa ada yang bermaksud begitu. Kelas jebakan yang sama
+# dengan `src_bak/`: berkas yang bukan sumber, duduk di tempat sumber.
+a.out.ll
+*.out
+
+# Data profil PGO yang tercecer dari `--pgo`.
+*.profraw
+*.profdata
+
+# Cadangan editor. Bukan cuma soal kerapian: salinan basi adalah jebakan
+# yang sudah nyata di repo ini — `src_bak/` dan `Testing/mod.rs.bak` sama-
+# sama membuat grep dan agen pencari menemukan versi LAMA sebuah berkas,
+# lalu seseorang membaca (atau mengedit) yang salah.
+*.bak
+*.orig
+*.rej
+*~
+*.swp
+# Kate menamai swap-nya `.<berkas>.kate-swp` — berakhiran `-swp`, bukan
+# `.swp`, jadi pola di atas TIDAK menangkapnya. Dan `.save` adalah salinan
+# byte-per-byte dari berkas aslinya: persis bentuk jebakan yang dijelaskan
+# di atas, tinggal menunggu seseorang mengedit yang salah.
+*.kate-swp
+*.save
+
+# Virtualenv milik contoh proyek Python — dibuat ulang oleh `jrgm run`,
+# 400+ berkas pihak ketiga yang tidak ada urusannya dengan repo ini.
+examples_projects/*/venv/
+
+# Cache Python
+__pycache__/
+*.pyc
+/jembatan/target/

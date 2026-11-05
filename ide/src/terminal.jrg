@@ -1,0 +1,374 @@
+// JRG IDE — terminal: PTY sungguhan lewat libc (`extern "C"`), satu shell interaktif per sesi.
+// Keluaran disangga di pelayan, jadi sesi tetap hidup dan layarnya kembali saat halaman dimuat ulang.
+// Rancangannya: ide/README.md, "Terminal".
+package terminal
+
+extern "C" {
+    fn posix_openpt(f: i32) -> i32
+    fn grantpt(fd: i32) -> i32
+    fn unlockpt(fd: i32) -> i32
+    fn ptsname(fd: i32) -> string
+    fn malloc(n: u64) -> *mut u8
+    fn free(p: *mut u8) -> unit
+    fn memset(p: *mut u8, c: i32, n: u64) -> *mut u8
+    fn memmove(a: *mut u8, b: *const u8, n: u64) -> *mut u8
+    fn memcpy(a: *mut u8, s: string, n: u64) -> *mut u8
+    fn read(fd: i32, p: *mut u8, n: u64) -> i64
+    fn write(fd: i32, p: *const u8, n: u64) -> i64
+    fn strstr(a: *const u8, b: string) -> string
+    fn strnlen(p: *const u8, n: u64) -> u64
+    fn poll(fds: []i32, n: u64, ms: i32) -> i32
+    fn ioctl(fd: i32, req: u64, ws: []u16) -> i32
+    fn close(fd: i32) -> i32
+    fn signal(sig: i32, h: u64) -> u64
+}
+
+// O_RDWR | O_NOCTTY | O_NONBLOCK, dan TIOCSWINSZ: nilai Linux yang sama di arm64 dan x86-64.
+const BUKA_PTY = 2306
+const TIOCSWINSZ = 21524
+const BUF = 32768
+// Keluaran yang diingat per sesi (huruf); yang lebih tua dibuang dari depan.
+const MAKS_LOG = 400000
+const MAKS_SESI = 12
+
+let SEMUA = ptr::new({"n": 0, "sesi": dict::new()})
+
+fn sesi(id) {
+    return dict::get(ptr::get(SEMUA)["sesi"], str(id))
+}
+
+fn ambil(id) {
+    match sesi(id) {
+        Some(sp) => { return Ok(sp) }
+        None => { return Err("sesi " + str(id) + " tidak ada") }
+    }
+}
+
+/// Daftar sesi untuk halaman: nomor, judul, dan apakah shell-nya sudah selesai.
+pub fn daftar() {
+    var hasil = []
+    for k, sp in ptr::get(SEMUA)["sesi"] {
+        let s = ptr::get(sp)
+        hasil = hasil + [{"id": s["id"], "judul": s["judul"], "selesai": s["selesai"], "kode": s["kode"], "dibuat": s["dibuat"]}]
+    }
+    return arr::sort_by_key(hasil, |s| s["id"])
+}
+
+fn kutip(s) {
+    return "'" + str::replace(s, "'", "'\\''") + "'"
+}
+
+/// Shell yang dipakai: Android selalu mksh di /system/bin/sh; di laptop bash kalau ada.
+fn pilih_shell() {
+    let paksa = env::get("JRG_IDE_SHELL").unwrap_or("")
+    if paksa != "" { return paksa }
+    if fs::exists("/system/bin/sh") { return "/system/bin/sh" }
+    for _, c in ["/bin/bash", "/usr/bin/bash", "/bin/sh"] { if fs::exists(c) { return c } }
+    return "sh"
+}
+
+/// Berkas rc: fungsi penjalan bahasa, perintah IDE (lewat OSC 7770 yang dibaca halaman), dan prompt.
+/// `penjalan`: [[nama perintah, program]]; `halaman`: perintah yang dijalankan bahasa-halaman.
+fn tulis_rc(jalur, shell, penjalan, halaman) {
+    var t = "# Dibuat JRG IDE tiap sesi terminal dimulai; ubahan pribadi taruh di ~/.jrgrc\n"
+    t = t + "export TERM=xterm-256color COLORTERM=truecolor LANG=C.UTF-8 PYTHONUNBUFFERED=1\n"
+    // Android tidak punya /tmp: tanpa TMPDIR, heredoc mksh dan banyak program gagal membuat berkas sementara.
+    let sementara = fs::join(fs::dirname(jalur), "tmp")
+    t = t + "[ -d \"${TMPDIR:-/tmp}\" ] && [ -w \"${TMPDIR:-/tmp}\" ] || { mkdir -p " + kutip(sementara) + " 2>/dev/null; export TMPDIR=" + kutip(sementara) + "; }\n"
+    // Fungsi untuk shell ini, tautan di ~/.jrg-bin untuk program yang dimulainya (make, skrip).
+    t = t + "_jrg_bin=" + kutip(fs::join(fs::dirname(jalur), "bin")) + "\nmkdir -p \"$_jrg_bin\" 2>/dev/null\n"
+    for _, p in penjalan {
+        // [nama, program, perintah di Linux]: dijalankan lewat skrip `masuk`, jadi tanpa tautan di bin.
+        if len(p) == 3 { t = t + p[0] + "() { command " + kutip(p[1]) + " " + kutip(p[2]) + " \"$@\"; }\n"; continue }
+        t = t + p[0] + "() { command " + kutip(p[1]) + " \"$@\"; }\n"
+        let asal = str::starts_with(p[1], "/") $ kutip(p[1]) : "\"$(command -v " + kutip(p[1]) + ")\""
+        t = t + "ln -sf " + asal + " \"$_jrg_bin/" + p[0] + "\" 2>/dev/null\n"
+    }
+    // `jrgm`: jrgc yang sama berperan jrgm (`--jrgm`), kecuali ada jrgm sungguhan di sebelahnya (laptop).
+    let jrgc = env::get("JRG_JRGC").unwrap_or("")
+    if jrgc != "" && str::starts_with(jrgc, "/") && !fs::exists(fs::join(fs::dirname(jrgc), "jrgm")) {
+        let jm = fs::join(fs::join(fs::dirname(jalur), "bin"), "jrgm")
+        if !fs::exists(fs::dirname(jm)) { let _ = fs::mkdir(fs::dirname(jm)) }
+        fs::write(jm, "#!" + shell + "\nexec " + kutip(jrgc) + " --jrgm \"$@\"\n")
+        fs::chmod(jm, 493)
+    }
+    t = t + "case \":$PATH:\" in *\":$_jrg_bin:\"*) ;; *) export PATH=\"$_jrg_bin:$PATH\";; esac\n"
+    t = t + "_jrg_ide() {\n  printf '\\033]7770;%s\\007' \"$*\"\n  stty -echo 2>/dev/null; IFS= read -r _jrg_k; stty echo 2>/dev/null\n  return \"${_jrg_k:-0}\"\n}\n"
+    t = t + "_jrg_mutlak() { case \"$1\" in /*) printf '%s' \"$1\";; *) printf '%s/%s' \"$PWD\" \"$1\";; esac; }\n"
+    t = t + "buka() {\n  [ $# -gt 0 ] || { echo 'pakai: buka <berkas>...' >&2; return 2; }\n  for _f in \"$@\"; do\n    if [ -f \"$_f\" ]; then printf '\\033]7770;buka;%s\\007' \"$(_jrg_mutlak \"$_f\")\"\n    else echo \"buka: $_f bukan berkas\" >&2; fi\n  done\n}\n"
+    t = t + "pasang() { _jrg_ide \"pasang;$1\"; }\ncopot() { _jrg_ide \"copot;$1\"; }\nbahasa() { _jrg_ide bahasa; }\n"
+    // Kebiasaan dari Termux: `pkg install x` = pasang; `penyimpanan` = memori bersama HP (butuh izinnya).
+    t = t + "pkg() {\n  case \"$1\" in\n    install|i|add) shift; for _b in \"$@\"; do pasang \"$_b\" || return; done;;\n    uninstall|remove|rm) shift; for _b in \"$@\"; do copot \"$_b\" || return; done;;\n    list*|search|'') bahasa;;\n    *) echo \"pkg: perintah '$1' tidak ada; yang ada: install, uninstall, list\" >&2; return 2;;\n  esac\n}\nalias apt=pkg\n"
+    // `setup-storage` seperti termux-setup-storage: dialog izin lewat halaman. Tanpa ~/storage: HOME shell ini folder
+    // berkas IDE, dan tautan ke memori HP di sana ikut tampil di pohon berkas.
+    let ss = fs::join(fs::join(fs::dirname(jalur), "bin"), "setup-storage")
+    if !fs::exists(fs::dirname(ss)) { let _ = fs::mkdir(fs::dirname(ss)) }
+    fs::write(ss, "#!" + shell + "\nprintf '\\033]7770;izin;penyimpanan\\007'\nstty -echo 2>/dev/null; IFS= read -r k; stty echo 2>/dev/null\n[ \"$k\" = 0 ] || { [ \"$k\" = 130 ] || echo 'setup-storage: izin penyimpanan tidak diberikan' >&2; exit 1; }\nmkdir -p /sdcard/JRG-bersama 2>/dev/null\necho 'Penyimpanan HP: /sdcard (perintah: penyimpanan); folder tukar dengan Termux: /sdcard/JRG-bersama'\n")
+    fs::chmod(ss, 493)
+    let _ = fs::copy(ss, fs::join(fs::dirname(ss), "termux-setup-storage"))
+    fs::chmod(fs::join(fs::dirname(ss), "termux-setup-storage"), 493)
+    t = t + "penyimpanan() {\n  for _d in /sdcard /storage/emulated/0; do [ -d \"$_d\" ] && { cd \"$_d\" 2>/dev/null && return; }; done\n  echo 'penyimpanan: memori HP tidak bisa dibuka; beri izin Penyimpanan di Lainnya > Perangkat' >&2; return 1\n}\n"
+    for _, h in halaman {
+        t = t + h + "() { [ -n \"$1\" ] || { echo 'pakai: " + h + " <berkas>' >&2; return 2; }; _jrg_ide \"jalankan;$(_jrg_mutlak \"$1\")\"; }\n"
+    }
+    t = t + "bantuan() {\n  cat <<'X'\nPerintah tambahan JRG IDE:\n  buka <berkas>    buka di penyunting\n  bahasa           daftar bahasa\n  pasang <bahasa>  mis. pasang python\n  copot <bahasa>   copot lagi\n  pkg install <b>  sama dengan pasang\n  penyimpanan      ke memori HP\n  jrgc <f.jrg>     jalankan JRG\nSelebihnya shell biasa: ls, cd, vi, top...\nX\n}\n"
+    t = t + "alias ll='ls -la' la='ls -A' l='ls -CF' cls=clear bersih=clear\n"
+    t = t + "ls --color=auto -d . >/dev/null 2>&1 && alias ls='ls --color=auto'\n"
+    t = t + "if [ -n \"$BASH_VERSION\" ]; then\n"
+    t = t + "  PROMPT_COMMAND='printf \"\\033]7;%s\\007\" \"$PWD\"'\n"
+    t = t + "  PS1='\\[\\e[1;32m\\]\\w\\[\\e[0m\\] \\$ '\n"
+    t = t + "elif [ -n \"$KSH_VERSION\" ]; then\n"
+    // mksh: \001 di awal menandai urutan yang tidak tercetak, supaya penyunting barisnya tidak salah hitung.
+    t = t + "  _jrg_pwd() { case \"$PWD\" in \"$HOME\") echo '~';; \"$HOME\"/*) echo \"~${PWD#\"$HOME\"}\";; *) echo \"$PWD\";; esac; }\n"
+    t = t + "  PS1=$'\\001\\r\\001\\e]7;$PWD\\a\\e[1;32m\\001$(_jrg_pwd)\\001\\e[0m\\001 $ '\n"
+    t = t + "else\n  PS1='$ '\nfi\n"
+    t = t + "[ -f \"$HOME/.jrgrc\" ] && . \"$HOME/.jrgrc\"\n"
+    fs::write(jalur, t)
+}
+
+/// SIGINT/SIGQUIT yang diabaikan pelayan (mis. dimulai di latar `sh`) ikut diwarisi shell dan
+/// programnya, dan Ctrl+C tidak akan menghentikan apa pun; kembalikan ke bawaan sekali saat mulai.
+pub fn siapkan() {
+    let _ = signal(2, 0)
+    let _ = signal(3, 0)
+}
+
+/// Sesi baru: PTY `kolom` x `baris`, shell di `dir`. `rumah` jadi $HOME shell (folder berkas pemakai).
+/// `masuk` bukan "": sesi Linux, yang dijalankan skrip itu (bash login di dalam proot), bukan shell Android.
+pub fn buka(kolom, baris, dir, rumah, rc_dir, penjalan, halaman, masuk) {
+    if len(ptr::get(SEMUA)["sesi"]) >= MAKS_SESI { return Err("paling banyak " + str(MAKS_SESI) + " sesi; tutup salah satu dulu") }
+    let fd = posix_openpt(BUKA_PTY)?
+    if fd < 0 { return Err("perangkat ini tidak memberi PTY (posix_openpt gagal)") }
+    if grantpt(fd)? != 0 || unlockpt(fd)? != 0 {
+        let _ = close(fd)
+        return Err("PTY tidak bisa disiapkan (grantpt/unlockpt)")
+    }
+    let nama = ptsname(fd)?
+    let _ = ioctl(fd, TIOCSWINSZ, [baris, kolom, 0, 0])
+    let shell = pilih_shell()
+    if !fs::exists(rc_dir) { let _ = fs::mkdir(rc_dir) }
+    let rc = fs::join(rc_dir, "rc.sh")
+    tulis_rc(rc, shell, penjalan, halaman)
+    var jalankan = str::ends_with(shell, "bash") $ kutip(shell) + " --rcfile " + kutip(rc) + " -i" : kutip(shell) + " -i"
+    if masuk != "" { jalankan = kutip(masuk) }
+    // setsid: shell jadi pemimpin sesi, dan PTY yang dibukanya jadi terminal pengendalinya (Ctrl+C, job control).
+    let perintah = "exec " + jalankan + " <>" + kutip(nama) + " >&0 2>&1"
+    var env = {"HOME": rumah, "ENV": rc, "TERM": "xterm-256color", "COLORTERM": "truecolor", "JRG_IDE": "1", "SHELL": shell}
+    if masuk != "" { env["JRG_LINUX_LOGIN"] = "1" }
+    let opsi = {"dir": dir, "env": env}
+    let mulai = proses::ada("setsid") $ proses::mulai("setsid", [shell, "-c", perintah], opsi) : proses::mulai(shell, ["-c", perintah], opsi)
+    let nomor = match mulai {
+        Ok(n) => n,
+        Err(e) => { let _ = close(fd); return Err(e) }
+    }
+    let buf = malloc(BUF + 1)? as int
+    let id = ptr::update(SEMUA, |d| dict::set(d, "n", d["n"] + 1))["n"]
+    let s = ptr::new({"id": id, "fd": fd, "nomor": nomor, "buf": buf, "sisa": 0, "log": "", "awal": 0, "panjang": 0,
+                      "selesai": false, "kode": 0, "judul": masuk != "" $ "ubuntu" : fs::basename(shell), "dibuat": time::now_ms(), "mx": Mutex::new(),
+                      "kolom": kolom, "baris": baris})
+    ptr::update(SEMUA, |d| {
+        var x = d
+        x["sesi"][str(id)] = s
+        return x
+    })
+    return Ok(id)
+}
+
+/// Byte [0, total) penyangga jadi teks. Urutan UTF-8 yang terpotong di ujung disisakan untuk bacaan
+/// berikutnya; byte NUL dilewati (strstr berhenti di sana).
+fn urai(buf, total) {
+    var off = 0
+    var hasil = ""
+    var akhir = ""
+    while off < total {
+        let l = strnlen(buf + off, total - off).unwrap_or(0)
+        if l > 0 {
+            akhir = strstr(buf + off, "").unwrap_or("")
+            hasil = hasil + akhir
+        }
+        if off + l >= total { break }
+        off = off + l + 1
+        akhir = ""
+    }
+    if akhir != "" && str::ends_with(akhir, "\uFFFD") {
+        let tanpa = str::slice(akhir, 0, str::len(akhir) - 1)
+        let sisa = (total - off) - str::byte_len(tanpa)
+        if sisa >= 1 && sisa <= 3 {
+            let _ = memmove(buf, buf + total - sisa, sisa)
+            return (str::slice(hasil, 0, str::len(hasil) - 1), sisa)
+        }
+    }
+    return (hasil, 0)
+}
+
+/// Baca semua yang tersedia dari PTY ke log sesi (di bawah kunci sesinya). Shell yang sudah selesai
+/// dicatat kodenya sesudah keluaran terakhirnya terbaca.
+fn sedot(sp) {
+    let s0 = ptr::get(sp)
+    if s0["selesai"] { return }
+    mutex::with_lock(s0["mx"], || {
+        let s = ptr::get(sp)
+        if s["selesai"] { return nil }
+        let fd = s["fd"]
+        let buf = s["buf"]
+        var sisa = s["sisa"]
+        var teks = ""
+        var putaran = 0
+        while putaran < 32 {
+            let n = read(fd, buf + sisa, BUF - sisa).unwrap_or(-1)
+            if n <= 0 { break }
+            let total = sisa + n
+            let _ = memset(buf + total, 0, 1)
+            let (t, k) = urai(buf, total)
+            teks = teks + t
+            sisa = k
+            putaran = putaran + 1
+        }
+        var selesai = false
+        var kode = 0
+        if putaran == 0 {
+            match proses::baca(s["nomor"]) {
+                Ok(b) => { if b.selesai { selesai = true; kode = b.kode } }
+                Err(e) => { selesai = true; kode = -1 }
+            }
+        }
+        if teks == "" && !selesai {
+            if sisa != s["sisa"] { ptr::update(sp, |x| dict::set(x, "sisa", sisa)) }
+            return nil
+        }
+        ptr::update(sp, |x| {
+            var y = x
+            y["sisa"] = sisa
+            if teks != "" {
+                var log = y["log"] + teks
+                var pj = y["panjang"] + str::len(teks)
+                if pj > MAKS_LOG {
+                    let buang = pj - MAKS_LOG + MAKS_LOG / 8
+                    log = str::slice(log, buang, pj)
+                    y["awal"] = y["awal"] + buang
+                    pj = pj - buang
+                }
+                y["log"] = log
+                y["panjang"] = pj
+            }
+            if selesai {
+                y["selesai"] = true
+                y["kode"] = kode
+                let _ = close(fd)
+                free(buf)
+            }
+            return y
+        })
+        return nil
+    })
+}
+
+/// Bagian log sesudah `dari` (hitungan huruf sejak sesi dimulai). `potong`: sebagian sudah dibuang.
+fn potongan(s, dari) {
+    let akhir = s["awal"] + s["panjang"]
+    let mulai = dari < s["awal"] $ s["awal"] : (dari > akhir $ akhir : dari)
+    let data = mulai == akhir $ "" : str::slice(s["log"], mulai - s["awal"], s["panjang"])
+    return {"data": data, "sampai": akhir, "potong": dari < s["awal"], "selesai": s["selesai"], "kode": s["kode"], "judul": s["judul"]}
+}
+
+/// Tunggu keluaran baru dari sesi-sesi `minta` ({id: dari}) paling lama `ms`; jawabannya per sesi.
+/// `minta`: [[id, dari], ...]. Saat keluaran deras (banyak sekaligus), jawabannya ditahan sampai
+/// 60 md supaya terkumpul: lebih sedikit putaran permintaan, banjir selesai jauh lebih cepat.
+pub fn baca(minta, ms) {
+    let mulai = time::now_ms()
+    let batas = mulai + ms
+    while true {
+        var hasil = dict::new()
+        var ada = false
+        var deras = false
+        var fds = []
+        for _, m in minta {
+            let id = str(m[0])
+            let dari = m[1]
+            match sesi(id) {
+                Some(sp) => {
+                    sedot(sp)
+                    let s = ptr::get(sp)
+                    let baru = s["awal"] + s["panjang"] - dari
+                    if baru > 0 || s["selesai"] {
+                        hasil[id] = potongan(s, dari)
+                        ada = true
+                        if baru >= 8192 && baru < 400000 && !s["selesai"] { deras = true; fds = fds + [s["fd"], 1] }
+                    } else {
+                        fds = fds + [s["fd"], 1]
+                    }
+                }
+                None => { hasil[id] = {"hilang": true}; ada = true }
+            }
+        }
+        let kini = time::now_ms()
+        if deras && kini - mulai < 60 {
+            let _ = poll(fds, len(fds) / 2, 20)
+            continue
+        }
+        if ada || kini >= batas || len(fds) == 0 { return hasil }
+        let _ = poll(fds, len(fds) / 2, 120)
+    }
+    return dict::new()
+}
+
+/// Kirim teks ke shell (ketikan, tempelan). PTY yang penuh ditunggu sebentar, tidak dibuang.
+pub fn tulis(id, teks) {
+    let sp = ambil(id)?
+    let s = ptr::get(sp)
+    if s["selesai"] { return Err("shell sesi ini sudah selesai") }
+    let n = str::byte_len(teks)
+    if n == 0 { return Ok(0) }
+    let p = malloc(n + 1)? as int
+    let _ = memcpy(p, teks, n)
+    var off = 0
+    var coba = 0
+    while off < n && coba < 400 {
+        let k = write(s["fd"], p + off, n - off).unwrap_or(-1)
+        if k > 0 { off = off + k } else { coba = coba + 1; time::sleep_ms(5) }
+    }
+    free(p)
+    return Ok(off)
+}
+
+pub fn ukuran(id, kolom, baris) {
+    let sp = ambil(id)?
+    let s = ptr::get(sp)
+    if s["selesai"] { return Ok(false) }
+    let _ = ioctl(s["fd"], TIOCSWINSZ, [baris, kolom, 0, 0])
+    ptr::update(sp, |x| dict::set(dict::set(x, "kolom", kolom), "baris", baris))
+    return Ok(true)
+}
+
+pub fn judul(id, t) {
+    let sp = ambil(id)?
+    ptr::update(sp, |x| dict::set(x, "judul", t))
+    return Ok(true)
+}
+
+/// Tutup sesi: PTY ditutup (shell dapat SIGHUP), prosesnya dihentikan, sesinya dilupakan.
+pub fn tutup(id) {
+    let sp = ambil(id)?
+    let s = ptr::get(sp)
+    mutex::with_lock(s["mx"], || {
+        let x = ptr::get(sp)
+        if !x["selesai"] {
+            let _ = close(x["fd"])
+            let _ = proses::hentikan(x["nomor"])
+            free(x["buf"])
+            ptr::update(sp, |y| dict::set(y, "selesai", true))
+        }
+        return nil
+    })
+    ptr::update(SEMUA, |d| {
+        var x = d
+        x["sesi"] = dict::remove(x["sesi"], str(id))
+        return x
+    })
+    return Ok(true)
+}
+
+/// Tutup semua sesi (pelayan berhenti): shell dan turunannya tidak tertinggal tanpa pemilik.
+pub fn tutup_semua() {
+    for _, s in daftar() { let _ = tutup(s["id"]) }
+}

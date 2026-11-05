@@ -1,0 +1,11 @@
+// Program pertama: tekan tombol jalankan.
+package main
+
+pub fn main() {
+    wok("Halo dari JRG IDE!")
+    let angka = [1, 2, 3, 4, 5]
+    for i, x in angka {
+        wok(i, "->", x * x)
+    }
+    wok("jumlah:", arr::sum(angka))
+}

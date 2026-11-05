@@ -1,0 +1,20 @@
+// Bunyi dibangkitkan sebagai larik angka, lalu diputar pengeras suara perangkat ini.
+package main
+
+fn not(frek, ms) {
+    return wokwok::mul(suara::selubung(suara::nada(frek, ms), 5, 60), 0.3)
+}
+
+pub fn main() {
+    if !suara::tersedia() {
+        wok("Perangkat ini tidak punya pemutar suara yang bisa dipakai.")
+        return
+    }
+    var lagu = suara::sunyi(10)
+    for _, f in [523, 659, 784, 1047] { lagu = suara::sambung(lagu, not(f, 180)) }
+    wok("memutar", suara::durasi_ms(lagu), "ms")
+    match suara::putar_tunggu(lagu) {
+        Ok(_) => wok("selesai"),
+        Err(e) => wok("gagal:", e),
+    }
+}

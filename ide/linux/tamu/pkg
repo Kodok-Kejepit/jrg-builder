@@ -1,0 +1,140 @@
+#!/bin/sh
+# pkg — pengelola paket Linux JRG IDE. Membungkus apt (Ubuntu) atau apk (Alpine)
+# dan menerjemahkan nama populer (python, node, gcc, java, go, rust, ...).
+set -e
+
+if command -v apt-get >/dev/null 2>&1; then PM=apt
+elif command -v apk >/dev/null 2>&1; then PM=apk
+else echo "pkg: apt/apk tidak ditemukan" >&2; exit 1
+fi
+
+export DEBIAN_FRONTEND=noninteractive
+
+# Nama populer -> nama paket sebenarnya.
+resolve() {
+    for n in "$@"; do
+        case "$PM:$n" in
+            apt:python|apt:python3) echo python3 python3-pip python3-venv ;;
+            apk:python|apk:python3) echo python3 py3-pip ;;
+            apt:pip|apt:pip3) echo python3-pip ;;
+            apk:pip|apk:pip3) echo py3-pip ;;
+            # npm Ubuntu menarik ratusan paket node-*; pasang terpisah: pkg install npm
+            apt:node|apt:nodejs) echo nodejs ;;
+            apk:node|apk:nodejs) echo nodejs npm ;;
+            apt:gcc|apt:g++|apt:c|apt:cpp|apt:c++|apt:build-essential) echo build-essential ;;
+            apk:gcc|apk:g++|apk:c|apk:cpp|apk:c++|apk:build-essential|apk:build-base) echo build-base ;;
+            apt:java|apt:jdk|apt:openjdk) echo default-jdk-headless ;;
+            apk:java|apk:jdk|apk:openjdk) echo openjdk21-jdk ;;
+            apt:go|apt:golang) echo golang-go ;;
+            apk:go|apk:golang) echo go ;;
+            apt:rust|apt:cargo) echo rustc cargo ;;
+            apk:rust|apk:cargo) echo rust cargo ;;
+            apt:php) echo php-cli ;;
+            apt:kotlin) echo kotlin ;;
+            apt:lua) echo lua5.4 ;;
+            apk:lua) echo lua5.4 ;;
+            *) echo "$n" ;;
+        esac
+    done
+}
+
+index_stale() {
+    case "$PM" in
+        apt) [ -z "$(find /var/lib/apt/lists -maxdepth 1 -name '*Packages*' -mmin -1440 2>/dev/null | head -n 1)" ] ;;
+        apk) [ -z "$(find /var/cache/apk -maxdepth 1 -name 'APKINDEX*' -mmin -1440 2>/dev/null | head -n 1)" ] ;;
+    esac
+}
+
+update() {
+    case "$PM" in
+        apt) apt-get update ;;
+        apk) apk update ;;
+    esac
+}
+
+need() { [ "$#" -gt 0 ] || { echo "pkg: sebutkan nama paket" >&2; exit 1; }; }
+
+cmd="${1:-help}"
+[ "$#" -gt 0 ] && shift
+
+case "$cmd" in
+    install|i|add)
+        need "$@"
+        index_stale && update
+        # shellcheck disable=SC2046
+        case "$PM" in
+            apt) apt-get install -y $(resolve "$@") ;;
+            apk) apk add $(resolve "$@") ;;
+        esac ;;
+    remove|uninstall|rm)
+        need "$@"
+        # shellcheck disable=SC2046
+        case "$PM" in
+            apt) apt-get remove -y $(resolve "$@") && apt-get autoremove -y ;;
+            apk) apk del $(resolve "$@") ;;
+        esac ;;
+    update) update ;;
+    upgrade)
+        update
+        case "$PM" in
+            apt) apt-get full-upgrade -y ;;
+            apk) apk upgrade ;;
+        esac ;;
+    search|s)
+        need "$@"
+        index_stale && update >/dev/null
+        case "$PM" in
+            apt) apt-cache search --names-only "$@" | sort ;;
+            apk) apk search -v "$@" ;;
+        esac ;;
+    show|info)
+        need "$@"
+        case "$PM" in
+            apt) apt-cache show "$@" ;;
+            apk) apk info -a "$@" ;;
+        esac ;;
+    list|list-installed)
+        case "$PM" in
+            apt) dpkg-query -W -f='${Package} ${Version}\n' ;;
+            apk) apk info -v ;;
+        esac ;;
+    files)
+        need "$@"
+        case "$PM" in
+            apt) dpkg -L "$@" ;;
+            apk) apk info -L "$@" ;;
+        esac ;;
+    clean)
+        case "$PM" in
+            apt) apt-get clean && apt-get autoremove -y ;;
+            apk) apk cache clean 2>/dev/null; rm -rf /var/cache/apk/* ;;
+        esac ;;
+    setup)
+        update
+        case "$PM" in
+            apt) apt-get install -y ca-certificates curl wget nano less procps xz-utils unzip zip file bash-completion ;;
+            apk) apk add bash ncurses-terminfo-base ca-certificates curl nano less procps xz unzip ;;
+        esac
+        mkdir -p /var/lib/jrg-ide && touch /var/lib/jrg-ide/setup-done
+        echo "Selesai. Coba: pkg install python" ;;
+    help|-h|--help|*)
+        cat <<EOF
+pkg — pengelola paket Linux JRG IDE ($PM)
+
+  pkg install <paket...>   pasang paket (index diperbarui otomatis bila lama)
+  pkg remove <paket...>    hapus paket
+  pkg search <kata>        cari paket
+  pkg show <paket>         info paket
+  pkg list                 paket terpasang
+  pkg files <paket>        berkas milik paket
+  pkg update               perbarui index paket
+  pkg upgrade              perbarui semua paket
+  pkg clean                kosongkan cache unduhan
+  pkg setup                pasang paket dasar (otomatis saat pertama kali)
+
+Nama singkat: python, pip, node, gcc, java, go, rust, php, lua, kotlin
+(Ubuntu: npm dipasang terpisah dengan "pkg install npm")
+Contoh: pkg install python nodejs gcc git
+EOF
+        [ "$cmd" = help ] || [ "$cmd" = -h ] || [ "$cmd" = --help ] || exit 1 ;;
+esac

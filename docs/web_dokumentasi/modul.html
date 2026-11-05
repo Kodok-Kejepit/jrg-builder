@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modul dan import — Dokumentasi JRG</title>
+<meta name="description" content="Memecah program jadi beberapa berkas, dan memakai pustaka std/.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a class="aktif" aria-current="page" href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Bahasa</p>
+<h1>Modul dan import</h1>
+<p class="ringkas">Memecah program jadi beberapa berkas, dan memakai pustaka std/.</p>
+<h2 id="satu-berkas-satu-modul"><a class="jangkar" href="#satu-berkas-satu-modul">Satu berkas, satu modul</a></h2>
+<p>Tiap berkas <code>.jrg</code> adalah sebuah modul. Berkas lain memakainya lewat <code>import</code>, dan isinya dipanggil dengan awalan <code>nama::</code>.</p>
+<figure class="kode"><figcaption><span>geometri.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> geometri
+
+<span class="k-kunci">pub</span> <span class="k-kunci">const</span> <span class="k-tipe">PI</span> = <span class="k-ang">3.14159</span>
+
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">luas_lingkaran</span>(r: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
+    <span class="k-kunci">return</span> <span class="k-tipe">PI</span> * r * r
+}
+
+<span class="k-kunci">fn</span> <span class="k-fn">_bantu</span>() { <span class="k-kunci">return</span> <span class="k-ang">1</span> }
+
+<span class="k-kunci">pub</span> <span class="k-kunci">struct</span> <span class="k-tipe">Titik</span> { <span class="k-kunci">pub</span> x: <span class="k-tipe">float</span>, <span class="k-kunci">pub</span> y: <span class="k-tipe">float</span> }
+
+<span class="k-kunci">impl</span> <span class="k-tipe">Titik</span> {
+    <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">jarak</span>(<span class="k-kunci">self</span>, lain: <span class="k-tipe">Titik</span>) -&gt; <span class="k-tipe">float</span> {
+        <span class="k-kunci">return</span> <span class="k-ns">math</span>::<span class="k-fn">sqrt</span>((<span class="k-kunci">self</span>.x - lain.x) ** <span class="k-ang">2.0</span> + (<span class="k-kunci">self</span>.y - lain.y) ** <span class="k-ang">2.0</span>)
+    }
+}</code></pre></figure>
+<figure class="kode"><figcaption><span>main.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> main
+
+<span class="k-kunci">import</span> <span class="k-str">&quot;geometri&quot;</span>
+<span class="k-kunci">import</span> <span class="k-str">&quot;geometri&quot;</span> <span class="k-kunci">as</span> g
+
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-fn">wok</span>(<span class="k-ns">geometri</span>::<span class="k-fn">luas_lingkaran</span>(<span class="k-ang">2.0</span>))
+    <span class="k-kunci">let</span> a = <span class="k-ns">g</span>::<span class="k-tipe">Titik</span> { x: <span class="k-ang">0.0</span>, y: <span class="k-ang">0.0</span> }
+    <span class="k-kunci">let</span> b = <span class="k-ns">geometri</span>::<span class="k-tipe">Titik</span> { x: <span class="k-ang">3.0</span>, y: <span class="k-ang">4.0</span> }
+    <span class="k-fn">wok</span>(a.<span class="k-fn">jarak</span>(b), <span class="k-ns">g</span>::<span class="k-tipe">PI</span>)
+}</code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc main.jrg
+12.56636
+5.0 3.14159</code></pre></figure>
+<h2 id="apa-yang-terlihat-dari-luar"><a class="jangkar" href="#apa-yang-terlihat-dari-luar">Apa yang terlihat dari luar</a></h2>
+<ul><li>Yang bisa dipakai pengimpor: fungsi, <code>const</code>/<code>let</code> tingkat atas, struct, enum beserta variannya, dan method tipe milik modul itu.</li><li>Nama yang diawali <code>_</code> privat. <code>geometri::_bantu()</code> ditolak dengan pesan yang menyebut alasannya.</li><li><code>var</code> tingkat atas tetap milik modulnya. Kalau nilainya perlu dibaca dari luar, sediakan fungsi pembacanya.</li><li>Sebuah berkas cuma melihat modul yang ia import sendiri. Modul yang diimport oleh modul lain tidak ikut terlihat.</li></ul>
+<p>Satu berkas tetap satu modul berapa kali pun ia diimport, dengan alias apa pun.</p>
+<h2 id="di-mana-import-mencari"><a class="jangkar" href="#di-mana-import-mencari">Di mana import mencari</a></h2>
+<p><code>import &quot;geometri&quot;</code> mencari <code>geometri.jrg</code> di folder berkas yang mengimpor, lalu di folder dependensi proyek (lihat <a href="jrgm.html">jrgm</a>), lalu di folder yang ditambahkan dengan <code>jrgc -I folder</code>. Jalur bertingkat juga boleh: <code>import &quot;alat/teks&quot;</code> memuat <code>alat/teks.jrg</code> sebagai modul <code>teks</code>.</p>
+<h2 id="pustaka-std"><a class="jangkar" href="#pustaka-std">Pustaka std/</a></h2>
+<p>Empat belas modul pustaka standar ditulis dalam JRG dan tertanam di dalam <code>jrgc</code>, jadi bisa dipakai di mana saja tanpa memasang apa pun.</p>
+<figure class="kode" data-jalan><figcaption><span>std.jrg</span></figcaption><pre><code><span class="k-kunci">import</span> <span class="k-str">&quot;std/set&quot;</span>
+<span class="k-kunci">import</span> <span class="k-str">&quot;std/csv&quot;</span>
+
+<span class="k-kunci">let</span> s = <span class="k-ns">set</span>::<span class="k-fn">from</span>([<span class="k-ang">3</span>, <span class="k-ang">1</span>, <span class="k-ang">3</span>, <span class="k-ang">2</span>])
+<span class="k-fn">wok</span>(s.<span class="k-fn">len</span>(), s.<span class="k-fn">has</span>(<span class="k-ang">3</span>))
+
+<span class="k-kunci">let</span> baris = <span class="k-ns">csv</span>::<span class="k-fn">parse</span>(<span class="k-str">&quot;nama,kota\n\&quot;Ani, S.Kom\&quot;,Bandung&quot;</span>)
+<span class="k-fn">wok</span>(baris[<span class="k-ang">1</span>][<span class="k-ang">0</span>])</code></pre><pre class="keluaran"><code>3 true
+Ani, S.Kom</code></pre></figure>
+<p>Daftar modulnya ada di <a href="pustaka.html#modul-std">Pustaka bawaan</a>.</p>
+<h2 id="nama-bawaan-yang-dibayangi"><a class="jangkar" href="#nama-bawaan-yang-dibayangi">Nama bawaan yang dibayangi</a></h2>
+<p>Kalau program punya fungsi bernama sama dengan fungsi bawaan, milik program yang menang. <code>::nama</code> selalu menunjuk fungsi bawaan bahasa.</p>
+<figure class="kode" data-jalan><figcaption><span>bayang.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">len</span>(a, b, c) { <span class="k-kunci">return</span> a + b + c }
+
+<span class="k-fn">wok</span>(<span class="k-fn">len</span>(<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>), ::<span class="k-fn">len</span>(<span class="k-str">&quot;abc&quot;</span>))</code></pre><pre class="keluaran"><code>6 3</code></pre></figure>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="galat.html"><small>Sebelumnya</small><strong>Option dan Result</strong></a><a class="ke-kanan" href="konkuren.html"><small>Berikutnya</small><strong>Konkurensi</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#satu-berkas-satu-modul">Satu berkas, satu modul</a></li><li><a href="#apa-yang-terlihat-dari-luar">Apa yang terlihat dari luar</a></li><li><a href="#di-mana-import-mencari">Di mana import mencari</a></li><li><a href="#pustaka-std">Pustaka std/</a></li><li><a href="#nama-bawaan-yang-dibayangi">Nama bawaan yang dibayangi</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

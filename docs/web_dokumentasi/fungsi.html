@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fungsi dan closure — Dokumentasi JRG</title>
+<meta name="description" content="Mendeklarasikan fungsi, parameter yang fleksibel, fungsi sebagai nilai, dan closure.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a class="aktif" aria-current="page" href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Bahasa</p>
+<h1>Fungsi dan closure</h1>
+<p class="ringkas">Mendeklarasikan fungsi, parameter yang fleksibel, fungsi sebagai nilai, dan closure.</p>
+<h2 id="mendeklarasikan-fungsi"><a class="jangkar" href="#mendeklarasikan-fungsi">Mendeklarasikan fungsi</a></h2>
+<figure class="kode" data-jalan><figcaption><span>fungsi.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">luas</span>(p: <span class="k-tipe">int</span>, l: <span class="k-tipe">int</span>) -&gt; <span class="k-tipe">int</span> {
+    <span class="k-kunci">return</span> p * l
+}
+
+<span class="k-kunci">fn</span> <span class="k-fn">keliling</span>(p, l) {
+    <span class="k-kunci">return</span> <span class="k-ang">2</span> * (p + l)
+}
+
+<span class="k-kunci">fn</span> <span class="k-fn">kali_dua</span>(x) = x * <span class="k-ang">2</span>
+
+<span class="k-fn">wok</span>(<span class="k-fn">luas</span>(<span class="k-ang">3</span>, <span class="k-ang">4</span>), <span class="k-fn">keliling</span>(<span class="k-ang">3</span>, <span class="k-ang">4</span>), <span class="k-fn">kali_dua</span>(<span class="k-ang">5</span>))</code></pre><pre class="keluaran"><code>12 14 10</code></pre></figure>
+<p>Anotasi tipe di parameter dan nilai kembalian boleh ditulis atau dilewati. <code>fn f(x) = ekspresi</code> adalah bentuk pendek untuk fungsi yang cuma mengembalikan satu ekspresi. Fungsi boleh dipanggil sebelum barisnya, dan fungsi yang dideklarasikan di dalam fungsi lain juga boleh (tapi ia tidak melihat variabel lokal fungsi luarnya; untuk itu pakai closure).</p>
+<h2 id="parameter"><a class="jangkar" href="#parameter">Parameter</a></h2>
+<figure class="kode" data-jalan><figcaption><span>parameter.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">sapa</span>(nama, salam = <span class="k-str">&quot;halo&quot;</span>) {
+    <span class="k-kunci">return</span> salam + <span class="k-str">&quot;, &quot;</span> + nama
+}
+
+<span class="k-kunci">fn</span> <span class="k-fn">total</span>(angka...) {
+    <span class="k-kunci">return</span> <span class="k-ns">arr</span>::<span class="k-fn">sum</span>(angka)
+}
+
+<span class="k-kunci">fn</span> <span class="k-fn">bagi</span>(pembilang, penyebut) {
+    <span class="k-kunci">return</span> pembilang / penyebut
+}
+
+<span class="k-fn">wok</span>(<span class="k-fn">sapa</span>(<span class="k-str">&quot;Ani&quot;</span>), <span class="k-fn">sapa</span>(<span class="k-str">&quot;Budi&quot;</span>, <span class="k-str">&quot;selamat pagi&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-fn">total</span>(), <span class="k-fn">total</span>(<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>))
+<span class="k-fn">wok</span>(<span class="k-fn">total</span>(...[<span class="k-ang">4</span>, <span class="k-ang">5</span>, <span class="k-ang">6</span>]))
+<span class="k-fn">wok</span>(<span class="k-fn">bagi</span>(penyebut: <span class="k-ang">2</span>, pembilang: <span class="k-ang">10</span>))</code></pre><pre class="keluaran"><code>halo, Ani selamat pagi, Budi
+0 6
+15
+5</code></pre></figure>
+<ul><li><strong>Nilai bawaan</strong> (<code>salam = &quot;halo&quot;</code>) dihitung saat dipanggil, dan boleh memakai parameter sebelumnya.</li><li><strong>Pengumpul</strong> (<code>angka...</code>) menerima sisa argumen sebagai array; kalau tidak ada, isinya <code>[]</code>.</li><li><strong>Sebar</strong> (<code>...arr</code>) kebalikannya: isi array jadi argumen satu per satu.</li><li><strong>Argumen bernama</strong> (<code>penyebut: 2</code>) boleh diurutkan bebas dan dicampur dengan argumen posisi.</li></ul>
+<p>Parameter boleh berupa pola: <code>fn jarak((x1, y1), (x2, y2))</code> membongkar dua tuple langsung di kepala fungsi.</p>
+<h2 id="mengembalikan-beberapa-nilai"><a class="jangkar" href="#mengembalikan-beberapa-nilai">Mengembalikan beberapa nilai</a></h2>
+<p>Kembalikan tuple, lalu bongkar di pemanggil:</p>
+<figure class="kode" data-jalan><figcaption><span>kembali.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">statistik</span>(xs) {
+    <span class="k-kunci">return</span> (<span class="k-ns">arr</span>::<span class="k-fn">min</span>(xs), <span class="k-ns">arr</span>::<span class="k-fn">max</span>(xs), <span class="k-ns">arr</span>::<span class="k-fn">sum</span>(xs) / <span class="k-fn">len</span>(xs))
+}
+
+kecil, besar, rata := <span class="k-fn">statistik</span>([<span class="k-ang">4</span>, <span class="k-ang">8</span>, <span class="k-ang">15</span>, <span class="k-ang">16</span>, <span class="k-ang">23</span>, <span class="k-ang">42</span>])
+<span class="k-fn">wok</span>(kecil, besar, rata)</code></pre><pre class="keluaran"><code>4 42 18</code></pre></figure>
+<h2 id="closure"><a class="jangkar" href="#closure">Closure</a></h2>
+<p>Closure adalah fungsi tanpa nama yang ditulis di tempat: <code>|x| x * x</code>, atau <code>|a, b| { … }</code> kalau badannya lebih dari satu ekspresi.</p>
+<figure class="kode" data-jalan><figcaption><span>closure.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> kuadrat = |x| x * x
+<span class="k-kunci">let</span> nilai = [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>, <span class="k-ang">4</span>, <span class="k-ang">5</span>]
+<span class="k-fn">wok</span>(nilai.<span class="k-fn">map</span>(kuadrat))
+<span class="k-fn">wok</span>(nilai.<span class="k-fn">filter</span>(|x| x % <span class="k-ang">2</span> == <span class="k-ang">1</span>))
+<span class="k-fn">wok</span>(nilai.<span class="k-fn">reduce</span>(|a, b| a + b, <span class="k-ang">0</span>))
+<span class="k-fn">wok</span>(nilai.<span class="k-fn">map</span>(|x| x * <span class="k-ang">10</span>).<span class="k-fn">filter</span>(|x| x &gt; <span class="k-ang">20</span>))</code></pre><pre class="keluaran"><code>[1, 4, 9, 16, 25]
+[1, 3, 5]
+15
+[30, 40, 50]</code></pre></figure>
+<p>Closure <strong>mengingat variabel</strong>, bukan salinan nilainya. Perubahan di dalam terlihat di luar, dan sebaliknya:</p>
+<figure class="kode" data-jalan><figcaption><span>tangkap.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> hitung = <span class="k-ang">0</span>
+<span class="k-kunci">let</span> naik = || { hitung += <span class="k-ang">1</span> }
+<span class="k-fn">naik</span>()
+<span class="k-fn">naik</span>()
+<span class="k-fn">wok</span>(hitung)
+
+<span class="k-kunci">fn</span> <span class="k-fn">pembuat_tambah</span>(n) {
+    <span class="k-kunci">return</span> |x| x + n
+}
+<span class="k-kunci">let</span> tambah10 = <span class="k-fn">pembuat_tambah</span>(<span class="k-ang">10</span>)
+<span class="k-fn">wok</span>(<span class="k-fn">tambah10</span>(<span class="k-ang">5</span>))</code></pre><pre class="keluaran"><code>2
+15</code></pre></figure>
+<p>Kalau kamu ingin closure memotret nilainya saat dibuat, tulis <code>move</code>:</p>
+<figure class="kode" data-jalan><figcaption><span>move.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> n = <span class="k-ang">1</span>
+<span class="k-kunci">let</span> lihat = || n
+<span class="k-kunci">let</span> foto = <span class="k-kunci">move</span> || n
+n = <span class="k-ang">9</span>
+<span class="k-fn">wok</span>(<span class="k-fn">lihat</span>(), <span class="k-fn">foto</span>())</code></pre><pre class="keluaran"><code>9 1</code></pre></figure>
+<h2 id="fungsi-sebagai-nilai"><a class="jangkar" href="#fungsi-sebagai-nilai">Fungsi sebagai nilai</a></h2>
+<p>Fungsi bernama, closure, fungsi bawaan, dan konstruktor varian enum semuanya nilai yang bisa disimpan dan dioper.</p>
+<figure class="kode" data-jalan><figcaption><span>nilai-fungsi.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">ganda</span>(x) = x * <span class="k-ang">2</span>
+
+<span class="k-kunci">let</span> langkah = [ganda, |x| x + <span class="k-ang">1</span>, <span class="k-ns">math</span>::abs]
+<span class="k-kunci">var</span> v = -<span class="k-ang">5</span>
+<span class="k-kunci">for</span> _, f <span class="k-kunci">in</span> langkah {
+    v = <span class="k-fn">f</span>(v)
+}
+<span class="k-fn">wok</span>(v)
+<span class="k-fn">wok</span>([<span class="k-ang">3</span>, -<span class="k-ang">1</span>, <span class="k-ang">2</span>].<span class="k-fn">map</span>(<span class="k-ns">math</span>::abs), [<span class="k-str">&quot;a&quot;</span>, <span class="k-str">&quot;b&quot;</span>].<span class="k-fn">map</span>(<span class="k-ns">str</span>::upper))
+<span class="k-fn">wok</span>(<span class="k-ang">4</span> |&gt; ganda |&gt; ganda)
+<span class="k-fn">wok</span>(<span class="k-fn">terap</span>(<span class="k-ns">math</span>::max, [<span class="k-ang">3</span>, <span class="k-ang">9</span>]))</code></pre><pre class="keluaran"><code>9
+[3, 1, 2] [A, B]
+16
+9</code></pre></figure>
+<p><code>x |&gt; f</code> sama dengan <code>f(x)</code>, berguna untuk merangkai langkah dari kiri ke kanan. <code>terap(f, args)</code> memanggil <code>f</code> dengan isi array sebagai argumennya.</p>
+<p>Dua fungsi tidak bisa dibandingkan dengan <code>==</code>; JRG menolaknya karena tidak ada jawaban yang benar untuk "apakah dua fungsi sama".</p>
+<h2 id="rekursi"><a class="jangkar" href="#rekursi">Rekursi</a></h2>
+<figure class="kode" data-jalan><figcaption><span>rekursi.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">fib</span>(n) {
+    <span class="k-kunci">return</span> n &lt; <span class="k-ang">2</span> $ n : <span class="k-fn">fib</span>(n - <span class="k-ang">1</span>) + <span class="k-fn">fib</span>(n - <span class="k-ang">2</span>)
+}
+<span class="k-fn">wok</span>(<span class="k-fn">fib</span>(<span class="k-ang">20</span>))</code></pre><pre class="keluaran"><code>6765</code></pre></figure>
+<p>Kedalaman rekursi dibatasi besar stack: sekitar 20 ribu lapis di interpreter, sampai sejuta di <code>--vm</code>, dan ratusan ribu di biner <code>--emit-llvm</code>. Melewatinya menghasilkan galat yang menyebut fungsinya, bukan crash. Untuk rekursi yang berulang-ulang, pakai <code>fn</code> bernama, bukan closure yang memanggil dirinya sendiri.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="kendali.html"><small>Sebelumnya</small><strong>Kendali alur</strong></a><a class="ke-kanan" href="tipe.html"><small>Berikutnya</small><strong>Struct, enum, trait</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#mendeklarasikan-fungsi">Mendeklarasikan fungsi</a></li><li><a href="#parameter">Parameter</a></li><li><a href="#mengembalikan-beberapa-nilai">Mengembalikan beberapa nilai</a></li><li><a href="#closure">Closure</a></li><li><a href="#fungsi-sebagai-nilai">Fungsi sebagai nilai</a></li><li><a href="#rekursi">Rekursi</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

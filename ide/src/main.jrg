@@ -1,0 +1,1151 @@
+// JRG IDE — pelayan lokalnya. Halaman di `web/` berbicara dengan program ini lewat `/api/...`;
+// berkas pemakai disimpan sebagai berkas sungguhan, dan kode dijalankan sebagai PROSES
+// terpisah yang keluarannya dibaca selagi jalan dan bisa dihentikan. Rancangannya: ide/README.md
+package main
+
+import "terminal"
+import "linux"
+
+const VERSI = "0.14.0"
+// Batas pengaman saja: program dihentikan pemakainya lewat tombol, jauh sebelum ini.
+const BATAS_MS = 600000
+
+/// "terminal" untuk versi luar Play Store (berkas `varian.txt` ditulis bangun_apk.sh), "play" untuk APK
+/// Play Store, "" di laptop.
+fn varian() {
+    if fs::is_file("varian.txt") { return str::trim(fs::read("varian.txt")) }
+    return lingkungan("JRG_APK", "") == "1" $ "play" : ""
+}
+
+/// Clang untuk mesin Native (LLVM): di PATH, di folder paket, atau di Ubuntu (versi Terminal, native_di_linux).
+fn ada_clang() {
+    return proses::ada("clang") || fs::exists(fs::join(fs::join(akar_paket(), "clang"), "bin/clang")) || native_di_linux()
+}
+
+/// Native lewat Ubuntu: jrgc milik APK dijalankan di dalam Linux dengan clang Ubuntu dan runtime glibc.
+fn native_di_linux() {
+    return !proses::ada("clang") && lingkungan("JRG_JRGC", "") != "" && linux::terpasang() && fs::exists(linux::masuk())
+        && linux::program(["clang"]) != ""
+}
+
+fn lingkungan(nama, cadangan) {
+    return env::get(nama).unwrap_or(cadangan)
+}
+
+/// Direktori berkas pemakai: di luar direktori program, jadi pembaruan aplikasi tidak menghapusnya.
+fn akar_data() {
+    let d = fs::join(lingkungan("HOME", fs::temp_dir()), "jrg-ide")
+    if !fs::exists(d) { let _ = fs::mkdir(d) }
+    return d
+}
+
+/// Paket bahasa yang dipasang dari halaman (`web/js/paket.js`) disimpan di sini, di luar berkas pemakai.
+const PAKET = ["python", "ts", "coffee", "ruby", "scheme", "prolog"]
+
+fn akar_paket() {
+    let d = fs::join(lingkungan("HOME", fs::temp_dir()), "jrg-ide-paket")
+    if !fs::exists(d) { let _ = fs::mkdir(d) }
+    return d
+}
+
+/// Nama berkas dari halaman tidak boleh keluar dari direktori data.
+fn aman(nama) {
+    if typeof(nama) != "string" || nama == "" || str::len(nama) > 200 { return false }
+    if str::starts_with(nama, "/") || str::contains(nama, "\\") || str::contains(nama, "\n") { return false }
+    for _, bagian in str::split(nama, "/") {
+        if bagian == "" || bagian == "." || bagian == ".." { return false }
+    }
+    return true
+}
+
+fn ekstensi(nama) {
+    let bagian = str::split(nama, ".")
+    if len(bagian) < 2 { return "" }
+    return str::lower(bagian[len(bagian) - 1])
+}
+
+/// Program pertama dari `calon` yang ada; `""` kalau tidak satu pun.
+fn cari_program(calon) {
+    for _, c in calon {
+        if str::starts_with(c, "/") {
+            if fs::exists(c) { return c }
+        } else if proses::ada(c) { return c }
+    }
+    return ""
+}
+
+/// Bahasa yang dikenal. `program` kosong berarti penjalannya tidak ada di perangkat ini; `sebab`
+/// menyebut kenapa, supaya tidak ada yang mengira belum sempat.
+fn daftar_bahasa() {
+    let pustaka = lingkungan("JRG_PUSTAKA", "")
+    let di_apk = |nama| pustaka == "" $ "/tidak/ada" : fs::join(pustaka, nama)
+    let jrgc = lingkungan("JRG_JRGC", "jrgc")
+    // `JRG_IDE_SEMBUNYI=python,lua`: anggap penjalan itu tidak ada (untuk menguji jalur paket).
+    let sembunyi = str::split(lingkungan("JRG_IDE_SEMBUNYI", ""), ",")
+    var semua = [
+        {"id": "jrg", "label": "JRG", "ekst": ["jrg"], "program": cari_program([jrgc]), "cara": "berkas",
+         "sebab": "jrgc tidak ditemukan"},
+        {"id": "sh", "label": "Shell", "ekst": ["sh"], "program": cari_program(["/system/bin/sh", "sh"]), "cara": "berkas",
+         "sebab": "tidak ada shell di perangkat ini"},
+        {"id": "lua", "label": "Lua", "ekst": ["lua"], "cara": "berkas", "awalan": ["-e", "io.stdout:setvbuf('line')"], "linux": ["lua5.4", "lua"],
+         "program": cari_program([di_apk("liblua_exe.so"), "lua5.4", "lua"]),
+         "sebab": "Lua belum dipasang di perangkat ini"},
+        {"id": "js", "label": "JavaScript", "ekst": ["js", "mjs"], "cara": "berkas", "linux": ["node", "nodejs"],
+         "program": cari_program([di_apk("libqjs_exe.so"), "node", "qjs"]),
+         "sebab": "mesin JavaScript belum dipasang di perangkat ini"},
+        {"id": "python", "label": "Python", "ekst": ["py"], "cara": "berkas", "awalan": ["-u"], "linux": ["python3"],
+         "program": cari_program([di_apk("libpython_exe.so"), "python3"]),
+         "sebab": "Python belum dipasang di perangkat ini"},
+        {"id": "sql", "label": "SQL (SQLite)", "ekst": ["sql"], "cara": "stdin", "linux": ["sqlite3"],
+         "program": cari_program([di_apk("libsqlite3_exe.so"), "sqlite3"]),
+         "sebab": "SQLite belum dipasang di perangkat ini"},
+        // Bahasa yang dikompilasi: aktif begitu kompilatornya ada di PATH (di HP: versi Terminal, sesudah dipasang).
+        {"id": "c", "label": "C", "ekst": ["c"], "cara": "kompilasi", "program": cari_program(["clang", "cc", "gcc"]), "linux": ["gcc", "clang", "cc"],
+         "kompilasi": "\"$c\" -O1 -o \"$o\" $s -lm", "sebab": "butuh kompilator C (clang atau gcc) di perangkat"},
+        {"id": "cpp", "label": "C++", "ekst": ["cpp", "cc", "cxx", "c++"], "cara": "kompilasi", "program": cari_program(["clang++", "c++", "g++"]), "linux": ["g++", "clang++", "c++"],
+         "kompilasi": "\"$c\" -O1 -std=c++17 -o \"$o\" $s", "sebab": "butuh kompilator C++ (clang++ atau g++) di perangkat"},
+        {"id": "asm", "label": "Assembly", "ekst": ["s", "S"], "cara": "kompilasi", "program": cari_program(["clang", "cc", "gcc"]), "linux": ["gcc", "clang", "cc"],
+         "kompilasi": "\"$c\" -o \"$o\" $s", "sebab": "butuh clang atau gcc untuk merakit dan menautkan"},
+        {"id": "rust", "label": "Rust", "ekst": ["rs"], "cara": "kompilasi", "program": cari_program(["rustc"]), "linux": ["rustc"],
+         "kompilasi": "\"$c\" -O --edition 2021 -o \"$o\" $s", "sebab": "butuh rustc di perangkat"},
+        {"id": "zig", "label": "Zig", "ekst": ["zig"], "cara": "kompilasi", "program": cari_program(["zig"]), "linux": ["zig"],
+         "kompilasi": "\"$c\" build-exe -O ReleaseSafe -femit-bin=\"$o\" $s", "sebab": "butuh zig di perangkat"},
+        {"id": "fortran", "label": "Fortran", "ekst": ["f90", "f95", "f03", "f"], "cara": "kompilasi", "program": cari_program(["gfortran", "flang"]), "linux": ["gfortran", "flang"],
+         "kompilasi": "\"$c\" -O1 -o \"$o\" $s", "sebab": "butuh gfortran atau flang di perangkat"},
+        {"id": "java", "label": "Java", "ekst": ["java"], "cara": "berkas", "program": cari_program(["java"]), "linux": ["java"],
+         "sebab": "butuh JDK 11 ke atas (java) di perangkat"},
+    ]
+    let ada_linux = linux::terpasang() && fs::exists(linux::masuk())
+    let bisa_linux = !ada_linux && linux::bisa()
+    for i, b in semua {
+        if arr::contains(sembunyi, b["id"]) { semua[i]["program"] = "" }
+        if bisa_linux && semua[i]["program"] == "" && len(dict::get(b, "linux").unwrap_or([])) > 0 {
+            semua[i]["sebab"] = "pasang Linux dulu (Lainnya > Linux), lalu pkg install " + paket_linux(b["id"])
+        }
+        // Penjalan yang tidak ada di perangkat dicari di Linux (versi Terminal): `dalam` nama programnya di sana.
+        if semua[i]["program"] != "" || !ada_linux { continue }
+        let calon = dict::get(b, "linux").unwrap_or([])
+        if len(calon) == 0 { continue }
+        let g = linux::program(calon)
+        if g != "" {
+            semua[i]["program"] = linux::masuk()
+            semua[i]["dalam"] = g
+        } else {
+            semua[i]["sebab"] = "pasang di Ubuntu: pkg install " + paket_linux(b["id"])
+        }
+    }
+    return semua
+}
+
+fn bahasa_dari(nama) {
+    let e = ekstensi(nama)
+    for _, b in daftar_bahasa() {
+        if arr::contains(b["ekst"], e) { return Option::Some(b) }
+    }
+    return Option::None
+}
+
+/// Cara menjalankan berkas `nama`: {program, argumen, dir, masukan, stdin}; dipakai tombol Jalankan
+/// (`mulai`) dan "Jalankan di terminal". `mode` "uji"/"profil" untuk JRG, `args` jadi argumen program.
+fn rencana(nama, masukan, mesin, akar, mode, args) {
+    let b = match bahasa_dari(nama) {
+        Option::Some(x) => x,
+        Option::None => { return Err("berkas `" + nama + "` bukan bahasa yang bisa dijalankan di sini") }
+    }
+    if b["program"] == "" { return Err(b["label"] + ": " + b["sebab"]) }
+    let jalur = fs::join(akar_data(), nama)
+    // `awalan`: bendera supaya keluaran bahasa itu tidak ditahan di penampung selagi program jalan.
+    var argumen = dict::get(b, "awalan").unwrap_or([]) + [jalur]
+    var isi_masukan = masukan
+    if b["id"] == "jrg" && mesin == "vm" { argumen = [jalur, "--vm"] }
+    if b["id"] == "jrg" && mesin == "llvm" { argumen = [jalur, "--emit-llvm"] }
+    if mode == "uji" {
+        if b["id"] != "jrg" { return Err("mode uji cuma untuk berkas JRG (fungsi `test_*`/`uji_*`)") }
+        argumen = argumen + ["--uji"]
+    }
+    if mode == "profil" {
+        if b["id"] != "jrg" || mesin == "llvm" { return Err("profil cuma untuk berkas JRG di interpreter atau VM (`jrgc --profile`)") }
+        argumen = argumen + ["--profile"]
+    }
+    // JRG: argumen sesudah `--` masuk ke `env::args()`; bahasa lain menerimanya sesudah nama berkas.
+    if len(args) > 0 && b["cara"] == "berkas" { argumen = argumen + (b["id"] == "jrg" $ ["--"] : []) + args }
+    if b["cara"] == "stdin" {
+        argumen = [":memory:"]
+        isi_masukan = fs::read(jalur)
+    }
+    var program = b["program"]
+    if b["id"] == "jrg" && mesin == "llvm" && native_di_linux() {
+        program = linux::masuk()
+        argumen = ["jrgc"] + argumen
+    }
+    let dalam = dict::get(b, "dalam").unwrap_or("")
+    if dalam != "" && b["cara"] != "kompilasi" { argumen = [dalam] + argumen }
+    // Dikompilasi ke berkas sementara lalu dijalankan; di dalam proyek semua berkas sejenisnya ikut
+    // (Rust ber-Cargo.toml lewat cargo run).
+    if b["cara"] == "kompilasi" {
+        let dir_proyek = akar == "" $ "" : fs::join(akar_data(), akar)
+        let cargo = dalam != "" $ linux::program(["cargo"]) != "" : proses::ada("cargo")
+        if b["id"] == "rust" && dir_proyek != "" && fs::exists(fs::join(dir_proyek, "Cargo.toml")) && cargo {
+            program = dalam != "" $ linux::masuk() : "cargo"
+            argumen = (dalam != "" $ ["cargo"] : []) + ["run", "-q", "--"] + args
+        } else {
+            // Di dalam Linux, /tmp milik rootfs; folder sementara Android tidak terlihat dari sana. Uji (tests/,
+            // rangka jrgm new) punya `main` sendiri, jadi tidak ikut dikompilasi bersama program.
+            let keluar = fs::join(dalam != "" $ "/tmp" : fs::temp_dir(), "jrg-ide-prog-" + str(time::now_ms()) + "-" + str(rand::int(0, 999999)))
+            let sumber = dir_proyek != "" && (b["id"] == "c" || b["id"] == "cpp") $ "$(find . -name '*." + ekstensi(nama) + "' -not -path './tests/*' -not -path './test/*')" : "\"$f\""
+            let skrip = "f=$1; o=$2; c=$3; shift 3; s=" + sumber + "; " + b["kompilasi"] + " || exit $?; \"$o\" \"$@\"; k=$?; rm -f \"$o\"; exit $k"
+            program = cari_program(["/system/bin/sh", "sh"])
+            argumen = ["-c", skrip, "jrg-ide", jalur, keluar, b["program"]] + args
+            if dalam != "" {
+                program = linux::masuk()
+                argumen = ["/bin/sh", "-c", skrip, "jrg-ide", jalur, keluar, dalam] + args
+            }
+        }
+    }
+    // Di dalam proyek, direktori kerjanya akar proyek — `require "bantu"` dan berkas data dicari dari sana.
+    let dir = akar == "" $ fs::dirname(jalur) : fs::join(akar_data(), akar)
+    return Ok({"program": program, "argumen": argumen, "dir": dir, "masukan": isi_masukan, "stdin": b["cara"] == "stdin"})
+}
+
+fn mulai(nama, masukan, mesin, akar, mode, args) {
+    let r = rencana(nama, masukan, mesin, akar, mode, args)?
+    // `kelompok`: Hentikan mematikan juga proses yang dimulai program itu sendiri.
+    let opsi = {"batas_ms": BATAS_MS, "masukan": r["masukan"], "dir": r["dir"], "kelompok": true}
+    let id = proses::mulai(r["program"], r["argumen"], opsi)?
+    if r["stdin"] { let _ = proses::tutup_masukan(id) }
+    return Ok(id)
+}
+
+/// Baris shell yang menjalankan berkas di terminal (pindah ke direktorinya dulu, lalu kembali).
+fn perintah_terminal(nama, mesin, akar, mode, args) {
+    let r = rencana(nama, "", mesin, akar, mode, args)?
+    var baris = "(cd " + kutip_sh(r["dir"]) + " && " + kutip_sh(r["program"])
+    for _, a in r["argumen"] { baris = baris + " " + kutip_sh(a) }
+    if r["stdin"] { baris = baris + " < " + kutip_sh(fs::join(akar_data(), nama)) }
+    return Ok(baris + ")")
+}
+
+fn kutip_sh(s) {
+    if s == "" { return "''" }
+    for _, c in s {
+        if !str::contains("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_./=:,+@%", str(c)) {
+            return "'" + str::replace(s, "'", "'\\''") + "'"
+        }
+    }
+    return s
+}
+/// Nama perintah konsol untuk penjalan sebuah bahasa.
+fn perintah_konsol(id) {
+    if id == "jrg" { return ["jrgc", "jrg"] }
+    if id == "lua" { return ["lua"] }
+    if id == "js" { return ["js", "node", "qjs"] }
+    if id == "python" { return ["python", "python3"] }
+    if id == "sql" { return ["sqlite3"] }
+    return []
+}
+
+/// Nama untuk `pkg install` di Ubuntu (pkg menerjemahkan python, node, gcc, rust, java, lua).
+fn paket_linux(id) {
+    let peta = {"js": "nodejs", "sql": "sqlite3", "cpp": "g++", "asm": "gcc", "c": "gcc", "fortran": "gfortran"}
+    return dict::get(peta, id).unwrap_or(id)
+}
+
+/// Folder yang ikut terlihat dari dalam Linux selain folder berkas: rc shell IDE dan paket bahasa-halaman.
+fn folder_linux() {
+    return [fs::join(lingkungan("HOME", fs::temp_dir()), "jrg-ide-sh"), akar_paket()]
+}
+
+/// Konsol: satu shell yang tetap hidup; halaman menulis baris ke stdin-nya dan membaca lewat `/api/baca`.
+/// Penjalan bahasa jadi fungsi shell bernama biasa (di APK berkasnya `lib..._exe.so`); `perintah`
+/// menyebut namanya, `akar` folder berkas pemakai seperti yang dilihat shell itu.
+fn mulai_konsol(dir) {
+    let sh = cari_program(["/system/bin/sh", "sh"])
+    if sh == "" { return Err("tidak ada shell di perangkat ini") }
+    var awal = "exec 2>&1\n"
+    var nama = []
+    for _, b in daftar_bahasa() {
+        if b["program"] == "" { continue }
+        for _, p in perintah_konsol(b["id"]) {
+            nama = nama + [p]
+            let dalam = dict::get(b, "dalam").unwrap_or("")
+            if dalam != "" { awal = awal + p + "() { '" + b["program"] + "' '" + dalam + "' \"$@\"; }\n" }
+            else if p != b["program"] { awal = awal + p + "() { '" + b["program"] + "' \"$@\"; }\n" }
+        }
+    }
+    let d = dir == "" $ akar_data() : fs::join(akar_data(), dir)
+    let opsi = {"masukan": awal, "dir": d, "kelompok": true, "env": {"TERM": "dumb", "PYTHONUNBUFFERED": "1"}}
+    let id = proses::mulai(sh, [], opsi)?
+    // Akar menurut shell itu sendiri: di Android direktori data punya dua nama (`/data/user/0`, `/data/data`).
+    let akar = str::trim(proses::keluaran(sh, ["-c", "pwd -P"], {"dir": akar_data(), "batas_ms": 5000})?.keluaran)
+    return Ok({"id": id, "perintah": nama, "akar": akar})
+}
+
+/// Penjalan bahasa sebagai fungsi shell terminal: [[nama perintah, program]].
+fn penjalan_konsol() {
+    var hasil = []
+    for _, b in daftar_bahasa() {
+        if b["program"] == "" { continue }
+        let dalam = dict::get(b, "dalam").unwrap_or("")
+        for _, p in perintah_konsol(b["id"]) {
+            if dalam != "" { hasil = hasil + [[p, b["program"], dalam]] }
+            else if p != b["program"] { hasil = hasil + [[p, b["program"]]] }
+        }
+    }
+    // `linux` (atau `ubuntu`) dari shell Android masuk ke Linux; dengan argumen, menjalankan satu perintah di sana.
+    if linux::terpasang() && fs::exists(linux::masuk()) { hasil = hasil + [["linux", linux::masuk()], ["ubuntu", linux::masuk()]] }
+    return hasil
+}
+
+/// Perintah terminal yang dijalankan bahasa-halaman (Python lewat Pyodide, Ruby, ...), kecuali yang
+/// penjalan aslinya ada di perangkat.
+fn perintah_halaman() {
+    var asli = []
+    for _, p in penjalan_konsol() { asli = asli + [p[0]] }
+    return arr::filter(["python", "python3", "ruby", "ts", "coffee", "scheme", "prolog"], |p| !arr::contains(asli, p) && !proses::ada(p))
+}
+
+/// Akar berkas pemakai menurut shell (di Android direktori data punya dua nama).
+fn akar_shell() {
+    match proses::keluaran("sh", ["-c", "pwd -P"], {"dir": akar_data(), "batas_ms": 5000}) {
+        Ok(h) => { return str::trim(h.keluaran) }
+        Err(e) => { return akar_data() }
+    }
+}
+
+/// Bilangan bulat dari badan, dijepit ke [bawah, atas].
+fn angka_badan(req, kunci, cadangan, bawah, atas) {
+    let n = isi_badan(req, kunci, cadangan)
+    if typeof(n) != "int" { return cadangan }
+    return n < bawah $ bawah : (n > atas $ atas : n)
+}
+
+/// Nomor proses dari badan permintaan; -1 kalau tidak ada.
+fn nomor_badan(req) {
+    let n = isi_badan(req, "id", -1)
+    return typeof(n) == "int" $ n : -1
+}
+
+/// Jawaban sebuah `Result` tanpa isi sebagai JSON.
+fn jawab_hasil(h) {
+    match h {
+        Ok(v) => { return dok::json_response({"ok": true}) }
+        Err(e) => { return tolak(e) }
+    }
+}
+
+/// Berkas kerja IDE sendiri (`.ts-keluar/`, `.utama`) bukan berkas pemakai.
+fn tersembunyi(nama) {
+    return str::starts_with(nama, ".") || str::contains(nama, "/.")
+}
+
+/// Berkas di bawah `dir` yang benar-benar bisa dibaca: tautan yang putus atau menunjuk folder (mis. ke /sdcard
+/// yang izinnya dicabut) dilewati, karena satu `fs::size` yang gagal menggagalkan seluruh jawaban.
+fn walk_berkas(dir) {
+    return arr::filter(fs::walk(dir), |p| fs::is_file(p))
+}
+
+fn daftar_berkas() {
+    let akar = akar_data()
+    var hasil = []
+    for _, p in walk_berkas(akar) {
+        if fs::is_dir(p) { continue }
+        let nama = str::slice(p, str::len(akar) + 1, str::len(p))
+        if tersembunyi(nama) { continue }
+        hasil = hasil + [{"nama": nama, "ukuran": fs::size(p)}]
+    }
+    return hasil
+}
+
+/// Folder di bawah `dir` (relatif akar data), rekursif — `fs::walk` cuma menyebut berkas, jadi
+/// folder kosong dicari sendiri.
+fn daftar_folder(dir, dalam) {
+    var hasil = []
+    if dalam > 12 { return hasil }
+    let penuh = dir == "" $ akar_data() : fs::join(akar_data(), dir)
+    for _, n in arr::sort(fs::ls(penuh)) {
+        let nama = fs::basename(n)
+        if str::starts_with(nama, ".") { continue }
+        let rel = dir == "" $ nama : dir + "/" + nama
+        // Folder lewat tautan (mis. ke memori HP) tidak ikut: isinya bisa ribuan berkas di luar IDE.
+        if !fs::is_dir(fs::join(akar_data(), rel)) || fs::is_symlink(fs::join(akar_data(), rel)) { continue }
+        hasil = hasil + [rel] + daftar_folder(rel, dalam + 1)
+    }
+    return hasil
+}
+
+/// Berkas utama yang ditulis `jrgm.toml` (`entry = "src/main.jrg"`); `""` kalau tidak ada.
+fn utama_dari_toml(jalur) {
+    for _, baris in str::split(fs::read(jalur), "\n") {
+        let b = str::trim(baris)
+        if !str::starts_with(b, "entry") { continue }
+        let potong = str::split(b, "\"")
+        if len(potong) >= 3 { return potong[1] }
+    }
+    return ""
+}
+
+/// Proyek tempat `nama` berada: folder terdekat ke atas yang punya `.utama` (ditulis IDE) atau
+/// `jrgm.toml`. Jawabannya `{"akar", "utama"}` relatif akar data; `akar` kosong berarti bukan proyek.
+fn proyek_dari(nama) {
+    var bagian = str::split(nama, "/")
+    while len(bagian) > 1 {
+        bagian = arr::take(bagian, len(bagian) - 1)
+        let akar = str::join(bagian, "/")
+        let d = fs::join(akar_data(), akar)
+        var utama = ""
+        if fs::exists(fs::join(d, ".utama")) { utama = str::trim(fs::read(fs::join(d, ".utama"))) }
+        else if fs::exists(fs::join(d, "jrgm.toml")) { utama = utama_dari_toml(fs::join(d, "jrgm.toml")) }
+        if utama != "" && aman(utama) && fs::exists(fs::join(d, utama)) { return {"akar": akar, "utama": akar + "/" + utama} }
+    }
+    return {"akar": "", "utama": ""}
+}
+
+/// Berkas teks sebuah folder (nama relatif folder itu), untuk bahasa yang jalan di halaman:
+/// paling banyak 200 berkas, masing-masing di bawah 1 MB.
+fn isi_folder(dir) {
+    let akar = fs::join(akar_data(), dir)
+    var hasil = []
+    for _, p in walk_berkas(akar) {
+        let nama = str::slice(p, str::len(akar) + 1, str::len(p))
+        if tersembunyi(nama) || fs::size(p) > 1000000 || len(hasil) >= 200 { continue }
+        // Berkas biner (gambar, data) ikut sebagai base64, supaya `open("x.png", "rb")` di proyek Python jalan.
+        hasil = hasil + [match baca_teks(p) {
+            Option::Some(t) => ({"nama": nama, "isi": t}),
+            Option::None => ({"nama": nama, "b64": fs::read_base64(p).unwrap_or("")})
+        }]
+    }
+    return hasil
+}
+
+/// Perapi resmi tiap bahasa yang membaca stdin dan menulis stdout, dicoba berurutan; yang tidak
+/// terpasang dilewati. JRG ditangani `rapikan_jrg` (butuh berkas).
+fn perapi_stdin(nama) {
+    let e = str::lower(ekstensi(nama))
+    if e == "go" { return [["gofmt", []]] }
+    if e == "rs" { return [["rustfmt", ["--emit", "stdout", "--edition", "2021"]]] }
+    if e == "c" || e == "h" || e == "cpp" || e == "cc" || e == "cxx" || e == "hpp" || e == "java" {
+        return [["clang-format", ["--assume-filename=" + nama]]]
+    }
+    if e == "py" { return [["ruff", ["format", "--stdin-filename", nama, "-"]], ["black", ["-q", "-"]]] }
+    if e == "sh" { return [["shfmt", ["-i", "4"]]] }
+    if e == "js" || e == "mjs" || e == "ts" || e == "css" || e == "html" || e == "md" || e == "yaml" || e == "yml" {
+        return [["prettier", ["--stdin-filepath", nama]]]
+    }
+    return []
+}
+
+fn baris_pertama(t) {
+    let b = str::split(str::trim(t), "\n")
+    return len(b) == 0 $ "" : b[0]
+}
+
+/// JRG: `jrgc --fmt <berkas>` (stdout) kalau jrgc-nya punya, lalu `jrgm fmt <berkas>` (menulis di
+/// tempat) kalau jrgm ada. Keduanya memakai formatter yang sama (`src/fmt`).
+fn rapikan_jrg(isi) {
+    let jrgc = lingkungan("JRG_JRGC", "jrgc")
+    let p = fs::join(akar_data(), ".rapikan-" + str(time::now_ms()) + ".jrg")
+    fs::write(p, isi)
+    var hasil = {"alat": ""}
+    match proses::keluaran(jrgc, ["--fmt", p], {"batas_ms": 10000, "env": {"JRG_SOPAN": "1"}}) {
+        Ok(h) => {
+            if h.sukses { hasil = {"alat": "jrgc --fmt", "isi": h.keluaran} }
+            else if !str::contains(h.galat, "--fmt") { hasil = {"alat": "jrgc --fmt", "galat": baris_pertama(h.galat + h.keluaran)} }
+        }
+        Err(e) => {}
+    }
+    if hasil["alat"] == "" {
+        let sebelah = fs::join(fs::dirname(jrgc), "jrgm")
+        let jrgm = lingkungan("JRG_JRGM", "") != "" $ lingkungan("JRG_JRGM", "") : fs::exists(sebelah) $ sebelah : proses::ada("jrgm") $ "jrgm" : ""
+        if jrgm != "" {
+            match proses::keluaran(jrgm, ["fmt", p], {"batas_ms": 10000}) {
+                Ok(h) => {
+                    if h.sukses { hasil = {"alat": "jrgm fmt", "isi": fs::read(p)} }
+                    else { hasil = {"alat": "jrgm fmt", "galat": baris_pertama(h.galat + h.keluaran)} }
+                }
+                Err(e) => {}
+            }
+        }
+    }
+    let _ = fs::delete(p)
+    return hasil
+}
+
+fn rapikan_isi(nama, isi) {
+    if str::lower(ekstensi(nama)) == "jrg" { return rapikan_jrg(isi) }
+    for _, c in perapi_stdin(nama) {
+        if !proses::ada(c[0]) { continue }
+        match proses::keluaran(c[0], c[1], {"masukan": isi, "batas_ms": 15000}) {
+            Ok(h) => {
+                if h.sukses && h.keluaran != "" { return {"alat": c[0], "isi": h.keluaran} }
+                return {"alat": c[0], "galat": baris_pertama(h.galat + h.keluaran)}
+            }
+            Err(e) => { return {"alat": c[0], "galat": str(e)} }
+        }
+    }
+    return {"alat": ""}
+}
+
+/// Semua berkas teks pemakai (paling banyak 400, masing-masing di bawah 300 KB), untuk simbol di semua berkas.
+fn teks_semua() {
+    let akar = akar_data()
+    var hasil = []
+    for _, p in walk_berkas(akar) {
+        let nama = str::slice(p, str::len(akar) + 1, str::len(p))
+        if tersembunyi(nama) || fs::size(p) > 300000 || len(hasil) >= 400 { continue }
+        match baca_teks(p) {
+            Option::Some(t) => { hasil = hasil + [{"nama": nama, "isi": t}] }
+            Option::None => {}
+        }
+    }
+    return hasil
+}
+
+/// Isi berkas kalau teks, `None` kalau biner. `fs::read` menghentikan handler untuk berkas yang
+/// bukan UTF-8, jadi dibaca lewat base64; dekodenya mengganti byte rusak dengan U+FFFD, dan itulah
+/// tandanya. NUL juga berarti biner.
+fn baca_teks(p) {
+    match fs::read_base64(p) {
+        Ok(b) => {
+            match crypto::base64_decode(b) {
+                Ok(t) => { return str::contains(t, "\uFFFD") || str::contains(t, "\u0000") $ Option::None : Option::Some(t) }
+                Err(e) => { return Option::None }
+            }
+        }
+        Err(e) => { return Option::None }
+    }
+}
+
+/// Baris yang memuat `kata` di semua berkas, paling banyak `batas` temuan. `persis`: huruf besar-kecil
+/// dibedakan dan barisnya utuh (sampai 400 huruf), untuk navigasi kode; selain itu dipangkas 160 huruf.
+fn cari_di_berkas(kata, persis, batas) {
+    let akar = akar_data()
+    let dicari = persis $ kata : str::lower(kata)
+    var hasil = []
+    for _, f in daftar_berkas() {
+        if f["ukuran"] > 1000000 { continue }
+        let isi = match baca_teks(fs::join(akar, f["nama"])) { Option::Some(t) => t, Option::None => { continue } }
+        for i, b in str::split(isi, "\n") {
+            if !str::contains(persis $ b : str::lower(b), dicari) { continue }
+            let teks = persis $ str::slice(b, 0, math::min(str::len(b), 400)) : str::trim(str::slice(b, 0, math::min(str::len(b), 160)))
+            hasil += [{"nama": f["nama"], "baris": i + 1, "teks": teks}]
+            if len(hasil) >= batas { return hasil }
+        }
+    }
+    return hasil
+}
+
+/// Riwayat berkas: isi LAMA sebuah berkas disalin ke `$HOME/jrg-ide-riwayat/<nama>/<ms>` sebelum
+/// ditimpa atau dihapus. Paling sering sekali per 2 menit per berkas (simpan otomatis jalan tiap
+/// jeda ketik), paling banyak 40 salinan; di luar akar data, jadi tidak tampil di pohon berkas.
+const RIWAYAT_JEDA_MS = 120000
+const RIWAYAT_MAKS = 40
+
+fn akar_riwayat() {
+    let d = fs::join(lingkungan("HOME", fs::temp_dir()), "jrg-ide-riwayat")
+    if !fs::exists(d) { let _ = fs::mkdir(d) }
+    return d
+}
+
+/// Salinan riwayat sebuah berkas, terbaru dulu: `[ms, ...]`.
+/// Nama salinan riwayat: angka milidetik saja.
+fn stempel(n) {
+    return typeof(n) == "string" && n != "" && str::len(n) < 16 && str::is_numeric(n) && !str::contains(n, ".") && !str::contains(n, "-") && !str::contains(n, " ")
+}
+
+fn daftar_riwayat(nama) {
+    let d = fs::join(akar_riwayat(), nama)
+    if !fs::is_dir(d) { return [] }
+    var t = []
+    for _, n in fs::ls(d) {
+        if stempel(n) && fs::is_file(fs::join(d, n)) { t += [str::to_int(n)] }
+    }
+    return arr::sort_desc(t)
+}
+
+/// `paksa`: tanpa jeda (berkas akan dihapus). Gagal menyalin tidak menggagalkan simpannya.
+fn catat_riwayat(nama, isi, paksa) {
+    if tersembunyi(nama) || str::len(isi) > 2000000 { return }
+    let ada = daftar_riwayat(nama)
+    let kini = time::now_ms()
+    if !paksa && len(ada) > 0 && kini - ada[0] < RIWAYAT_JEDA_MS { return }
+    let d = fs::join(akar_riwayat(), nama)
+    if !fs::exists(d) { let _ = fs::mkdir(d) }
+    let _ = fs::write(fs::join(d, str(kini)), isi)
+    for i, t in ada {
+        if i >= RIWAYAT_MAKS - 1 { let _ = fs::delete(fs::join(d, str(t))) }
+    }
+}
+
+/// Berkas yang punya riwayat tapi sudah tidak ada (terhapus atau dipindah), terbaru dulu.
+fn riwayat_terhapus() {
+    let akar = akar_riwayat()
+    var lihat = dict::new()
+    var hasil = []
+    for _, p in walk_berkas(akar) {
+        let nama = fs::dirname(str::slice(p, str::len(akar) + 1, str::len(p)))
+        if nama == "." || nama == "" || dict::has(lihat, nama) { continue }
+        lihat[nama] = true
+        if fs::exists(fs::join(akar_data(), nama)) { continue }
+        let t = daftar_riwayat(nama)
+        if len(t) > 0 { hasil += [{"nama": nama, "t": t[0], "jumlah": len(t)}] }
+    }
+    return arr::sort_by(hasil, |a, b| b["t"] - a["t"])
+}
+
+/// Berkas contoh disalin sekali per versi IDE; berkas pemakai yang bernama sama tidak ditimpa.
+fn siapkan_contoh() {
+    let tanda = fs::join(akar_data(), ".contoh")
+    if !fs::exists("contoh") || (fs::exists(tanda) && fs::read(tanda) == VERSI) { return }
+    for _, p in fs::walk("contoh") {
+        let nama = str::slice(p, str::len("contoh") + 1, str::len(p))
+        let tujuan = fs::join(akar_data(), nama)
+        if fs::exists(tujuan) { continue }
+        if !fs::exists(fs::dirname(tujuan)) { let _ = fs::mkdir(fs::dirname(tujuan)) }
+        fs::write(tujuan, fs::read(p))
+    }
+    fs::write(tanda, VERSI)
+}
+
+/// Satu nilai dari badan JSON permintaan; `cadangan` kalau badannya rusak atau kuncinya tidak ada.
+fn isi_badan(req, kunci, cadangan) {
+    match dok::json_decode(req.body) {
+        Ok(d) => { return dok::json_get(d, kunci).unwrap_or(cadangan) }
+        Err(e) => { return cadangan }
+    }
+}
+
+fn tolak(pesan) {
+    return dok::response(400, dok::json_encode({"galat": pesan}), "application/json")
+}
+
+/// Galat berlokasi dari `jrgc <berkas> --periksa` (urai + kompilasi, tanpa menjalankan): satu
+/// `{nama, baris, kolom, pesan}` per galat, `nama` relatif akar data. Galat tanpa lokasi (mis. modul
+/// yang tidak ketemu) cuma ada di `teks`, jadi `teks` selalu ikut dijawab.
+fn periksa(nama) {
+    let jrgc = lingkungan("JRG_JRGC", "jrgc")
+    let akar = akar_data()
+    let jalur = fs::join(akar, nama)
+    let catatan = fs::join(fs::temp_dir(), "jrg-ide-periksa-" + str(time::now_ms()) + "-" + str(rand::int(0, 999999)) + ".txt")
+    let opsi = {"batas_ms": 15000, "dir": fs::dirname(jalur), "env": {"JRG_SOPAN": "1", "JRG_GALAT_KE": catatan}}
+    let h = proses::keluaran(jrgc, [jalur, "--periksa"], opsi)?
+    var masalah = []
+    if fs::exists(catatan) {
+        for _, baris in str::split(fs::read(catatan), "\n") {
+            let k = str::split(baris, "\t")
+            if len(k) < 4 { continue }
+            var berkas = k[0]
+            if str::starts_with(berkas, akar + "/") { berkas = str::slice(berkas, str::len(akar) + 1, str::len(berkas)) }
+            let pesan = str::join(arr::skip(k, 3), "\t")
+            masalah = masalah + [{"nama": berkas, "baris": str::to_int(k[1]), "kolom": str::to_int(k[2]), "pesan": pesan}]
+        }
+        let _ = fs::delete(catatan)
+    }
+    if str::ends_with(nama, ".jrg") && h.sukses { masalah = masalah + peringatan_lint(jalur, akar) }
+    return Ok({"masalah": masalah, "teks": h.galat + h.keluaran, "sukses": h.sukses, "habis_waktu": h.habis_waktu})
+}
+
+/// Proyek JRG terdekat di atas berkas (masih di akar data), supaya modulnya dilint lewat entry proyek.
+fn proyek_jrg(jalur, akar) {
+    var d = fs::dirname(jalur)
+    while str::starts_with(d, akar) {
+        let m = fs::join(d, "jrgm.toml")
+        if fs::is_file(m) { return str::contains(fs::read(m), "\nbahasa") $ None : Some(d) }
+        if d == akar { return None }
+        d = fs::dirname(d)
+    }
+    return None
+}
+
+/// Peringatan `jrgm lint` (lewat `jrgc --jrgm`): import tak dipakai, fungsi tak dipanggil, lokal tak dibaca,
+/// literal bulat di tempat pecahan. Berkas tanpa proyek dilint lewat proyek sementara ber-entry berkas itu;
+/// jrgc lama tanpa `lint` cukup tidak menambah apa-apa.
+fn peringatan_lint(jalur, akar) {
+    let jrgc = lingkungan("JRG_JRGC", "jrgc")
+    var dir = ""
+    var sementara = ""
+    var modul = false
+    match proyek_jrg(jalur, akar) {
+        Some(d) => { dir = d }
+        None => {
+            sementara = fs::join(fs::temp_dir(), "jrg-ide-lint-" + str(time::now_ms()) + "-" + str(rand::int(0, 999999)))
+            let _ = fs::mkdir(sementara)
+            fs::write(fs::join(sementara, "jrgm.toml"), "[package]\nname = \"lint\"\nversion = \"0.1.0\"\nentry = " + json::stringify(jalur) + "\n")
+            dir = sementara
+            let awal = str::trim(fs::read(jalur))
+            modul = str::starts_with(awal, "package ") && !str::starts_with(awal, "package main")
+        }
+    }
+    let h = proses::keluaran(jrgc, ["--jrgm", "lint"], {"batas_ms": 15000, "dir": dir, "env": {"JRG_SOPAN": "1"}})
+    if sementara != "" { let _ = fs::try_delete(sementara) }
+    var hasil = []
+    match h {
+        Ok(x) => {
+            var pesan = ""
+            for _, b in str::split(x.galat + x.keluaran, "\n") {
+                if str::starts_with(b, "peringatan: ") { pesan = str::slice(b, 12, str::len(b)); continue }
+                let t = str::trim(b)
+                if pesan == "" || !str::starts_with(t, "--> ") { continue }
+                // Modul yang diperiksa sendirian: fungsinya memang dipanggil pengimpornya.
+                if modul && str::contains(pesan, "tidak pernah dipanggil") { pesan = ""; continue }
+                let loc = str::split(str::slice(t, 4, str::len(t)), ":")
+                if len(loc) >= 3 {
+                    var berkas = str::join(arr::take(loc, len(loc) - 2), ":")
+                    if str::starts_with(berkas, akar + "/") { berkas = str::slice(berkas, str::len(akar) + 1, str::len(berkas)) }
+                    hasil = hasil + [{"nama": berkas, "baris": parse_int(loc[len(loc) - 2]), "kolom": parse_int(loc[len(loc) - 1]), "pesan": pesan, "jenis": "peringatan"}]
+                }
+                pesan = ""
+            }
+        }
+        Err(e) => {}
+    }
+    return hasil
+}
+
+/// Jawaban `jrgc <bendera> <kata>` sebagai teks — kamus fungsi yang selalu sama dengan mesinnya.
+fn tanya_jrgc(bendera, kata) {
+    let jrgc = lingkungan("JRG_JRGC", "jrgc")
+    let argumen = kata == "" $ [bendera] : [bendera, kata]
+    match proses::keluaran(jrgc, argumen, {"batas_ms": 5000, "env": {"JRG_SOPAN": "1"}}) {
+        Ok(h) => { return h.keluaran + h.galat }
+        Err(e) => { return e }
+    }
+}
+
+// ---------- penjaga (HP): proses yang dibunuh aktivitas cuma penjaga; pelayan dan sesinya terlepas ----------
+// dan dipakai lagi aktivitas berikutnya selama versinya sama. Rancangannya: ide/README.md, "Pelayan di HP".
+
+/// Penanda versi terpasang: VERSI plus stempel pembaruan APK yang ditulis aktivitas (proyek.versi).
+fn jejak() {
+    let f = fs::join(lingkungan("HOME", fs::temp_dir()), "proyek.versi")
+    return VERSI + "/" + (fs::is_file(f) $ str::trim(fs::read(f)) : "")
+}
+
+// Jejak yang dibawa pelayan ini sejak mulai, bukan yang dibaca ulang: pembaruan APK membuatnya berbeda.
+let JEJAK_PELAYAN = ptr::new("")
+
+// Penjaga yang terakhir menanyai pelayan ini, dan apakah halaman sedang memakai layanan latar.
+let PENJAGA = ptr::new(0)
+let LATAR = ptr::new(false)
+
+/// Keluar lewat notifikasi milik jrgm menghentikan penjaga saja; selagi latar aktif, pelayan ikut berhenti.
+/// Tanpa latar penjaga memang dibunuh tiap aktivitas ditutup, dan pelayannya sengaja tetap hidup.
+fn awasi_penjaga() {
+    if !fs::exists("/proc/self") { return }
+    spawn {
+        while true {
+            time::sleep_ms(1000)
+            let p = ptr::get(PENJAGA)
+            if ptr::get(LATAR) && p > 0 && !fs::exists("/proc/" + str(p)) {
+                wok("pelayan: penjaga " + str(p) + " berhenti selagi latar aktif, ikut berhenti")
+                terminal::tutup_semua()
+                exit(0)
+            }
+        }
+    }
+}
+
+fn tanya_pelayan(u) {
+    match dok::http_get(u + "/api/jejak?penjaga=" + str(proses::pid())) {
+        Ok(j) => { return j["status"] == 200 $ Some(json::parse(j["body"])) : None }
+        Err(e) => { return None }
+    }
+}
+
+fn jaga(port) {
+    let u = "http://127.0.0.1:" + str(port)
+    let rumah = lingkungan("HOME", fs::temp_dir())
+    let keluar = fs::join(rumah, "jrg-ide-keluar")
+    let _ = fs::delete(keluar)
+    match tanya_pelayan(u) {
+        Some(j) => {
+            if j["jejak"] != jejak() {
+                wok("penjaga: pelayan lama (" + j["jejak"] + ") diganti")
+                let _ = dok::http_post(u + "/api/keluar", "{}")
+                var n = 0
+                while n < 50 && tanya_pelayan(u).is_some() { time::sleep_ms(100); n += 1 }
+                if n >= 50 { let _ = proses::jalankan("kill", ["-9", str(j["pid"])]) }
+                let _ = fs::delete(keluar)
+            }
+        }
+        None => {}
+    }
+    var gagal = 0
+    var awal = true
+    while true {
+        if tanya_pelayan(u).is_some() { gagal = 0 } else { gagal += 1 }
+        // Pelayan berhenti karena diminta (Keluar): penjaga ikut berhenti, tidak menghidupkannya lagi.
+        if fs::exists(keluar) { let _ = fs::delete(keluar); exit(0) }
+        // Belum ada, atau dua kali tidak menjawab: mulai pelayan baru, lalu tunggu sampai melayani.
+        if gagal >= 2 || (awal && gagal == 1) {
+            let log = fs::join(rumah, "jrg-ide-pelayan.log")
+            let arg = env::args()
+            let h = proses::keluaran("sh", ["-c", "JRG_IDE_PELAYAN=1 \"$0\" \"$@\" >\"$JRG_IDE_LOG\" 2>&1 </dev/null &", lingkungan("JRG_JRGC", "jrgc"), arg[0]],
+                                     {"env": {"JRG_IDE_LOG": log}, "batas_ms": 10000})
+            match h { Ok(x) => {}, Err(e) => { wok("penjaga: pelayan tidak bisa dimulai: " + e) } }
+            var n = 0
+            while n < 300 && tanya_pelayan(u).is_none() { time::sleep_ms(100); n += 1 }
+            wok(n < 300 $ "penjaga: pelayan " + jejak() + " di " + u : "penjaga: pelayan tidak menjawab; lihat " + log)
+            gagal = 0
+        }
+        awal = false
+        time::sleep_ms(gagal > 0 $ 1000 : 5000)
+    }
+}
+
+/// Permintaan dari halaman lain (situs di peramban HP) ke pelayan ini ditolak: Origin-nya bukan kita.
+/// `Host` juga: lewat DNS rebinding sebuah situs memakai nama sendiri yang menunjuk ke 127.0.0.1.
+fn asal_sah(req, port) {
+    match dok::header_get(req.headers, "host") {
+        Some(h) => {
+            let akhir = port == 80 $ "" : ":" + str(port)
+            let nama = port == 80 $ str::replace(h, ":80", "") : h
+            if nama != "127.0.0.1" + akhir && nama != "localhost" + akhir { return false }
+        }
+        None => { return false }
+    }
+    match dok::header_get(req.headers, "origin") {
+        Some(o) => { return o == "http://127.0.0.1:" + str(port) || o == "http://localhost:" + str(port) }
+        None => { return true }
+    }
+}
+
+pub fn main() {
+    let port = int(lingkungan("PORT", "8080"))
+    if (lingkungan("JRG_APK", "") == "1" || lingkungan("JRG_IDE_JAGA", "") == "1") && lingkungan("JRG_IDE_PELAYAN", "") == "" { jaga(port) }
+    ptr::set(JEJAK_PELAYAN, jejak())
+    if lingkungan("JRG_IDE_PELAYAN", "") != "" { awasi_penjaga() }
+    siapkan_contoh()
+    terminal::siapkan()
+    // Jalur pustaka APK berganti tiap pembaruan aplikasi: skrip `masuk` Linux ditulis ulang tiap mulai.
+    if linux::terpasang() { let _ = linux::siapkan(akar_data(), folder_linux()) }
+    let r = dok::router_new()
+    dok::router_use(r, |req| asal_sah(req, port) $ nil : dok::response(403, "permintaan dari situs lain ditolak"))
+    dok::router_get(r, "/", |req| dok::html(fs::read("web/index.html")))
+    dok::router_get(r, "/api/jejak", |req| {
+        let p = dok::query_get(req.query, "penjaga").unwrap_or("")
+        if str::len(p) > 0 && str::len(p) < 10 && arr::all(str::chars(p), |c| str::contains("0123456789", str(c))) { ptr::set(PENJAGA, str::to_int(p)) }
+        return dok::json_response({"jejak": ptr::get(JEJAK_PELAYAN), "pid": proses::pid()})
+    })
+    dok::router_post(r, "/api/latar", |req| {
+        ptr::set(LATAR, isi_badan(req, "aktif", false) == true)
+        return dok::json_response({"ok": true})
+    })
+    // Keluar sungguhan (penjaga versi baru, tombol Keluar): jawab dulu, baru berhenti.
+    dok::router_post(r, "/api/keluar", |req| {
+        fs::write(fs::join(lingkungan("HOME", fs::temp_dir()), "jrg-ide-keluar"), "1")
+        spawn { time::sleep_ms(200); terminal::tutup_semua(); exit(0) }
+        return dok::json_response({"ok": true})
+    })
+    dok::router_static(r, "/web", "web")
+
+    dok::router_get(r, "/api/info", |req| dok::json_response({
+        "versi": VERSI, "jrgc": str::trim(tanya_jrgc("--version", "")), "android": lingkungan("JRG_APK", "") == "1",
+        "data": akar_data(), "bahasa": daftar_bahasa(),
+        "llvm": varian() != "play" && ada_clang(), "varian": varian(), "linux": linux::info(), "cermin_paket": lingkungan("JRG_IDE_CERMIN", "") == "" $ "" : "/cermin/"}))
+    // Ikon aplikasi IDE sendiri (dipakai `jrgm apk` berikutnya) dan logo bawaannya. Di HP sumbernya
+    // aset APK yang sudah dipasang, jadi tidak ada yang bisa ditulis.
+    dok::router_post(r, "/api/ikon_ide", |req| {
+        if lingkungan("JRG_APK", "") == "1" { return tolak("ikon JRG IDE di HP terkunci sejak dipasang; ganti lewat APK baru") }
+        let jalur = isi_badan(req, "jalur", "")
+        if jalur != "aset/ikon.png" && jalur != "web/aset/logo.png" { return tolak("jalur ikon tidak sah") }
+        return match fs::write_base64(jalur, str(isi_badan(req, "isi", ""))) {
+            Ok(n) => dok::json_response({"ok": true, "byte": n, "jalur": fs::join(fs::cwd(), jalur)}),
+            Err(e) => tolak(e)
+        }
+    })
+    dok::router_get(r, "/api/berkas", |req| dok::json_response(daftar_berkas()))
+    dok::router_get(r, "/api/folder", |req| dok::json_response(daftar_folder("", 0)))
+    dok::router_post(r, "/api/folder", |req| {
+        let nama = isi_badan(req, "nama", "")
+        if !aman(nama) { return tolak("nama folder tidak sah") }
+        return dok::json_response({"ok": fs::mkdir(fs::join(akar_data(), nama))})
+    })
+    dok::router_get(r, "/api/proyek", |req| {
+        let nama = dok::query_get(req.query, "nama").unwrap_or("")
+        if !aman(nama) { return tolak("nama berkas tidak sah") }
+        return dok::json_response(proyek_dari(nama))
+    })
+    // Menandai berkas utama sebuah folder; `utama` kosong mencabut tandanya.
+    dok::router_post(r, "/api/proyek", |req| {
+        let akar = isi_badan(req, "akar", "")
+        let utama = isi_badan(req, "utama", "")
+        if !aman(akar) || !fs::is_dir(fs::join(akar_data(), akar)) { return tolak("folder proyek tidak sah") }
+        let tanda = fs::join(fs::join(akar_data(), akar), ".utama")
+        if utama == "" { return dok::json_response({"ok": fs::delete(tanda)}) }
+        if !aman(utama) || !fs::exists(fs::join(fs::join(akar_data(), akar), utama)) { return tolak("berkas utama tidak ada di folder itu") }
+        fs::write(tanda, utama)
+        return dok::json_response({"ok": true})
+    })
+    // Proyek dari rangka `jrgm new` (JRG dengan uji, atau bahasa lain): sama dengan yang dibuat jrgm di terminal.
+    dok::router_post(r, "/api/proyek/baru", |req| {
+        let nama = str(isi_badan(req, "nama", ""))
+        let bahasa = str(isi_badan(req, "bahasa", "jrg"))
+        let dasar = fs::basename(nama)
+        if !aman(nama) || dasar == "" || str::starts_with(dasar, ".") || fs::exists(fs::join(akar_data(), nama)) { return tolak("nama proyek tidak sah atau sudah ada") }
+        if !arr::contains(["jrg", "python", "javascript", "c", "cpp", "rust", "go", "java", "php", "lua", "ruby", "sh"], bahasa) { return tolak("bahasa tidak dikenal jrgm new: " + bahasa) }
+        let dir = fs::join(akar_data(), fs::dirname(nama))
+        if !fs::is_dir(dir) { let _ = fs::mkdir(dir) }
+        let arg = bahasa == "jrg" $ ["--jrgm", "new", dasar] : ["--jrgm", "new", dasar, "--bahasa", bahasa]
+        match proses::keluaran(lingkungan("JRG_JRGC", "jrgc"), arg, {"batas_ms": 15000, "dir": dir, "env": {"JRG_SOPAN": "1"}}) {
+            Ok(h) => {
+                if !h.sukses { return tolak(baris_pertama(h.galat + h.keluaran)) }
+                let utama = utama_dari_toml(fs::join(fs::join(akar_data(), nama), "jrgm.toml"))
+                return dok::json_response({"ok": true, "utama": utama})
+            }
+            Err(e) => { return tolak(e) }
+        }
+    })
+    dok::router_post(r, "/api/rapikan", |req| {
+        let nama = isi_badan(req, "nama", "")
+        if !aman(nama) { return tolak("nama berkas tidak sah") }
+        return dok::json_response(rapikan_isi(nama, str(isi_badan(req, "isi", ""))))
+    })
+    dok::router_get(r, "/api/teks_semua", |req| dok::json_response(teks_semua()))
+    dok::router_get(r, "/api/isi_folder", |req| {
+        let dir = dok::query_get(req.query, "dir").unwrap_or("")
+        if !aman(dir) || !fs::is_dir(fs::join(akar_data(), dir)) { return tolak("folder tidak sah") }
+        return dok::json_response(isi_folder(dir))
+    })
+    dok::router_get(r, "/api/baca", |req| {
+        let nama = dok::query_get(req.query, "nama").unwrap_or("")
+        if !aman(nama) { return tolak("nama berkas tidak sah") }
+        let p = fs::join(akar_data(), nama)
+        if !fs::exists(p) || fs::is_dir(p) { return tolak("berkas `" + nama + "` tidak ada") }
+        return dok::json_response({"nama": nama, "isi": fs::read(p)})
+    })
+    dok::router_post(r, "/api/simpan", |req| {
+        let nama = isi_badan(req, "nama", "")
+        if !aman(nama) { return tolak("nama berkas tidak sah") }
+        let p = fs::join(akar_data(), nama)
+        let induk = fs::dirname(p)
+        if !fs::exists(induk) { let _ = fs::mkdir(induk) }
+        let isi = str(isi_badan(req, "isi", ""))
+        if fs::is_file(p) {
+            match baca_teks(p) {
+                Option::Some(lama) => { if lama != isi { catat_riwayat(nama, lama, false) } }
+                Option::None => {}
+            }
+        }
+        fs::write(p, isi)
+        return dok::json_response({"ok": true})
+    })
+    // Berkas dari luar (penyimpanan HP, peramban) datang sebagai base64 berpotongan, jadi berkas
+    // biner ikut utuh; potongan pertama (`awal`) menimpa, sisanya menyambung.
+    dok::router_post(r, "/api/unggah", |req| {
+        let nama = isi_badan(req, "nama", "")
+        if !aman(nama) { return tolak("nama berkas tidak sah") }
+        let p = fs::join(akar_data(), nama)
+        if fs::is_dir(p) { return tolak("`" + nama + "` sebuah folder") }
+        let induk = fs::dirname(p)
+        if !fs::exists(induk) { let _ = fs::mkdir(induk) }
+        let isi = str(isi_badan(req, "isi", ""))
+        let h = isi_badan(req, "awal", false) $ fs::write_base64(p, isi) : fs::append_base64(p, isi)
+        return match h { Ok(n) => dok::json_response({"ok": true, "byte": n}), Err(e) => tolak(e) }
+    })
+    dok::router_post(r, "/api/periksa", |req| {
+        let nama = isi_badan(req, "nama", "")
+        if !aman(nama) || !fs::exists(fs::join(akar_data(), nama)) { return tolak("berkas tidak sah") }
+        if ekstensi(nama) != "jrg" { return tolak("pemeriksaan cuma untuk berkas JRG") }
+        match periksa(nama) {
+            Ok(h) => { return dok::json_response(h) }
+            Err(e) => { return tolak(e) }
+        }
+    })
+    dok::router_post(r, "/api/hapus", |req| {
+        let nama = isi_badan(req, "nama", "")
+        if !aman(nama) { return tolak("nama berkas tidak sah") }
+        let p = fs::join(akar_data(), nama)
+        // Yang dihapus disalin ke riwayatnya dulu, jadi bisa dipulihkan (Lainnya > Berkas terhapus).
+        let semua = fs::is_dir(p) $ walk_berkas(p) : (fs::is_file(p) $ [p] : [])
+        for _, f in semua {
+            if fs::size(f) > 2000000 { continue }
+            match baca_teks(f) {
+                Option::Some(t) => { catat_riwayat(str::slice(f, str::len(akar_data()) + 1, str::len(f)), t, true) }
+                Option::None => {}
+            }
+        }
+        return dok::json_response({"ok": fs::delete(p)})
+    })
+    dok::router_post(r, "/api/ganti", |req| {
+        let dari = isi_badan(req, "dari", "")
+        let ke = isi_badan(req, "ke", "")
+        if !aman(dari) || !aman(ke) { return tolak("nama berkas tidak sah") }
+        if fs::exists(fs::join(akar_data(), ke)) { return tolak("`" + ke + "` sudah ada") }
+        let induk = fs::dirname(fs::join(akar_data(), ke))
+        if !fs::exists(induk) { let _ = fs::mkdir(induk) }
+        let ok = fs::rename(fs::join(akar_data(), dari), fs::join(akar_data(), ke))
+        // Riwayatnya ikut pindah, kecuali nama baru sudah punya riwayat sendiri.
+        let rd = fs::join(akar_riwayat(), dari)
+        let rk = fs::join(akar_riwayat(), ke)
+        if ok && fs::is_dir(rd) && !fs::exists(rk) {
+            if !fs::exists(fs::dirname(rk)) { let _ = fs::mkdir(fs::dirname(rk)) }
+            let _ = fs::rename(rd, rk)
+        }
+        return dok::json_response({"ok": ok})
+    })
+    dok::router_post(r, "/api/mulai", |req| {
+        let nama = isi_badan(req, "nama", "")
+        if !aman(nama) { return tolak("nama berkas tidak sah") }
+        if !fs::exists(fs::join(akar_data(), nama)) { return tolak("simpan dulu berkas `" + nama + "`") }
+        let akar = isi_badan(req, "akar", "")
+        if akar != "" && (!aman(akar) || !fs::is_dir(fs::join(akar_data(), akar))) { return tolak("folder proyek tidak sah") }
+        let args = isi_badan(req, "argumen", [])
+        if typeof(args) != "array" || len(args) > 64 || !arr::all(args, |a| typeof(a) == "string") { return tolak("argumen harus daftar teks") }
+        match mulai(nama, str(isi_badan(req, "masukan", "")), isi_badan(req, "mesin", "interp"), akar, isi_badan(req, "mode", ""), args) {
+            Ok(id) => { return dok::json_response({"id": id}) }
+            Err(e) => { return tolak(e) }
+        }
+    })
+    dok::router_post(r, "/api/perintah", |req| {
+        let nama = isi_badan(req, "nama", "")
+        if !aman(nama) { return tolak("nama berkas tidak sah") }
+        let akar = isi_badan(req, "akar", "")
+        if akar != "" && (!aman(akar) || !fs::is_dir(fs::join(akar_data(), akar))) { return tolak("folder proyek tidak sah") }
+        let args = isi_badan(req, "argumen", [])
+        if typeof(args) != "array" || len(args) > 64 || !arr::all(args, |a| typeof(a) == "string") { return tolak("argumen harus daftar teks") }
+        match perintah_terminal(nama, isi_badan(req, "mesin", "interp"), akar, isi_badan(req, "mode", ""), args) {
+            Ok(b) => { return dok::json_response({"baris": b}) }
+            Err(e) => { return tolak(e) }
+        }
+    })
+    dok::router_post(r, "/api/konsol/mulai", |req| {
+        let dir = isi_badan(req, "dir", "")
+        if dir != "" && (!aman(dir) || !fs::is_dir(fs::join(akar_data(), dir))) { return tolak("folder tidak sah") }
+        match mulai_konsol(dir) {
+            Ok(k) => { return dok::json_response(k) }
+            Err(e) => { return tolak(e) }
+        }
+    })
+    dok::router_post(r, "/api/baca", |req| {
+        match proses::baca(nomor_badan(req)) {
+            Ok(b) => {
+                return dok::json_response({"keluaran": b.keluaran, "galat": b.galat, "selesai": b.selesai,
+                                           "kode": b.kode, "sukses": b.sukses, "habis_waktu": b.habis_waktu})
+            }
+            Err(e) => { return tolak(e) }
+        }
+    })
+    dok::router_post(r, "/api/tulis", |req| jawab_hasil(proses::tulis(nomor_badan(req), str(isi_badan(req, "teks", "")))))
+    dok::router_post(r, "/api/akhiri", |req| jawab_hasil(proses::tutup_masukan(nomor_badan(req))))
+    dok::router_post(r, "/api/hentikan", |req| jawab_hasil(proses::hentikan(nomor_badan(req))))
+    dok::router_get(r, "/api/pty", |req| dok::json_response({"sesi": terminal::daftar(), "akar": akar_shell()}))
+    dok::router_post(r, "/api/pty/buka", |req| {
+        let dir = isi_badan(req, "dir", "")
+        if dir != "" && (!aman(dir) || !fs::is_dir(fs::join(akar_data(), dir))) { return tolak("folder tidak sah") }
+        let kolom = angka_badan(req, "kolom", 80, 10, 500)
+        let baris = angka_badan(req, "baris", 24, 4, 300)
+        // `linux`: sesi Ubuntu (versi Terminal); berkas tamu disegarkan dulu.
+        var masuk = ""
+        if isi_badan(req, "linux", false) == true {
+            match linux::siapkan(akar_data(), folder_linux()) {
+                Ok(m) => { masuk = m }
+                Err(e) => { return tolak(e) }
+            }
+        }
+        match terminal::buka(kolom, baris, dir == "" $ akar_data() : fs::join(akar_data(), dir), akar_data(),
+                             fs::join(lingkungan("HOME", fs::temp_dir()), "jrg-ide-sh"), penjalan_konsol(), perintah_halaman(), masuk) {
+            Ok(id) => { return dok::json_response({"id": id, "akar": akar_shell()}) }
+            Err(e) => { return tolak(e) }
+        }
+    })
+    dok::router_post(r, "/api/pty/baca", |req| {
+        let minta = isi_badan(req, "sesi", [])
+        if typeof(minta) != "array" || len(minta) > 32 { return tolak("sesi harus daftar [id, dari]") }
+        var bersih = []
+        for _, m in minta {
+            if typeof(m) != "array" || len(m) != 2 || typeof(m[0]) != "int" || typeof(m[1]) != "int" { return tolak("sesi harus daftar [id, dari]") }
+            bersih = bersih + [m]
+        }
+        return dok::json_response(terminal::baca(bersih, angka_badan(req, "ms", 15000, 0, 25000)))
+    })
+    dok::router_post(r, "/api/pty/tulis", |req| {
+        match terminal::tulis(nomor_badan(req), str(isi_badan(req, "teks", ""))) {
+            Ok(n) => { return dok::json_response({"byte": n}) }
+            Err(e) => { return tolak(e) }
+        }
+    })
+    dok::router_post(r, "/api/pty/ukuran", |req| jawab_hasil(terminal::ukuran(nomor_badan(req), angka_badan(req, "kolom", 80, 10, 500), angka_badan(req, "baris", 24, 4, 300))))
+    dok::router_post(r, "/api/pty/judul", |req| jawab_hasil(terminal::judul(nomor_badan(req), str::slice(str(isi_badan(req, "judul", "")), 0, 60))))
+    dok::router_post(r, "/api/pty/tutup", |req| jawab_hasil(terminal::tutup(nomor_badan(req))))
+    // Perintah `jrg-ide` untuk Termux: bertukar berkas lewat pelayan ini (linux/termux.sh).
+    dok::router_get(r, "/termux.sh", |req| dok::response(200, str::replace(fs::read("linux/termux.sh"), "@PORT@", lingkungan("PORT", "8080"))))
+    dok::router_get(r, "/api/linux", |req| dok::json_response(linux::maju(akar_data(), folder_linux())))
+    // Arsip Ubuntu yang ditaruh sendiri di folder berkas (tanpa internet) dipakai kalau sidiknya cocok.
+    dok::router_post(r, "/api/linux/pasang", |req| jawab_hasil(linux::pasang([akar_data()])))
+    dok::router_post(r, "/api/linux/batal", |req| jawab_hasil(linux::batal()))
+    dok::router_post(r, "/api/linux/hapus", |req| jawab_hasil(linux::hapus()))
+    dok::router_post(r, "/api/linux/sumber", |req| jawab_hasil(linux::bongkar_sumber(akar_data())))
+    dok::router_static(r, "/paket", akar_paket())
+    // Berkas pemakai apa adanya, supaya pratinjau HTML bisa memuat CSS dan skrip tetangganya.
+    dok::router_static(r, "/berkas", akar_data())
+    // `JRG_IDE_CERMIN=<direktori>`: paket diambil dari sana, bukan dari internet (uji, jaringan tertutup).
+    if lingkungan("JRG_IDE_CERMIN", "") != "" { dok::router_static(r, "/cermin", lingkungan("JRG_IDE_CERMIN", "")) }
+    dok::router_get(r, "/api/paket", |req| {
+        var d = dict::new()
+        for _, id in PAKET { d[id] = fs::exists(fs::join(fs::join(akar_paket(), id), ".utuh")) }
+        return dok::json_response(d)
+    })
+    dok::router_post(r, "/api/paket/tulis", |req| {
+        let id = isi_badan(req, "paket", "")
+        let berkas = isi_badan(req, "berkas", "")
+        if !arr::contains(PAKET, id) || !aman(berkas) || str::contains(berkas, "/") { return tolak("paket atau nama berkas tidak sah") }
+        let d = fs::join(akar_paket(), id)
+        if !fs::exists(d) { let _ = fs::mkdir(d) }
+        let tujuan = fs::join(d, berkas)
+        let isi = str(isi_badan(req, "isi", ""))
+        let h = isi_badan(req, "awal", false) $ fs::write_base64(tujuan, isi) : fs::append_base64(tujuan, isi)
+        return match h { Ok(n) => dok::json_response({"ok": true, "byte": n}), Err(e) => tolak(e) }
+    })
+    dok::router_get(r, "/api/paket/ada", |req| {
+        let id = dok::query_get(req.query, "paket").unwrap_or("")
+        let berkas = dok::query_get(req.query, "berkas").unwrap_or("")
+        if !arr::contains(PAKET, id) || !aman(berkas) || str::contains(berkas, "/") { return tolak("paket atau nama berkas tidak sah") }
+        return dok::json_response({"ada": fs::exists(fs::join(fs::join(akar_paket(), id), berkas))})
+    })
+    dok::router_post(r, "/api/paket/selesai", |req| {
+        let id = isi_badan(req, "paket", "")
+        if !arr::contains(PAKET, id) { return tolak("paket tidak dikenal") }
+        fs::write(fs::join(fs::join(akar_paket(), id), ".utuh"), VERSI)
+        return dok::json_response({"ok": true})
+    })
+    dok::router_post(r, "/api/paket/copot", |req| {
+        let id = isi_badan(req, "paket", "")
+        if !arr::contains(PAKET, id) { return tolak("paket tidak dikenal") }
+        let d = fs::join(akar_paket(), id)
+        if fs::exists(d) { let _ = fs::delete(d) }
+        return dok::json_response({"ok": true})
+    })
+    dok::router_get(r, "/api/cari", |req| {
+        let kata = dok::query_get(req.query, "kata").unwrap_or("")
+        if str::len(kata) < 2 { return tolak("tulis paling sedikit dua huruf") }
+        let persis = dok::query_get(req.query, "persis").unwrap_or("") == "1"
+        return dok::json_response(cari_di_berkas(kata, persis, persis $ 3000 : 200))
+    })
+    dok::router_get(r, "/api/riwayat", |req| {
+        let nama = dok::query_get(req.query, "nama").unwrap_or("")
+        if !aman(nama) { return tolak("nama berkas tidak sah") }
+        let d = fs::join(akar_riwayat(), nama)
+        return dok::json_response(arr::map(daftar_riwayat(nama), |t| ({"t": t, "ukuran": fs::size(fs::join(d, str(t)))})))
+    })
+    dok::router_get(r, "/api/riwayat/isi", |req| {
+        let nama = dok::query_get(req.query, "nama").unwrap_or("")
+        let t = dok::query_get(req.query, "t").unwrap_or("")
+        if !aman(nama) || !stempel(t) { return tolak("permintaan riwayat tidak sah") }
+        let p = fs::join(fs::join(akar_riwayat(), nama), t)
+        if !fs::is_file(p) { return tolak("salinan itu sudah tidak ada") }
+        return dok::json_response({"nama": nama, "t": str::to_int(t), "isi": fs::read(p)})
+    })
+    dok::router_get(r, "/api/riwayat/terhapus", |req| dok::json_response(riwayat_terhapus()))
+    dok::router_get(r, "/api/kamus", |req| {
+        let kata = dok::query_get(req.query, "kata").unwrap_or("")
+        if kata == "" { return dok::json_response({"teks": tanya_jrgc("--daftar-builtin", "")}) }
+        return dok::json_response({"teks": tanya_jrgc("--cari", kata)})
+    })
+    dok::router_get(r, "/api/dok", |req| {
+        let nama = dok::query_get(req.query, "nama").unwrap_or("")
+        return dok::json_response({"teks": tanya_jrgc("--doc", nama)})
+    })
+    dok::router_not_found(r, |req| dok::response(404, "tidak ada: " + req.path))
+    wok("JRG IDE " + VERSI + " di http://127.0.0.1:" + str(port))
+    dok::serve(r, port, "127.0.0.1")
+}

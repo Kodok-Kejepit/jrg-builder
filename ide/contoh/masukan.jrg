@@ -1,0 +1,12 @@
+// Membaca masukan: jalankan, lalu ketik jawabannya di kotak "Masukan" dan tekan Kirim.
+package main
+
+pub fn main() {
+    wok("Siapa namamu?")
+    let nama = str::trim(tok())
+    if nama == "" {
+        wok("(tidak ada nama yang dikirim)")
+        return
+    }
+    wok("Halo, " + nama + "! Namamu " + str(str::len(nama)) + " huruf.")
+}

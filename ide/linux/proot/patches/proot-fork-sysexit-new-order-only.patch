@@ -1,0 +1,21 @@
+diff --git a/src/syscall/enter.c b/src/syscall/enter.c
+index 6bfdd56..6bf855f 100644
+--- a/src/syscall/enter.c
++++ b/src/syscall/enter.c
+@@ -113,6 +113,16 @@
+  */
+ static void force_fork_sysexit(Tracee *tracee)
+ {
++	/* Woksole: only on kernels with the "new" (>= 4.8) seccomp/ptrace
++	 * syscall order, where the openela 4.14 hang was seen.  On kernels
++	 * with the old order (e.g. Android 4.4/4.9 without the backport)
++	 * forcing the sysexit stop desynchronises the new child and PRoot
++	 * aborts on IS_IN_SYSENTER for every fork.  Before the order is
++	 * detected the helper reports the old order, i.e. the pre-v5.1.107.94
++	 * behaviour.  */
++	if (seccomp_event_happens_after_enter_sigtrap())
++		return;
++
+ 	tracee->sysexit_pending = true;
+ 	tracee->restart_how = PTRACE_SYSCALL;
+ }

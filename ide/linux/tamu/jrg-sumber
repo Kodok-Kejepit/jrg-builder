@@ -1,0 +1,9 @@
+#!/bin/sh
+# jrg-sumber: bongkar sumber bahasa JRG (ikut di APK Terminal) ke ~/berkas/jrg-lang, lalu bisa dibangun di sini.
+a=/usr/local/share/jrg-ide/jrg-lang.tar.gz
+ke=${1:-$JRG_IDE_BERKAS/jrg-lang}
+[ -f "$a" ] || { echo "jrg-sumber: sumber JRG tidak ikut di versi ini" >&2; exit 1; }
+[ -e "$ke" ] && { echo "jrg-sumber: $ke sudah ada (hapus dulu, atau: jrg-sumber <folder-lain>)" >&2; exit 1; }
+mkdir -p "$ke" && tar -xzf "$a" -C "$ke" --strip-components=1 --no-same-owner || exit 1
+echo "Sumber JRG: $ke"
+echo "Bangun jrgc dan jrgm di sini:  pkg install rust && cd \"$ke\" && cargo install --path ."

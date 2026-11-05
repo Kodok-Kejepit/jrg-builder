@@ -1,0 +1,96 @@
+/* JRG IDE — css/terminal.css: panel Konsol mode terminal (js/terminal.js, js/vt.js) dan baris tombolnya. */
+.t {
+  --t-bg: var(--c-bg); --t-fg: var(--c-ink); --t-kursor: var(--accent);
+  --t0: #3A404B; --t1: #FF6B7A; --t2: #8DE0A8; --t3: #F3CF7A; --t4: #7CB3F0; --t5: #D3A1F0; --t6: #74D6DC; --t7: #C9D1DB;
+  --t8: #5F6877; --t9: #FF8B97; --t10: #A9F0C0; --t11: #FFE19B; --t12: #9DC8FF; --t13: #E4BBFF; --t14: #9BE8EC; --t15: #FFFFFF;
+  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; background: var(--t-bg);
+}
+[data-mode="light"] .t {
+  --t0: #2B2F36; --t1: #C4283F; --t2: #187A45; --t3: #946200; --t4: #1F5FBF; --t5: #8A3FB8; --t6: #0E7C80; --t7: #6E7781;
+  --t8: #57606A; --t9: #E0435A; --t10: #1F9D58; --t11: #B07D00; --t12: #3578E5; --t13: #A855D6; --t14: #1597A0; --t15: #24292F;
+}
+.t[hidden], .k-mode[hidden] { display: none; }
+.k-mode { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.k-ganti { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 2px var(--s2) 2px var(--s3); font-size: var(--fs-xs); color: var(--ink-3); }
+.app.di-terminal .keluar-atas, .app.di-terminal .simbol { display: none; }
+
+.t-atas { flex: none; display: flex; align-items: center; gap: 2px; padding: 3px 4px 3px 6px; background: var(--bg-2); border-bottom: 1px solid var(--line); }
+.t-atas .tb { width: 34px; height: 34px; }
+.t-atas .tb .ik { width: 18px; height: 18px; }
+.t-tab { flex: 1 1 auto; min-width: 0; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.t-tab::-webkit-scrollbar { display: none; }
+.t-tab button { flex: none; display: flex; align-items: center; gap: 2px; max-width: 46vw; height: 30px; padding: 0 2px 0 10px;
+  border: 1px solid transparent; border-radius: var(--r-pill); background: transparent; color: var(--ink-3); font: 500 12px var(--font-mono); }
+.t-tab button > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-tab button[aria-selected="true"] { color: var(--ink); background: var(--accent-soft); border-color: var(--accent-line); }
+.t-tab button.usai > span:first-child { text-decoration: line-through; opacity: .7; }
+.t-tab .x { flex: none; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; font-size: 15px; color: var(--ink-3); }
+.t-tab .x:active { background: var(--bg-4); }
+
+.t-wadah { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.t-layar {
+  position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; padding: 2px 4px;
+  font-family: var(--font-mono); line-height: 1.25; color: var(--t-fg); background: var(--t-bg);
+  white-space: pre; font-variant-ligatures: none; font-kerning: none; -webkit-text-size-adjust: none; text-size-adjust: none;
+  overscroll-behavior: contain; -webkit-tap-highlight-color: transparent; cursor: text;
+}
+.t-layar[hidden] { display: none; }
+.t-layar .tr { height: 1.25em; overflow: hidden; }
+.t-layar.alt .t-sb { display: none; }
+/* Scrollback panjang: baris di luar layar tidak ditata ulang tiap bingkai. */
+.t-sb .sbk { content-visibility: auto; }
+.t-ukur { position: absolute; left: -9999px; top: 0; visibility: hidden; white-space: pre; }
+.t-layar .vw2 { display: inline-block; width: 2ch; overflow: hidden; vertical-align: top; }
+.t-layar a { color: inherit; text-decoration: underline dotted; }
+
+.t-layar .vkur { background: transparent; box-shadow: inset 0 0 0 1px var(--t-kursor); }
+.t.fokus .t-layar .vkur { background: var(--t-kursor); color: var(--t-bg); box-shadow: none; animation: t-kedip 1.1s steps(1) infinite; }
+.t.fokus .t-layar[data-kursor="bawah"] .vkur { background: transparent; color: inherit; box-shadow: inset 0 -2px 0 var(--t-kursor); }
+.t.fokus .t-layar[data-kursor="garis"] .vkur { background: transparent; color: inherit; box-shadow: inset 2px 0 0 var(--t-kursor); }
+@keyframes t-kedip { 50% { background: transparent; color: inherit; } }
+.t-layar.bel { animation: t-bel .18s ease-out; }
+@keyframes t-bel { from { background: var(--accent-soft); } }
+.t-layar.balik { filter: invert(1) hue-rotate(180deg); }
+
+.t-layar .vf0 { color: var(--t0); } .t-layar .vf1 { color: var(--t1); } .t-layar .vf2 { color: var(--t2); } .t-layar .vf3 { color: var(--t3); }
+.t-layar .vf4 { color: var(--t4); } .t-layar .vf5 { color: var(--t5); } .t-layar .vf6 { color: var(--t6); } .t-layar .vf7 { color: var(--t7); }
+.t-layar .vf8 { color: var(--t8); } .t-layar .vf9 { color: var(--t9); } .t-layar .vf10 { color: var(--t10); } .t-layar .vf11 { color: var(--t11); }
+.t-layar .vf12 { color: var(--t12); } .t-layar .vf13 { color: var(--t13); } .t-layar .vf14 { color: var(--t14); } .t-layar .vf15 { color: var(--t15); }
+.t-layar .vb0 { background: var(--t0); } .t-layar .vb1 { background: var(--t1); } .t-layar .vb2 { background: var(--t2); } .t-layar .vb3 { background: var(--t3); }
+.t-layar .vb4 { background: var(--t4); } .t-layar .vb5 { background: var(--t5); } .t-layar .vb6 { background: var(--t6); } .t-layar .vb7 { background: var(--t7); }
+.t-layar .vb8 { background: var(--t8); } .t-layar .vb9 { background: var(--t9); } .t-layar .vb10 { background: var(--t10); } .t-layar .vb11 { background: var(--t11); }
+.t-layar .vb12 { background: var(--t12); } .t-layar .vb13 { background: var(--t13); } .t-layar .vb14 { background: var(--t14); } .t-layar .vb15 { background: var(--t15); }
+.t-layar .vfb { color: var(--t-bg); } .t-layar .vbf { background: var(--t-fg); }
+.t-layar .vt { font-weight: 600; } .t-layar .vr { opacity: .62; } .t-layar .vm { font-style: italic; }
+.t-layar .vg { text-decoration: underline; } .t-layar .vc { text-decoration: line-through; } .t-layar .vg.vc { text-decoration: underline line-through; }
+.t-layar .vs { color: transparent !important; } .t-layar .vk { animation: t-kedip-teks 1.2s steps(1) infinite; }
+@keyframes t-kedip-teks { 50% { opacity: .2; } }
+
+.t-kebawah { position: absolute; right: 12px; bottom: 12px; z-index: 2; width: 40px; height: 40px; display: grid; place-items: center;
+  border: 1px solid var(--accent-line); border-radius: 50%; background: var(--bg-3); color: var(--accent); box-shadow: var(--shadow-lift); }
+.t-kebawah[hidden] { display: none; }
+.t-kebawah .ik { width: 20px; height: 20px; }
+.t-masuk { position: absolute; left: 0; top: 0; width: 1px; height: 1em; padding: 0; border: 0; margin: 0; opacity: 0;
+  font-size: 16px; color: transparent; background: transparent; caret-color: transparent; pointer-events: none; z-index: 0; }
+
+.t-kunci { flex: none; padding: 2px 2px calc(2px + var(--safe-b)); background: var(--bg-2); border-top: 1px solid var(--line);
+  user-select: none; -webkit-user-select: none; touch-action: none; }
+.t-kunci[hidden] { display: none; }
+.t-deret { display: flex; gap: 2px; }
+.t-kunci button { position: relative; flex: 1 1 0; min-width: 0; height: 40px; padding: 0; border: 0; border-radius: 8px;
+  background: transparent; color: var(--ink); font: 500 13px var(--font-mono); -webkit-tap-highlight-color: transparent; }
+.t-kunci button i { position: absolute; top: 2px; right: 4px; font: 400 9px var(--font-mono); color: var(--ink-3); }
+.t-kunci button.ditekan { background: var(--bg-4); }
+.t-kunci .mod[data-n="1"] { color: var(--accent); background: var(--accent-soft); }
+.t-kunci .mod[data-n="2"] { color: var(--accent-ink); background: var(--accent); }
+@media (min-width: 900px) { .t-kunci { display: none; } }
+/* Terminal memenuhi layar HP: seperti Termux, kepala IDE disembunyikan (laci dan menu pindah ke bilah
+   sesi), dan bilah bawah ikut hilang selama papan ketik terbuka. */
+.t-laci { display: none; }
+@media (max-width: 899px) {
+  .app.alat-penuh.di-terminal .atas { display: none; }
+  .app.alat-penuh.di-terminal .t-laci { display: grid; }
+  .app.alat-penuh.di-terminal .t-atas { padding-top: calc(3px + var(--safe-t)); }
+  .papan .app.alat-penuh.di-terminal .bilah { display: none; }
+}
+.app.di-terminal .bilah .st { visibility: hidden; }

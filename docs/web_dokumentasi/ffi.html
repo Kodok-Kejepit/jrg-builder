@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bahasa lain (FFI) — Dokumentasi JRG</title>
+<meta name="description" content="Memanggil C, C++, Rust, Go, Python, JavaScript, PHP, Lua, Java, Kotlin, .NET, dan WebAssembly dari JRG.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a class="aktif" aria-current="page" href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Pustaka</p>
+<h1>Bahasa lain (FFI)</h1>
+<p class="ringkas">Memanggil C, C++, Rust, Go, Python, JavaScript, PHP, Lua, Java, Kotlin, .NET, dan WebAssembly dari JRG.</p>
+<p>Semua pintu ke bahasa lain menjawab <code>Result</code>: pustakanya bisa saja tidak terpasang, dan itu kegagalan yang wajar ditangani.</p>
+<h2 id="c-rust-dan-go"><a class="jangkar" href="#c-rust-dan-go">C, Rust, dan Go</a></h2>
+<p>Deklarasikan tanda tangannya di blok <code>extern &quot;C&quot;</code>, lalu panggil seperti fungsi biasa. Nama pustaka boleh disebut.</p>
+<figure class="kode"><figcaption><span>c.jrg</span><span class="lokal" title="Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban">jalankan dengan jrgc</span></figcaption><pre><code><span class="k-kunci">extern</span> <span class="k-str">&quot;C&quot;</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">abs</span>(n: <span class="k-tipe">i32</span>) -&gt; <span class="k-tipe">i32</span>
+    <span class="k-kunci">fn</span> <span class="k-fn">strlen</span>(s: <span class="k-tipe">string</span>) -&gt; <span class="k-tipe">usize</span>
+}
+
+<span class="k-fn">wok</span>(<span class="k-fn">abs</span>(-<span class="k-ang">17</span>), <span class="k-fn">strlen</span>(<span class="k-str">&quot;halo&quot;</span>))</code></pre><pre class="keluaran"><code>Result::Ok(17) Result::Ok(4)</code></pre></figure>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">extern</span> <span class="k-str">&quot;C&quot;</span> <span class="k-str">&quot;libm.so.6&quot;</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">pow</span>(basis: <span class="k-tipe">f64</span>, pangkat: <span class="k-tipe">f64</span>) -&gt; <span class="k-tipe">f64</span>
+}
+<span class="k-kunci">extern</span> <span class="k-str">&quot;C&quot;</span> <span class="k-str">&quot;./libhitung.so&quot;</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">proses</span>(data: *<span class="k-kunci">mut</span> <span class="k-tipe">i32</span>, n: <span class="k-tipe">i32</span>) -&gt; <span class="k-tipe">i32</span>
+}</code></pre></figure>
+<p>Rust (<code>#[no_mangle] pub extern &quot;C&quot; fn</code>) dan Go (<code>-buildmode=c-shared</code> dengan <code>//export</code>) menghasilkan simbol C biasa, jadi dipanggil dengan cara yang sama.</p>
+<h2 id="c"><a class="jangkar" href="#c">C++</a></h2>
+<p><code>extern &quot;C++&quot;</code> menghitung sendiri nama simbol C++ (<em>mangling</em>) dari tanda tangannya, jadi pustaka C++ bisa dipanggil tanpa membungkusnya. Fungsi di dalam namespace ditulis dengan jalurnya.</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">extern</span> <span class="k-str">&quot;C++&quot;</span> <span class="k-str">&quot;./libmilik.so&quot;</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">add</span>(a: <span class="k-tipe">i32</span>, b: <span class="k-tipe">i32</span>) -&gt; <span class="k-tipe">i32</span>
+    <span class="k-kunci">fn</span> <span class="k-ns">math</span>::<span class="k-fn">mul</span>(a: <span class="k-tipe">i32</span>, b: <span class="k-tipe">i32</span>) -&gt; <span class="k-tipe">i32</span>
+}</code></pre></figure>
+<h2 id="python"><a class="jangkar" href="#python">Python</a></h2>
+<p><code>py::</code> menjalankan Python di proses terpisah dan berbicara dengannya, jadi pustaka apa pun yang bisa di-<code>import</code> bisa dipakai: numpy, pandas, requests, PIL, dan seterusnya.</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">kali10</span>(x) { <span class="k-kunci">return</span> x * <span class="k-ang">10</span> }
+
+<span class="k-fn">wok</span>(<span class="k-ns">py</span>::<span class="k-fn">eval</span>(<span class="k-str">&quot;sum(range(10))&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">py</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;statistics&quot;</span>, <span class="k-str">&quot;median&quot;</span>, [<span class="k-ang">3</span>, <span class="k-ang">1</span>, <span class="k-ang">4</span>, <span class="k-ang">1</span>, <span class="k-ang">5</span>]))
+<span class="k-fn">wok</span>(<span class="k-ns">py</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;builtins&quot;</span>, <span class="k-str">&quot;list&quot;</span>, <span class="k-ns">py</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;builtins&quot;</span>, <span class="k-str">&quot;map&quot;</span>, kali10, [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>])?))
+
+<span class="k-kunci">let</span> himpunan = <span class="k-ns">py</span>::<span class="k-fn">eval</span>(<span class="k-str">&quot;{1, 2}&quot;</span>)?
+<span class="k-fn">wok</span>(<span class="k-fn">typeof</span>(himpunan), <span class="k-ns">py</span>::<span class="k-fn">method</span>(himpunan, <span class="k-str">&quot;issubset&quot;</span>, [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>]))</code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>Result::Ok(45)
+Result::Ok(3)
+Result::Ok([10, 20, 30])
+py:set Result::Ok(true)</code></pre></figure>
+<ul><li>Nilai yang punya padanan (angka, teks, list, dict) datang sebagai nilai JRG biasa. Yang tidak punya (set, objek, DataFrame) datang sebagai <strong>handle</strong>: method-nya bisa dipanggil (<code>df.head(5)</code>), ia bisa dioper lagi ke Python, dan dilepas sendiri saat tidak dipakai.</li><li><code>py::ref(kode)</code> meminta handle walau nilainya bisa dikonversi, supaya data besar tetap di sisi Python.</li><li>Fungsi JRG boleh jadi callback (<code>map</code>, <code>sorted(key=…)</code>, <code>df.apply</code>), juga dari thread Python lain.</li><li>Argumen bernama lewat <code>py::call_kw</code> dan <code>py::method_kw</code>.</li></ul>
+<h2 id="javascript-php-dan-lua"><a class="jangkar" href="#javascript-php-dan-lua">JavaScript, PHP, dan Lua</a></h2>
+<p>Tiga-tiganya memakai mesin yang sama dengan <code>py::</code>, jadi aturannya sama: nilai atau handle, fungsi JRG sebagai callback, dan <code>Result</code> di setiap panggilan.</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ns">js</span>::<span class="k-fn">eval</span>(<span class="k-str">&quot;[1,2,3].map(x =&gt; x * 2)&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">js</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;path&quot;</span>, <span class="k-str">&quot;join&quot;</span>, <span class="k-str">&quot;a&quot;</span>, <span class="k-str">&quot;b&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">lua</span>::<span class="k-fn">eval</span>(<span class="k-str">&quot;1 + 2, &#x27;tiga&#x27;&quot;</span>), <span class="k-ns">lua</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;string.upper&quot;</span>, <span class="k-str">&quot;lua&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">php</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;array_map&quot;</span>, |x| x * <span class="k-ang">10</span>, [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>]))</code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>Result::Ok([2, 4, 6])
+Result::Ok(a/b)
+Result::Ok([3, tiga]) Result::Ok(LUA)
+Result::Ok([10, 20, 30])</code></pre></figure>
+<ul><li><code>js::</code> butuh Node. <code>Promise</code> ditunggu otomatis, jadi <code>fetch</code> dan pustaka async bisa dipakai apa adanya.</li><li><code>php::</code> butuh PHP 8. Peringatan PHP menjadi <code>Err</code>, <code>echo</code> dialihkan ke stderr, dan pustaka Composer dimuat dengan <code>php::require(&quot;vendor/autoload.php&quot;)</code>.</li><li><code>lua::</code> butuh Lua 5.3 ke atas.</li></ul>
+<h2 id="java-dan-kotlin"><a class="jangkar" href="#java-dan-kotlin">Java dan Kotlin</a></h2>
+<p><code>jvm::</code> memuat JVM dari JDK yang terpasang lewat JNI. Tanda tangan metode ditulis sebagai deskriptor JNI, persis seperti yang dicetak <code>javap -s</code>.</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">jvm</span>::<span class="k-fn">mulai</span>([<span class="k-str">&quot;-Djava.class.path=./kelas&quot;</span>])
+<span class="k-fn">wok</span>(<span class="k-ns">jvm</span>::<span class="k-fn">panggil_statis</span>(<span class="k-str">&quot;java.lang.Math&quot;</span>, <span class="k-str">&quot;abs&quot;</span>, <span class="k-str">&quot;(I)I&quot;</span>, [-<span class="k-ang">17</span>]))
+
+<span class="k-kunci">let</span> sb = <span class="k-ns">jvm</span>::<span class="k-fn">baru</span>(<span class="k-str">&quot;java.lang.StringBuilder&quot;</span>, <span class="k-str">&quot;()V&quot;</span>)?
+<span class="k-ns">jvm</span>::<span class="k-fn">panggil</span>(sb, <span class="k-str">&quot;append&quot;</span>, <span class="k-str">&quot;(Ljava/lang/String;)Ljava/lang/StringBuilder;&quot;</span>, [<span class="k-str">&quot;halo&quot;</span>])?
+<span class="k-fn">wok</span>(<span class="k-ns">jvm</span>::<span class="k-fn">ke_teks</span>(sb))
+<span class="k-ns">jvm</span>::<span class="k-fn">lepas</span>(sb)</code></pre></figure>
+<p><code>kotlin::</code> menerjemahkan aturan nama Kotlin ke JVM: fungsi tingkat atas (<code>kotlin::fungsi(&quot;Hitung&quot;, &quot;tambah&quot;, …)</code>), <code>object</code> (<code>kotlin::objek</code>), properti (<code>kotlin::properti</code>), dan companion.</p>
+<h2 id="net"><a class="jangkar" href="#net">.NET</a></h2>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">dotnet</span>::<span class="k-fn">mulai</span>(<span class="k-str">&quot;./App.runtimeconfig.json&quot;</span>)
+<span class="k-kunci">let</span> tambah = <span class="k-ns">dotnet</span>::<span class="k-fn">fungsi</span>(<span class="k-str">&quot;./App.dll&quot;</span>, <span class="k-str">&quot;UjiJrg, App&quot;</span>, <span class="k-str">&quot;Tambah&quot;</span>, [<span class="k-str">&quot;i32&quot;</span>, <span class="k-str">&quot;i32&quot;</span>], <span class="k-str">&quot;i32&quot;</span>)?
+<span class="k-fn">wok</span>(<span class="k-ns">dotnet</span>::<span class="k-fn">panggil</span>(tambah, [<span class="k-ang">2</span>, <span class="k-ang">3</span>]))</code></pre></figure>
+<p>Metode yang dipanggil harus bertanda <code>[UnmanagedCallersOnly]</code>; sesudah itu ia diperlakukan seperti fungsi C.</p>
+<h2 id="webassembly"><a class="jangkar" href="#webassembly">WebAssembly</a></h2>
+<p><code>wasm::</code> menjalankan modul <code>.wasm</code> dengan interpreter yang ada di dalam JRG sendiri. Modulnya cuma bisa menyentuh memorinya sendiri, jadi cocok untuk menjalankan kode dari luar yang tidak sepenuhnya dipercaya.</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">let</span> m = <span class="k-ns">wasm</span>::<span class="k-fn">muat</span>(<span class="k-str">&quot;modul.wasm&quot;</span>)?
+<span class="k-fn">wok</span>(<span class="k-ns">wasm</span>::<span class="k-fn">ekspor</span>(m))
+<span class="k-fn">wok</span>(<span class="k-ns">wasm</span>::<span class="k-fn">panggil</span>(m, <span class="k-str">&quot;fib&quot;</span>, [<span class="k-ang">20</span>]))
+<span class="k-ns">wasm</span>::<span class="k-fn">tulis_memori</span>(m, <span class="k-ang">200</span>, <span class="k-str">&quot;halo&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">wasm</span>::<span class="k-fn">baca_memori</span>(m, <span class="k-ang">200</span>, <span class="k-ang">4</span>))</code></pre></figure>
+<p>Fitur WASM yang belum didukung (impor, <code>call_indirect</code>, SIMD) ditolak saat dimuat, dengan nama fiturnya.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="game.html"><small>Sebelumnya</small><strong>Mesin game</strong></a><a class="ke-kanan" href="jrgc.html"><small>Berikutnya</small><strong>jrgc</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#c-rust-dan-go">C, Rust, dan Go</a></li><li><a href="#c">C++</a></li><li><a href="#python">Python</a></li><li><a href="#javascript-php-dan-lua">JavaScript, PHP, dan Lua</a></li><li><a href="#java-dan-kotlin">Java dan Kotlin</a></li><li><a href="#net">.NET</a></li><li><a href="#webassembly">WebAssembly</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

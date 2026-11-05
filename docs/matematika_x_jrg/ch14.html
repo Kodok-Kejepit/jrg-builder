@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logaritma — Matematika × JRG</title>
+<meta name="description" content="Kalau eksponen bertanya &quot;2 dipangkatkan 5 hasilnya berapa?&quot;, logaritma bertanya kebalikannya: &quot;2 harus dipangkatkan berapa supaya hasilnya 32?&quot; Jawabannya: 5. Itulah log₂(32) = 5.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="mtk">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a class="aktif" aria-current="page" href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel kelas" data-bab="ch14">
+<p class="rel">Bab 14 · Matematika Terapan</p>
+<h1>Logaritma</h1>
+<p class="ringkas">Kalau eksponen bertanya "2 dipangkatkan 5 hasilnya berapa?", logaritma bertanya kebalikannya: "2 harus dipangkatkan berapa supaya hasilnya 32?" Jawabannya: 5. Itulah <code>log₂(32) = 5</code>.</p>
+
+<h2 id="logaritma-pertanyaan-kebalikan-pangkat"><span class="lencana">Konsep</span>Logaritma = pertanyaan kebalikan pangkat</h2>
+<div class="rumus"><div class="rumus-persamaan">log_b(x) = y &nbsp;&nbsp;⟺&nbsp;&nbsp; b^y = x</div><div class="rumus-langkah">log₂(8) = 3, karena 2³ = 8</div><div class="rumus-langkah">log₁₀(1000) = 3, karena 10³ = 1000</div></div>
+<aside class="catatan catatan-info"><p class="catatan-judul">Dua jenis log yang paling sering ditulis tanpa basis</p><div><code>log(x)</code> tanpa keterangan biasanya berarti basis 10 (log umum). <code>ln(x)</code> berarti basis <em>e</em>≈2.718 (log natural, dipakai di kalkulus &amp; sains). Di ilmu komputer, <code>log₂(x)</code> paling sering muncul.</div></aside>
+<h2 id="tiga-aturan-log-yang-wajib-dihafal">Tiga aturan log yang wajib dihafal</h2>
+<div class="tabel"><table><thead><tr><th>Aturan</th><th>Rumus</th></tr></thead><tbody><tr><td>Perkalian → penjumlahan</td><td>log(a×b) = log(a) + log(b)</td></tr><tr><td>Pembagian → pengurangan</td><td>log(a÷b) = log(a) − log(b)</td></tr><tr><td>Pangkat → perkalian</td><td>log(aⁿ) = n × log(a)</td></tr></tbody></table></div>
+<aside class="catatan catatan-warn"><p class="catatan-judul">Kesalahan umum</p><div><code>log(a+b) ≠ log(a)+log(b)</code> — aturan penjumlahan HANYA berlaku untuk perkalian di dalam log, bukan penjumlahan di dalam log. Tidak ada rumus sederhana untuk log dari penjumlahan.</div></aside>
+<h2 id="kenapa-log-penting-di-ilmu-komputer">Kenapa log₂ penting di ilmu komputer?</h2>
+<p>Log₂ menjawab "berapa kali kita bisa membagi dua sebelum habis" — dan itu persis yang terjadi pada <strong>pencarian biner (binary search)</strong>, struktur yang jauh lebih cepat daripada memeriksa satu-satu.</p>
+<div class="rumus"><div class="rumus-persamaan">Mencari 1 nama di antara 1.000.000 nama terurut</div><div class="rumus-langkah">Cek satu-satu: sampai 1.000.000 langkah (skenario terburuk)</div><div class="rumus-langkah">Binary search: hanya ≈log₂(1.000.000) ≈ <span>20 langkah</span></div></div>
+<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Berapa nilai log₁₀(100)?</p>
+      <p><strong>2.</strong> Sederhanakan: log(20) − log(4)</p>
+      <div class="math-box">
+        <div class="math-step"><span>Jawaban 1:</span> 2 (karena 10²=100)</div>
+        <div class="math-step"><span>Jawaban 2:</span> log(20/4) = log(5)</div>
+      </div></div></details>
+<h2 id="menghitung-log-di-jrg"><span class="lencana">Kode JRG</span>Menghitung log di JRG</h2>
+<figure class="kode" data-jalan><figcaption><span>logaritma.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;log10(1000) =&quot;</span>, <span class="k-ns">math</span>::<span class="k-fn">log10</span>(<span class="k-ang">1000.0</span>))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;log2(1024) =&quot;</span>, <span class="k-ns">math</span>::<span class="k-fn">log2</span>(<span class="k-ang">1024.0</span>))
+
+    <span class="k-kom">// Perkiraan langkah binary search untuk n data</span>
+    <span class="k-kunci">let</span> n = <span class="k-ang">1000000.0</span>
+    <span class="k-kunci">let</span> langkah = <span class="k-ns">math</span>::<span class="k-fn">ceil</span>(<span class="k-ns">math</span>::<span class="k-fn">log2</span>(n))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Estimasi langkah binary search:&quot;</span>, langkah)
+}</code></pre><pre class="keluaran"><code>log10(1000) = 3.0
+log2(1024) = 10.0
+Estimasi langkah binary search: 20.0</code></pre></figure>
+<aside class="catatan catatan-real"><p class="catatan-judul">Skala logaritmik di sekitar kita</p><div>Desibel (kekerasan suara), skala Richter (kekuatan gempa), dan pH (keasaman) semuanya logaritmik. Gempa magnitudo 6 bukan "2× lebih kuat" dari magnitudo 3 — melainkan sekitar 1000× lebih kuat, karena skalanya logaritmik.</div></aside>
+<div class="kuis" data-kuis="q14_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">log₂(16) = ?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>8</button><button type="button" data-benar="1"><span>B</span>4</button><button type="button" data-benar="0"><span>C</span>2</button></div><p class="kuis-umpan benar" hidden>Tepat! 2⁴=16, jadi log₂(16)=4.</p><p class="kuis-umpan salah" hidden>Tanya: 2 dipangkatkan berapa supaya hasilnya 16?</p></div>
+<div class="kuis" data-kuis="q14_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">log(6) + log(2) sama dengan...</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span>log(12)</button><button type="button" data-benar="0"><span>B</span>log(8)</button><button type="button" data-benar="0"><span>C</span>log(3)</button></div><p class="kuis-umpan benar" hidden>Benar! Aturan penjumlahan log → perkalian di dalam: log(6×2)=log(12).</p><p class="kuis-umpan salah" hidden>Ingat aturan: log(a)+log(b) = log(a×b).</p></div>
+<div class="kuis" data-kuis="q14_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Kenapa log₂ sering dipakai di ilmu komputer?</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span>Karena banyak algoritma membagi data jadi dua bagian berulang</button><button type="button" data-benar="0"><span>B</span>Karena komputer hanya paham angka 2</button><button type="button" data-benar="0"><span>C</span>Tidak ada alasan khusus</button></div><p class="kuis-umpan benar" hidden>Tepat! Seperti binary search yang membagi dua data terus-menerus.</p><p class="kuis-umpan salah" hidden>Ingat contoh binary search di atas.</p></div>
+<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke Bab 15</p><div>Selanjutnya: probabilitas — seberapa "mungkin" suatu kejadian terjadi, dan bagaimana menghitungnya dengan tepat (bukan sekadar tebak-tebakan).</div></aside>
+
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="ch13.html"><small>Bab sebelumnya</small><strong>Eksponen &amp; Akar</strong></a><a class="ke-kanan" href="ch15.html"><small>Bab berikutnya</small><strong>Probabilitas</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+<script src="../aset/kelas-data.js"></script>
+<script src="../aset/kelas.js"></script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pasang — Dokumentasi JRG</title>
+<meta name="description" content="Pakai biner siap jadi, atau bangun sendiri dari sumber. Keduanya menghasilkan dua program, jrgc dan jrgm.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a class="aktif" aria-current="page" href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Mulai</p>
+<h1>Pasang</h1>
+<p class="ringkas">Pakai biner siap jadi, atau bangun sendiri dari sumber. Keduanya menghasilkan dua program, jrgc dan jrgm.</p>
+<p>Sesudah terpasang kamu punya dua perintah:</p>
+<ul><li><code>jrgc</code> menjalankan, memeriksa, dan mengompilasi berkas <code>.jrg</code>. Tanpa argumen ia membuka REPL.</li><li><code>jrgm</code> mengurus proyek: membuat, menjalankan, menguji, mengatur dependensi, sampai membungkus APK.</li></ul>
+<h2 id="biner-siap-pakai"><a class="jangkar" href="#biner-siap-pakai">Biner siap pakai</a></h2>
+<p>Rilis untuk Linux (x86_64, aarch64), macOS (Intel, Apple Silicon), Windows, dan Termux ada di halaman <a href="https://github.com/Kodok-Kejepit/jrg/releases">Releases</a>. Di Linux, macOS, dan Termux, pemasangnya mengunduh berkas yang cocok, memeriksa checksum-nya, lalu menaruh <code>jrgc</code> dan <code>jrgm</code> di <code>~/.local/bin</code> (di Termux: <code>$PREFIX/bin</code>):</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>curl -fsSL https://raw.githubusercontent.com/Kodok-Kejepit/jrg/main/rilis/pasang.sh | sh
+
+<span class="k-kom"># versi tertentu, atau folder lain</span>
+sh pasang.sh --versi 0.2.0 --ke /usr/local/bin</code></pre></figure>
+<p>Pastikan <code>~/.local/bin</code> ada di <code>PATH</code>, lalu periksa:</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc --version</code></pre></figure>
+<h2 id="dari-sumber"><a class="jangkar" href="#dari-sumber">Dari sumber</a></h2>
+<p>Yang dibutuhkan cuma <a href="https://rustup.rs">Rust</a> versi stabil.</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>git clone https://github.com/Kodok-Kejepit/jrg
+cd jrg
+cargo build --release
+./target/release/jrgc --version
+
+<span class="k-kom"># pasang ke ~/.cargo/bin</span>
+cargo install --path .</code></pre></figure>
+<p>Build pertama memakan beberapa menit dan sekitar 2 GB memori. Kalau mesinmu kecil, batasi jumlah pekerjanya: <code>cargo build --release -j 1</code>.</p>
+<h2 id="termux-android"><a class="jangkar" href="#termux-android">Termux (Android)</a></h2>
+<p>Perintah pemasang yang sama jalan di Termux. Pemasangnya mengenali Termux dan memakai biner Android, karena biner Linux biasa tidak jalan di sana.</p>
+<p>Kalau mau membangun sendiri:</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>pkg install rust git
+git clone https://github.com/Kodok-Kejepit/jrg
+cd jrg
+cargo build --release -j 1</code></pre></figure>
+<p><code>-j 1</code> penting di HP: build paralel bisa kehabisan memori di tahap optimisasi.</p>
+<h2 id="yang-opsional"><a class="jangkar" href="#yang-opsional">Yang opsional</a></h2>
+<p>JRG jalan tanpa apa pun di bawah ini. Masing-masing cuma dibutuhkan fitur tertentu.</p>
+<div class="tabel"><table><thead><tr><th>Fitur</th><th>Butuh</th></tr></thead><tbody><tr><td>mesin native (<code>--emit-llvm</code>)</td><td><code>clang</code>; kalau JRG dibangun dari sumber, juga toolchain Rust untuk membangun runtime-nya sekali</td></tr><tr><td><code>py::</code></td><td><code>python3</code></td></tr><tr><td><code>js::</code></td><td><code>node</code></td></tr><tr><td><code>php::</code></td><td><code>php</code> 8.0 ke atas</td></tr><tr><td><code>lua::</code></td><td><code>lua</code> 5.3 ke atas</td></tr><tr><td><code>jvm::</code>, <code>kotlin::</code></td><td>JDK (<code>libjvm.so</code>)</td></tr><tr><td><code>dotnet::</code></td><td>runtime .NET, misalnya <code>dotnet-sdk-8.0</code> (<code>libhostfxr</code>)</td></tr><tr><td><code>dok::db_*</code> (SQLite)</td><td><code>libsqlite3</code></td></tr><tr><td><code>suara::</code> (memutar bunyi)</td><td>PulseAudio atau PipeWire</td></tr><tr><td>jendela <code>Canvas</code></td><td>build dengan <code>--features canvas</code></td></tr><tr><td><code>jrgm apk</code></td><td>Android SDK dan NDK, atau <code>jrgm siapkan android</code></td></tr></tbody></table></div>
+<h2 id="berkas-pertama"><a class="jangkar" href="#berkas-pertama">Berkas pertama</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>echo &#x27;wok(&quot;halo&quot;)&#x27; &gt; halo.jrg
+jrgc halo.jrg</code></pre></figure>
+<p>Lanjut ke <a href="tur.html">Tur singkat</a>.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="index.html"><small>Sebelumnya</small><strong>Pengantar</strong></a><a class="ke-kanan" href="tur.html"><small>Berikutnya</small><strong>Tur singkat</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#biner-siap-pakai">Biner siap pakai</a></li><li><a href="#dari-sumber">Dari sumber</a></li><li><a href="#termux-android">Termux (Android)</a></li><li><a href="#yang-opsional">Yang opsional</a></li><li><a href="#berkas-pertama">Berkas pertama</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

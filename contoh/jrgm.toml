@@ -1,0 +1,15 @@
+[package]
+name        = "contoh"
+version     = "0.1.0"
+edition     = "jrg2025"
+entry       = "src/main.jrg"
+
+[dependencies]
+std = { version = "0.1" }
+
+# Package Python yang dipakai lewat py::import/py::call/py::call_kw.
+# jrgm juga men-scan src/main.jrg otomatis dan menambah apa pun yang
+# terdeteksi di sana — baris ini untuk kasus yang scan tidak bisa
+# tangkap (mis. py::exec("import ...")) atau supaya eksplisit.
+# [python]
+# packages = ["requests", "numpy"]

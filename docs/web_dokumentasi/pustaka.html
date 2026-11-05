@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pustaka bawaan — Dokumentasi JRG</title>
+<meta name="description" content="864 fungsi bawaan dalam namespace, ditambah 14 modul std/ yang ditulis dalam JRG.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a class="aktif" aria-current="page" href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Pustaka</p>
+<h1>Pustaka bawaan</h1>
+<p class="ringkas">864 fungsi bawaan dalam namespace, ditambah 14 modul std/ yang ditulis dalam JRG.</p>
+<h2 id="menemukan-fungsi"><a class="jangkar" href="#menemukan-fungsi">Menemukan fungsi</a></h2>
+<p>Tidak perlu menghafal. Dari terminal:</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc --cari sort
+arr::sort
+arr::sort_by
+arr::sort_by_key
+arr::sort_desc
+heap::to_sorted_array
+wokwok::argsort
+wokwok::sort
+$ jrgc --doc arr::sort_by_key
+arr::sort_by_key(a, f) -&gt; array
+  Salinan terurut menaik menurut `f(x)`; `f` dipanggil sekali per elemen.</code></pre></figure>
+<p>Di REPL perintahnya <code>:cari</code> dan <code>:doc</code>. Salah ketik nama fungsi dijawab dengan saran ("maksudnya <code>upper</code>?").</p>
+<p>Kebanyakan fungsi <code>arr::</code> dan <code>str::</code> juga bisa dipanggil sebagai method: <code>arr::sort(a)</code> sama dengan <code>a.sort()</code>.</p>
+<h2 id="contoh-sehari-hari"><a class="jangkar" href="#contoh-sehari-hari">Contoh sehari-hari</a></h2>
+<figure class="kode"><figcaption><span>sehari.jrg</span><span class="lokal" title="Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban">jalankan dengan jrgc</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ns">math</span>::<span class="k-fn">sqrt</span>(<span class="k-ang">16.0</span>), <span class="k-ns">math</span>::<span class="k-fn">gcd</span>(<span class="k-ang">12</span>, <span class="k-ang">18</span>), <span class="k-ns">math</span>::<span class="k-fn">round</span>(<span class="k-ang">2.567</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">arr</span>::<span class="k-fn">unique</span>([<span class="k-ang">1</span>, <span class="k-ang">1</span>, <span class="k-ang">2</span>]), <span class="k-ns">arr</span>::<span class="k-fn">chunks</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>, <span class="k-ang">4</span>, <span class="k-ang">5</span>], <span class="k-ang">2</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">title</span>(<span class="k-str">&quot;budi santoso&quot;</span>), <span class="k-ns">str</span>::<span class="k-fn">words</span>(<span class="k-str">&quot;satu dua  tiga&quot;</span>))
+
+<span class="k-kunci">let</span> j = <span class="k-ns">json</span>::<span class="k-fn">parse</span>(<span class="k-str">&quot;{\&quot;nama\&quot;: \&quot;Ani\&quot;, \&quot;nilai\&quot;: [90, 85]}&quot;</span>)
+<span class="k-fn">wok</span>(j[<span class="k-str">&quot;nama&quot;</span>], j[<span class="k-str">&quot;nilai&quot;</span>][<span class="k-ang">1</span>], <span class="k-ns">json</span>::<span class="k-fn">stringify</span>({<span class="k-str">&quot;ok&quot;</span>: <span class="k-kunci">true</span>}))
+
+<span class="k-fn">wok</span>(<span class="k-ns">re</span>::<span class="k-fn">test</span>(<span class="k-str">&quot;[0-9]+&quot;</span>, <span class="k-str">&quot;kode 4521&quot;</span>), <span class="k-ns">re</span>::<span class="k-fn">replace_all</span>(<span class="k-str">&quot;[0-9]&quot;</span>, <span class="k-str">&quot;x9y8&quot;</span>, <span class="k-str">&quot;#&quot;</span>))
+
+<span class="k-ns">fs</span>::<span class="k-fn">write</span>(<span class="k-str">&quot;catatan.txt&quot;</span>, <span class="k-str">&quot;baris satu\nbaris dua\n&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">fs</span>::<span class="k-fn">read_lines</span>(<span class="k-str">&quot;catatan.txt&quot;</span>), <span class="k-ns">fs</span>::<span class="k-fn">size</span>(<span class="k-str">&quot;catatan.txt&quot;</span>))
+<span class="k-ns">fs</span>::<span class="k-fn">delete</span>(<span class="k-str">&quot;catatan.txt&quot;</span>)
+
+<span class="k-fn">wok</span>(<span class="k-ns">crypto</span>::<span class="k-fn">sha256</span>(<span class="k-str">&quot;halo&quot;</span>)[<span class="k-ang">0</span>:<span class="k-ang">16</span>], <span class="k-ns">crypto</span>::<span class="k-fn">base64_encode</span>(<span class="k-str">&quot;JRG&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">time</span>::<span class="k-fn">format</span>(<span class="k-ang">0</span>, <span class="k-str">&quot;%d/%m/%Y %H:%M&quot;</span>))</code></pre><pre class="keluaran"><code>4.0 6 3.0
+[1, 2] [[1, 2], [3, 4], [5]]
+Budi Santoso [satu, dua, tiga]
+Ani 85 {&quot;ok&quot;:true}
+true x#y#
+[baris satu, baris dua] 21
+a4e63bcacf6c172a SlJH
+01/01/1970 00:00</code></pre></figure>
+<h2 id="namespace"><a class="jangkar" href="#namespace">Namespace</a></h2>
+<div class="tabel"><table><thead><tr><th>Namespace</th><th>Isi</th></tr></thead><tbody><tr><td><code>str::</code> (52)</td><td>teks: potong, cari, ganti, pecah, format, ubah huruf, isi kiri/kanan</td></tr><tr><td><code>arr::</code> (65)</td><td>array: urut, saring, petakan, lipat, kelompokkan, potong-potong, zip</td></tr><tr><td><code>dict::</code> (14)</td><td>dict: ambil, set, gabung, kunci, nilai</td></tr><tr><td><code>math::</code> (41)</td><td>trigonometri, akar, pangkat, pembulatan, FPB/KPK, faktorial, aritmetika membungkus</td></tr><tr><td><code>fs::</code> (34), <code>file::</code> (7)</td><td>berkas dan folder; versi <code>try_</code> menjawab <code>Result</code></td></tr><tr><td><code>time::</code> (12)</td><td>waktu sekarang (milidetik), format tanggal, tidur</td></tr><tr><td><code>rand::</code> (6)</td><td>angka acak, pilih acak, kocok</td></tr><tr><td><code>json::</code> (9)</td><td>baca dan tulis JSON</td></tr><tr><td><code>re::</code> (8)</td><td>ekspresi reguler</td></tr><tr><td><code>crypto::</code> (20)</td><td>SHA, MD5, HMAC, AES, base64, hex</td></tr><tr><td><code>env::</code> (5)</td><td>argumen program dan variabel lingkungan</td></tr><tr><td><code>proses::</code> (11)</td><td>menjalankan program lain</td></tr><tr><td><code>term::</code> (9)</td><td>terminal: mode mentah, membaca tombol, ukuran layar</td></tr><tr><td><code>http::</code> (8)</td><td>klien HTTP dan HTTPS, unduh ke berkas</td></tr><tr><td><code>dok::</code> (123)</td><td>server web, router, cookie, sesi, template, WebSocket, TCP/UDP, SQLite, log, statistik</td></tr><tr><td><code>canvas::</code> (57)</td><td>menggambar: bentuk, teks, gambar PNG, transformasi, jendela</td></tr><tr><td><code>suara::</code> (11)</td><td>membuat, menyimpan, dan memutar bunyi</td></tr><tr><td><code>wokwok::</code> (86)</td><td>array numerik n-dimensi yang cepat</td></tr><tr><td><code>chan::</code>, <code>future::</code>, <code>task::</code>, <code>atomic::</code>, <code>mutex::</code></td><td>konkurensi</td></tr><tr><td><code>ptr::</code> (11), <code>jawa::</code> (21), <code>jawir::</code> (2)</td><td>pegangan bersama, dan alokasi manual yang diperiksa</td></tr><tr><td><code>py::</code> <code>js::</code> <code>php::</code> <code>lua::</code> <code>jvm::</code> <code>kotlin::</code> <code>dotnet::</code> <code>wasm::</code></td><td>bahasa lain, lihat <a href="ffi.html">FFI</a></td></tr><tr><td><code>fmt::</code> (5)</td><td>mencetak dan merangkai teks</td></tr></tbody></table></div>
+<p>Fungsi tanpa namespace yang paling sering dipakai: <code>wok</code>, <code>wok_</code>, <code>eprint</code>, <code>tok</code>, <code>len</code>, <code>typeof</code>, <code>str</code>, <code>int</code>, <code>float</code>, <code>range</code>, <code>enumerate</code>, <code>zip</code>, <code>assert</code>, <code>assert_eq</code>, <code>panik</code>, <code>exit</code>, <code>sleep</code>, <code>terap</code>.</p>
+<h2 id="modul-std"><a class="jangkar" href="#modul-std">Modul std/</a></h2>
+<p>Modul ini ditulis dalam JRG dan tertanam di <code>jrgc</code>. Pakai dengan <code>import &quot;std/nama&quot;</code>.</p>
+<div class="tabel"><table><thead><tr><th>Modul</th><th>Gunanya</th></tr></thead><tbody><tr><td><code>set</code></td><td>himpunan: cek keanggotaan cepat, gabungan, irisan</td></tr><tr><td><code>queue</code></td><td>antrean (masuk belakang, keluar depan)</td></tr><tr><td><code>deque</code></td><td>antrean dua ujung</td></tr><tr><td><code>heap</code></td><td>antrean prioritas, ambil yang terkecil</td></tr><tr><td><code>csv</code></td><td>membaca dan menulis CSV dengan aturan tanda kutip yang benar</td></tr><tr><td><code>path</code></td><td>jalur berkas: ekstensi, nama tanpa ekstensi, normalisasi <code>.</code> dan <code>..</code></td></tr><tr><td><code>functional</code></td><td><code>compose</code>, <code>pipe</code>, <code>partial</code>, <code>curry2</code>, <code>memoize</code>, <code>once</code></td></tr><tr><td><code>teks</code></td><td>satu kosakata untuk array dan teks, ramah pemula</td></tr><tr><td><code>uang</code></td><td>hitungan uang tanpa pecahan float, format Rupiah</td></tr><tr><td><code>tabel</code></td><td>mencetak data berkolom yang lurus</td></tr><tr><td><code>option</code>, <code>result</code></td><td>fungsi bantu untuk <code>Option</code> dan <code>Result</code></td></tr><tr><td><code>iterator</code></td><td>iterator malas</td></tr><tr><td><code>testing</code></td><td>kumpulan pemeriksaan yang dilaporkan sekaligus</td></tr><tr><td><code>mesin</code></td><td>mesin game 2D (12 modul), lihat <a href="game.html">Mesin game</a></td></tr></tbody></table></div>
+<figure class="kode" data-jalan><figcaption><span>uang.jrg</span></figcaption><pre><code><span class="k-kunci">import</span> <span class="k-str">&quot;std/uang&quot;</span>
+<span class="k-kunci">import</span> <span class="k-str">&quot;std/tabel&quot;</span>
+
+<span class="k-kunci">let</span> harga = <span class="k-ns">uang</span>::<span class="k-fn">rupiah</span>(<span class="k-ang">19999.5</span>)
+<span class="k-fn">wok</span>(harga.<span class="k-fn">rupiah</span>(), harga.<span class="k-fn">kali</span>(<span class="k-ang">3</span>).<span class="k-fn">rupiah</span>())
+
+<span class="k-kunci">var</span> t = <span class="k-ns">tabel</span>::<span class="k-fn">baru</span>([<span class="k-str">&quot;barang&quot;</span>, <span class="k-str">&quot;jumlah&quot;</span>]).<span class="k-fn">rata_kanan</span>(<span class="k-ang">1</span>)
+t = t.<span class="k-fn">baris_baru</span>([<span class="k-str">&quot;kopi&quot;</span>, <span class="k-ang">3</span>]).<span class="k-fn">baris_baru</span>([<span class="k-str">&quot;teh manis&quot;</span>, <span class="k-ang">12</span>])
+<span class="k-fn">wok</span>(t)</code></pre><pre class="keluaran"><code>Rp 19.999,50 Rp 59.998,50
+barang     jumlah
+---------  ------
+kopi            3
+teh manis      12</code></pre></figure>
+<p>Berkas <code>.jrg</code> milikmu sendiri menang atas nama ini: kalau ada <code>set.jrg</code> di folder program, <code>import &quot;set&quot;</code> memuat berkas itu, sedangkan <code>import &quot;std/set&quot;</code> tetap memuat pustaka standar.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="konkuren.html"><small>Sebelumnya</small><strong>Konkurensi</strong></a><a class="ke-kanan" href="web.html"><small>Berikutnya</small><strong>Web dan data</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#menemukan-fungsi">Menemukan fungsi</a></li><li><a href="#contoh-sehari-hari">Contoh sehari-hari</a></li><li><a href="#namespace">Namespace</a></li><li><a href="#modul-std">Modul std/</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

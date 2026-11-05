@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JawaRustGo++ — bahasa pemrograman</title>
+<meta name="description" content="JawaRustGo++ (JRG): bahasa pemrograman dengan pesan galat berbahasa Indonesia, tiga mesin eksekusi, dan kelas matematika dari nol.">
+<link rel="icon" type="image/png" sizes="96x96" href="aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="aset/favicon.png">
+<link rel="apple-touch-icon" href="aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="beranda">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <a class="merek" href="index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a href="web_dokumentasi/index.html">Dokumentasi</a><a href="matematika_x_jrg/index.html">Matematika × JRG</a><a href="profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<main id="isi" class="beranda">
+<section class="pahlawan">
+  <div>
+    <span class="label-versi">JRG 0.2.0</span>
+    <h1 class="judul-gambar"><img class="terang-saja" src="aset/hero.png" alt="JRG++, bahasa pemrograman Indonesia" width="550" height="142"><img class="gelap-saja" src="aset/hero-gelap.png" alt="JRG++, bahasa pemrograman Indonesia" width="550" height="142"></h1>
+    <ul class="ciri-kecil" aria-label="Ciri JRG">
+      <li>Galat berbahasa Indonesia</li>
+      <li>Tiga mesin, satu hasil</li>
+      <li>Tanpa pengumpul sampah</li>
+      <li>864 fungsi bawaan</li>
+      <li>FFI ke 12 bahasa</li>
+      <li>Sampai ke Android</li>
+    </ul>
+    <p class="lead">JawaRustGo++ (JRG) adalah bahasa pemrograman dengan pesan galat berbahasa Indonesia. Ditulis dengan Rust,
+    bentuk kodenya mirip Rust dan Go. Satu program bisa dijalankan lewat interpreter, mesin virtual, atau dikompilasi
+    jadi program native, dan hasilnya sama.</p>
+    <div class="baris-tombol">
+      <a class="tombol" href="web_dokumentasi/pasang.html">Pasang JRG</a>
+      <a class="tombol biasa" href="web_dokumentasi/tur.html">Tur singkat</a>
+      <a class="tombol biasa" href="matematika_x_jrg/index.html">Belajar dari nol</a>
+    </div>
+  </div>
+  <div>
+<figure class="kode" data-jalan><figcaption><span>rapor.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Murid</span> { <span class="k-kunci">pub</span> nama: <span class="k-tipe">string</span>, <span class="k-kunci">pub</span> nilai: <span class="k-tipe">int</span> }
+
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> kelas = [
+        <span class="k-tipe">Murid</span> { nama: <span class="k-str">&quot;Ani&quot;</span>, nilai: <span class="k-ang">92</span> },
+        <span class="k-tipe">Murid</span> { nama: <span class="k-str">&quot;Budi&quot;</span>, nilai: <span class="k-ang">78</span> },
+        <span class="k-tipe">Murid</span> { nama: <span class="k-str">&quot;Citra&quot;</span>, nilai: <span class="k-ang">85</span> },
+    ]
+    <span class="k-kunci">for</span> _, m <span class="k-kunci">in</span> kelas.<span class="k-fn">filter</span>(|m| m.nilai &gt;= <span class="k-ang">80</span>) {
+        <span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;&quot;${m.nama} lulus dengan ${m.nilai}&quot;&quot;&quot;</span>)
+    }
+    <span class="k-kunci">let</span> rata = <span class="k-ns">arr</span>::<span class="k-fn">sum</span>(kelas.<span class="k-fn">map</span>(|m| m.nilai)) / <span class="k-fn">len</span>(kelas)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;rata-rata kelas:&quot;</span>, rata)
+}</code></pre><pre class="keluaran"><code>Ani lulus dengan 92
+Citra lulus dengan 85
+rata-rata kelas: 85</code></pre></figure>
+  </div>
+</section>
+
+<section class="bagian-beranda">
+  <h2>Dua pintu masuk</h2>
+  <p>Pilih sesuai kebutuhan. Bilah di atas tiap halaman memindahkanmu antara keduanya.</p>
+  <div class="kartu-kartu">
+    <a class="kartu" href="web_dokumentasi/index.html">
+      <h3>Dokumentasi</h3>
+      <p>Rujukan bahasa untuk yang sudah biasa memprogram: sintaks, tipe, pustaka, perkakas, FFI, dan cara kerja mesinnya.</p>
+      <span class="lanjut">Buka dokumentasi →</span>
+    </a>
+    <a class="kartu" href="matematika_x_jrg/index.html">
+      <h3>Matematika × JRG</h3>
+      <p>Kelas dari nol untuk yang belum pernah memprogram. 12 bab dasar JRG dan 20 bab matematika, lengkap dengan kuis dan kode yang bisa dijalankan di sini.</p>
+      <span class="lanjut">Mulai belajar →</span>
+    </a>
+  </div>
+</section>
+
+<section class="bagian-beranda">
+  <h2>Galat yang bisa dibaca</h2>
+  <p>Pesannya menyebut letak masalah, apa yang salah, dan jalan keluarnya.</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc harga.jrg
+kepentok di baris 2 waktu jalan. keterangannya di bawah.
+error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2, atau -1..-3 kalau mau hitung dari belakang)
+ --&gt; harga.jrg:2:5
+  |
+2 | wok(harga[3])
+  |     ^^^^^^^^</code></pre></figure>
+</section>
+
+<section class="bagian-beranda">
+  <h2>Isi kotaknya</h2>
+  <p>Yang kamu dapat sesudah memasang JRG.</p>
+  <div class="ciri">
+    <div><h3>Tiga mesin</h3><p>Interpreter untuk coba-coba, VM bytecode (<code>--vm</code>) yang lebih cepat, dan kompilasi native lewat LLVM (<code>--emit-llvm</code>).</p></div>
+    <div><h3>864 fungsi bawaan</h3><p>Teks, koleksi, berkas, waktu, JSON, regex, HTTP, SQLite, kanvas, suara, dan numerik. Cari dengan <code>jrgc --cari</code>.</p></div>
+    <div><h3>Pustaka std/</h3><p>14 modul (set, antrean, heap, CSV, uang, tabel…) plus mesin game 2D, semuanya ditulis dalam JRG.</p></div>
+    <div><h3>Bahasa lain</h3><p>Panggil C, C++, Rust, Go, Python, JavaScript, PHP, Lua, Java, Kotlin, .NET, dan WebAssembly.</p></div>
+    <div><h3>Proyek dan paket</h3><p><code>jrgm</code> membuat proyek, mengurus dependensi lewat git, menjalankan tes, merapikan, dan memeriksa kode.</p></div>
+    <div><h3>Sampai ke HP</h3><p>Bungkus program jadi APK Android dengan <code>jrgm apk</code>. Ada juga JRG IDE yang jalan di HP.</p></div>
+  </div>
+</section>
+
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="web_dokumentasi/pasang.html">Pasang</a> · <a href="web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="aset/cari.js"></script>
+<script src="aset/situs.js"></script>
+</body>
+</html>

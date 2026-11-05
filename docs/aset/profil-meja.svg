@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 44 432 432" role="img" aria-label="Meja kerja dengan laptop yang menampilkan kode JRG">
+  <defs>
+    <radialGradient id="ruang" cx="50%" cy="38%" r="75%">
+      <stop offset="0" stop-color="#2a221d"/>
+      <stop offset=".6" stop-color="#17130f"/>
+      <stop offset="1" stop-color="#0d0b09"/>
+    </radialGradient>
+    <radialGradient id="lampu" cx="18%" cy="8%" r="60%">
+      <stop offset="0" stop-color="#e0885c" stop-opacity=".38"/>
+      <stop offset=".45" stop-color="#a94f28" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#a94f28" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="meja" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5a3a26"/>
+      <stop offset=".25" stop-color="#3f281b"/>
+      <stop offset="1" stop-color="#1e140e"/>
+    </linearGradient>
+    <radialGradient id="pantul" cx="50%" cy="0%" r="60%">
+      <stop offset="0" stop-color="#9fc7ff" stop-opacity=".30"/>
+      <stop offset=".5" stop-color="#e0885c" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="badan" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a4a50"/>
+      <stop offset="1" stop-color="#26262b"/>
+    </linearGradient>
+    <linearGradient id="layar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#26241f"/>
+      <stop offset="1" stop-color="#1a1916"/>
+    </linearGradient>
+    <radialGradient id="cahayaLayar" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#ffd9b8" stop-opacity=".10"/>
+      <stop offset="1" stop-color="#ffd9b8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cangkir" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d9cfbf"/>
+      <stop offset=".6" stop-color="#f4efe4"/>
+      <stop offset="1" stop-color="#bfb3a1"/>
+    </linearGradient>
+    <clipPath id="isiLayar"><rect x="120" y="150" width="272" height="168" rx="6"/></clipPath>
+  </defs>
+
+  <!-- ruangan -->
+  <rect width="512" height="512" fill="url(#ruang)"/>
+  <rect width="512" height="512" fill="url(#lampu)"/>
+  <!-- jendela samar di dinding -->
+  <g opacity=".22" stroke="#e0885c" stroke-width="1.5" fill="none">
+    <rect x="356" y="58" width="96" height="74" rx="4"/>
+    <line x1="404" y1="58" x2="404" y2="132"/>
+    <line x1="356" y1="95" x2="452" y2="95"/>
+  </g>
+  <g fill="#f4efe4" opacity=".55">
+    <circle cx="378" cy="76" r="1.3"/><circle cx="430" cy="70" r="1"/><circle cx="440" cy="114" r="1.2"/><circle cx="388" cy="118" r="1"/>
+  </g>
+  <!-- lampu meja -->
+  <g>
+    <path d="M58 300 L74 196" stroke="#2c2622" stroke-width="7" stroke-linecap="round"/>
+    <path d="M74 196 L120 150" stroke="#2c2622" stroke-width="7" stroke-linecap="round"/>
+    <path d="M100 128 L156 140 L134 178 Z" fill="#a94f28"/>
+    <path d="M110 160 L144 166" stroke="#ffd9b8" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+    <ellipse cx="58" cy="304" rx="22" ry="6" fill="#2c2622"/>
+  </g>
+
+  <!-- meja -->
+  <path d="M0 330 L512 330 L512 512 L0 512 Z" fill="url(#meja)"/>
+  <path d="M0 330 L512 330" stroke="#7a5038" stroke-width="2" opacity=".8"/>
+  <ellipse cx="256" cy="336" rx="220" ry="60" fill="url(#pantul)"/>
+  <g stroke="#2a1b12" stroke-width="1.2" opacity=".55" fill="none">
+    <path d="M0 372 C 120 366, 260 380, 512 370"/>
+    <path d="M0 420 C 160 412, 330 430, 512 418"/>
+    <path d="M0 470 C 140 462, 300 478, 512 466"/>
+  </g>
+
+  <!-- laptop: layar -->
+  <rect x="108" y="138" width="296" height="192" rx="12" fill="#121214"/>
+  <rect x="108" y="138" width="296" height="192" rx="12" fill="none" stroke="#3a3a40" stroke-width="2"/>
+  <rect x="120" y="150" width="272" height="168" rx="6" fill="url(#layar)"/>
+  <g clip-path="url(#isiLayar)" font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace" font-size="12.5">
+    <rect x="120" y="150" width="272" height="20" fill="#1e1c18"/>
+    <circle cx="132" cy="160" r="3.2" fill="#e0885c"/>
+    <circle cx="143" cy="160" r="3.2" fill="#d8b56a"/>
+    <circle cx="154" cy="160" r="3.2" fill="#7dbb88"/>
+    <text x="250" y="164" fill="#9d978b" font-size="10" text-anchor="middle">halo.jrg</text>
+    <text x="130" y="190"><tspan fill="#77716a" font-style="italic">// bahasa kita sendiri</tspan></text>
+    <text x="130" y="208"><tspan fill="#e48a5a">pub fn</tspan><tspan fill="#f0d9a8"> main</tspan><tspan fill="#ece5d6">() {</tspan></text>
+    <text x="160" y="226"><tspan fill="#e48a5a">let</tspan><tspan fill="#ece5d6"> nama = </tspan><tspan fill="#a9c48a">"JRG++"</tspan></text>
+    <text x="160" y="244"><tspan fill="#e48a5a">for</tspan><tspan fill="#ece5d6"> _, i </tspan><tspan fill="#e48a5a">in</tspan><tspan fill="#d8b56a"> 1</tspan><tspan fill="#ece5d6">..=</tspan><tspan fill="#d8b56a">3</tspan><tspan fill="#ece5d6"> {</tspan></text>
+    <text x="190" y="262"><tspan fill="#f0d9a8">wok</tspan><tspan fill="#ece5d6">(</tspan><tspan fill="#a9c48a">"""halo, ${nama}!"""</tspan><tspan fill="#ece5d6">)</tspan></text>
+    <text x="160" y="280"><tspan fill="#ece5d6">}</tspan></text>
+    <text x="130" y="298"><tspan fill="#ece5d6">}</tspan><tspan fill="#ece5d6" opacity=".9"> ▍</tspan></text>
+  </g>
+  <rect x="120" y="150" width="272" height="168" rx="6" fill="url(#cahayaLayar)"/>
+  <circle cx="256" cy="144" r="2" fill="#2b2b30"/>
+  <!-- laptop: alas -->
+  <path d="M84 334 L428 334 L452 360 Q454 366 446 366 L66 366 Q58 366 60 360 Z" fill="url(#badan)"/>
+  <path d="M84 334 L428 334" stroke="#6b6b73" stroke-width="2"/>
+  <rect x="226" y="352" width="60" height="6" rx="3" fill="#1d1d21"/>
+  <g fill="#1d1d21" opacity=".7">
+    <rect x="112" y="340" width="288" height="3" rx="1.5"/>
+    <rect x="104" y="346" width="304" height="3" rx="1.5"/>
+  </g>
+
+  <!-- cangkir -->
+  <g transform="translate(16 0)">
+    <path d="M410 300 C 404 290, 420 284, 414 272" stroke="#f4efe4" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".35"/>
+    <path d="M426 302 C 420 292, 436 286, 430 274" stroke="#f4efe4" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".25"/>
+    <path d="M396 306 L446 306 L442 352 Q441 360 433 360 L409 360 Q401 360 400 352 Z" fill="url(#cangkir)"/>
+    <path d="M446 316 C 464 316, 464 342, 443 342" stroke="#d9cfbf" stroke-width="6" fill="none"/>
+    <ellipse cx="421" cy="306" rx="25" ry="5" fill="#3a2418"/>
+    <circle cx="421" cy="333" r="12" fill="#a94f28"/>
+    <text x="421" y="338" fill="#fff" font-family="Georgia, serif" font-size="13" font-weight="700" text-anchor="middle">J+</text>
+  </g>
+
+  <!-- buku catatan -->
+  <g>
+    <path d="M30 372 L118 364 L124 398 L36 408 Z" fill="#a94f28"/>
+    <path d="M36 408 L124 398 L125 402 L37 412 Z" fill="#f4efe4" opacity=".85"/>
+    <path d="M44 378 L104 372" stroke="#f4efe4" stroke-width="1.5" opacity=".6"/>
+  </g>
+</svg>

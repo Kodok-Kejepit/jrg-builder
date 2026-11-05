@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perulangan — Matematika × JRG</title>
+<meta name="description" content="Mengulang pekerjaan tanpa menyalin kode. Bab ini memuat satu hal khas JRG yang kalau tidak kamu tahu, programmu akan berjalan lancar sambil menjawab salah.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="mtk">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a class="aktif" aria-current="page" href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel kelas" data-bab="jrg5">
+<p class="rel">JRG 5 · Dasar JRG</p>
+<h1>Perulangan</h1>
+<p class="ringkas">Mengulang pekerjaan tanpa menyalin kode. Bab ini memuat satu hal khas JRG yang kalau tidak kamu tahu, programmu akan berjalan lancar sambil menjawab salah.</p>
+
+<h2 id="hal-pertama-yang-harus-kamu-tahu-tentang-for"><span class="lencana">penting</span>Hal pertama yang harus kamu tahu tentang <code>for</code></h2>
+<p>Di banyak bahasa, <code>for x in daftar</code> memberikan <em>isi</em> daftarnya. <strong>Di JRG, ia memberikan nomor urutnya (indeks).</strong></p>
+<figure class="kode" data-jalan><figcaption><span>for-indeks.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> nilai = [<span class="k-ang">70</span>, <span class="k-ang">85</span>, <span class="k-ang">90</span>]
+    <span class="k-kunci">for</span> x <span class="k-kunci">in</span> nilai {
+        <span class="k-fn">wok_</span>(x, <span class="k-str">&quot; &quot;</span>)
+    }
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;</span>)
+}</code></pre><pre class="keluaran"><code>0  1  2  </code></pre></figure>
+<aside class="catatan catatan-bug"><p class="catatan-judul">Kenapa ini berbahaya</p><div>Program di atas <strong>tidak error</strong>. Ia berjalan, mencetak angka, dan keluar dengan tenang &mdash; hanya saja angkanya salah. Kalau kamu memakainya untuk menjumlah nilai, kamu akan mendapat total dari <code>0+1+2</code>, bukan dari nilai sebenarnya.</div></aside>
+<p>Bentuk yang mengikat <strong>isi</strong>-nya memakai dua nama, dipisah koma:</p>
+<figure class="kode" data-jalan><figcaption><span>for-nilai.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> nilai = [<span class="k-ang">70</span>, <span class="k-ang">85</span>, <span class="k-ang">90</span>]
+    <span class="k-kunci">for</span> i, x <span class="k-kunci">in</span> nilai {
+        <span class="k-fn">wok</span>(<span class="k-str">&quot;Data ke-&quot;</span>, i, <span class="k-str">&quot;isinya&quot;</span>, x)
+    }
+}</code></pre><pre class="keluaran"><code>Data ke- 0 isinya 70
+Data ke- 1 isinya 85
+Data ke- 2 isinya 90</code></pre></figure>
+<p>Kalau nomor urutnya tidak kamu butuhkan, tulis <code>_</code> sebagai gantinya. Tanda itu berarti “ada, tapi sengaja tidak dipakai”.</p>
+<figure class="kode" data-jalan><figcaption><span>for-underscore.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> nilai = [<span class="k-ang">70</span>, <span class="k-ang">85</span>, <span class="k-ang">90</span>]
+    <span class="k-kunci">var</span> total = <span class="k-ang">0</span>
+    <span class="k-kunci">for</span> _, x <span class="k-kunci">in</span> nilai {
+        total += x
+    }
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Total:&quot;</span>, total, <span class="k-str">&quot; Rata-rata:&quot;</span>, total <span class="k-kunci">as</span> <span class="k-tipe">float</span> / <span class="k-fn">len</span>(nilai) <span class="k-kunci">as</span> <span class="k-tipe">float</span>)
+}</code></pre><pre class="keluaran"><code>Total: 245  Rata-rata: 81.66666666666667</code></pre></figure>
+<div class="tabel"><table><thead><tr><th>Ditulis</th><th><code>x</code> berisi</th><th>Pakai kalau</th></tr></thead><tbody><tr><td><code>for x in a</code></td><td>0, 1, 2, &hellip; (indeks)</td><td>kamu memang butuh nomor urut</td></tr><tr><td><code>for i, x in a</code></td><td>indeks <em>dan</em> isi</td><td>butuh dua-duanya</td></tr><tr><td><code>for _, x in a</code></td><td>isi saja</td><td>ini yang paling sering kamu mau</td></tr></tbody></table></div>
+<h2 id="rentang-angka-juga-begitu">Rentang angka juga begitu</h2>
+<p><code>1..=5</code> membuat deretan lima angka. Tapi <code>for n in 1..=5</code> tetap memberi <em>indeks</em>-nya &mdash; yaitu 0 sampai 4.</p>
+<figure class="kode" data-jalan><figcaption><span>rentang.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-fn">wok_</span>(<span class="k-str">&quot;for n in 1..=5   -&gt; &quot;</span>)
+    <span class="k-kunci">for</span> n <span class="k-kunci">in</span> <span class="k-ang">1</span>..=<span class="k-ang">5</span> { <span class="k-fn">wok_</span>(n, <span class="k-str">&quot; &quot;</span>) }
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;</span>)
+
+    <span class="k-fn">wok_</span>(<span class="k-str">&quot;for _, n in 1..=5 -&gt; &quot;</span>)
+    <span class="k-kunci">for</span> _, n <span class="k-kunci">in</span> <span class="k-ang">1</span>..=<span class="k-ang">5</span> { <span class="k-fn">wok_</span>(n, <span class="k-str">&quot; &quot;</span>) }
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;</span>)
+}</code></pre><pre class="keluaran"><code>for n in 1..=5   -&gt; 0  1  2  3  4  
+for _, n in 1..=5 -&gt; 1  2  3  4  5  </code></pre></figure>
+<aside class="catatan catatan-warn"><p class="catatan-judul">Aturan satu kalimat</p><div>Kalau nama sesudah <code>for</code> cuma satu, isinya <strong>selalu</strong> nomor urut &mdash; baik untuk array, string, maupun rentang. Butuh isinya? Pakai dua nama.</div></aside>
+<h2 id="while-mdash-selama-syarat-masih-benar"><code>while</code> &mdash; selama syarat masih benar</h2>
+<p>Pakai <code>while</code> kalau kamu tidak tahu berapa kali harus mengulang, hanya tahu kapan harus berhenti.</p>
+<figure class="kode" data-jalan><figcaption><span>while.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">var</span> sisa = <span class="k-ang">100</span>
+    <span class="k-kunci">var</span> langkah = <span class="k-ang">0</span>
+    <span class="k-kunci">while</span> sisa &gt; <span class="k-ang">1</span> {
+        sisa = sisa / <span class="k-ang">2</span>
+        langkah += <span class="k-ang">1</span>
+    }
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Butuh&quot;</span>, langkah, <span class="k-str">&quot;kali dibagi dua&quot;</span>)
+}</code></pre><pre class="keluaran"><code>Butuh 6 kali dibagi dua</code></pre></figure>
+<aside class="catatan catatan-bug"><p class="catatan-judul">Perulangan yang tidak pernah berhenti</p><div>Kalau syarat <code>while</code> tidak pernah menjadi salah, programmu menggantung selamanya. Pastikan ada sesuatu <em>di dalam</em> badan yang mendekatkanmu ke syarat berhenti &mdash; di contoh atas, <code>sisa</code> mengecil tiap putaran.</div></aside>
+<h2 id="keluar-lebih-awal-break-dan-continue">Keluar lebih awal: <code>break</code> dan <code>continue</code></h2>
+<div class="tabel"><table><thead><tr><th>Kata kunci</th><th>Artinya</th></tr></thead><tbody><tr><td><code>break</code></td><td>Hentikan perulangan sekarang juga</td></tr><tr><td><code>continue</code></td><td>Lewati sisa badan, lanjut ke putaran berikutnya</td></tr></tbody></table></div>
+<figure class="kode" data-jalan><figcaption><span>break.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> angka = [<span class="k-ang">4</span>, <span class="k-ang">9</span>, <span class="k-ang">12</span>, <span class="k-ang">7</span>, <span class="k-ang">20</span>]
+    <span class="k-kunci">for</span> _, n <span class="k-kunci">in</span> angka {
+        <span class="k-kunci">if</span> n % <span class="k-ang">2</span> != <span class="k-ang">0</span> { <span class="k-kunci">continue</span> }   <span class="k-kom">// lewati yang ganjil</span>
+        <span class="k-kunci">if</span> n &gt; <span class="k-ang">10</span> { <span class="k-kunci">break</span> }          <span class="k-kom">// berhenti kalau lewat 10</span>
+        <span class="k-fn">wok</span>(<span class="k-str">&quot;Genap kecil:&quot;</span>, n)
+    }
+}</code></pre><pre class="keluaran"><code>Genap kecil: 4</code></pre></figure>
+<h2 id="perulangan-bersarang">Perulangan bersarang</h2>
+<figure class="kode" data-jalan><figcaption><span>bersarang.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">for</span> _, i <span class="k-kunci">in</span> <span class="k-ang">1</span>..=<span class="k-ang">3</span> {
+        <span class="k-kunci">for</span> _, j <span class="k-kunci">in</span> <span class="k-ang">1</span>..=<span class="k-ang">3</span> {
+            <span class="k-fn">wok_</span>(i * j, <span class="k-str">&quot;\t&quot;</span>)
+        }
+        <span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;</span>)
+    }
+}</code></pre><pre class="keluaran"><code>1 	2 	3 	
+2 	4 	6 	
+3 	6 	9 	</code></pre></figure>
+<div class="kuis" data-kuis="qj5_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Apa yang dicetak <code>for x in [10, 20, 30] { wok_(x, " ") }</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>10 20 30</button><button type="button" data-benar="1"><span>B</span>0 1 2</button><button type="button" data-benar="0"><span>C</span>Error</button></div><p class="kuis-umpan benar" hidden>Tepat &mdash; satu nama berarti indeks. Ini jebakan JRG yang paling sering memakan korban.</p><p class="kuis-umpan salah" hidden>Ingat aturannya: satu nama sesudah <code>for</code> selalu berisi nomor urut.</p></div>
+<div class="kuis" data-kuis="qj5_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Bagaimana cara menjumlahkan isi array <code>a</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>for x in a { total += x }</code></button><button type="button" data-benar="1"><span>B</span><code>for _, x in a { total += x }</code></button><button type="button" data-benar="0"><span>C</span><code>for a { total += a }</code></button></div><p class="kuis-umpan benar" hidden>Betul. <code>_</code> membuang indeksnya, <code>x</code> menerima isinya.</p><p class="kuis-umpan salah" hidden>Pilihan pertama menjumlahkan indeks (0+1+2+&hellip;), bukan isinya &mdash; dan tidak ada yang memberitahumu.</p></div>
+<div class="kuis" data-kuis="qj5_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Apa beda <code>break</code> dan <code>continue</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>Sama saja</button><button type="button" data-benar="1"><span>B</span><code>break</code> keluar dari perulangan, <code>continue</code> lompat ke putaran berikutnya</button><button type="button" data-benar="0"><span>C</span><code>break</code> keluar dari program</button></div><p class="kuis-umpan benar" hidden>Tepat.</p><p class="kuis-umpan salah" hidden><code>break</code> menghentikan; <code>continue</code> melompati sisa badan putaran ini saja.</p></div>
+<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Cetak semua bilangan genap dari 1 sampai 20.</p><p><strong>2.</strong> Hitung berapa banyak angka di <code>[3, 8, 12, 5, 20]</code> yang lebih dari 6.</p><p><strong>3.</strong> Cetak tabel perkalian 7 (7&times;1 sampai 7&times;10).</p><div class="math-box"><div class="math-step"><span>Jawaban 1:</span> <code>for _, n in 1..=20 { if n % 2 == 0 { wok_(n, " ") } }</code></div><div class="math-step"><span>Jawaban 2:</span> pakai penghitung <code>var c = 0</code>, lalu <code>for _, n in a { if n &gt; 6 { c += 1 } }</code> &rarr; 3.</div><div class="math-step"><span>Jawaban 3:</span> <code>for _, i in 1..=10 { wok("7 x", i, "=", 7 * i) }</code></div></div></div></details>
+<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke JRG 6</p><div>Kamu sudah bisa mengulang. Berikutnya: membungkus pekerjaan jadi <em>fungsi</em>, supaya bisa dipakai berkali-kali tanpa disalin.</div></aside>
+
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="jrg4.html"><small>Bab sebelumnya</small><strong>Percabangan: if &amp; match</strong></a><a class="ke-kanan" href="jrg6.html"><small>Bab berikutnya</small><strong>Fungsi</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+<script src="../aset/kelas-data.js"></script>
+<script src="../aset/kelas.js"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aplikasi Android — Dokumentasi JRG</title>
+<meta name="description" content="Membungkus program atau proyek JRG jadi APK, dari game kanvas sampai aplikasi berantarmuka web.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a class="aktif" aria-current="page" href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Perkakas</p>
+<h1>Aplikasi Android</h1>
+<p class="ringkas">Membungkus program atau proyek JRG jadi APK, dari game kanvas sampai aplikasi berantarmuka web.</p>
+<h2 id="dari-satu-berkas"><a class="jangkar" href="#dari-satu-berkas">Dari satu berkas</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc game.jrg --apk game.apk                     <span class="k-kom"> # untuk HP (arm64-v8a)</span>
+jrgc game.jrg --apk game.apk --apk-abi arm64-v8a,x86_64
+adb install -r game.apk</code></pre></figure>
+<h2 id="dari-proyek"><a class="jangkar" href="#dari-proyek">Dari proyek</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgm siapkan android     <span class="k-kom"> # sekali: unduh platform, build-tools, dan NDK</span>
+jrgm new gameku --android
+cd gameku
+jrgm apk                 <span class="k-kom"> # target/gameku.apk</span>
+jrgm run --android       <span class="k-kom"> # pasang ke HP lewat adb, buka, ikuti keluarannya</span></code></pre></figure>
+<p>Identitas aplikasinya ditulis di <code>jrgm.toml</code>:</p>
+<figure class="kode"><figcaption><span>toml</span></figcaption><pre><code>[android]
+nama       = &quot;Game Ku&quot;
+paket      = &quot;id.jrg.gameku&quot;
+versi      = &quot;1.2.0&quot;
+orientasi  = &quot;portrait&quot;          # bebas | portrait | landscape
+abi        = [&quot;arm64-v8a&quot;]       # tambah &quot;x86_64&quot; untuk emulator
+ikon_depan = &quot;aset/ikon.png&quot;     # ikon adaptif Android 8+
+ikon_latar = &quot;#0B1230&quot;           # warna atau PNG
+izin       = [&quot;internet&quot;, &quot;getar&quot;]</code></pre></figure>
+<h2 id="dua-jenis-tampilan"><a class="jangkar" href="#dua-jenis-tampilan">Dua jenis tampilan</a></h2>
+<div class="tabel"><table><thead><tr><th><code>tampilan</code></th><th>Isinya</th><th>Cocok untuk</th></tr></thead><tbody><tr><td><code>&quot;kanvas&quot;</code> (bawaan)</td><td>program dikompilasi native lewat LLVM, menggambar ke layar penuh</td><td>game, gambar, alat sederhana</td></tr><tr><td><code>&quot;web&quot;</code></td><td><code>jrgc</code> ikut di dalam APK dan menjalankan proyekmu sebagai server lokal; halamannya tampil di WebView</td><td>aplikasi dengan antarmuka HTML</td></tr></tbody></table></div>
+<p>Proyek dari <code>jrgm new x --kind web</code> sudah memakai tampilan web. Di sana seluruh bahasa dan pustaka tersedia, karena yang menjalankannya interpreter yang sama dengan di komputer. Halamannya juga mendapat objek <code>JRGAndroid</code> untuk meminta izin (<code>mintaIzin(&quot;kamera&quot;)</code>), menggetarkan HP, dan bertukar berkas dengan penyimpanan HP.</p>
+<p>Tampilan kanvas memakai backend LLVM, jadi berlaku batasan backend itu (lihat <a href="batasan.html">Yang belum jadi</a>).</p>
+<h2 id="izin"><a class="jangkar" href="#izin">Izin</a></h2>
+<p><code>izin = [...]</code> menerima <code>internet</code>, <code>jaringan</code>, <code>wifi</code>, <code>getar</code>, <code>tetap_menyala</code>, <code>latar</code> (jalan di latar dengan notifikasi), serta izin yang perlu dialog di tampilan web: <code>kamera</code>, <code>mikrofon</code>, <code>lokasi</code>, <code>kontak</code>, <code>penyimpanan</code>, <code>telepon</code>, <code>sms</code>, <code>kalender</code>. Nama izin Android lengkap (<code>android.permission.X</code>) juga diterima.</p>
+<h2 id="bahasa-dan-pustaka-native-di-dalam-apk"><a class="jangkar" href="#bahasa-dan-pustaka-native-di-dalam-apk">Bahasa dan pustaka native di dalam APK</a></h2>
+<figure class="kode"><figcaption><span>toml</span></figcaption><pre><code>[android]
+bahasa = [&quot;lua&quot;, &quot;js&quot;, &quot;sql&quot;]     # penjalan Lua, QuickJS, dan SQLite ikut di APK
+
+[android.pustaka_c]
+libhitung = [&quot;native/hitung.c&quot;, &quot;native/teks.cpp&quot;]
+
+[android.pustaka_rust]
+librumus = &quot;rust/rumus&quot;</code></pre></figure>
+<p><code>jrgm</code> mengunduh sumber resminya sekali (sidiknya diperiksa), lalu mengompilasinya untuk tiap ABI. Pustaka native dipanggil dari JRG lewat <code>extern &quot;C&quot; &quot;libhitung.so&quot; { … }</code>.</p>
+<h2 id="rilis-ke-play-store"><a class="jangkar" href="#rilis-ke-play-store">Rilis ke Play Store</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgm kunci                        <span class="k-kom"> # sekali: buat kunci rilis</span>
+JRG_KUNCI_SANDI=… jrgm apk --rilis
+JRG_KUNCI_SANDI=… jrgm apk --aab  <span class="k-kom"> # Android App Bundle untuk Play Store</span></code></pre></figure>
+<p>APK biasa ditandatangani dengan kunci debug. Simpan berkas kunci rilis baik-baik: tanpa kunci yang sama, pembaruan aplikasi tidak bisa dipasang di atas versi lama.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="editor.html"><small>Sebelumnya</small><strong>Editor dan IDE</strong></a><a class="ke-kanan" href="mesin.html"><small>Berikutnya</small><strong>Tiga mesin</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#dari-satu-berkas">Dari satu berkas</a></li><li><a href="#dari-proyek">Dari proyek</a></li><li><a href="#dua-jenis-tampilan">Dua jenis tampilan</a></li><li><a href="#izin">Izin</a></li><li><a href="#bahasa-dan-pustaka-native-di-dalam-apk">Bahasa dan pustaka native di dalam APK</a></li><li><a href="#rilis-ke-play-store">Rilis ke Play Store</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jrgc — Dokumentasi JRG</title>
+<meta name="description" content="Menjalankan, memeriksa, menguji, dan mengompilasi berkas .jrg.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a class="aktif" aria-current="page" href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Perkakas</p>
+<h1>jrgc</h1>
+<p class="ringkas">Menjalankan, memeriksa, menguji, dan mengompilasi berkas .jrg.</p>
+<h2 id="menjalankan"><a class="jangkar" href="#menjalankan">Menjalankan</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc program.jrg             <span class="k-kom"> # interpreter</span>
+jrgc program.jrg --vm        <span class="k-kom"> # VM bytecode</span>
+jrgc program.jrg --emit-llvm <span class="k-kom"> # native, lewat clang</span>
+jrgc program.jrg -- a b c    <span class="k-kom"> # argumen untuk programnya, dibaca lewat env::args()</span>
+jrgc program.jrg --watch     <span class="k-kom"> # jalankan ulang tiap berkasnya berubah</span>
+jrgc                         <span class="k-kom"> # REPL</span></code></pre></figure>
+<h2 id="memeriksa-tanpa-menjalankan"><a class="jangkar" href="#memeriksa-tanpa-menjalankan">Memeriksa tanpa menjalankan</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc program.jrg --periksa   <span class="k-kom"> # urai dan periksa berkas beserta semua import-nya; diam kalau bersih</span>
+jrgc program.jrg --fmt       <span class="k-kom"> # cetak versi rapinya ke stdout (berkasnya tidak diubah)</span>
+jrgc program.jrg --emit-ast  <span class="k-kom"> # cetak pohon sintaks</span>
+jrgc program.jrg --emit-tokens</code></pre></figure>
+<p><code>--periksa</code> menemukan galat sintaks, nama yang belum dideklarasikan, dan penugasan ke sesuatu yang bukan variabel, sebelum satu baris pun jalan.</p>
+<h2 id="tes-dan-profil"><a class="jangkar" href="#tes-dan-profil">Tes dan profil</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc hitung.jrg --uji                  <span class="k-kom"> # jalankan tiap fn test_*/uji_*</span>
+jrgc hitung.jrg --uji --uji-filter tambah
+jrgc program.jrg --profile             <span class="k-kom"> # waktu tiap fungsi sesudah program selesai</span>
+jrgc program.jrg --profile-json p.json <span class="k-kom"> # versi JSON-nya</span></code></pre></figure>
+<h2 id="mencari-fungsi"><a class="jangkar" href="#mencari-fungsi">Mencari fungsi</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc --cari kata       <span class="k-kom"> # nama bawaan yang memuat &quot;kata&quot;</span>
+jrgc --doc str::split  <span class="k-kom"> # tanda tangan dan penjelasan singkat</span>
+jrgc --daftar-builtin  <span class="k-kom"> # semua nama, satu per baris</span></code></pre></figure>
+<h2 id="kompilasi-native"><a class="jangkar" href="#kompilasi-native">Kompilasi native</a></h2>
+<p><code>--emit-llvm</code> menerjemahkan program ke LLVM IR lalu menyerahkannya ke <code>clang</code>. Runtime native-nya dibangun sekali dengan cargo dan disimpan.</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc program.jrg --emit-llvm -o program --no-run  <span class="k-kom"> # cuma kompilasi</span>
+./program
+
+jrgc program.jrg --emit-llvm -O3 --native-cpu --lto thin
+jrgc program.jrg --emit-llvm --full-power         <span class="k-kom"> # preset tercepat, khusus CPU ini</span>
+jrgc program.jrg --emit-llvm --target aarch64-unknown-linux-gnu
+jrgc program.jrg --apk app.apk                    <span class="k-kom"> # APK Android dari satu berkas</span></code></pre></figure>
+<div class="tabel"><table><thead><tr><th>Bendera</th><th>Gunanya</th></tr></thead><tbody><tr><td><code>-O 0..3</code></td><td>tingkat optimisasi (bawaan 2)</td></tr><tr><td><code>--lto auto|off|thin|full</code>, <code>--lld</code></td><td>optimisasi saat menautkan</td></tr><tr><td><code>--native-cpu</code>, <code>--fast-math</code>, <code>--aggressive</code></td><td>lebih cepat, dengan syaratnya masing-masing</td></tr><tr><td><code>--pgo-generate</code>, <code>--pgo-use</code></td><td>optimisasi berdasarkan profil pemakaian</td></tr><tr><td><code>--strip</code>, <code>--no-gc-sections</code></td><td>ukuran biner</td></tr></tbody></table></div>
+<p>Backend native belum menerima seluruh bahasa; yang belum ada ditolak dengan alasannya. Lihat <a href="mesin.html">Tiga mesin</a>.</p>
+<h2 id="pesan-galat"><a class="jangkar" href="#pesan-galat">Pesan galat</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc program.jrg --nada hangat   <span class="k-kom"> # sopan, galak, judes, hangat, cool, lawak</span>
+jrgc program.jrg --sopan         <span class="k-kom"> # tanpa baris sapaan, cocok untuk CI</span>
+JRG_GALAT_KE=galat.txt jrgc program.jrg  <span class="k-kom"> # tulis tiap galat juga ke berkas: berkas, baris, kolom, pesan</span></code></pre></figure>
+<p>Penjelasannya di <a href="diagnostik.html">Diagnostik</a>.</p>
+<h2 id="lain-lain"><a class="jangkar" href="#lain-lain">Lain-lain</a></h2>
+<div class="tabel"><table><thead><tr><th>Perintah</th><th>Gunanya</th></tr></thead><tbody><tr><td><code>jrgc --sunting berkas.jrg</code></td><td>penyunting teks di terminal, lihat <a href="editor.html">Editor</a></td></tr><tr><td><code>jrgc --lsp</code></td><td>server bahasa untuk editor (VS Code, Neovim)</td></tr><tr><td><code>jrgc -I folder</code></td><td>folder tambahan untuk mencari <code>import</code></td></tr><tr><td><code>jrgc --jrgm …</code></td><td><code>jrgc</code> yang sama berperan sebagai <code>jrgm</code></td></tr><tr><td><code>-v</code></td><td>cetak tiap tahap yang dikerjakan</td></tr></tbody></table></div>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="ffi.html"><small>Sebelumnya</small><strong>Bahasa lain</strong></a><a class="ke-kanan" href="jrgm.html"><small>Berikutnya</small><strong>jrgm</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#menjalankan">Menjalankan</a></li><li><a href="#memeriksa-tanpa-menjalankan">Memeriksa tanpa menjalankan</a></li><li><a href="#tes-dan-profil">Tes dan profil</a></li><li><a href="#mencari-fungsi">Mencari fungsi</a></li><li><a href="#kompilasi-native">Kompilasi native</a></li><li><a href="#pesan-galat">Pesan galat</a></li><li><a href="#lain-lain">Lain-lain</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

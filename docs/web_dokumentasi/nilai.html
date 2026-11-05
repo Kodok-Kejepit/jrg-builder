@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nilai dan tipe — Dokumentasi JRG</title>
+<meta name="description" content="Angka, teks, array, tuple, dict, dan cara mengikatnya ke nama.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a class="aktif" aria-current="page" href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Bahasa</p>
+<h1>Nilai dan tipe</h1>
+<p class="ringkas">Angka, teks, array, tuple, dict, dan cara mengikatnya ke nama.</p>
+<h2 id="mengikat-nama"><a class="jangkar" href="#mengikat-nama">Mengikat nama</a></h2>
+<div class="tabel"><table><thead><tr><th>Bentuk</th><th>Bisa ditugasi ulang?</th></tr></thead><tbody><tr><td><code>let x = 1</code></td><td>tidak</td></tr><tr><td><code>const X = 1</code></td><td>tidak</td></tr><tr><td><code>var x = 1</code></td><td>ya</td></tr><tr><td><code>x := 1</code></td><td>ya, sekaligus mendeklarasikan</td></tr><tr><td><code>let mut x = 1</code></td><td>ya, sama dengan <code>var</code></td></tr></tbody></table></div>
+<figure class="kode" data-jalan><figcaption><span>ikat.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> skor = <span class="k-ang">10</span>
+skor = skor + <span class="k-ang">5</span>
+x := <span class="k-ang">3</span>
+x = x * <span class="k-ang">2</span>
+<span class="k-kunci">const</span> <span class="k-tipe">BATAS</span> = <span class="k-ang">100</span>
+<span class="k-fn">wok</span>(skor, x, <span class="k-tipe">BATAS</span>)</code></pre><pre class="keluaran"><code>15 6 100</code></pre></figure>
+<p>Nama harus dideklarasikan sebelum ditugasi. <code>totl = 5</code> atas nama yang belum ada ditolak, jadi salah ketik tidak diam-diam membuat variabel baru. Nama yang diikat <code>let</code> juga tidak bisa diubah isinya: <code>let a = [1, 2]</code> lalu <code>a[0] = 9</code> ditolak.</p>
+<p>Anotasi tipe boleh ditulis (<code>let n: int = 5</code>), dan JRG memeriksa bahwa nama tipenya ada. Isinya tidak ditegakkan: JRG diketik dinamis, jadi anotasi berfungsi sebagai dokumentasi.</p>
+<h2 id="angka"><a class="jangkar" href="#angka">Angka</a></h2>
+<p><code>int</code> adalah bilangan bulat 128 bit, <code>float</code> pecahan 64 bit. Pembagian dua <code>int</code> menghasilkan <code>int</code> (dipotong ke arah nol), dan <code>%</code> adalah sisa bagi.</p>
+<figure class="kode" data-jalan><figcaption><span>angka.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ang">7</span> / <span class="k-ang">2</span>, <span class="k-ang">7</span> % <span class="k-ang">2</span>, <span class="k-ang">7.0</span> / <span class="k-ang">2.0</span>, -<span class="k-ang">7</span> / <span class="k-ang">2</span>)
+<span class="k-fn">wok</span>(<span class="k-ang">2</span> ** <span class="k-ang">10</span>, <span class="k-ang">2.0</span> ** <span class="k-ang">0.5</span>)
+<span class="k-fn">wok</span>(<span class="k-ang">1_000_000</span>, <span class="k-ang">0xff</span>, 0b1010)
+<span class="k-fn">wok</span>(<span class="k-ang">0.1</span> + <span class="k-ang">0.2</span>)</code></pre><pre class="keluaran"><code>3 1 3.5 -3
+1024 1.4142135623730951
+1000000 255 10
+0.30000000000000004</code></pre></figure>
+<p>Luapan tidak membungkus diam-diam. <code>170141183460469231731687303715884105727 + 1</code> adalah galat, begitu juga pembagian dengan nol. Untuk aritmetika yang memang ingin membungkus (hash, pembangkit acak), pakai <code>math::wrap_add</code>, <code>math::wrap_sub</code>, dan <code>math::wrap_mul</code>.</p>
+<p>Tipe bulat berlebar tetap juga ada: <code>i8</code> sampai <code>i128</code>, <code>u8</code> sampai <code>u128</code>, <code>isize</code>, <code>usize</code>, dan <code>byte</code> (bilangan 0–255). Pecahan: <code>f32</code>, <code>f64</code>.</p>
+<h2 id="teks"><a class="jangkar" href="#teks">Teks</a></h2>
+<p><code>string</code> adalah teks UTF-8. Indeks menghitung karakter, bukan byte, dan satu karakter bertipe <code>rune</code> (ditulis <code>&#x27;a&#x27;</code>).</p>
+<figure class="kode" data-jalan><figcaption><span>teks.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> s = <span class="k-str">&quot;Halo&quot;</span>
+<span class="k-fn">wok</span>(s.<span class="k-fn">len</span>(), s.<span class="k-fn">upper</span>(), s[<span class="k-ang">0</span>], s[-<span class="k-ang">1</span>], s[<span class="k-ang">1</span>:<span class="k-ang">3</span>])
+<span class="k-fn">wok</span>(s + <span class="k-str">&quot; dunia&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">repeat</span>(<span class="k-str">&quot;ab&quot;</span>, <span class="k-ang">3</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">split</span>(<span class="k-str">&quot;a,b,c&quot;</span>, <span class="k-str">&quot;,&quot;</span>), <span class="k-str">&quot;  rapi  &quot;</span>.<span class="k-fn">trim</span>())</code></pre><pre class="keluaran"><code>4 HALO H o al
+Halo dunia ababab
+[a, b, c] rapi</code></pre></figure>
+<p>Ada tiga cara menulis teks literal:</p>
+<figure class="kode" data-jalan><figcaption><span>literal.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> nama = <span class="k-str">&quot;Ani&quot;</span>
+<span class="k-kunci">let</span> umur = <span class="k-ang">20</span>
+<span class="k-fn">wok</span>(<span class="k-str">&quot;biasa, dengan \&quot;escape\&quot;\tdan tab&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;&quot;halo ${nama}, tahun depan umurmu ${umur + 1}&quot;&quot;&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-str">«sama, versi pendek: ${nama}»</span>)
+<span class="k-fn">wok</span>(<span class="k-str">`mentah: ${nama} \n tidak diproses`</span>)</code></pre><pre class="keluaran"><code>biasa, dengan &quot;escape&quot;	dan tab
+halo Ani, tahun depan umurmu 21
+sama, versi pendek: Ani
+mentah: ${nama} \n tidak diproses</code></pre></figure>
+<p><code>&quot;&quot;&quot;…&quot;&quot;&quot;</code> dan <code>«…»</code> adalah <em>template</em>: isi <code>${…}</code> dihitung lalu disisipkan, dan boleh lebih dari satu baris. Backtick menghasilkan teks mentah tanpa escape dan tanpa penyisipan.</p>
+<p><code>str::format</code> merangkai teks dengan <code>{}</code>, termasuk format angka:</p>
+<figure class="kode" data-jalan><figcaption><span>format.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{} dapat {:.2}&quot;</span>, <span class="k-str">&quot;Ani&quot;</span>, <span class="k-ang">91.456</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">pad_left</span>(<span class="k-str">&quot;7&quot;</span>, <span class="k-ang">3</span>, <span class="k-str">&quot;0&quot;</span>))</code></pre><pre class="keluaran"><code>Ani dapat 91.46
+007</code></pre></figure>
+<h2 id="array"><a class="jangkar" href="#array">Array</a></h2>
+<p>Array berisi nilai berurutan. Indeks negatif menghitung dari belakang, dan indeks di luar batas selalu galat.</p>
+<figure class="kode" data-jalan><figcaption><span>array.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> a = [<span class="k-ang">10</span>, <span class="k-ang">20</span>, <span class="k-ang">30</span>]
+a[<span class="k-ang">0</span>] = <span class="k-ang">11</span>
+a = a.<span class="k-fn">push</span>(<span class="k-ang">40</span>)
+<span class="k-fn">wok</span>(a, a[-<span class="k-ang">1</span>], a[<span class="k-ang">1</span>:<span class="k-ang">3</span>], <span class="k-fn">len</span>(a))
+<span class="k-fn">wok</span>(a.<span class="k-fn">map</span>(|x| x * <span class="k-ang">2</span>), a.<span class="k-fn">filter</span>(|x| x &gt; <span class="k-ang">20</span>), <span class="k-ns">arr</span>::<span class="k-fn">sum</span>(a))
+<span class="k-fn">wok</span>(a.<span class="k-fn">contains</span>(<span class="k-ang">20</span>), a.<span class="k-fn">first</span>(), [].<span class="k-fn">first</span>())</code></pre><pre class="keluaran"><code>[11, 20, 30, 40] 40 [20, 30] 4
+[22, 40, 60, 80] [30, 40] 101
+true Option::Some(11) Option::None</code></pre></figure>
+<p>Method yang "mengubah" seperti <code>push</code> mengembalikan array baru; tugaskan hasilnya kembali (<code>a = a.push(x)</code>). Bentuk ini tidak menyalin seluruh array, jadi menambah elemen satu per satu tetap cepat.</p>
+<p>Yang mungkin tidak menemukan apa pun (<code>first</code>, <code>last</code>, <code>get</code>, <code>find</code>, <code>pop</code>) mengembalikan <code>Option</code>, tidak pernah <code>nil</code> atau <code>-1</code>. Lihat <a href="galat.html">Option dan Result</a>.</p>
+<h2 id="tuple"><a class="jangkar" href="#tuple">Tuple</a></h2>
+<p>Tuple mengelompokkan beberapa nilai dengan tipe berbeda. Elemennya dibaca dengan <code>.0</code>, <code>.1</code>, atau <code>[i]</code>, dan bisa dibongkar ke beberapa nama sekaligus.</p>
+<figure class="kode" data-jalan><figcaption><span>tuple.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bagi</span>(a, b) { <span class="k-kunci">return</span> (a / b, a % b) }
+
+<span class="k-kunci">let</span> t = (<span class="k-ang">1</span>, <span class="k-str">&quot;dua&quot;</span>, <span class="k-ang">3.0</span>)
+<span class="k-fn">wok</span>(t, t.<span class="k-ang">0</span>, t[<span class="k-ang">1</span>])
+hasil, sisa := <span class="k-fn">bagi</span>(<span class="k-ang">17</span>, <span class="k-ang">5</span>)
+<span class="k-fn">wok</span>(hasil, sisa)</code></pre><pre class="keluaran"><code>(1, dua, 3.0) 1 dua
+3 2</code></pre></figure>
+<h2 id="dict"><a class="jangkar" href="#dict">Dict</a></h2>
+<p>Dict memetakan kunci ke nilai. Kuncinya disimpan sebagai teks, jadi <code>d[1]</code> dan <code>d[&quot;1&quot;]</code> menunjuk tempat yang sama. Urutan cetaknya urut kunci.</p>
+<figure class="kode" data-jalan><figcaption><span>dict.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> stok = {<span class="k-str">&quot;apel&quot;</span>: <span class="k-ang">3</span>, <span class="k-str">&quot;jeruk&quot;</span>: <span class="k-ang">5</span>}
+stok[<span class="k-str">&quot;mangga&quot;</span>] = <span class="k-ang">2</span>
+<span class="k-fn">wok</span>(stok, stok[<span class="k-str">&quot;apel&quot;</span>], stok.<span class="k-fn">len</span>())
+<span class="k-fn">wok</span>(<span class="k-ns">dict</span>::<span class="k-fn">get</span>(stok, <span class="k-str">&quot;durian&quot;</span>), <span class="k-ns">dict</span>::<span class="k-fn">get_or</span>(stok, <span class="k-str">&quot;durian&quot;</span>, <span class="k-ang">0</span>))
+<span class="k-kunci">for</span> k, v <span class="k-kunci">in</span> stok {
+    <span class="k-fn">wok</span>(k, v)
+}</code></pre><pre class="keluaran"><code>dict {apel: 3, jeruk: 5, mangga: 2} 3 3
+Option::None 0
+apel 3
+jeruk 5
+mangga 2</code></pre></figure>
+<p>Membaca kunci yang tidak ada lewat <code>d[k]</code> adalah galat; pakai <code>dict::get</code> (mengembalikan <code>Option</code>) atau <code>get_or</code>.</p>
+<h2 id="konversi"><a class="jangkar" href="#konversi">Konversi</a></h2>
+<p><code>as</code> mengubah tipe dasar. Konversi yang tidak punya jawaban tepat ditolak, bukan dipotong diam-diam.</p>
+<figure class="kode" data-jalan><figcaption><span>konversi.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ang">3</span> <span class="k-kunci">as</span> <span class="k-tipe">float</span>, <span class="k-ang">3.9</span> <span class="k-kunci">as</span> <span class="k-tipe">int</span>, <span class="k-str">&#x27;A&#x27;</span> <span class="k-kunci">as</span> <span class="k-tipe">int</span>, <span class="k-ang">66</span> <span class="k-kunci">as</span> <span class="k-tipe">rune</span>)
+<span class="k-fn">wok</span>(<span class="k-tipe">int</span>(<span class="k-str">&quot;42&quot;</span>) + <span class="k-ang">1</span>, <span class="k-tipe">float</span>(<span class="k-str">&quot;2.5&quot;</span>), <span class="k-fn">str</span>(<span class="k-ang">42</span>) + <span class="k-str">&quot;!&quot;</span>, <span class="k-str">&quot;17&quot;</span>.<span class="k-fn">to_int</span>())
+<span class="k-fn">wok</span>(<span class="k-fn">typeof</span>(<span class="k-ang">1</span>), <span class="k-fn">typeof</span>(<span class="k-ang">1.5</span>), <span class="k-fn">typeof</span>(<span class="k-str">&quot;a&quot;</span>), <span class="k-fn">typeof</span>(<span class="k-str">&#x27;a&#x27;</span>), <span class="k-fn">typeof</span>([<span class="k-ang">1</span>]), <span class="k-fn">typeof</span>({<span class="k-str">&quot;a&quot;</span>: <span class="k-ang">1</span>}))</code></pre><pre class="keluaran"><code>3.0 3 65 B
+43 2.5 42! 17
+int float string rune array dict</code></pre></figure>
+<p><code>300 as u8</code>, <code>-1 as uint</code>, dan <code>int(&quot;abc&quot;)</code> adalah galat. Untuk mengambil 8 bit terbawah, tulis <code>x &amp; 255</code>.</p>
+<h2 id="nilai-kosong"><a class="jangkar" href="#nilai-kosong">Nilai kosong</a></h2>
+<p><code>nil</code> ada, tapi jarang dibutuhkan. Fungsi bawaan yang bisa tidak menemukan sesuatu menjawab <code>Option::None</code>, dan <code>var x: int</code> tanpa nilai awal mendapat nilai nol tipenya (<code>0</code>, <code>0.0</code>, <code>&quot;&quot;</code>, <code>false</code>, <code>[]</code>).</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="tur.html"><small>Sebelumnya</small><strong>Tur singkat</strong></a><a class="ke-kanan" href="kendali.html"><small>Berikutnya</small><strong>Kendali alur</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#mengikat-nama">Mengikat nama</a></li><li><a href="#angka">Angka</a></li><li><a href="#teks">Teks</a></li><li><a href="#array">Array</a></li><li><a href="#tuple">Tuple</a></li><li><a href="#dict">Dict</a></li><li><a href="#konversi">Konversi</a></li><li><a href="#nilai-kosong">Nilai kosong</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

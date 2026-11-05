@@ -1,0 +1,534 @@
+// JRG IDE — Linux (Ubuntu) di dalam proot, untuk versi Terminal. Mesinnya dari Woksole (pemilik proyek):
+// proot dan loader-nya ikut di APK (`ide/linux/proot/`), rootfs Ubuntu diunduh sekali lalu dibongkar
+// `libjrglinux_exe.so` (`ide/linux/jrglinux.c`). Rancangannya: ide/README.md, "Linux".
+package linux
+
+// Rilis yang diterima, terbaru dulu. Sidiknya DIPATOK di sini: unduhannya lewat http polos.
+const RILIS = [
+    {"versi": "24.04.5", "arm64": "a91d5a93010193712d346d761372b7c9db6dfcf093893161c64ca107f05914f2",
+     "amd64": "e77b6f10c2590cef872b33ee9f635a0e3fd1f57fb074c0e52b5c7f56147a0c86"},
+    {"versi": "24.04.4", "arm64": "04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2",
+     "amd64": "c1e67ef7b17a6300e136118bd1dc04725009cb376c1aad10abcf8cd453628d58"},
+    {"versi": "24.04.3", "arm64": "7b2dced6dd56ad5e4a813fa25c8de307b655fdabc6ea9213175a92c48dabb048",
+     "amd64": "6bc2cde3930ad088b3bb46fa45279e96d25bc3810f209850ecbe4722711874f9"},
+]
+const URL_RILIS = "http://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/"
+// Naikkan kalau isi berkas tamu di bawah berubah.
+const KONFIG = 1
+
+let KEADAAN = ptr::new({"tahap": "", "proses": -1, "pesan": "", "dapat": 0, "total": 0, "calon": 0, "seccomp": true, "log": ""})
+let KUNCI = Mutex::new()
+
+fn env_atau(nama, cadangan) { return env::get(nama).unwrap_or(cadangan) }
+
+/// Bilangan bulat dari teks angka; `cadangan` kalau bukan.
+fn angka(s, cadangan) {
+    let t = str::trim(s)
+    if t == "" || str::len(t) > 18 { return cadangan }
+    for _, c in t { if !str::contains("0123456789", str(c)) { return cadangan } }
+    return str::to_int(t)
+}
+
+/// Folder mesin: rootfs, metadata, pengganti /proc, folder sementara proot, unduhan.
+pub fn dasar() {
+    let d = fs::join(env_atau("HOME", fs::temp_dir()), "jrg-linux")
+    if !fs::exists(d) { let _ = fs::mkdir(d) }
+    return d
+}
+pub fn rootfs() { return fs::join(dasar(), "ubuntu/rootfs") }
+fn berkas_meta() { return fs::join(dasar(), "ubuntu/meta.json") }
+/// Skrip host yang menjalankan perintah di dalam Linux (`linux`, penjalan bahasa, sesi terminal).
+pub fn masuk() { return fs::join(dasar(), "bin/masuk") }
+
+fn di_pustaka(nama) {
+    let p = env_atau("JRG_PUSTAKA", "")
+    return p != "" && fs::exists(fs::join(p, nama)) $ fs::join(p, nama) : ""
+}
+/// proot: dari APK (`libproot.so`), atau `JRG_IDE_PROOT` (laptop, uji).
+fn proot() {
+    let apk = di_pustaka("libproot.so")
+    return apk != "" $ apk : env_atau("JRG_IDE_PROOT", "")
+}
+fn android() { return di_pustaka("libproot.so") != "" }
+fn pembantu() {
+    let apk = di_pustaka("libjrglinux_exe.so")
+    return apk != "" $ apk : env_atau("JRG_IDE_JRGLINUX", "")
+}
+
+// Jawaban yang tidak berubah selama pelayan hidup (arsitektur, zona waktu): proses luar cuma sekali.
+let INGAT = ptr::new(dict::new())
+fn ingat(k, f) {
+    match dict::get(ptr::get(INGAT), k) {
+        Some(v) => { return v }
+        None => {
+            let v = f()
+            let _ = ptr::update(INGAT, |d| dict::set(d, k, v))
+            return v
+        }
+    }
+}
+
+/// Nama arsitektur menurut Ubuntu; "" kalau tidak didukung.
+fn arsitektur() { return ingat("arsitektur", || arsitektur_baca()) }
+fn arsitektur_baca() {
+    let m = match proses::keluaran("uname", ["-m"], {"batas_ms": 5000}) { Ok(h) => str::trim(h.keluaran), Err(e) => "" }
+    if m == "aarch64" || m == "arm64" { return "arm64" }
+    if m == "x86_64" || m == "amd64" { return "amd64" }
+    return ""
+}
+
+fn meta() {
+    match fs::try_read(berkas_meta()) {
+        Ok(t) => { return str::starts_with(t, "{") $ json::parse(t) : dict::new() }
+        Err(e) => { return dict::new() }
+    }
+}
+/// Mesinnya ada (versi Terminal, atau laptop dengan JRG_IDE_PROOT).
+pub fn bisa() { return proot() != "" && pembantu() != "" && arsitektur() != "" }
+pub fn terpasang() { return fs::exists(fs::join(rootfs(), "usr/bin/env")) && fs::exists(berkas_meta()) }
+
+/// Ringkasan untuk halaman (`/api/info`, `/api/linux`).
+pub fn info() {
+    let k = ptr::get(KEADAAN)
+    let m = meta()
+    return {"bisa": bisa(), "terpasang": terpasang(),
+            "versi": dict::get(m, "versi").unwrap_or(""), "seccomp": dict::get(m, "seccomp").unwrap_or(true),
+            "arsip": "ubuntu-base-" + RILIS[0]["versi"] + "-base-" + arsitektur() + ".tar.gz",
+            "tahap": k["tahap"], "pesan": k["pesan"], "dapat": k["dapat"], "total": k["total"], "log": k["log"],
+            "sumber": fs::is_file(arsip_sumber())}
+}
+
+fn kutip(s) { return "'" + str::replace(s, "'", "'\\''") + "'" }
+
+/// Sumber bahasa JRG yang ikut di APK Terminal (bangun_apk.sh), dan jalurnya di dalam Linux (`jrg-sumber`).
+pub fn arsip_sumber() { return fs::join(fs::cwd(), "linux/jrg-lang.tar.gz") }
+const SUMBER_TAMU = "/usr/local/share/jrg-ide/jrg-lang.tar.gz"
+
+/// Bongkar sumber JRG ke folder berkas IDE (`jrg-lang/`), dari tombol di Lainnya > Linux.
+pub fn bongkar_sumber(akar) {
+    if !fs::is_file(arsip_sumber()) { return Err("sumber JRG tidak ikut di versi ini") }
+    let ke = fs::join(akar, "jrg-lang")
+    if fs::exists(ke) { return Err("berkas/jrg-lang sudah ada; hapus atau ganti namanya dulu") }
+    let h = proses::keluaran(pembantu(), ["tarik", arsip_sumber(), akar], {"batas_ms": 300000})?
+    if !h.sukses { return Err(str::trim(h.galat)) }
+    return Ok("jrg-lang")
+}
+
+/// Akar berkas pemakai seperti yang dilihat shell (`pwd -P`): di Android folder data punya dua nama.
+fn kanonik(p) {
+    match proses::keluaran("sh", ["-c", "pwd -P"], {"dir": p, "batas_ms": 5000}) {
+        Ok(h) => { return h.sukses $ str::trim(h.keluaran) : p }
+        Err(e) => { return p }
+    }
+}
+
+/// Isi pengganti berkas /proc yang dilarang dibaca aplikasi sejak Android 8 (SELinux). Yang bisa dibaca
+/// tidak diganti. Nilainya statis tapi masuk akal; `uptime`/`btime` dari jam nyala sebenarnya.
+fn proc_palsu() {
+    var hasil = []
+    let d = fs::join(dasar(), "proc")
+    let nyala = match fs::try_read("/proc/uptime") { Ok(t) => angka(str::split(str::trim(t), ".")[0], 1000), Err(e) => 1000 }
+    let cpu = 8
+    var baris_cpu = ""
+    for i in 0..cpu { baris_cpu = baris_cpu + "cpu" + str(i) + " 1957 0 2877 93280 262 342 254 0 0 0\n" }
+    let isi = {
+        "loadavg": "0.12 0.07 0.02 2/165 765\n",
+        "uptime": str(nyala) + ".00 " + str(nyala * 4) + ".00\n",
+        "version": "Linux version 4.14 (jrg-ide@android) #1 SMP PREEMPT\n",
+        "stat": "cpu  15656 0 23016 746240 2096 2736 2032 0 0 0\n" + baris_cpu + "intr 63361 0\nctxt 38014093\nbtime " +
+                str(time::now_ms() / 1000 - nyala) + "\nprocesses 26442\nprocs_running 1\nprocs_blocked 0\nsoftirq 75663 0 5903 6 25375 10774 0 243 11685 0 21677\n",
+        "vmstat": "nr_free_pages 136977\nnr_inactive_anon 11\nnr_active_anon 4386\nnr_inactive_file 8618\nnr_active_file 14453\npgpgin 199652\npgpgout 37456\npswpin 0\npswpout 0\npgfault 360588\npgmajfault 1072\n",
+    }
+    for nama, teks in isi {
+        if fs::try_read(fs::join("/proc", nama)).is_ok() { continue }
+        let f = fs::join(d, nama)
+        if !fs::exists(d) { let _ = fs::mkdir(d) }
+        fs::write(f, teks)
+        hasil = hasil + [[f, "/proc/" + nama]]
+    }
+    return hasil
+}
+
+/// Zona waktu tamu dalam bentuk POSIX (`<+0700>-07:00`), dipahami glibc tanpa paket tzdata.
+fn zona() { return ingat("zona", || zona_baca()) }
+fn zona_baca() {
+    let z = match proses::keluaran("date", ["+%z"], {"batas_ms": 5000}) { Ok(h) => str::trim(h.keluaran), Err(e) => "" }
+    if str::len(z) != 5 { return "UTC0" }
+    let tanda = str::slice(z, 0, 1) == "-" $ "+" : "-"
+    return "<" + z + ">" + tanda + str::slice(z, 1, 3) + ":" + str::slice(z, 3, 5)
+}
+
+/// Pasangan `-b` proot: perangkat, /proc pengganti, folder berkas IDE (di jalur yang SAMA, jadi jalur
+/// berkas berlaku di dua sisi), pustaka APK (jrgc), penyimpanan HP, dan alat Android.
+fn ikatan(akar, lain) {
+    let r = rootfs()
+    var b = ["/dev", "/proc", "/sys", "/proc/self/fd:/dev/fd", "/dev/urandom:/dev/random", fs::join(r, "tmp") + ":/dev/shm"]
+    for _, p in proc_palsu() { b = b + [p[0] + ":" + p[1]] }
+    b = b + [akar]
+    for _, x in lain { if x != "" && fs::exists(x) { b = b + [x] } }
+    let pustaka = env_atau("JRG_PUSTAKA", "")
+    if pustaka != "" { b = b + [pustaka] }
+    if fs::is_file(arsip_sumber()) { b = b + [arsip_sumber() + ":" + SUMBER_TAMU] }
+    if android() {
+        // Selalu diikat: izin yang diberikan sesudah sesi dibuka (setup-storage) langsung berlaku di sesi itu.
+        b = b + ["/sdcard", "/storage"]
+        for _, d in ["/system", "/apex", "/vendor", "/linkerconfig"] { if fs::is_dir(d) { b = b + [d] } }
+    }
+    return b
+}
+
+/// Lingkungan di dalam tamu (`env -i`): tidak ada yang bocor dari Android.
+fn env_tamu(akar) {
+    let shell = fs::exists(fs::join(rootfs(), "bin/bash")) $ "/bin/bash" : "/bin/sh"
+    var e = ["HOME=/root", "USER=root", "LOGNAME=root", "SHELL=" + shell, "COLORTERM=truecolor", "LANG=C.UTF-8",
+             "PATH=/root/.local/bin:/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/root/go/bin", "TMPDIR=/tmp", "TZ=" + zona(),
+             "JRG_IDE=1", "JRG_IDE_BERKAS=" + akar, "PYTHONUNBUFFERED=1"]
+    if android() { e = e + ["ANDROID_ROOT=/system", "ANDROID_DATA=/data"] }
+    let pustaka = env_atau("JRG_PUSTAKA", "")
+    if pustaka != "" { e = e + ["JRG_PUSTAKA=" + pustaka] }
+    return e
+}
+
+/// Tulis skrip `masuk`: `masuk` saja membuka bash login, `masuk prog arg...` menjalankan satu perintah.
+/// Folder kerjanya ikut kalau ada di dalam folder berkas IDE; selain itu /root.
+fn tulis_masuk(akar, lain) {
+    let m = meta()
+    let p = proot()
+    let pustaka = env_atau("JRG_PUSTAKA", "")
+    var t = "#!" + (fs::exists("/system/bin/sh") $ "/system/bin/sh" : "/bin/sh") + "\n# Ditulis JRG IDE (src/linux.jrg); ditimpa tiap sesi.\n"
+    t = t + "export PROOT_TMP_DIR=" + kutip(fs::join(dasar(), "tmp")) + "\n"
+    if android() {
+        // Pengganti hard link (link2symlink) disimpan di satu folder, bukan di samping berkasnya: kalau tidak,
+        // `rm -rf` folder yang salah satu hard link-nya di luar folder itu gagal ("Directory not empty")
+        // dan isi pasangannya ikut hilang.
+        t = t + "export PROOT_L2S_DIR=" + kutip(fs::join(rootfs(), ".l2s")) + "\n"
+        t = t + "export PROOT_LOADER=" + kutip(fs::join(pustaka, "libproot-loader.so")) + "\n"
+        if fs::exists(fs::join(pustaka, "libproot-loader32.so")) { t = t + "export PROOT_LOADER_32=" + kutip(fs::join(pustaka, "libproot-loader32.so")) + "\n" }
+    }
+    let seccomp = dict::get(m, "seccomp").unwrap_or(true) $ "1" : "0"
+    t = t + "[ \"${JRG_LINUX_SECCOMP:-" + seccomp + "}\" = 0 ] && export PROOT_NO_SECCOMP=1\n"
+    t = t + "w=$(pwd -P 2>/dev/null); case \"$w/\" in " + kutip(akar + "/") + "*) ;; *) w=/root;; esac\n"
+    // /dev/stdin dan kawannya cuma untuk terminal: pipa (tombol Jalankan) tidak bisa diikat proot.
+    t = t + "t=; for p in 0:stdin 1:stdout 2:stderr; do [ -t ${p%%:*} ] && t=\"$t -b /proc/self/fd/${p%%:*}:/dev/${p#*:}\"; done\n"
+    t = t + "[ $# -gt 0 ] || set -- " + (fs::exists(fs::join(rootfs(), "bin/bash")) $ "/bin/bash --login" : "/bin/sh -l") + "\n"
+    // Bendera termux/proot yang tidak ada di proot biasa (laptop): IPC SysV, memfd lewat ashmem, ukuran symlink, port rendah.
+    // Hard link dilarang untuk aplikasi Android (link2symlink); di Linux biasa boleh, dan link2symlink proot
+    // biasa rusak (dpkg gagal menulis status-old).
+    var bendera = ["--kill-on-exit", "--root-id"]
+    if android() { bendera = bendera + ["--link2symlink", "--sysvipc", "--ashmem-memfd", "-L", "-H", "-p"] }
+    t = t + "exec " + kutip(p)
+    for _, x in bendera { t = t + " " + x }
+    t = t + " $t -r " + kutip(rootfs())
+    for _, x in ikatan(akar, lain) { t = t + " -b " + kutip(x) }
+    t = t + " -w \"$w\" /usr/bin/env -i"
+    for _, x in env_tamu(akar) { t = t + " " + kutip(x) }
+    t = t + " \"TERM=${TERM:-dumb}\" \"JRG_LINUX_LOGIN=${JRG_LINUX_LOGIN:-}\" \"$@\"\n"
+    let f = masuk()
+    if !fs::exists(fs::dirname(f)) { let _ = fs::mkdir(fs::dirname(f)) }
+    fs::write(f, t)
+    fs::chmod(f, 493)
+}
+
+fn tulis_tamu(jalur, isi, mode) {
+    let f = fs::join(rootfs(), jalur)
+    if !fs::exists(fs::dirname(f)) { let _ = fs::mkdir(fs::dirname(f)) }
+    if fs::is_symlink(f) { let _ = fs::delete(f) }
+    fs::write(f, isi)
+    fs::chmod(f, mode)
+}
+
+/// Grup tambahan proses aplikasi Android (inet, sdcard_rw, ...): tanpa entri, `id` mengeluh.
+fn grup_android() {
+    let g = fs::join(rootfs(), "etc/group")
+    if !fs::is_file(g) { return }
+    let status = fs::try_read("/proc/self/status").unwrap_or("")
+    var ada = []
+    for _, b in str::split(fs::read(g), "\n") {
+        let k = str::split(b, ":")
+        if len(k) > 2 { ada = ada + [k[2]] }
+    }
+    var tambah = ""
+    for _, b in str::split(status, "\n") {
+        if !str::starts_with(b, "Groups:") { continue }
+        for _, n in str::split(str::trim(str::slice(b, 7, str::len(b))), " ") {
+            let x = str::trim(n)
+            if x != "" && x != "0" && !arr::contains(ada, x) && angka(x, -1) > 0 { tambah = tambah + "aid_" + x + ":x:" + x + ":root\n"; ada = ada + [x] }
+        }
+    }
+    if tambah != "" { let _ = fs::append(g, tambah) }
+}
+
+/// Blok ~/.bashrc milik IDE: prompt, warna, dan OSC 7 (folder kerja) yang dibaca terminal IDE.
+fn bashrc() {
+    let f = fs::join(rootfs(), "root/.bashrc")
+    let awal = "# >>> jrg-ide >>>"
+    let akhir = "# <<< jrg-ide <<<"
+    var lama = fs::try_read(f).unwrap_or("")
+    let i = str::find(lama, awal)
+    let j = str::find(lama, akhir)
+    match i {
+        Some(a) => { match j { Some(b) => { lama = str::slice(lama, 0, a) + str::slice(lama, b + str::len(akhir), str::len(lama)) }, None => {} } }
+        None => {}
+    }
+    var blok = awal + "\n# Dikelola JRG IDE dan diperbarui sendiri; tulis ubahanmu di luar blok ini.\n"
+    // Folder berkas IDE tampil `berkas/...` di prompt: jalurnya di Android panjang (/data/user/0/...).
+    blok = blok + "_jrg_pwd() { case \"$PWD\" in \"$JRG_IDE_BERKAS\") echo '~/berkas';; \"$JRG_IDE_BERKAS\"/*) echo \"~/berkas${PWD#\"$JRG_IDE_BERKAS\"}\";; \"$HOME\") echo '~';; \"$HOME\"/*) echo \"~${PWD#\"$HOME\"}\";; *) echo \"$PWD\";; esac; }\n"
+    blok = blok + "PS1='\\[\\e[1;32m\\]\\u@\\h\\[\\e[0m\\]:\\[\\e[1;34m\\]$(_jrg_pwd)\\[\\e[0m\\]\\$ '\n"
+    blok = blok + "alias ls='ls --color=auto' ll='ls -alF' la='ls -A' l='ls -CF' grep='grep --color=auto' cls=clear\n"
+    blok = blok + "HISTCONTROL=ignoreboth HISTSIZE=5000 HISTFILESIZE=10000\n"
+    blok = blok + "[ -f /usr/share/bash-completion/bash_completion ] && . /usr/share/bash-completion/bash_completion\n"
+    blok = blok + "PROMPT_COMMAND='printf \"\\033]7;%s\\007\" \"$PWD\"'\n" + akhir + "\n"
+    if !fs::exists(fs::dirname(f)) { let _ = fs::mkdir(fs::dirname(f)) }
+    fs::write(f, str::trim_end(lama) + "\n\n" + blok)
+}
+
+/// Berkas milik IDE di dalam rootfs. Ditulis tiap sesi: jalur pustaka APK berganti tiap pembaruan aplikasi.
+fn atur_tamu(akar) {
+    let r = rootfs()
+    tulis_tamu("etc/hosts", "127.0.0.1 localhost\n::1 localhost ip6-localhost ip6-loopback\n", 420)
+    tulis_tamu("etc/resolv.conf", "# Ditulis JRG IDE.\nnameserver 1.1.1.1\nnameserver 8.8.8.8\n", 420)
+    tulis_tamu("usr/local/bin/pkg", fs::read("linux/tamu/pkg"), 493)
+    let simpan = fs::read("linux/tamu/setup-storage")
+    for _, n in ["setup-storage", "ubuntu-setup-storage", "termux-setup-storage"] { tulis_tamu("usr/local/bin/" + n, simpan, 493) }
+    let profil = str::replace(str::replace(str::replace(fs::read("linux/tamu/profil.sh"), "@DISTRO@", "Ubuntu " + dict::get(meta(), "versi").unwrap_or("")),
+                                           "@ARSITEKTUR@", arsitektur()), "@AKAR@", akar)
+    tulis_tamu("etc/profile.d/jrg-ide.sh", profil, 420)
+    tulis_tamu("etc/apt/apt.conf.d/99jrg-ide", "// Dikelola JRG IDE: sandbox _apt tidak bermakna di proot; tanpa recommends supaya hemat ruang.\nAPT::Sandbox::User \"root\";\nAcquire::Languages \"none\";\nAcquire::Retries \"3\";\nAPT::Install-Recommends \"false\";\nAPT::Install-Suggests \"false\";\n", 420)
+    // Tanpa fsync per berkas: di flash HP itu yang membuat dpkg lambat; rename tetap atomik.
+    tulis_tamu("etc/dpkg/dpkg.cfg.d/99jrg-ide", "force-unsafe-io\n", 420)
+    // jrgc milik APK (bionic) ikut bisa dipakai dari dalam Linux; /system dan /apex terikat untuk linker-nya.
+    let jrgc = env_atau("JRG_JRGC", "")
+    if jrgc != "" && str::starts_with(jrgc, "/") {
+        // Mesin Native: clang Ubuntu + runtime glibc (siapkan_jrgrt); tanpa runtime bawaan APK, sumbernya
+        // dibongkar dari arsip sumber JRG dan dibangun cargo Ubuntu saat pertama dipakai.
+        let rt = "/" + JRGRT_TAMU
+        var j = "#!/bin/sh\nexport JRGC_RUNTIME_DIR=\"${JRGC_RUNTIME_DIR:-" + rt + "}\"\n"
+        j = j + "case \" $* \" in *\" --emit-llvm\"*) [ -f \"$JRGC_RUNTIME_DIR/Cargo.toml\" ] || [ ! -f " + SUMBER_TAMU + " ] || { mkdir -p \"$JRGC_RUNTIME_DIR\" && tar -xzf " + SUMBER_TAMU + " -C \"$JRGC_RUNTIME_DIR\" --strip-components=2 --no-same-owner jrg-lang/runtime; };; esac\n"
+        tulis_tamu("usr/local/bin/jrgc", j + "exec " + kutip(jrgc) + " \"$@\"\n", 493)
+        siapkan_jrgrt()
+        tulis_tamu("usr/local/bin/jrgm", "#!/bin/sh\nexec " + kutip(jrgc) + " --jrgm \"$@\"\n", 493)
+    }
+    // `masuk` di dalam tamu cuma meneruskan, jadi baris "Jalankan di terminal" sama di dua shell.
+    tulis_tamu(str::slice(masuk(), 1, str::len(masuk())), "#!/bin/sh\n[ $# -gt 0 ] || { echo 'sudah di dalam Linux'; exit 0; }\nexec \"$@\"\n", 493)
+    tulis_tamu("usr/local/bin/sudo", fs::read("linux/tamu/sudo"), 493)
+    tulis_tamu("usr/local/bin/jrg-sumber", fs::read("linux/tamu/jrg-sumber"), 493)
+    // ~/berkas: folder berkas IDE dari rumah Linux, seperti ~/storage di Termux.
+    let rumah = fs::join(r, "root/berkas")
+    if !fs::exists(rumah) && !fs::is_symlink(rumah) { let _ = proses::jalankan("ln", ["-s", akar, rumah]) }
+    let _ = fs::mkdir(fs::join(r, ".l2s"))
+    let tmp = fs::join(r, "tmp")
+    if !fs::exists(tmp) { let _ = fs::mkdir(tmp) }
+    fs::chmod(tmp, 1023)
+    let _ = fs::mkdir(fs::join(r, "var/lib/jrg-ide"))
+    let _ = fs::mkdir(fs::join(dasar(), "tmp"))
+    bashrc()
+    if dict::get(meta(), "grup").unwrap_or(false) != true {
+        grup_android()
+        simpan_meta("grup", true)
+    }
+}
+
+const JRGRT_TAMU = "var/lib/jrg-ide/jrgrt"
+/// Runtime Native glibc dari APK (`linux/jrgrt/libjrgrt.a`, dibangun bangun_apk.sh). Penanda sumber ditulis
+/// lebih dulu dan pustakanya sesudahnya, jadi jrgc menganggapnya segar dan tidak memanggil cargo.
+fn siapkan_jrgrt() {
+    let asal = "linux/jrgrt/libjrgrt.a"
+    if !fs::is_file(asal) || arsitektur() != "arm64" { return }
+    let d = fs::join(rootfs(), JRGRT_TAMU)
+    let lib = fs::join(d, "target/release/libjrgrt.a")
+    let tanda = fs::join(d, "dari-apk")
+    if fs::is_file(lib) && fs::try_read(tanda).unwrap_or("") == str(fs::size(asal)) { return }
+    let _ = fs::mkdir(fs::join(d, "src"))
+    let _ = fs::mkdir(fs::dirname(lib))
+    fs::write(fs::join(d, "Cargo.toml"), "# Runtime jrgrt bawaan JRG IDE (dibangun sebelum dikemas); bukan sumber.\n[package]\nname = \"jrgrt\"\nversion = \"0.0.0\"\n")
+    fs::write(fs::join(d, "Cargo.lock"), "")
+    fs::write(fs::join(d, "src/lib.rs"), "")
+    if fs::copy(asal, lib) { fs::write(tanda, str(fs::size(asal))) }
+}
+
+fn simpan_meta(k, v) {
+    var m = meta()
+    m[k] = v
+    fs::write(berkas_meta(), json::stringify(m))
+}
+
+/// Siapkan sesi: berkas tamu dan skrip `masuk` diperbarui. `akar` folder berkas IDE, `lain` folder lain
+/// yang ikut terlihat dari dalam (folder shell IDE, paket).
+pub fn siapkan(akar, lain) {
+    if !terpasang() { return Err("Linux belum dipasang (Lainnya > Linux)") }
+    let a = kanonik(akar)
+    atur_tamu(a)
+    tulis_masuk(a, lain)
+    return Ok(masuk())
+}
+
+/// Program tamu pertama dari `calon` yang ada di rootfs; "" kalau tidak ada atau Linux belum dipasang.
+pub fn program(calon) {
+    if !terpasang() { return "" }
+    for _, c in calon {
+        for _, d in ["usr/local/bin", "usr/bin"] { if fs::exists(fs::join(fs::join(rootfs(), d), c)) { return c } }
+    }
+    return ""
+}
+
+// ---------- pemasangan: tahap demi tahap, dimajukan tiap kali halaman bertanya ----------
+
+fn ubah(f) { let _ = ptr::update(KEADAAN, f) }
+fn tahap(t, pesan) {
+    ubah(|k| { var x = k; x["tahap"] = t; x["pesan"] = pesan; return x })
+}
+fn gagal(pesan) {
+    ubah(|k| { var x = k; x["tahap"] = "gagal"; x["pesan"] = pesan; x["proses"] = -1; return x })
+}
+fn jalan(argumen, env) {
+    match proses::mulai(pembantu(), argumen, {"kelompok": true, "env": env}) {
+        Ok(n) => { ubah(|k| { var x = k; x["proses"] = n; x["log"] = ""; return x }); return true }
+        Err(e) => { gagal("pemasang tidak bisa dimulai: " + e); return false }
+    }
+}
+fn arsip(r) { return fs::join(fs::join(dasar(), "unduh"), "ubuntu-base-" + r["versi"] + "-base-" + arsitektur() + ".tar.gz") }
+
+/// Mulai memasang (atau mengulang yang gagal). `cari` berisi folder tempat arsip yang sudah diunduh
+/// sendiri boleh ditemukan (mis. folder berkas IDE): tanpa internet pun bisa.
+pub fn pasang(cari) {
+    return mutex::with_lock(KUNCI, || {
+        let k = ptr::get(KEADAAN)
+        if k["tahap"] != "" && k["tahap"] != "gagal" && k["tahap"] != "siap" { return Err("pemasangan sedang berjalan") }
+        if proot() == "" || pembantu() == "" { return Err("mesin Linux cuma ada di JRG IDE Terminal") }
+        let a = arsitektur()
+        if a == "" { return Err("arsitektur perangkat ini tidak didukung Ubuntu") }
+        let _ = fs::mkdir(fs::join(dasar(), "unduh"))
+        ptr::set(KEADAAN, {"tahap": "", "proses": -1, "pesan": "", "dapat": 0, "total": 0, "calon": 0, "seccomp": true, "log": ""})
+        // Arsip yang sudah ada (unduhan sebelumnya, atau ditaruh pemakai) diperiksa dulu sidiknya.
+        for i, r in RILIS {
+            let nama = fs::basename(arsip(r))
+            for _, d in cari {
+                let f = fs::join(d, nama)
+                if fs::is_file(f) && !fs::exists(arsip(r)) { let _ = fs::copy(f, arsip(r)) }
+            }
+            if fs::is_file(arsip(r)) {
+                ubah(|k| { var x = k; x["calon"] = i; return x })
+                tahap("periksa", "Memeriksa sidik " + nama)
+                let _ = jalan(["sha256", arsip(r)], dict::new())
+                return Ok(true)
+            }
+        }
+        mulai_unduh(0)
+        return Ok(true)
+    })
+}
+
+fn mulai_unduh(i) {
+    let r = RILIS[i]
+    ubah(|k| { var x = k; x["calon"] = i; x["dapat"] = 0; x["total"] = 0; return x })
+    tahap("unduh", "Mengunduh Ubuntu " + r["versi"])
+    let url = env_atau("JRG_IDE_LINUX_URL", URL_RILIS) + fs::basename(arsip(r))
+    let _ = jalan(["unduh", url, arsip(r)], dict::new())
+}
+
+/// Batalkan pemasangan yang sedang berjalan.
+pub fn batal() {
+    return mutex::with_lock(KUNCI, || {
+        let k = ptr::get(KEADAAN)
+        if k["proses"] >= 0 { let _ = proses::hentikan(k["proses"]) }
+        gagal("dibatalkan")
+        return Ok(true)
+    })
+}
+
+/// Hapus Linux beserta semua isinya (paket yang dipasang ikut hilang).
+pub fn hapus() {
+    let k = ptr::get(KEADAAN)
+    if k["tahap"] != "" && k["tahap"] != "gagal" && k["tahap"] != "siap" { return Err("tunggu pemasangan selesai atau batalkan dulu") }
+    let d = fs::join(dasar(), "ubuntu")
+    if !fs::exists(d) { return Ok(true) }
+    let h = proses::keluaran(pembantu(), ["hapus", d], {"batas_ms": 600000})?
+    ptr::set(KEADAAN, {"tahap": "", "proses": -1, "pesan": "", "dapat": 0, "total": 0, "calon": 0, "seccomp": true, "log": ""})
+    if fs::exists(d) { return Err("sebagian berkas tidak bisa dihapus: " + h.galat) }
+    return Ok(true)
+}
+
+/// Majukan pemasangan selagi halaman bertanya; jawabannya `info()`.
+pub fn maju(akar, lain) {
+    mutex::with_lock(KUNCI, || { langkah(akar, lain); return nil })
+    return info()
+}
+
+fn langkah(akar, lain) {
+    let k = ptr::get(KEADAAN)
+    if k["proses"] < 0 {
+        // Tahap berjalan tanpa proses (pelayan sempat galat di tengah): jangan menggantung selamanya.
+        if k["tahap"] != "" && k["tahap"] != "gagal" && k["tahap"] != "siap" { gagal("pemasangan terhenti; coba lagi") }
+        return
+    }
+    let b = match proses::baca(k["proses"]) { Ok(x) => x, Err(e) => { gagal(e); return } }
+    var log = k["log"] + b.keluaran
+    if str::len(log) > 4000 { log = str::slice(log, str::len(log) - 4000, str::len(log)) }
+    // Baris kemajuan pembantu: "unduh <dapat> <total>", "tarik <dibaca> <total>".
+    let baris = arr::filter(str::split(log, "\n"), |x| str::starts_with(x, k["tahap"] + " "))
+    if len(baris) > 0 {
+        let p = str::split(baris[len(baris) - 1], " ")
+        if len(p) == 3 { ubah(|x| { var y = x; y["dapat"] = angka(p[1], 0); y["total"] = angka(p[2], 0); return y }) }
+    }
+    ubah(|x| { var y = x; y["log"] = log; return y })
+    if !b.selesai { return }
+    ubah(|x| { var y = x; y["proses"] = -1; return y })
+    let galat = str::trim(b.galat)
+    let r = RILIS[k["calon"]]
+    let t = k["tahap"]
+    if t == "unduh" {
+        if !b.sukses {
+            // Rilis yang sudah ditarik dari server (404): coba yang lebih lama.
+            if str::contains(galat, "HTTP 404") && k["calon"] + 1 < len(RILIS) { mulai_unduh(k["calon"] + 1); return }
+            gagal(galat == "" $ "unduhan gagal" : galat)
+            return
+        }
+        tahap("periksa", "Memeriksa sidik unduhan")
+        let _ = jalan(["sha256", arsip(r)], dict::new())
+    } else if t == "periksa" {
+        let sidik = str::trim(log)
+        if !b.sukses || sidik != r[arsitektur()] {
+            let _ = fs::delete(arsip(r))
+            gagal(b.sukses $ "sidik arsip tidak cocok (unduhan rusak atau bukan arsip resmi); coba lagi" : galat)
+            return
+        }
+        let sebagian = fs::join(dasar(), "ubuntu/rootfs.sebagian")
+        let _ = fs::mkdir(fs::join(dasar(), "ubuntu"))
+        ubah(|x| { var y = x; y["dapat"] = 0; y["total"] = 0; return y })
+        tahap("tarik", "Membongkar Ubuntu " + r["versi"])
+        if fs::exists(sebagian) { let _ = proses::keluaran(pembantu(), ["hapus", sebagian], {"batas_ms": 600000}) }
+        let _ = jalan(["tarik", arsip(r), sebagian], dict::new())
+    } else if t == "tarik" {
+        if !b.sukses { gagal(galat == "" $ "arsip tidak bisa dibongkar" : galat); return }
+        let sebagian = fs::join(dasar(), "ubuntu/rootfs.sebagian")
+        if fs::exists(rootfs()) { let _ = proses::keluaran(pembantu(), ["hapus", rootfs()], {"batas_ms": 600000}) }
+        if !fs::rename(sebagian, rootfs()) { gagal("rootfs tidak bisa dipindah ke tempatnya"); return }
+        fs::write(berkas_meta(), json::stringify({"versi": r["versi"], "sha256": r[arsitektur()], "dipasang": time::now_ms(), "konfig": KONFIG, "seccomp": true}))
+        let _ = fs::delete(arsip(r))
+        uji(akar, lain, true)
+    } else if t == "uji" {
+        // Akselerasi seccomp proot gagal di sebagian kernel: diulang tanpa itu sebelum menyerah.
+        if b.sukses && str::contains(log, "42") {
+            simpan_meta("seccomp", k["seccomp"])
+            tahap("siap", "Ubuntu " + r["versi"] + " siap" + (k["seccomp"] $ "" : " (mode kompatibel)"))
+        } else if k["seccomp"] {
+            uji(akar, lain, false)
+        } else {
+            gagal("proot tidak bisa berjalan di perangkat ini: " + str::trim(log + "\n" + galat))
+        }
+    }
+}
+
+fn uji(akar, lain, seccomp) {
+    ubah(|x| { var y = x; y["seccomp"] = seccomp; return y })
+    tahap("uji", seccomp $ "Menguji mesin" : "Menguji mesin (mode kompatibel)")
+    match siapkan(akar, lain) {
+        Ok(m) => {
+            match proses::mulai(m, ["/bin/sh", "-c", "/bin/true && echo $((40+2)) | /bin/cat"], {"kelompok": true, "batas_ms": 120000, "env": {"JRG_LINUX_SECCOMP": seccomp $ "1" : "0"}}) {
+                Ok(n) => { ubah(|x| { var y = x; y["proses"] = n; y["log"] = ""; return y }) }
+                Err(e) => { gagal("uji mesin tidak bisa dimulai: " + e) }
+            }
+        }
+        Err(e) => { gagal(e) }
+    }
+}

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalau Jawabannya Mungkin Tidak Ada — Matematika × JRG</title>
+<meta name="description" content="Bagaimana JRG menangani &quot;tidak ketemu&quot; dan &quot;gagal&quot; &amp;mdash; tanpa pernah menyerahkan nilai palsu yang kelihatan seperti jawaban.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="mtk">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a class="aktif" aria-current="page" href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel kelas" data-bab="jrg10">
+<p class="rel">JRG 10 · JRG Lanjut</p>
+<h1>Kalau Jawabannya Mungkin Tidak Ada</h1>
+<p class="ringkas">Bagaimana JRG menangani "tidak ketemu" dan "gagal" &mdash; tanpa pernah menyerahkan nilai palsu yang kelihatan seperti jawaban.</p>
+
+<h2 id="masalah-yang-diselesaikan"><span class="lencana">keandalan</span>Masalah yang diselesaikan</h2>
+<p>Apa yang harus dikembalikan sebuah fungsi pencari kalau yang dicari tidak ada? Banyak bahasa menjawab <code>null</code> &mdash; dan di situlah kesulitan dimulai, karena <code>null</code> terlihat seperti nilai biasa sampai program terlanjur memakainya.</p>
+<p>JRG menjawab berbeda: fungsi semacam itu mengembalikan <strong>Option</strong>, yang isinya salah satu dari dua hal &mdash; <code>Some(nilai)</code> kalau ketemu, atau <code>None</code> kalau tidak.</p>
+<figure class="kode" data-jalan><figcaption><span>option.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> a = [<span class="k-ang">10</span>, <span class="k-ang">20</span>, <span class="k-ang">30</span>]
+    <span class="k-fn">wok</span>(a.<span class="k-fn">first</span>())
+    <span class="k-fn">wok</span>(a.<span class="k-fn">get</span>(<span class="k-ang">1</span>))
+    <span class="k-fn">wok</span>(a.<span class="k-fn">get</span>(<span class="k-ang">99</span>))     <span class="k-kom">// di luar jangkauan -&gt; None, bukan tebakan</span>
+}</code></pre><pre class="keluaran"><code>Option::Some(10)
+Option::Some(20)
+Option::None</code></pre></figure>
+<h2 id="mengambil-isinya-dengan-aman">Mengambil isinya dengan aman</h2>
+<div class="tabel"><table><thead><tr><th>Cara</th><th>Kalau ada isinya</th><th>Kalau kosong</th></tr></thead><tbody><tr><td><code>x.unwrap_or(bawaan)</code></td><td>Isinya</td><td>Nilai bawaan yang kamu tentukan</td></tr><tr><td><code>x.is_some()</code></td><td><code>true</code></td><td><code>false</code></td></tr><tr><td><code>match</code></td><td>Cabang <code>Some(v)</code></td><td>Cabang <code>None</code></td></tr></tbody></table></div>
+<figure class="kode" data-jalan><figcaption><span>ambil.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> a = [<span class="k-ang">10</span>, <span class="k-ang">20</span>, <span class="k-ang">30</span>]
+
+    <span class="k-fn">wok</span>(a.<span class="k-fn">get</span>(<span class="k-ang">1</span>).<span class="k-fn">unwrap_or</span>(<span class="k-ang">0</span>))
+    <span class="k-fn">wok</span>(a.<span class="k-fn">get</span>(<span class="k-ang">99</span>).<span class="k-fn">unwrap_or</span>(<span class="k-ang">0</span>))
+
+    <span class="k-kunci">match</span> a.<span class="k-fn">get</span>(<span class="k-ang">99</span>) {
+        <span class="k-fn">Some</span>(v) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;Ketemu:&quot;</span>, v),
+        <span class="k-tipe">None</span> =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;Tidak ada di posisi itu&quot;</span>)
+    }
+}</code></pre><pre class="keluaran"><code>20
+0
+Tidak ada di posisi itu</code></pre></figure>
+<aside class="catatan catatan-tip"><p class="catatan-judul">Bentuk ringkas: <code>??</code></p><div><code>a ?? b</code> berarti "pakai <code>a</code> kalau ada isinya, kalau tidak pakai <code>b</code>". Bedanya dengan <code>unwrap_or</code>: <code>b</code> baru dihitung <em>kalau memang diperlukan</em>.</div></aside>
+<figure class="kode" data-jalan><figcaption><span>nullish.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> a = [<span class="k-ang">10</span>, <span class="k-ang">20</span>]
+    <span class="k-fn">wok</span>(a.<span class="k-fn">get</span>(<span class="k-ang">0</span>) ?? -<span class="k-ang">1</span>)
+    <span class="k-fn">wok</span>(a.<span class="k-fn">get</span>(<span class="k-ang">9</span>) ?? -<span class="k-ang">1</span>)
+}</code></pre><pre class="keluaran"><code>10
+-1</code></pre></figure>
+<h2 id="result-berhasil-atau-gagal-dengan-alasan"><code>Result</code>: berhasil, atau gagal dengan alasan</h2>
+<p>Kalau kegagalannya punya <em>sebab</em> yang perlu dijelaskan, JRG memakai <code>Result</code>: <code>Ok(nilai)</code> atau <code>Err(alasan)</code>.</p>
+<figure class="kode" data-jalan><figcaption><span>result.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bagi</span>(a: <span class="k-tipe">int</span>, b: <span class="k-tipe">int</span>) -&gt; <span class="k-tipe">Result</span> {
+    <span class="k-kunci">if</span> b == <span class="k-ang">0</span> {
+        <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;tidak bisa dibagi nol&quot;</span>)
+    }
+    <span class="k-kunci">return</span> <span class="k-fn">Ok</span>(a / b)
+}
+
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">match</span> <span class="k-fn">bagi</span>(<span class="k-ang">10</span>, <span class="k-ang">2</span>) {
+        <span class="k-fn">Ok</span>(v) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;Hasil:&quot;</span>, v),
+        <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;Gagal:&quot;</span>, e)
+    }
+    <span class="k-kunci">match</span> <span class="k-fn">bagi</span>(<span class="k-ang">10</span>, <span class="k-ang">0</span>) {
+        <span class="k-fn">Ok</span>(v) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;Hasil:&quot;</span>, v),
+        <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;Gagal:&quot;</span>, e)
+    }
+}</code></pre><pre class="keluaran"><code>Hasil: 5
+Gagal: tidak bisa dibagi nol</code></pre></figure>
+<h2 id="meneruskan-kegagalan-dengan">Meneruskan kegagalan dengan <code>?</code></h2>
+<p>Menulis <code>match</code> untuk setiap pemanggilan itu melelahkan. Tanda <code>?</code> berarti: "kalau ini gagal, hentikan fungsi ini dan teruskan galatnya ke atas".</p>
+<figure class="kode" data-jalan><figcaption><span>tanya.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bagi</span>(a: <span class="k-tipe">int</span>, b: <span class="k-tipe">int</span>) -&gt; <span class="k-tipe">Result</span> {
+    <span class="k-kunci">if</span> b == <span class="k-ang">0</span> { <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;bagi nol&quot;</span>) }
+    <span class="k-kunci">return</span> <span class="k-fn">Ok</span>(a / b)
+}
+
+<span class="k-kunci">fn</span> <span class="k-fn">hitung</span>(x: <span class="k-tipe">int</span>) -&gt; <span class="k-tipe">Result</span> {
+    <span class="k-kunci">let</span> a = <span class="k-fn">bagi</span>(<span class="k-ang">100</span>, x)?      <span class="k-kom">// gagal di sini -&gt; langsung keluar</span>
+    <span class="k-kunci">let</span> b = <span class="k-fn">bagi</span>(a, <span class="k-ang">2</span>)?
+    <span class="k-kunci">return</span> <span class="k-fn">Ok</span>(b)
+}
+
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-fn">wok</span>(<span class="k-fn">hitung</span>(<span class="k-ang">5</span>))
+    <span class="k-fn">wok</span>(<span class="k-fn">hitung</span>(<span class="k-ang">0</span>))
+}</code></pre><pre class="keluaran"><code>Result::Ok(10)
+Result::Err(bagi nol)</code></pre></figure>
+<aside class="catatan catatan-info"><p class="catatan-judul">Inilah kenapa <code>?</code> bukan pembuka percabangan</p><div>Di JRG tanda tanya sudah punya tugas ini &mdash; meneruskan galat. Itu sebabnya bentuk ringkas percabangan memakai <code>$</code>, bukan <code>?</code> seperti di bahasa lain.</div></aside>
+<h2 id="kenapa-bukan-sekadar-nil">Kenapa bukan sekadar <code>nil</code></h2>
+<p>Kalau sebuah fungsi boleh menjawab <code>nil</code> untuk "tidak ketemu", maka <code>nil</code> punya dua arti: “tidak ada” dan “ada, isinya memang kosong”. Dua keadaan berbeda dengan satu jawaban yang sama &mdash; dan program tidak bisa membedakannya.</p>
+<div class="rumus"><div class="rumus-persamaan">Some(nil)  &ne;  None</div><div class="rumus-langkah"><span>Some(nil)</span> &rarr; ada isinya, kebetulan kosong</div><div class="rumus-langkah"><span>None</span> &rarr; memang tidak ada</div></div>
+<div class="kuis" data-kuis="qj10_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Apa yang dikembalikan <code>[1,2].get(99)</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>nil</code></button><button type="button" data-benar="1"><span>B</span><code>None</code></button><button type="button" data-benar="0"><span>C</span>Error yang menghentikan program</button></div><p class="kuis-umpan benar" hidden>Tepat &mdash; <code>None</code>, yang harus kamu buka dulu sebelum dipakai.</p><p class="kuis-umpan salah" hidden>JRG memakai <code>Option</code> untuk hal yang mungkin tidak ketemu.</p></div>
+<div class="kuis" data-kuis="qj10_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Apa arti <code>?</code> di akhir pemanggilan fungsi?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>Bentuk percabangan singkat</button><button type="button" data-benar="1"><span>B</span>Kalau gagal, hentikan fungsi ini dan teruskan galatnya</button><button type="button" data-benar="0"><span>C</span>Ubah jadi teks</button></div><p class="kuis-umpan benar" hidden>Betul.</p><p class="kuis-umpan salah" hidden>Yang jadi bentuk percabangan singkat di JRG adalah <code>$</code>.</p></div>
+<div class="kuis" data-kuis="qj10_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Kenapa <code>None</code> lebih baik daripada <code>nil</code> untuk "tidak ketemu"?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>Lebih cepat</button><button type="button" data-benar="1"><span>B</span>Karena <code>nil</code> akan punya dua arti sekaligus</button><button type="button" data-benar="0"><span>C</span>Lebih pendek ditulis</button></div><p class="kuis-umpan benar" hidden>Tepat &mdash; dan dua arti dalam satu jawaban adalah sumber bug yang sulit dilacak.</p><p class="kuis-umpan salah" hidden>Pikirkan: apa yang terjadi kalau nilai yang tersimpan memang <code>nil</code>?</p></div>
+<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Tulis fungsi <code>akar(n)</code> yang menolak bilangan negatif memakai <code>Result</code>.</p><p><strong>2.</strong> Ambil elemen ke-5 dari array berisi 3 elemen, dengan nilai cadangan 0.</p><div class="math-box"><div class="math-step"><span>Jawaban 1:</span> <code>if n &lt; 0 { return Err("akar bilangan negatif") }</code> lalu <code>return Ok(math::sqrt(n))</code>.</div><div class="math-step"><span>Jawaban 2:</span> <code>a.get(5).unwrap_or(0)</code>, atau <code>a.get(5) ?? 0</code>.</div></div></div></details>
+<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke JRG 11</p><div>Berikutnya: menyimpan data berpasangan &mdash; nama dan nilainya &mdash; dengan <code>dict</code>.</div></aside>
+
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="jrg9.html"><small>Bab sebelumnya</small><strong>Fungsi sebagai Nilai</strong></a><a class="ke-kanan" href="jrg11.html"><small>Bab berikutnya</small><strong>Dict: Data Berpasangan</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+<script src="../aset/kelas-data.js"></script>
+<script src="../aset/kelas.js"></script>
+</body>
+</html>

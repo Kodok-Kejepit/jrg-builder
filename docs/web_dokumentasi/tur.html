@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tur singkat — Dokumentasi JRG</title>
+<meta name="description" content="Sepuluh menit pertama dengan JRG, dari satu baris sampai program dengan tes.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a class="aktif" aria-current="page" href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Mulai</p>
+<h1>Tur singkat</h1>
+<p class="ringkas">Sepuluh menit pertama dengan JRG, dari satu baris sampai program dengan tes.</p>
+<h2 id="satu-baris"><a class="jangkar" href="#satu-baris">Satu baris</a></h2>
+<p>Berkas <code>.jrg</code> paling pendek cukup berisi perintahnya saja:</p>
+<figure class="kode" data-jalan><figcaption><span>halo.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-str">&quot;halo&quot;</span>)</code></pre><pre class="keluaran"><code>halo</code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc halo.jrg</code></pre></figure>
+<p>Berkas tanpa <code>package</code> disebut <em>skrip</em>: baris-baris di tingkat atas dijalankan dari atas ke bawah. Fungsi, struct, dan tipe lain boleh dideklarasikan di mana saja di berkas itu.</p>
+<figure class="kode" data-jalan><figcaption><span>sapa.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-fn">sapa</span>(<span class="k-str">&quot;Ani&quot;</span>))
+
+<span class="k-kunci">fn</span> <span class="k-fn">sapa</span>(nama) {
+    <span class="k-kunci">return</span> <span class="k-str">&quot;halo, &quot;</span> + nama
+}
+
+<span class="k-kunci">let</span> angka = [<span class="k-ang">5</span>, <span class="k-ang">3</span>, <span class="k-ang">8</span>, <span class="k-ang">1</span>]
+<span class="k-fn">wok</span>(<span class="k-str">&quot;terurut:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">sort</span>(angka))</code></pre><pre class="keluaran"><code>halo, Ani
+terurut: [1, 3, 5, 8]</code></pre></figure>
+<h2 id="program-dengan-main"><a class="jangkar" href="#program-dengan-main">Program dengan main</a></h2>
+<p>Untuk program yang lebih besar, tulis <code>package</code> dan sebuah <code>pub fn main()</code>. Di sinilah program mulai berjalan.</p>
+<figure class="kode" data-jalan><figcaption><span>suhu.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> main
+
+<span class="k-kunci">fn</span> <span class="k-fn">ke_fahrenheit</span>(c: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
+    <span class="k-kunci">return</span> c * <span class="k-ang">9.0</span> / <span class="k-ang">5.0</span> + <span class="k-ang">32.0</span>
+}
+
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">for</span> _, c <span class="k-kunci">in</span> [<span class="k-ang">0.0</span>, <span class="k-ang">25.0</span>, <span class="k-ang">100.0</span>] {
+        <span class="k-fn">wok</span>(c, <span class="k-str">&quot;°C =&quot;</span>, <span class="k-fn">ke_fahrenheit</span>(c), <span class="k-str">&quot;°F&quot;</span>)
+    }
+}</code></pre><pre class="keluaran"><code>0.0 °C = 32.0 °F
+25.0 °C = 77.0 °F
+100.0 °C = 212.0 °F</code></pre></figure>
+<p><code>wok</code> menerima berapa pun argumen dan memisahkannya dengan spasi. Saudaranya: <code>wok_</code> (tanpa pindah baris), <code>eprint</code> (ke stderr), dan <code>str::format</code> untuk merangkai teks.</p>
+<h2 id="membaca-masukan-dan-argumen"><a class="jangkar" href="#membaca-masukan-dan-argumen">Membaca masukan dan argumen</a></h2>
+<p><code>tok()</code> membaca satu baris dari keyboard. <code>env::args()</code> berisi nama skrip lalu argumen yang ditulis sesudah <code>--</code>.</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">let</span> nama = <span class="k-fn">tok</span>()
+<span class="k-fn">wok</span>(<span class="k-str">&quot;halo,&quot;</span>, nama)
+<span class="k-fn">wok</span>(<span class="k-ns">env</span>::<span class="k-fn">args</span>())</code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc tanya.jrg -- satu dua
+Ani
+halo, Ani
+[tanya.jrg, satu, dua]</code></pre></figure>
+<h2 id="mesin-yang-lain"><a class="jangkar" href="#mesin-yang-lain">Mesin yang lain</a></h2>
+<p>Program yang sama bisa dijalankan dengan tiga cara:</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc suhu.jrg                <span class="k-kom"> # interpreter</span>
+jrgc suhu.jrg --vm           <span class="k-kom"> # VM bytecode, lebih cepat</span>
+jrgc suhu.jrg --emit-llvm    <span class="k-kom"> # kompilasi native lewat clang, lalu dijalankan</span>
+jrgc suhu.jrg --emit-llvm -o suhu --no-run  <span class="k-kom"> # cuma kompilasi, hasilnya ./suhu</span></code></pre></figure>
+<p>Bedanya dijelaskan di <a href="mesin.html">Tiga mesin</a>. Untuk sehari-hari, interpreter sudah cukup.</p>
+<h2 id="mencoba-di-repl"><a class="jangkar" href="#mencoba-di-repl">Mencoba di REPL</a></h2>
+<p><code>jrgc</code> tanpa berkas membuka REPL. Ekspresi langsung dicetak nilainya, dan blok yang belum tertutup dilanjutkan di baris berikutnya.</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc
+jrg&gt; let x = 10
+jrg&gt; x * 3
+30
+jrg&gt; fn kuadrat(n) { return n * n }
+jrg&gt; kuadrat(12)
+144
+jrg&gt; :doc arr::sort
+arr::sort(a) -&gt; array
+  Salinan terurut menaik; `a` sendiri tidak berubah.
+jrg&gt; :simpan coba.jrg</code></pre></figure>
+<p><code>:cari kata</code> mencari fungsi bawaan, <code>:doc nama</code> menjelaskannya, dan <code>:simpan</code> menulis sesi jadi berkas <code>.jrg</code> yang bisa dijalankan. Ketik <code>:bantuan</code> untuk daftar lengkapnya.</p>
+<h2 id="menulis-tes"><a class="jangkar" href="#menulis-tes">Menulis tes</a></h2>
+<p>Fungsi bernama <code>test_…</code> atau <code>uji_…</code> adalah tes. <code>--uji</code> menjalankan semuanya, bukan <code>main</code>.</p>
+<figure class="kode"><figcaption><span>hitung.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">tambah</span>(a, b) { <span class="k-kunci">return</span> a + b }
+
+<span class="k-kunci">fn</span> <span class="k-fn">test_tambah</span>() {
+    <span class="k-fn">assert_eq</span>(<span class="k-fn">tambah</span>(<span class="k-ang">2</span>, <span class="k-ang">3</span>), <span class="k-ang">5</span>)
+}
+
+<span class="k-kunci">fn</span> <span class="k-fn">test_salah</span>() {
+    <span class="k-fn">assert_eq</span>(<span class="k-fn">tambah</span>(<span class="k-ang">2</span>, <span class="k-ang">2</span>), <span class="k-ang">5</span>)
+}</code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc hitung.jrg --uji
+  ok    test_tambah
+  GAGAL test_salah (baris 8) — assert_eq gagal — kiri `4` (int), kanan `5` (int)
+--- 2 test: 1 lulus, 1 gagal ---</code></pre></figure>
+<p>Untuk proyek dengan banyak berkas tes, pakai <code>jrgm test</code> (lihat <a href="jrgm.html">jrgm</a>).</p>
+<h2 id="kalau-ada-yang-salah"><a class="jangkar" href="#kalau-ada-yang-salah">Kalau ada yang salah</a></h2>
+<p>Ambil contoh ini:</p>
+<figure class="kode" data-jalan><figcaption><span>harga.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> harga = [<span class="k-ang">12000</span>, <span class="k-ang">8500</span>, <span class="k-ang">4000</span>]
+<span class="k-fn">wok</span>(harga[<span class="k-ang">3</span>])</code></pre><pre class="keluaran"><code>error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2, atau -1..-3 kalau mau hitung dari belakang)
+ --&gt; harga.jrg:2:5
+  |
+2 | wok(harga[3])
+  |     ^^^^^^^^
+  |</code></pre></figure>
+<p>Pesan galat menyebut apa yang salah, letaknya, dan potongan kode dengan tanda <code>^</code> di bagian yang bermasalah. Di atasnya biasanya ada satu baris sapaan (di contoh ini dibuang dengan <code>--sopan</code>); cara mengatur nadanya ada di <a href="diagnostik.html">Diagnostik</a>.</p>
+<h2 id="sesudah-ini"><a class="jangkar" href="#sesudah-ini">Sesudah ini</a></h2>
+<ul><li><a href="nilai.html">Nilai dan tipe</a>: angka, teks, array, dict, dan konversinya.</li><li><a href="pustaka.html">Pustaka bawaan</a>: apa saja yang sudah tersedia.</li><li><a href="jrgm.html">jrgm</a>: membuat proyek dengan banyak berkas.</li></ul>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="pasang.html"><small>Sebelumnya</small><strong>Pasang</strong></a><a class="ke-kanan" href="nilai.html"><small>Berikutnya</small><strong>Nilai dan tipe</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#satu-baris">Satu baris</a></li><li><a href="#program-dengan-main">Program dengan main</a></li><li><a href="#membaca-masukan-dan-argumen">Membaca masukan dan argumen</a></li><li><a href="#mesin-yang-lain">Mesin yang lain</a></li><li><a href="#mencoba-di-repl">Mencoba di REPL</a></li><li><a href="#menulis-tes">Menulis tes</a></li><li><a href="#kalau-ada-yang-salah">Kalau ada yang salah</a></li><li><a href="#sesudah-ini">Sesudah ini</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

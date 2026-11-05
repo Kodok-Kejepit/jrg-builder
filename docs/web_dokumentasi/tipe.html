@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Struct, enum, dan trait — Dokumentasi JRG</title>
+<meta name="description" content="Membuat tipe sendiri, memberinya method, dan berbagi perilaku lewat trait.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a class="aktif" aria-current="page" href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Bahasa</p>
+<h1>Struct, enum, dan trait</h1>
+<p class="ringkas">Membuat tipe sendiri, memberinya method, dan berbagi perilaku lewat trait.</p>
+<h2 id="struct"><a class="jangkar" href="#struct">Struct</a></h2>
+<p>Struct mengelompokkan data bernama. Field yang ditulis <code>pub</code> bisa dibaca dari luar; sisanya cuma terlihat dari method tipe itu (dan turunannya). Field boleh punya nilai bawaan, dan field tanpa nilai bawaan wajib diisi.</p>
+<figure class="kode" data-jalan><figcaption><span>struct.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Akun</span> {
+    <span class="k-kunci">pub</span> nama: <span class="k-tipe">string</span>,
+    <span class="k-kunci">pub</span> saldo: <span class="k-tipe">int</span> = <span class="k-ang">0</span>,
+    pin: <span class="k-tipe">string</span> = <span class="k-str">&quot;0000&quot;</span>,
+}
+
+<span class="k-kunci">impl</span> <span class="k-tipe">Akun</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">baru</span>(nama) -&gt; <span class="k-tipe">Akun</span> {
+        <span class="k-kunci">return</span> <span class="k-tipe">Akun</span> { nama: nama }
+    }
+
+    <span class="k-kunci">fn</span> <span class="k-fn">setor</span>(<span class="k-kunci">self</span>, n) -&gt; <span class="k-tipe">Akun</span> {
+        <span class="k-kunci">var</span> a = <span class="k-kunci">self</span>
+        a.saldo += n
+        <span class="k-kunci">return</span> a
+    }
+
+    <span class="k-kunci">fn</span> <span class="k-fn">cek_pin</span>(<span class="k-kunci">self</span>, p) -&gt; <span class="k-tipe">bool</span> {
+        <span class="k-kunci">return</span> <span class="k-kunci">self</span>.pin == p
+    }
+}
+
+<span class="k-kunci">var</span> a = <span class="k-ns">Akun</span>::<span class="k-fn">baru</span>(<span class="k-str">&quot;Ani&quot;</span>)
+a = a.<span class="k-fn">setor</span>(<span class="k-ang">50</span>)
+<span class="k-fn">wok</span>(a.nama, a.saldo, a.<span class="k-fn">cek_pin</span>(<span class="k-str">&quot;1234&quot;</span>))</code></pre><pre class="keluaran"><code>Ani 50 false</code></pre></figure>
+<p>Fungsi di dalam <code>impl</code> tanpa <code>self</code> dipanggil lewat nama tipe (<code>Akun::baru</code>). Yang memakai <code>self</code> dipanggil lewat nilainya (<code>a.setor(50)</code>).</p>
+<p><code>self</code> di dalam method adalah <strong>salinan</strong>. Mengubah <code>self</code> tidak mengubah nilai milik pemanggil, jadi method yang mengubah sesuatu mengembalikan nilai baru dan pemanggilnya menugaskan ulang: <code>a = a.setor(50)</code>. Bentuk ini tidak menyalin data besar; lihat <a href="memori.html">Model memori</a>.</p>
+<h3 id="membuat-dari-nilai-lain"><a class="jangkar" href="#membuat-dari-nilai-lain">Membuat dari nilai lain</a></h3>
+<p><code>...</code> mengisi field yang tidak ditulis dari nilai lain. Ia harus ditulis paling akhir.</p>
+<figure class="kode" data-jalan><figcaption><span>sebar.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Titik</span> { <span class="k-kunci">pub</span> x: <span class="k-tipe">int</span>, <span class="k-kunci">pub</span> y: <span class="k-tipe">int</span>, <span class="k-kunci">pub</span> z: <span class="k-tipe">int</span> }
+
+<span class="k-kunci">let</span> awal = <span class="k-tipe">Titik</span> { x: <span class="k-ang">1</span>, y: <span class="k-ang">2</span>, z: <span class="k-ang">3</span> }
+<span class="k-kunci">let</span> geser = <span class="k-tipe">Titik</span> { x: <span class="k-ang">10</span>, ...awal }
+<span class="k-fn">wok</span>(geser)</code></pre><pre class="keluaran"><code>Titik {x: 10, y: 2, z: 3}</code></pre></figure>
+<h3 id="pewarisan"><a class="jangkar" href="#pewarisan">Pewarisan</a></h3>
+<p>Sebuah struct boleh mewarisi satu struct lain. Field dan method induknya ikut.</p>
+<figure class="kode" data-jalan><figcaption><span>waris.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Hewan</span> { <span class="k-kunci">pub</span> nama: <span class="k-tipe">string</span> }
+
+<span class="k-kunci">impl</span> <span class="k-tipe">Hewan</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">kenalan</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">string</span> { <span class="k-kunci">return</span> <span class="k-str">&quot;aku &quot;</span> + <span class="k-kunci">self</span>.nama }
+}
+
+<span class="k-kunci">struct</span> <span class="k-tipe">Kucing</span>: <span class="k-tipe">Hewan</span> { <span class="k-kunci">pub</span> warna: <span class="k-tipe">string</span> }
+
+<span class="k-kunci">let</span> k = <span class="k-tipe">Kucing</span> { nama: <span class="k-str">&quot;Oyen&quot;</span>, warna: <span class="k-str">&quot;oranye&quot;</span> }
+<span class="k-fn">wok</span>(k.<span class="k-fn">kenalan</span>(), k.warna)</code></pre><pre class="keluaran"><code>aku Oyen oranye</code></pre></figure>
+<h2 id="enum"><a class="jangkar" href="#enum">Enum</a></h2>
+<p>Enum adalah tipe yang nilainya satu dari beberapa varian. Varian boleh membawa data, berurutan atau bernama.</p>
+<figure class="kode" data-jalan><figcaption><span>enum.jrg</span></figcaption><pre><code><span class="k-kunci">enum</span> <span class="k-tipe">Bentuk</span> {
+    <span class="k-fn">Lingkaran</span>(<span class="k-tipe">float</span>),
+    <span class="k-fn">Persegi</span>(<span class="k-tipe">float</span>),
+    <span class="k-tipe">Segitiga</span> { alas: <span class="k-tipe">float</span>, tinggi: <span class="k-tipe">float</span> },
+}
+
+<span class="k-kunci">fn</span> <span class="k-fn">luas</span>(b) {
+    <span class="k-kunci">return</span> <span class="k-kunci">match</span> b {
+        <span class="k-ns">Bentuk</span>::<span class="k-fn">Lingkaran</span>(r) =&gt; <span class="k-ang">3.14</span> * r * r,
+        <span class="k-ns">Bentuk</span>::<span class="k-fn">Persegi</span>(s) =&gt; s * s,
+        <span class="k-ns">Bentuk</span>::<span class="k-tipe">Segitiga</span> { alas, tinggi } =&gt; alas * tinggi / <span class="k-ang">2.0</span>,
+    }
+}
+
+<span class="k-fn">wok</span>(<span class="k-fn">luas</span>(<span class="k-ns">Bentuk</span>::<span class="k-fn">Lingkaran</span>(<span class="k-ang">1.0</span>)))
+<span class="k-fn">wok</span>(<span class="k-fn">luas</span>(<span class="k-ns">Bentuk</span>::<span class="k-tipe">Segitiga</span> { alas: <span class="k-ang">4.0</span>, tinggi: <span class="k-ang">3.0</span> }))
+
+<span class="k-kunci">enum</span> <span class="k-tipe">Arah</span> { <span class="k-tipe">Utara</span>, <span class="k-tipe">Timur</span>, <span class="k-tipe">Selatan</span>, <span class="k-tipe">Barat</span> }
+<span class="k-fn">wok</span>(<span class="k-ns">Arah</span>::<span class="k-tipe">Utara</span>, <span class="k-ns">Arah</span>::<span class="k-tipe">Utara</span> == <span class="k-ns">Arah</span>::<span class="k-tipe">Barat</span>)</code></pre><pre class="keluaran"><code>3.14
+6.0
+Arah::Utara false</code></pre></figure>
+<p><code>Option</code> dan <code>Result</code> adalah enum biasa yang sudah tersedia; keduanya dibahas di <a href="galat.html">Option dan Result</a>.</p>
+<h2 id="trait"><a class="jangkar" href="#trait">Trait</a></h2>
+<p>Trait mendaftar method yang harus dimiliki sebuah tipe. Method tanpa badan wajib disediakan tiap <code>impl</code>; method dengan badan menjadi bawaan yang boleh ditimpa.</p>
+<figure class="kode" data-jalan><figcaption><span>trait.jrg</span></figcaption><pre><code><span class="k-kunci">trait</span> <span class="k-tipe">Bersuara</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">suara</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">string</span>
+    <span class="k-kunci">fn</span> <span class="k-fn">sapa</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">string</span> = <span class="k-kunci">self</span>.nama + <span class="k-str">&quot; bilang &quot;</span> + <span class="k-kunci">self</span>.<span class="k-fn">suara</span>()
+}
+
+<span class="k-kunci">struct</span> <span class="k-tipe">Anjing</span> { <span class="k-kunci">pub</span> nama: <span class="k-tipe">string</span> }
+<span class="k-kunci">struct</span> <span class="k-tipe">Bebek</span> { <span class="k-kunci">pub</span> nama: <span class="k-tipe">string</span> }
+
+<span class="k-kunci">impl</span> <span class="k-tipe">Bersuara</span> <span class="k-kunci">for</span> <span class="k-tipe">Anjing</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">suara</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">string</span> { <span class="k-kunci">return</span> <span class="k-str">&quot;guk&quot;</span> }
+}
+
+<span class="k-kunci">impl</span> <span class="k-tipe">Bersuara</span> <span class="k-kunci">for</span> <span class="k-tipe">Bebek</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">suara</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">string</span> { <span class="k-kunci">return</span> <span class="k-str">&quot;kwek&quot;</span> }
+    <span class="k-kunci">fn</span> <span class="k-fn">sapa</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">string</span> { <span class="k-kunci">return</span> <span class="k-kunci">self</span>.nama + <span class="k-str">&quot; cuma diam&quot;</span> }
+}
+
+<span class="k-fn">wok</span>(<span class="k-tipe">Anjing</span> { nama: <span class="k-str">&quot;Doggo&quot;</span> }.<span class="k-fn">sapa</span>())
+<span class="k-fn">wok</span>(<span class="k-tipe">Bebek</span> { nama: <span class="k-str">&quot;Donal&quot;</span> }.<span class="k-fn">sapa</span>())</code></pre><pre class="keluaran"><code>Doggo bilang guk
+Donal cuma diam</code></pre></figure>
+<p><code>impl</code> yang lupa menyediakan method wajib ditolak sebelum program jalan.</p>
+<h2 id="generik"><a class="jangkar" href="#generik">Generik</a></h2>
+<p>Fungsi dan struct boleh punya parameter tipe. Karena JRG diketik dinamis, parameter tipe dan batas trait-nya (<code>&lt;T: Bersuara&gt;</code>) adalah dokumentasi: namanya diperiksa, isinya tidak ditegakkan.</p>
+<figure class="kode" data-jalan><figcaption><span>generik.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> pertama&lt;<span class="k-tipe">T</span>&gt;(xs: []<span class="k-tipe">T</span>) -&gt; <span class="k-tipe">T</span> {
+    <span class="k-kunci">return</span> xs[<span class="k-ang">0</span>]
+}
+
+<span class="k-kunci">struct</span> <span class="k-tipe">Kotak</span>&lt;<span class="k-tipe">T</span>&gt; { <span class="k-kunci">pub</span> isi: <span class="k-tipe">T</span> }
+
+<span class="k-fn">wok</span>(<span class="k-fn">pertama</span>([<span class="k-ang">3</span>, <span class="k-ang">4</span>]), <span class="k-fn">pertama</span>([<span class="k-str">&quot;a&quot;</span>]), <span class="k-tipe">Kotak</span> { isi: <span class="k-ang">5.5</span> }.isi)</code></pre><pre class="keluaran"><code>3 a 5.5</code></pre></figure>
+<h2 id="operator-dan-tampilan-buatan-sendiri"><a class="jangkar" href="#operator-dan-tampilan-buatan-sendiri">Operator dan tampilan buatan sendiri</a></h2>
+<p>Sebuah tipe bisa memberi arti pada operator dengan method bernama khusus, dan menentukan cara ia dicetak lewat <code>to_string</code>.</p>
+<figure class="kode" data-jalan><figcaption><span>operator.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Uang</span> { <span class="k-kunci">pub</span> rp: <span class="k-tipe">int</span> }
+
+<span class="k-kunci">impl</span> <span class="k-tipe">Uang</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">add</span>(<span class="k-kunci">self</span>, o) -&gt; <span class="k-tipe">Uang</span> { <span class="k-kunci">return</span> <span class="k-tipe">Uang</span> { rp: <span class="k-kunci">self</span>.rp + o.rp } }
+    <span class="k-kunci">fn</span> <span class="k-fn">cmp</span>(<span class="k-kunci">self</span>, o) -&gt; <span class="k-tipe">int</span> { <span class="k-kunci">return</span> <span class="k-kunci">self</span>.rp - o.rp }
+    <span class="k-kunci">fn</span> <span class="k-fn">to_string</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">string</span> { <span class="k-kunci">return</span> <span class="k-str">&quot;Rp&quot;</span> + <span class="k-fn">str</span>(<span class="k-kunci">self</span>.rp) }
+}
+
+<span class="k-kunci">let</span> kopi = <span class="k-tipe">Uang</span> { rp: <span class="k-ang">18000</span> }
+<span class="k-kunci">let</span> roti = <span class="k-tipe">Uang</span> { rp: <span class="k-ang">12000</span> }
+<span class="k-fn">wok</span>(kopi + roti, kopi &gt; roti)
+<span class="k-fn">wok</span>([kopi, roti], <span class="k-str">&quot;&quot;&quot;total ${kopi + roti}&quot;&quot;&quot;</span>)</code></pre><pre class="keluaran"><code>Rp30000 true
+[Rp18000, Rp12000] total Rp30000</code></pre></figure>
+<div class="tabel"><table><thead><tr><th>Method</th><th>Operator</th></tr></thead><tbody><tr><td><code>add</code> <code>sub</code> <code>mul</code> <code>div</code> <code>rem</code> <code>pow</code></td><td><code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code> <code>**</code></td></tr><tr><td><code>bit_and</code> <code>bit_or</code> <code>bit_xor</code> <code>shl</code> <code>shr</code></td><td><code>&amp;</code> <code>|</code> <code>^</code> <code>&lt;&lt;</code> <code>&gt;&gt;</code></td></tr><tr><td><code>neg</code> <code>not</code> <code>bit_not</code></td><td><code>-x</code> <code>!x</code> <code>~x</code></td></tr><tr><td><code>eq</code></td><td><code>==</code> <code>!=</code></td></tr><tr><td><code>cmp</code> (mengembalikan bilangan bertanda)</td><td><code>&lt;</code> <code>&lt;=</code> <code>&gt;</code> <code>&gt;=</code></td></tr></tbody></table></div>
+<p><code>&amp;&amp;</code> dan <code>||</code> tidak bisa ditimpa. <code>to_string</code> dipakai di semua tempat sebuah nilai ditampilkan: <code>wok</code>, template, penggabungan teks, dan nilai yang ada di dalam array, dict, atau struct lain.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="fungsi.html"><small>Sebelumnya</small><strong>Fungsi dan closure</strong></a><a class="ke-kanan" href="pola.html"><small>Berikutnya</small><strong>Pola</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#struct">Struct</a></li><li><a href="#enum">Enum</a></li><li><a href="#trait">Trait</a></li><li><a href="#generik">Generik</a></li><li><a href="#operator-dan-tampilan-buatan-sendiri">Operator dan tampilan buatan sendiri</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

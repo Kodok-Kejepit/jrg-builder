@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benchmark — Dokumentasi JRG</title>
+<meta name="description" content="Seberapa cepat backend native JRG dibanding C dan Go, dan cara mengukurnya sendiri.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a class="aktif" aria-current="page" href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Di balik layar</p>
+<h1>Benchmark</h1>
+<p class="ringkas">Seberapa cepat backend native JRG dibanding C dan Go, dan cara mengukurnya sendiri.</p>
+<p>Angka di bawah dari backend LLVM (<code>--emit-llvm</code>), diukur di Intel i5-1235U dengan clang 21, rustc 1.97, dan Go 1.26. Tiap angka adalah waktu terbaik dari enam putaran, dijalankan di satu inti CPU.</p>
+<div class="tabel"><table><thead><tr><th>Kernel</th><th>JRG (ms)</th><th>C (ms)</th><th>JRG : C</th></tr></thead><tbody><tr><td><code>numeric_kernel</code></td><td>732</td><td>748</td><td>0,98</td></tr><tr><td><code>call_recursion</code></td><td>595</td><td>589</td><td>1,01</td></tr><tr><td><code>struct_particles</code></td><td>1044</td><td>981</td><td>1,06</td></tr><tr><td><code>array_sort</code></td><td>1060</td><td>880</td><td>1,20</td></tr><tr><td><code>match_dispatch</code></td><td>788</td><td>585</td><td>1,35</td></tr><tr><td><code>mixed_report</code></td><td>523</td><td>243</td><td>2,15</td></tr><tr><td><code>string_ops</code></td><td>516</td><td>147</td><td>3,51</td></tr></tbody></table></div>
+<p>Ringkasnya: setara C untuk angka dan pemanggilan fungsi, sedikit di belakang untuk struct, array, dan <code>match</code>, dan jelas lebih lambat untuk pengolahan teks. Dibanding Go, JRG menang di tiga kernel (<code>struct_particles</code> 5,8 kali, <code>call_recursion</code> 1,5 kali, <code>match_dispatch</code> 1,45 kali), seri di dua, dan kalah di dua.</p>
+<p>Selisih di <code>string_ops</code> datang dari teks sementara yang belum dibebaskan selama program berjalan; itu pekerjaan berikutnya untuk backend ini.</p>
+<h2 id="mengukur-sendiri"><a class="jangkar" href="#mengukur-sendiri">Mengukur sendiri</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>ROUNDS=5 CPU=0 benchmarks/llvm/run.sh</code></pre></figure>
+<p>Untuk interpreter dan VM ada sembilan kernel tersendiri:</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>sh benchmarks/acuan/jalankan.sh &quot;$PWD/target/release/jrgc&quot; 3</code></pre></figure>
+<p>Perbedaan di bawah sekitar 6–10 persen tidak bisa dibedakan dari derau pengukuran di mesin biasa. Untuk membuktikan sebuah perubahan lebih cepat, hitung instruksinya dengan <code>valgrind --tool=callgrind</code>, jangan cuma membandingkan jam.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="diagnostik.html"><small>Sebelumnya</small><strong>Diagnostik</strong></a><a class="ke-kanan" href="batasan.html"><small>Berikutnya</small><strong>Yang belum jadi</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

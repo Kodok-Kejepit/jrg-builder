@@ -1,0 +1,223 @@
+diff --git a/src/tracee/event.c b/src/tracee/event.c
+index 6141e19..19ff2be 100644
+--- a/src/tracee/event.c
++++ b/src/tracee/event.c
+@@ -37,6 +37,7 @@
+ #include <inttypes.h>   /* PRI*, */
+ 
+ #include "tracee/event.h"
++#include "tracee/reg.h"
+ #include "tracee/seccomp.h"
+ #include "tracee/mem.h"
+ #include "cli/note.h"
+@@ -815,6 +816,7 @@ int handle_tracee_event(Tracee *tracee, int tracee_status)
+ 			if (tracee->sigstop == SIGSTOP_IGNORED) {
+ 				tracee->sigstop = SIGSTOP_ALLOWED;
+ 				signal = 0;
++				restore_child_fork_args(tracee);
+ 			}
+ 			break;
+ 
+diff --git a/src/tracee/reg.c b/src/tracee/reg.c
+index 3859f8e..5fea2a0 100644
+--- a/src/tracee/reg.c
++++ b/src/tracee/reg.c
+@@ -372,6 +372,34 @@ int push_specific_regs(Tracee *tracee, bool including_sysnum)
+ 	return 0;
+ }
+ 
++/**
++ * Woksole: give a child created by a rewritten fork/vfork (see
++ * tracee/seccomp.c) back the argument registers its parent had before
++ * the rewrite.  The syscall ABI preserves them, so compiled code may
++ * rely on them after fork() returns 0.  @child must be ptrace-stopped.
++ */
++void restore_child_fork_args(Tracee *child)
++{
++	if (!child->restore_fork_args)
++		return;
++	child->restore_fork_args = false;
++
++	if (fetch_regs(child) < 0)
++		return;
++
++	REG(child, CURRENT, SYSARG_1) = REG(child, ORIGINAL_SECCOMP_REWRITE, SYSARG_1);
++	REG(child, CURRENT, SYSARG_2) = REG(child, ORIGINAL_SECCOMP_REWRITE, SYSARG_2);
++	REG(child, CURRENT, SYSARG_3) = REG(child, ORIGINAL_SECCOMP_REWRITE, SYSARG_3);
++	REG(child, CURRENT, SYSARG_4) = REG(child, ORIGINAL_SECCOMP_REWRITE, SYSARG_4);
++	REG(child, CURRENT, SYSARG_5) = REG(child, ORIGINAL_SECCOMP_REWRITE, SYSARG_5);
++	REG(child, CURRENT, SYSARG_6) = REG(child, ORIGINAL_SECCOMP_REWRITE, SYSARG_6);
++
++	child->restore_original_regs = false;
++	child->_regs_were_changed = true;
++	(void) push_specific_regs(child, false);
++	child->_regs_were_changed = false;
++}
++
+ /**
+  * Copy the cached values of all @tracee's general purpose registers
+  * back to the process, if necessary.  This function returns -errno if
+diff --git a/src/tracee/reg.h b/src/tracee/reg.h
+index 4536388..5d5abfb 100644
+--- a/src/tracee/reg.h
++++ b/src/tracee/reg.h
+@@ -45,6 +45,7 @@ typedef enum {
+ extern int fetch_regs(Tracee *tracee);
+ extern int push_specific_regs(Tracee *tracee, bool including_sysnum);
+ extern int push_regs(Tracee *tracee);
++extern void restore_child_fork_args(Tracee *child);
+ 
+ extern word_t peek_reg(const Tracee *tracee, RegVersion version, Reg reg);
+ extern void poke_reg(Tracee *tracee, Reg reg, word_t value);
+diff --git a/src/tracee/seccomp.c b/src/tracee/seccomp.c
+index 66dfef3..3157a10 100644
+--- a/src/tracee/seccomp.c
++++ b/src/tracee/seccomp.c
+@@ -1,4 +1,6 @@
+ #include <errno.h>     /* E*, */
++#include <fcntl.h>     /* O_*, AT_FDCWD, */
++#include <sched.h>     /* CLONE_*, */
+ #include <signal.h>    /* SIGSYS, */
+ #include <unistd.h>    /* getpgid, */
+ #include <utime.h>     /* utimbuf, */
+@@ -626,6 +628,96 @@ static int handle_seccomp_event_common(Tracee *tracee)
+ 		break;
+ 	}
+ 
++	/* Woksole: syscall lama yang masih dipakai glibc di x86/x86_64 tapi tidak ada
++	 * di allowlist seccomp aplikasi Android (bionic memakai varian *at/*1/*2).
++	 * Tanpa ini realpath(3) glibc gagal (ENOSYS) dan apt/dpkg tidak jalan.  */
++	case PR_readlink:
++		set_sysnum(tracee, PR_readlinkat);
++		poke_reg(tracee, SYSARG_4, peek_reg(tracee, CURRENT, SYSARG_3));
++		poke_reg(tracee, SYSARG_3, peek_reg(tracee, CURRENT, SYSARG_2));
++		poke_reg(tracee, SYSARG_2, peek_reg(tracee, CURRENT, SYSARG_1));
++		poke_reg(tracee, SYSARG_1, AT_FDCWD);
++		restart_syscall_after_seccomp(tracee);
++		break;
++
++	case PR_creat:
++		set_sysnum(tracee, PR_openat);
++		poke_reg(tracee, SYSARG_4, peek_reg(tracee, CURRENT, SYSARG_2));
++		poke_reg(tracee, SYSARG_3, O_CREAT | O_WRONLY | O_TRUNC);
++		poke_reg(tracee, SYSARG_2, peek_reg(tracee, CURRENT, SYSARG_1));
++		poke_reg(tracee, SYSARG_1, AT_FDCWD);
++		restart_syscall_after_seccomp(tracee);
++		break;
++
++	case PR_mknod:
++		set_sysnum(tracee, PR_mknodat);
++		poke_reg(tracee, SYSARG_4, peek_reg(tracee, CURRENT, SYSARG_3));
++		poke_reg(tracee, SYSARG_3, peek_reg(tracee, CURRENT, SYSARG_2));
++		poke_reg(tracee, SYSARG_2, peek_reg(tracee, CURRENT, SYSARG_1));
++		poke_reg(tracee, SYSARG_1, AT_FDCWD);
++		restart_syscall_after_seccomp(tracee);
++		break;
++
++	case PR_inotify_init:
++		set_sysnum(tracee, PR_inotify_init1);
++		poke_reg(tracee, SYSARG_1, 0);
++		restart_syscall_after_seccomp(tracee);
++		break;
++
++	case PR_epoll_create:
++		/* The size hint is ignored by the kernel but must be > 0;
++		 * epoll_create1 takes flags instead.  */
++		set_sysnum(tracee, PR_epoll_create1);
++		poke_reg(tracee, SYSARG_1, 0);
++		restart_syscall_after_seccomp(tracee);
++		break;
++
++	case PR_eventfd:
++		set_sysnum(tracee, PR_eventfd2);
++		poke_reg(tracee, SYSARG_2, 0);
++		restart_syscall_after_seccomp(tracee);
++		break;
++
++	/* musl di x86_64 memanggil fork/vfork langsung; bionic memakai clone,
++	 * jadi hanya clone yang diizinkan.  Semantiknya identik dengan clone ini
++	 * (begitulah kernel sendiri mengimplementasikan fork/vfork).  */
++	case PR_fork:
++		set_sysnum(tracee, PR_clone);
++		poke_reg(tracee, SYSARG_1, SIGCHLD);
++		poke_reg(tracee, SYSARG_2, 0);
++		poke_reg(tracee, SYSARG_3, 0);
++		poke_reg(tracee, SYSARG_4, 0);
++		poke_reg(tracee, SYSARG_5, 0);
++		restart_syscall_after_seccomp(tracee);
++		break;
++
++	case PR_vfork:
++		set_sysnum(tracee, PR_clone);
++		poke_reg(tracee, SYSARG_1, CLONE_VM | CLONE_VFORK | SIGCHLD);
++		poke_reg(tracee, SYSARG_2, 0);
++		poke_reg(tracee, SYSARG_3, 0);
++		poke_reg(tracee, SYSARG_4, 0);
++		poke_reg(tracee, SYSARG_5, 0);
++		restart_syscall_after_seccomp(tracee);
++		break;
++
++	case PR_pause:
++		/* ppoll(NULL, 0, NULL, NULL, 8): tunggu sampai ada sinyal.  */
++		set_sysnum(tracee, PR_ppoll);
++		poke_reg(tracee, SYSARG_1, 0);
++		poke_reg(tracee, SYSARG_2, 0);
++		poke_reg(tracee, SYSARG_3, 0);
++		poke_reg(tracee, SYSARG_4, 0);
++		poke_reg(tracee, SYSARG_5, 8);
++		restart_syscall_after_seccomp(tracee);
++		break;
++
++	case PR_signalfd:
++		set_sysnum(tracee, PR_signalfd4);
++		poke_reg(tracee, SYSARG_4, 0);
++		restart_syscall_after_seccomp(tracee);
++		break;
++
+ 	case PR_set_robust_list:
+ 	default:
+ 		/* Set errno to -ENOSYS */
+diff --git a/src/tracee/tracee.c b/src/tracee/tracee.c
+index dcc9bbe..d8ed0ad 100644
+--- a/src/tracee/tracee.c
++++ b/src/tracee/tracee.c
+@@ -838,6 +838,14 @@ static int attach_child(Tracee *parent, word_t clone_flags, pid_t pid)
+ 
+ 	child->tool_name = parent->tool_name;
+ 
++	/* Woksole: fork/vfork rewritten into clone(2), see seccomp.c.  */
++	if (parent->restore_original_regs_after_seccomp_event) {
++		memcpy(&child->_regs[ORIGINAL_SECCOMP_REWRITE],
++		       &parent->_regs[ORIGINAL_SECCOMP_REWRITE],
++		       sizeof(child->_regs[ORIGINAL_SECCOMP_REWRITE]));
++		child->restore_fork_args = true;
++	}
++
+ 	inherit_extensions(child, parent, clone_flags);
+ 
+ 	/* Restart the child tracee if it was already alive but
+@@ -864,6 +872,7 @@ static int attach_child(Tracee *parent, word_t clone_flags, pid_t pid)
+ 			child->as_ptracee.event4.proot.value   = 0;
+ 		}
+ 
++		restore_child_fork_args(child);
+ 		if (!keep_stopped)
+ 			(void) restart_tracee(child, 0);
+ 	}
+diff --git a/src/tracee/tracee.h b/src/tracee/tracee.h
+index eaf8625..8e80742 100644
+--- a/src/tracee/tracee.h
++++ b/src/tracee/tracee.h
+@@ -218,6 +218,12 @@ typedef struct tracee {
+ 	bool restore_original_regs;
+ 	bool restore_original_regs_after_seccomp_event;
+ 
++	/* Woksole: this child was created by a fork/vfork that PRoot
++	 * rewrote into clone(2) after a SIGSYS (see tracee/seccomp.c).
++	 * Its argument registers still hold the clone(2) arguments and
++	 * must get back their pre-rewrite values before it runs.  */
++	bool restore_fork_args;
++
+ 	/* State for the special handling of SIGSTOP.  */
+ 	enum {
+ 		SIGSTOP_IGNORED = 0,  /* Ignore SIGSTOP (once the parent is known).  */

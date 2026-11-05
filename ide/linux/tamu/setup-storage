@@ -1,0 +1,27 @@
+#!/bin/sh
+# setup-storage (juga ubuntu-setup-storage, termux-setup-storage): minta izin penyimpanan Android lewat
+# JRG IDE, lalu buat ~/storage seperti Termux dan ~/bersama, folder tukar berkas dengan Termux.
+if [ -t 0 ] && [ -t 1 ]; then
+    printf '\033]7770;izin;penyimpanan\007'
+    stty -echo 2>/dev/null; IFS= read -r k; stty echo 2>/dev/null
+else
+    k=0
+fi
+case "$k" in
+    0) ;;
+    130) exit 130 ;;
+    *) echo "setup-storage: izin penyimpanan tidak diberikan" >&2; exit 1 ;;
+esac
+if ! ls /sdcard/ >/dev/null 2>&1; then
+    echo "setup-storage: /sdcard belum terbaca. Tutup sesi ini dan buka sesi Ubuntu baru." >&2
+    exit 1
+fi
+mkdir -p "$HOME/storage"
+for p in shared: downloads:Download dcim:DCIM pictures:Pictures music:Music movies:Movies documents:Documents; do
+    ln -sfn "/sdcard/${p#*:}" "$HOME/storage/${p%%:*}"
+done
+mkdir -p /sdcard/JRG-bersama 2>/dev/null && ln -sfn /sdcard/JRG-bersama "$HOME/bersama"
+if touch /sdcard/.jrg-tulis 2>/dev/null; then rm -f /sdcard/.jrg-tulis; tulis="baca dan tulis"; else tulis="baca saja; izin tulis: Pengaturan aplikasi > Izin > Penyimpanan"; fi
+echo "Penyimpanan HP: /sdcard, ~/storage/{shared,downloads,dcim,pictures,music,movies,documents} ($tulis)"
+[ -L "$HOME/bersama" ] && echo "Tukar berkas dengan Termux: ~/bersama (di Termux: ~/storage/shared/JRG-bersama)"
+exit 0

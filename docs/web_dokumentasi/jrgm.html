@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jrgm — Dokumentasi JRG</title>
+<meta name="description" content="Mengurus proyek: membuat, menjalankan, menguji, merapikan, memeriksa, dependensi, dan rilis.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a class="aktif" aria-current="page" href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Perkakas</p>
+<h1>jrgm</h1>
+<p class="ringkas">Mengurus proyek: membuat, menjalankan, menguji, merapikan, memeriksa, dependensi, dan rilis.</p>
+<h2 id="proyek-baru"><a class="jangkar" href="#proyek-baru">Proyek baru</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgm new kalku
+Created `kalku` (bin) package
+$ cd kalku
+$ jrgm run
+Halo dari JawaRustGo++!</code></pre></figure>
+<p>Isinya:</p>
+<figure class="kode"><figcaption><span>teks</span></figcaption><pre><code>kalku/
+├── jrgm.toml        manifes proyek
+├── src/main.jrg     titik masuk
+└── tests/dasar.jrg  tes</code></pre></figure>
+<figure class="kode"><figcaption><span>jrgm.toml</span></figcaption><pre><code>[package]
+name        = &quot;kalku&quot;
+version     = &quot;0.1.0&quot;
+edition     = &quot;jrg2025&quot;
+entry       = &quot;src/main.jrg&quot;
+
+[dependencies]
+bantu = { path = &quot;../bantu&quot; }</code></pre></figure>
+<p><code>jrgm new nama --kind lib</code> membuat pustaka, <code>--kind web</code> membuat aplikasi web, dan <code>--android</code> menambahkan bagian <code>[android]</code>. Proyek bahasa lain juga bisa: <code>jrgm new alat --bahasa python</code> (juga <code>javascript</code>, <code>c</code>, <code>cpp</code>, <code>rust</code>, <code>go</code>, <code>java</code>, <code>php</code>, <code>lua</code>, <code>ruby</code>, <code>sh</code>); <code>run</code>, <code>build</code>, <code>test</code>, dan <code>fmt</code> lalu memakai perkakas bahasa itu.</p>
+<h2 id="perintah"><a class="jangkar" href="#perintah">Perintah</a></h2>
+<div class="tabel"><table><thead><tr><th>Perintah</th><th>Gunanya</th></tr></thead><tbody><tr><td><code>jrgm run [--vm] [--watch]</code></td><td>jalankan proyek; <code>--watch</code> mengulang tiap ada yang berubah</td></tr><tr><td><code>jrgm test [--filter kata] [--vm]</code></td><td>jalankan tes di <code>tests/*.jrg</code></td></tr><tr><td><code>jrgm build</code></td><td>periksa semua berkas proyek dan dependensinya</td></tr><tr><td><code>jrgm check</code></td><td>periksa titik masuk saja</td></tr><tr><td><code>jrgm fmt [--check]</code></td><td>rapikan spasi dan indentasi tiap berkas</td></tr><tr><td><code>jrgm lint [--ketat]</code></td><td>galat ditambah peringatan</td></tr><tr><td><code>jrgm exec berkas</code></td><td>jalankan satu berkas tanpa proyek (<code>.jrg</code>, <code>.c</code>, <code>.py</code>, <code>.rs</code>, <code>.go</code>, …)</td></tr><tr><td><code>jrgm clean</code></td><td>hapus hasil bangun</td></tr><tr><td><code>jrgm lsp</code></td><td>server bahasa untuk editor</td></tr><tr><td><code>jrgm apk</code>, <code>jrgm kunci</code>, <code>jrgm siapkan android</code></td><td>aplikasi Android, lihat <a href="android.html">Aplikasi Android</a></td></tr></tbody></table></div>
+<h2 id="tes"><a class="jangkar" href="#tes">Tes</a></h2>
+<p>Fungsi bernama <code>test_…</code> atau <code>uji_…</code> di <code>tests/*.jrg</code> adalah tes. Tiap berkas jalan di prosesnya sendiri dengan batas waktu, jadi satu tes yang macet tidak menahan yang lain.</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgm test
+[jrgm] 1 test di 1 berkas
+
+== tests/dasar.jrg (1 test)
+  ok    test_contoh
+--- 1 test: 1 lulus, 0 gagal ---
+
+[jrgm] semua 1 test lulus</code></pre></figure>
+<h2 id="lint"><a class="jangkar" href="#lint">Lint</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgm lint
+peringatan: `import &quot;std/set&quot;` tidak dipakai — tidak ada `set::` di berkas ini
+ --&gt; src/main.jrg:2:1
+  |
+2 | import &quot;std/set&quot;
+  | ^^^^^^^^^^^^^^^^
+  |
+  = bantuan: hapus baris import-nya
+
+peringatan: `x` diberi nilai tapi tidak pernah dibaca
+ --&gt; src/main.jrg:7:9
+  |
+7 |     let x = 5
+  |         ^
+  |
+  = bantuan: hapus, atau beri awalan `_` (`_x`) kalau memang sengaja
+
+[jrgm] lint: 2 berkas, 0 galat, 2 peringatan</code></pre></figure>
+<p>Peringatannya: import yang tidak dipakai, fungsi yang tidak pernah dipanggil, variabel yang tidak pernah dibaca, literal bulat di tempat pecahan, dan berkas yang belum rapi. <code>--ketat</code> membuat peringatan menggagalkan perintahnya.</p>
+<h2 id="dependensi"><a class="jangkar" href="#dependensi">Dependensi</a></h2>
+<p>Dependensi bisa berupa folder lokal atau repositori git. Git berperan sebagai registri: versinya adalah tag <code>v&lt;versi&gt;</code>, dan commit yang dipakai dikunci di <code>jrgm.lock</code>.</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgm add bantu --path ../bantu
+jrgm add warna --git https://github.com/contoh/warna-jrg --version 0.2.0
+jrgm add alat --git https://github.com/contoh/alat --rev main --dev
+jrgm update           <span class="k-kom"> # majukan semua dependensi git</span>
+jrgm update warna
+jrgm remove bantu
+jrgm tree</code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgm tree
+kalku 0.1.0
+└── bantu 0.1.0</code></pre></figure>
+<p>Sesudah ditambahkan, modul dependensi bisa langsung di-<code>import &quot;bantu&quot;</code>. Siklus dependensi dan dua dependensi yang memberi nama modul sama ditolak dengan rantainya disebut.</p>
+<h2 id="menerbitkan"><a class="jangkar" href="#menerbitkan">Menerbitkan</a></h2>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgm publish --dry-run  <span class="k-kom"> # periksa dulu</span>
+jrgm publish            <span class="k-kom"> # buat tag v&lt;versi&gt; dari jrgm.toml lalu dorong ke remote git</span></code></pre></figure>
+<p>Proyek lain lalu bisa memakainya dengan <code>jrgm add nama --git url --version x.y.z</code>. <code>jrgm add nama</code> tanpa <code>--path</code> atau <code>--git</code> ditolak, karena belum ada registri pusat untuk mencari nama saja.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="jrgc.html"><small>Sebelumnya</small><strong>jrgc</strong></a><a class="ke-kanan" href="editor.html"><small>Berikutnya</small><strong>Editor dan IDE</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#proyek-baru">Proyek baru</a></li><li><a href="#perintah">Perintah</a></li><li><a href="#tes">Tes</a></li><li><a href="#lint">Lint</a></li><li><a href="#dependensi">Dependensi</a></li><li><a href="#menerbitkan">Menerbitkan</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesin game — Dokumentasi JRG</title>
+<meta name="description" content="std/mesin, mesin game 2D di atas kanvas, yang bisa diuji tanpa membuka jendela.">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png">
+<link rel="apple-touch-icon" href="../aset/favicon.png">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<link rel="stylesheet" href="../aset/situs.css">
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.2.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a class="aktif" aria-current="page" href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Tiga mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Pustaka</p>
+<h1>Mesin game</h1>
+<p class="ringkas">std/mesin, mesin game 2D di atas kanvas, yang bisa diuji tanpa membuka jendela.</p>
+<p><code>import &quot;std/mesin&quot;</code> memberi mesin game 2D yang ditulis dalam JRG. Sebuah game terdiri dari tiga hal: keadaan awal, fungsi <code>perbarui</code> yang menghitung keadaan berikutnya, dan fungsi <code>gambar</code>.</p>
+<h2 id="game-terkecil"><a class="jangkar" href="#game-terkecil">Game terkecil</a></h2>
+<figure class="kode" data-jalan><figcaption><span>bola.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> main
+<span class="k-kunci">import</span> <span class="k-str">&quot;std/mesin&quot;</span>
+<span class="k-kunci">import</span> <span class="k-str">&quot;std/mesin/warna&quot;</span>
+
+<span class="k-kunci">struct</span> <span class="k-tipe">Bola</span> { <span class="k-kunci">pub</span> x: <span class="k-tipe">float</span> }
+
+<span class="k-kunci">fn</span> <span class="k-fn">perbarui</span>(k, m, dt) {
+    <span class="k-kunci">var</span> s = k
+    s.x = k.x + m.<span class="k-fn">arah</span>(<span class="k-str">&quot;Left&quot;</span>, <span class="k-str">&quot;Right&quot;</span>, <span class="k-str">&quot;Up&quot;</span>, <span class="k-str">&quot;Down&quot;</span>).x * <span class="k-ang">60.0</span> * dt
+    <span class="k-kunci">return</span> s
+}
+
+<span class="k-kunci">fn</span> <span class="k-fn">gambar</span>(c, k) {
+    <span class="k-ns">canvas</span>::<span class="k-fn">fill_circle</span>(c, k.x, <span class="k-ang">40</span>, <span class="k-ang">6</span>, <span class="k-ns">warna</span>::<span class="k-tipe">MERAH</span>)
+}
+
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> g = <span class="k-ns">mesin</span>::<span class="k-fn">baru</span>(<span class="k-str">&quot;Bola&quot;</span>, <span class="k-ang">160</span>, <span class="k-ang">80</span>, <span class="k-tipe">Bola</span> { x: <span class="k-ang">80.0</span> }, perbarui, gambar)
+    <span class="k-kunci">if</span> <span class="k-ns">canvas</span>::<span class="k-fn">punya_jendela</span>() {
+        g.<span class="k-fn">jalankan</span>()
+    } <span class="k-kunci">else</span> {
+        <span class="k-fn">wok</span>(g.<span class="k-fn">simulasi</span>([[<span class="k-str">&quot;Right&quot;</span>], [<span class="k-str">&quot;Right&quot;</span>]]).keadaan.x)
+    }
+}</code></pre><pre class="keluaran"><code>82.0</code></pre></figure>
+<p>Di komputer yang punya layar, <code>g.jalankan()</code> membuka jendela dan bola bisa digeser dengan panah. Di tempat lain, <code>simulasi</code> memajukan game dua langkah dengan tombol <code>Right</code> ditahan, lalu mencetak posisinya.</p>
+<h2 id="tiga-aturan"><a class="jangkar" href="#tiga-aturan">Tiga aturan</a></h2>
+<ol><li><strong>Keadaan adalah nilai.</strong> <code>perbarui(keadaan, masukan, dt)</code> mengembalikan keadaan baru; tidak ada yang diubah di tempat. Karena itu game bisa diputar ulang dan diuji.</li><li><strong>Langkah waktu tetap</strong>, bawaannya 1/60 detik (ubah dengan <code>dengan_dt</code>). Fisikanya sama di komputer cepat dan lambat.</li><li><strong>Bisa jalan tanpa jendela.</strong> <code>simulasi(rekaman)</code> menerima daftar tombol yang ditahan di tiap langkah. <code>dengan_rekam()</code> merekam permainan sungguhan, dan <code>putar(rekaman)</code> mengulangnya sampai ke keadaan yang sama, jadi bug yang muncul saat bermain bisa dijadikan tes.</li></ol>
+<p>Field struct keadaan perlu <code>pub</code>, karena <code>perbarui</code> dan <code>gambar</code> adalah fungsi biasa, bukan method.</p>
+<h2 id="modul"><a class="jangkar" href="#modul">Modul</a></h2>
+<div class="tabel"><table><thead><tr><th>Modul</th><th>Isi</th></tr></thead><tbody><tr><td><code>std/mesin</code></td><td><code>mesin::baru</code>, <code>langkah</code>, <code>simulasi</code>, <code>jalankan</code>, <code>dengan_latar</code>, <code>dengan_dt</code>, <code>dengan_rekam</code>, <code>putar</code></td></tr><tr><td><code>std/mesin/vek</code></td><td><code>Vek2</code> dengan operator <code>+ - * /</code>, <code>panjang</code>, <code>normal</code>, <code>putar</code>, <code>sudut</code>, <code>lerp</code>, <code>batasi</code></td></tr><tr><td><code>std/mesin/warna</code></td><td>warna bernama, <code>rgb</code>, <code>rgba</code>, <code>hex</code>, <code>campur</code>, <code>gelap</code>, <code>terang</code>, <code>alfa</code></td></tr><tr><td><code>std/mesin/masukan</code></td><td><code>tahan</code>, <code>tekan</code>, <code>lepas</code>, <code>arah</code>, tetikus, dan tombol layar untuk HP</td></tr><tr><td><code>std/mesin/fisika</code></td><td><code>Kotak</code>, <code>Lingkaran</code>, <code>tabrak</code>, <code>dorong_keluar</code>, <code>Benda</code></td></tr><tr><td><code>std/mesin/kamera</code></td><td>geser dan zoom, <code>ikuti</code>, <code>batasi</code>, konversi layar ke dunia</td></tr><tr><td><code>std/mesin/peta</code></td><td>peta petak dari baris teks, tabrakan per petak, <code>gerak</code> yang berhenti tepat di tepi</td></tr><tr><td><code>std/mesin/sprite</code></td><td>lembar sprite, gambar dicerminkan, animasi bingkai</td></tr><tr><td><code>std/mesin/partikel</code></td><td>sistem partikel dengan acak berbenih, jadi bisa diulang</td></tr><tr><td><code>std/mesin/tween</code></td><td>kurva pelonggaran (nama dari easings.net)</td></tr><tr><td><code>std/mesin/ui</code></td><td><code>label</code>, <code>tombol</code>, <code>bilah</code>, dan <code>menu</code> yang dinavigasi keyboard</td></tr><tr><td><code>std/mesin/adegan</code></td><td>tumpukan adegan: menu, permainan, layar jeda</td></tr></tbody></table></div>
+<p>Tiap modul dipanggil dengan nama terakhir jalurnya: <code>import &quot;std/mesin/vek&quot;</code> memberi <code>vek::</code>.</p>
+<h2 id="di-hp"><a class="jangkar" href="#di-hp">Di HP</a></h2>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">if</span> <span class="k-ns">canvas</span>::<span class="k-fn">layar_sentuh</span>() {
+    g = g.<span class="k-fn">dengan_tombol_layar</span>([<span class="k-str">&quot;Left&quot;</span>, <span class="k-str">&quot;Right&quot;</span>, <span class="k-str">&quot;Space&quot;</span>])
+}</code></pre></figure>
+<p>Tombol layar digambar di pita bawah layar dan dibaca seperti tombol keyboard, jadi <code>perbarui</code> tidak perlu diubah. Game JRG bisa dibungkus jadi APK dengan <code>jrgm apk</code> (lihat <a href="android.html">Aplikasi Android</a>).</p>
+<h2 id="bunyi"><a class="jangkar" href="#bunyi">Bunyi</a></h2>
+<p>Bunyi diturunkan dari perubahan keadaan, bukan diputar dari dalam <code>perbarui</code>, supaya putar ulang tetap sunyi:</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bunyi</span>(lama, baru) {
+    <span class="k-kunci">if</span> baru.skor &gt; lama.skor {
+        <span class="k-kunci">return</span> [<span class="k-ns">suara</span>::<span class="k-fn">nada</span>(<span class="k-ang">880</span>, <span class="k-ang">80</span>, <span class="k-str">&quot;kotak&quot;</span>)]
+    }
+    <span class="k-kunci">return</span> []
+}
+
+<span class="k-kunci">let</span> g = <span class="k-ns">mesin</span>::<span class="k-fn">baru</span>(<span class="k-str">&quot;Tangkap&quot;</span>, <span class="k-ang">160</span>, <span class="k-ang">120</span>, awal, perbarui, gambar).<span class="k-fn">dengan_bunyi</span>(bunyi)</code></pre></figure>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="grafis.html"><small>Sebelumnya</small><strong>Kanvas, suara, numerik</strong></a><a class="ke-kanan" href="ffi.html"><small>Berikutnya</small><strong>Bahasa lain</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.png" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.png" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#game-terkecil">Game terkecil</a></li><li><a href="#tiga-aturan">Tiga aturan</a></li><li><a href="#modul">Modul</a></li><li><a href="#di-hp">Di HP</a></li><li><a href="#bunyi">Bunyi</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script src="../aset/cari.js"></script>
+<script src="../aset/situs.js"></script>
+</body>
+</html>
