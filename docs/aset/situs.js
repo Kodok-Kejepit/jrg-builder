@@ -1,7 +1,7 @@
 // Perilaku bersama: tema, menu samping, pencarian, dan tombol di blok kode.
 (function () {
   const akar = document.documentElement;
-  const naik = (document.querySelector('link[rel="stylesheet"]').getAttribute('href') || '').replace(/aset\/situs\.css$/, '');
+  const naik = ((document.currentScript && document.currentScript.getAttribute('src')) || '').replace(/aset\/situs\.js(\?.*)?$/, '');
 
   function simpan(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* mode privat */ } }
 

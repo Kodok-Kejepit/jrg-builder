@@ -167,6 +167,10 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Diperbaiki
 
+- Biner `--emit-llvm`: fungsi yang menumbuhkan array dari array lain yang juga sedang tumbuh (`std/csv::from_dicts`
+  atas hasil `csv::to_dicts`) bisa dikompilasi dengan tipe kembalian yang berbeda antara pemanggil dan fungsinya,
+  tergantung urutan acak di dalam kompilator — sebagian kompilasi berhenti dengan "tag nilai tidak dikenal" atau
+  "memori habis". Sumber yang sama sekarang selalu menghasilkan biner yang sama.
 - `x ** n` dengan `x` pecahan dan `n` bulat dibulatkan tepat di interpreter dan `--vm` — dulu digit terakhirnya
   bisa beda dari `--emit-llvm` (`1.1 ** 10` menjawab `2.593742460100002`, yang tepat `2.5937424601000023`).
 - Biner `--emit-llvm`: `**` atas nilai yang jenisnya baru diketahui saat jalan (`n[0] **= 2` atas `[1, 2.5]`).

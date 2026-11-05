@@ -1,13 +1,13 @@
 /* Tema bersama situs JawaRustGo++: dokumentasi, Matematika x JRG, dan beranda. */
 :root {
-  --latar-hero: url("latar.png");
+  --latar-hero: url("latar.webp");
   --kertas: #f4efe4;
   --panel: #fbf8f1;
   --panel-2: #ece4d4;
   --garis: rgba(41, 38, 33, .14);
   --tinta: #27241f;
   --tinta-2: #5d584e;
-  --tinta-3: #8a8477;
+  --tinta-3: #6b665b;
   --aksen: #a94f28;
   --aksen-kuat: #7d3519;
   --aksen-lembut: rgba(169, 79, 40, .10);
@@ -31,14 +31,14 @@
   color-scheme: light;
 }
 :root[data-tema="gelap"] {
-  --latar-hero: url("latar-gelap.png");
+  --latar-hero: url("latar-gelap.webp");
   --kertas: #1a1815;
   --panel: #221f1b;
   --panel-2: #2c2823;
   --garis: rgba(236, 229, 214, .12);
   --tinta: #ece5d6;
   --tinta-2: #b9b1a3;
-  --tinta-3: #8a8477;
+  --tinta-3: #9a9486;
   --aksen: #e0885c;
   --aksen-kuat: #f2a67f;
   --aksen-lembut: rgba(224, 136, 92, .13);
@@ -49,9 +49,9 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema="terang"]) {
-    --latar-hero: url("latar-gelap.png");
+    --latar-hero: url("latar-gelap.webp");
     --kertas: #1a1815; --panel: #221f1b; --panel-2: #2c2823; --garis: rgba(236, 229, 214, .12);
-    --tinta: #ece5d6; --tinta-2: #b9b1a3; --tinta-3: #8a8477; --aksen: #e0885c; --aksen-kuat: #f2a67f;
+    --tinta: #ece5d6; --tinta-2: #b9b1a3; --tinta-3: #9a9486; --aksen: #e0885c; --aksen-kuat: #f2a67f;
     --aksen-lembut: rgba(224, 136, 92, .13); --hijau: #7dbb88; --merah: #ec7b6b; --kode-bg: #12110f;
     color-scheme: dark;
   }

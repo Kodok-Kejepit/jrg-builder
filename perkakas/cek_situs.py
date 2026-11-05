@@ -14,7 +14,7 @@ for p in halaman:
     t = p.read_text(encoding="utf-8")
     rel = p.relative_to(DOCS)
     for m in re.finditer(r'(?:href|src)="([^"#:]+)(?:#[^"]*)?"', t):
-        tuj = m.group(1)
+        tuj = m.group(1).split("?")[0]
         if tuj.startswith(("http", "//", "data:", "mailto:")):
             continue
         if not (p.parent / tuj).resolve().exists():
@@ -26,7 +26,7 @@ for p in halaman:
     kb = len(t.encode()) // 1024
     if kb > 60:
         salah.append(f"{rel}: {kb} KB, terlalu besar untuk satu halaman")
-    for wajib, ket in (('class="kepala"', "kepala situs"), ('id="isi"', "isi utama"), ("aset/situs.css", "gaya")):
+    for wajib, ket in (('class="kepala"', "kepala situs"), ('id="isi"', "isi utama"), ("--kertas", "gaya")):
         if wajib not in t:
             salah.append(f"{rel}: tidak punya {ket}")
 

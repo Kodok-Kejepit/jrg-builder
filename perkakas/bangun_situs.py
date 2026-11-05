@@ -11,6 +11,7 @@ tidak disentuh; yang ditulis ulang cuma halaman HTML, aset/cari.js dan aset/kela
 
 Pakai dari akar repo:  python3 perkakas/bangun_situs.py [--keluar DIR]
 """
+import hashlib
 import html
 import json
 import re
@@ -24,6 +25,7 @@ DOCS = AKAR / "docs"
 
 VERSI = "0.2.0"
 REPO = "https://github.com/Kodok-Kejepit/jrg"
+SITUS = "https://jrg-lang.org"
 
 URUTAN_DOK = [
     ("Mulai", ["index", "pasang", "tur"]),
@@ -44,12 +46,23 @@ def jumlah_builtin() -> str:
 
 
 ANGKA = {}
+KELUAR = DOCS
+HALAMAN = []
+
+
+def alamat(p: Path) -> str:
+    """URL publik sebuah berkas keluaran; `index.html` ditulis sebagai foldernya."""
+    rel = p.relative_to(KELUAR).as_posix()
+    return f"{SITUS}/{rel[:-len('index.html')] if rel.endswith('index.html') else rel}"
 
 
 def tulis(p: Path, isi: str):
     if "{BUILTIN}" in isi:
         ANGKA.setdefault("builtin", jumlah_builtin())
         isi = isi.replace("{BUILTIN}", ANGKA["builtin"])
+    if "{KANONIK}" in isi:
+        isi = isi.replace("{KANONIK}", alamat(p))
+        HALAMAN.append(alamat(p))
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(isi, encoding="utf-8")
 
@@ -302,19 +315,45 @@ def kepala(aktif: str, naik: str) -> str:
     menu = ('<button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" '
             f'data-aksi="menu">{IKON["menu"]}</button>') if aktif in ("dok", "mtk") else ""
     return f"""<header class="kepala">
-  {menu}<a class="merek" href="{naik}index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="{naik}aset/logo.png" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="{naik}aset/logo-gelap.png" alt="JRG++" width="107" height="34"></a>
+  {menu}<a class="merek" href="{naik}index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="{naik}aset/logo.webp" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="{naik}aset/logo-gelap.webp" alt="JRG++" width="107" height="34"></a>
   <nav class="situs" aria-label="Situs">{tab("dok", "Dokumentasi", "web_dokumentasi/index.html")}{tab("mtk", "Matematika × JRG", "matematika_x_jrg/index.html")}{tab("profil", "Profil", "profil.html")}</nav>
   <span class="versi">v{VERSI}</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari">{IKON["cari"]}<span>Cari</span><kbd>/</kbd></button>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari">{IKON["cari"]}<span>Cari</span><kbd>/</kbd></button>
     <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap">{IKON["tema"]}</button>
     <a class="tombol-ikon" href="{REPO}" aria-label="Kode sumber di GitHub">{IKON["git"]}</a>
   </div>
 </header>"""
 
 
-def halaman(judul, deskripsi, aktif, naik, isi, skrip=()):
-    js = "".join(f'\n<script src="{naik}aset/{s}"></script>' for s in ("cari.js", "situs.js") + tuple(skrip))
+def gaya(naik: str) -> str:
+    """`situs.css` disisipkan ke tiap halaman (tanpa permintaan yang menahan tampilan); `url()`-nya ditulis ulang."""
+    css = (DOCS / "aset" / "situs.css").read_text(encoding="utf-8")
+    return re.sub(r'url\("([^"/:]+)"\)', lambda m: f'url("{naik}aset/{m.group(1)}")', css)
+
+
+def versikan(keluar: Path):
+    """Rujukan ke `aset/` di halaman diberi `?v=<sidik isinya>`, jadi pelayan boleh menyimpannya setahun."""
+    sidik = {}
+
+    def v(m):
+        nama = m.group(2).lstrip("./")
+        f = keluar / nama if (keluar / nama).is_file() else DOCS / nama
+        if not f.is_file():
+            return m.group(0)
+        if f not in sidik:
+            sidik[f] = hashlib.sha256(f.read_bytes()).hexdigest()[:10]
+        return f"{m.group(1)}{m.group(2)}?v={sidik[f]}{m.group(3)}"
+
+    for u in HALAMAN:
+        f = keluar / (u[len(SITUS) + 1:] or "index.html")
+        f = f / "index.html" if f.is_dir() else f
+        isi = f.read_text(encoding="utf-8")
+        f.write_text(re.sub(r'((?:src|href)="|url\(")((?:\.\./)*aset/[^"?#]+)(")', v, isi), encoding="utf-8")
+
+
+def halaman(judul, deskripsi, aktif, naik, isi, skrip=(), ekstra=""):
+    js = "".join(f'\n<script defer src="{naik}aset/{s}"></script>' for s in ("cari.js", "situs.js") + tuple(skrip))
     return f"""<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -322,11 +361,19 @@ def halaman(judul, deskripsi, aktif, naik, isi, skrip=()):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{esc(judul)}</title>
 <meta name="description" content="{esc(deskripsi)}">
+<link rel="canonical" href="{{KANONIK}}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JawaRustGo++ (JRG)">
+<meta property="og:locale" content="id_ID">
+<meta property="og:title" content="{esc(judul)}">
+<meta property="og:description" content="{esc(deskripsi)}">
+<meta property="og:url" content="{{KANONIK}}">
+<meta name="twitter:card" content="summary_large_image">{ekstra}
 <link rel="icon" type="image/png" sizes="96x96" href="{naik}aset/favicon-96.png">
 <link rel="icon" type="image/png" sizes="128x128" href="{naik}aset/favicon.png">
 <link rel="apple-touch-icon" href="{naik}aset/favicon.png">
 <meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
-<link rel="stylesheet" href="{naik}aset/situs.css">
+<style>{gaya(naik)}</style>
 <script>try{{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}}catch(e){{}}</script>
 </head>
 <body data-situs="{aktif}">
@@ -343,8 +390,8 @@ def halaman(judul, deskripsi, aktif, naik, isi, skrip=()):
 
 
 def kaki(naik: str) -> str:
-    return (f'<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="{naik}aset/logo-kaki.png" alt="JRG++" '
-            f'width="150" height="44"><img class="gelap-saja" src="{naik}aset/logo-kaki-gelap.png" alt="JRG++" width="150" '
+    return (f'<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="{naik}aset/logo-kaki.webp" alt="JRG++" '
+            f'width="150" height="44"><img class="gelap-saja" src="{naik}aset/logo-kaki-gelap.webp" alt="JRG++" width="150" '
             f'height="46"><span>versi {VERSI}</span></span>'
             f'<span><a href="{naik}web_dokumentasi/pasang.html">Pasang</a> · '
             f'<a href="{naik}web_dokumentasi/rilis.html">Catatan rilis</a> · '
@@ -418,7 +465,7 @@ def bangun_dokumentasi(keluar: Path, cari: list):
 </main>
 {daftar_isi(judul)}
 </div>"""
-        jdl = "JawaRustGo++ — Dokumentasi" if n == "index" else f'{polos(meta["judul"])} — Dokumentasi JRG'
+        jdl = "Dokumentasi JawaRustGo++ (JRG)" if n == "index" else f'{polos(meta["judul"])} — Dokumentasi JRG'
         tulis(keluar / "web_dokumentasi" / f"{n}.html",
               halaman(jdl, polos(ringkas or meta["judul"]), "dok", "../", badan))
         cari.append({"j": polos(meta["judul"]), "u": f"web_dokumentasi/{n}.html", "g": "Dokumentasi",
@@ -578,10 +625,24 @@ def bangun_beranda(keluar: Path):
                  isi, flags=re.S | re.M)
     badan = f'<main id="isi" class="beranda">\n{isi}\n{kaki("")}\n</main>'
     tulis(keluar / "index.html", halaman(
-        "JawaRustGo++ — bahasa pemrograman",
+        "JawaRustGo++ (JRG) — bahasa pemrograman",
         "JawaRustGo++ (JRG): bahasa pemrograman dengan pesan galat berbahasa Indonesia, "
         "tiga mesin eksekusi, dan kelas matematika dari nol.",
-        "beranda", "", badan))
+        "beranda", "", badan, ekstra=data_terstruktur()))
+
+
+def data_terstruktur() -> str:
+    """JSON-LD beranda: nama situs dan bahasanya, supaya mesin pencari mengenali "JRG" sebagai namanya."""
+    data = [
+        {"@context": "https://schema.org", "@type": "WebSite", "name": "JawaRustGo++",
+         "alternateName": ["JRG", "JawaRustGo++ (JRG)", "bahasa pemrograman JRG"], "url": f"{SITUS}/",
+         "inLanguage": "id"},
+        {"@context": "https://schema.org", "@type": "ComputerLanguage", "name": "JawaRustGo++",
+         "alternateName": "JRG", "url": f"{SITUS}/", "sameAs": [REPO],
+         "creator": {"@type": "Person", "name": "Muhamad Surya Widianto", "url": f"{SITUS}/profil.html"}},
+    ]
+    return "".join(f'\n<script type="application/ld+json">{json.dumps(d, ensure_ascii=False)}</script>'
+                   for d in data)
 
 
 def bangun_profil(keluar: Path, cari: list):
@@ -595,10 +656,20 @@ def bangun_profil(keluar: Path, cari: list):
                  "k": "Muhamad Surya Widianto, pembuat JawaRustGo++", "t": re.sub(r"<[^>]+>", " ", isi)[:800]})
 
 
+def peta_situs(keluar: Path):
+    """`sitemap.xml` dari halaman yang benar-benar ditulis, dan `robots.txt` yang menunjuknya."""
+    baris = "".join(f"  <url><loc>{esc(u)}</loc></url>\n" for u in sorted(set(HALAMAN)))
+    tulis(keluar / "sitemap.xml", '<?xml version="1.0" encoding="UTF-8"?>\n'
+          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + baris + "</urlset>\n")
+    tulis(keluar / "robots.txt", f"User-agent: *\nAllow: /\n\nSitemap: {SITUS}/sitemap.xml\n")
+
+
 def main():
+    global KELUAR
     keluar = DOCS
     if "--keluar" in sys.argv:
         keluar = Path(sys.argv[sys.argv.index("--keluar") + 1]).resolve()
+    KELUAR = keluar
     cari = []
     n_dok = bangun_dokumentasi(keluar, cari)
     n_mtk = bangun_matematika(keluar, cari)
@@ -606,6 +677,8 @@ def main():
     bangun_profil(keluar, cari)
     tulis(keluar / "aset" / "cari.js",
           "// Dibangun perkakas/bangun_situs.py.\nwindow.JRG_CARI = " + json.dumps(cari, ensure_ascii=False) + ";\n")
+    peta_situs(keluar)
+    versikan(keluar)
     print(f"dokumentasi {n_dok} halaman, matematika {n_mtk} halaman, {len(cari)} entri cari")
 
 

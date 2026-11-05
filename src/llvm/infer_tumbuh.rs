@@ -33,12 +33,13 @@ impl Codegen {
         let calon2 = calon.clone();
 
         let mut hasil = HashMap::new();
-        // Beberapa putaran: lokal bertumbuh yang isinya lokal bertumbuh LAIN baru terbaca
-        // sesudah yang di dalam punya tipe.
-        for _putaran in 0..3 {
-        let sebelum = hasil.len();
-        for (nama, elem_awal) in calon.clone() {
-            if hasil.contains_key(&nama) { continue; }
+        // Sampai titik tetap, urut nama: lokal bertumbuh yang isinya lokal bertumbuh LAIN membaca tipe
+        // terbarunya. Dulu urutan `HashMap` yang menentukan, jadi pemanggil dan badan bisa beda tipe.
+        let mut urut: Vec<(String, Option<JrgType>)> = calon.clone().into_iter().collect();
+        urut.sort_by(|a, b| a.0.cmp(&b.0));
+        for _putaran in 0..4 {
+        let mut berubah = false;
+        for (nama, elem_awal) in urut.iter().cloned() {
             let Some(nilai) = ditugasi.get(&nama) else { continue };
             if nilai.is_empty() {
                 continue;
@@ -79,11 +80,15 @@ impl Codegen {
                         }
                     }
                 }
-                lokal.insert(nama.clone(), JrgType::Slice(Box::new(t.clone())));
-                hasil.insert(nama, JrgType::Slice(Box::new(t)));
+                let baru = JrgType::Slice(Box::new(t));
+                if hasil.get(&nama) != Some(&baru) {
+                    lokal.insert(nama.clone(), baru.clone());
+                    hasil.insert(nama, baru);
+                    berubah = true;
+                }
             }
         }
-        if hasil.len() == sebelum { break; }
+        if !berubah { break; }
         }
         // `var a = []` yang ditugasi ulang tapi elemennya tak terbaca dari mana pun: array bertag.
         for (nama, elem_awal) in &calon {

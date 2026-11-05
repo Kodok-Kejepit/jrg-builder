@@ -627,6 +627,40 @@ fn biaya_di_llvm_tetap_linear() {
     assert!(temuan.is_empty(), "biaya di backend LLVM tumbuh lebih cepat dari ukurannya:\n{}", temuan.join("\n"));
 }
 
+/// Sumber yang sama menghasilkan IR yang sama. Dulu penyimpul lokal bertumbuh membaca urutan `HashMap`,
+/// jadi pemanggil dan badan `std/csv::from_dicts` bisa sepakat beda tipe: 7 dari 12 kompilasi rusak (#972).
+#[test]
+fn ir_sama_tiap_kompilasi() {
+    if !ada_clang() { eprintln!("lewati: clang tidak ada"); return; }
+    let dir = dir_uji("ir-tetap");
+    let bungkus = dir.join("clang");
+    std::fs::write(&bungkus, "#!/bin/sh\nfor a; do case $a in *.ll) cp \"$a\" \"$JRG_SALIN_IR\";; esac; done\nexit 1\n")
+        .expect("tulis pembungkus");
+    let _ = Command::new("chmod").arg("+x").arg(&bungkus).status();
+    let mut korpus: Vec<(String, String)> = vec![("csv to_dicts/from_dicts".into(),
+        "package main\nimport \"std/csv\"\npub fn main() {\n    let d = csv::to_dicts([[\"nama\"], [\"ani\"]])\n    \
+         wok(csv::from_dicts([\"nama\"], d))\n}\n".into())];
+    for nama in ["collections", "functions", "semantik_nilai"] {
+        let p = format!("{}/tests/conformance/{}.jrg", env!("CARGO_MANIFEST_DIR"), nama);
+        korpus.push((nama.into(), std::fs::read_to_string(&p).expect("baca konformans")));
+    }
+    let mut temuan = Vec::new();
+    for (nama, src) in &korpus {
+        let file = dir.join("p.jrg");
+        std::fs::write(&file, src).expect("tulis sumber");
+        let ir: Vec<Vec<u8>> = (0..3).map(|k| {
+            let salin = dir.join(format!("ir{}.ll", k));
+            let _ = Command::new(jrgc()).arg(&file).arg("--emit-llvm").arg("-o").arg(dir.join("p.bin")).arg("--no-run")
+                .env("JRGC_CLANG", &bungkus).env("JRG_SALIN_IR", &salin).env("JRG_SOPAN", "1").output();
+            std::fs::read(&salin).unwrap_or_default()
+        }).collect();
+        if ir[0].is_empty() { temuan.push(format!("  {}: IR tidak tertulis", nama)); }
+        else if ir[0] != ir[1] || ir[0] != ir[2] { temuan.push(format!("  {}: IR berbeda antar kompilasi", nama)); }
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+    assert!(temuan.is_empty(), "IR backend LLVM tidak tetap:\n{}", temuan.join("\n"));
+}
+
 #[test]
 fn tiap_program_paritas_yang_jalan_di_llvm_menjawab_sama() {
     if !ada_clang() { eprintln!("lewati: clang tidak ada"); return; }
@@ -638,8 +672,15 @@ fn tiap_program_paritas_yang_jalan_di_llvm_menjawab_sama() {
                 let Some((nama, src)) = kerja.lock().unwrap().pop() else { break };
                 let l = jalankan_llvm(src);
                 let tercatat = PARITAS_BEDA_DI_LLVM.iter().any(|(n, _)| n == nama);
-                // Ditolak LLVM: celah backend yang keras, boleh — tapi entri tercatatnya basi.
+                // Ditolak LLVM: celah backend yang keras, boleh — tapi entri tercatatnya basi. Biner yang MATI
+                // karena cacat jrgc (tag sampah, ukuran karangan) bukan penolakan: itu jawaban rusak.
                 if !l.sukses {
+                    let rusak = l.galat.contains("bug di jrgc")
+                        || (l.galat.contains("memori habis") && jalankan_interp(src).sukses);
+                    if rusak {
+                        temuan.lock().unwrap().push(format!("  RUSAK di LLVM: {}\n    {}", nama,
+                            l.galat.lines().find(|b| b.contains("error")).unwrap_or("").trim()));
+                    }
                     if tercatat {
                         temuan.lock().unwrap().push(format!(
                             "  KABAR BAIK, sekarang DITOLAK LLVM — hapus dari PARITAS_BEDA_DI_LLVM: {}", nama));
