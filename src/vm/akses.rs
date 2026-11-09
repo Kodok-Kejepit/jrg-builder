@@ -48,12 +48,15 @@ impl Vm {
             }
             // FIELD bernama sama, tanpa method: dulu isinya dipanggil dengan
             // penerimanya disisipkan sebagai argumen pertama — dan BERHASIL.
-            let punya_field = m.lock().unwrap().get(name)
-                .is_some_and(|v| v.bisa_dipanggil());
-            if punya_field {
+            let isi = m.lock().unwrap().get(name).map(|v| v.bisa_dipanggil());
+            if isi == Some(true) {
                 let t = m.nama_tipe().unwrap_or("dict").to_string();
                 return Err(VmError::at(
                     crate::interpreter::galat_index::field_fungsi_bukan_metode(&t, name), sp));
+            }
+            // Field yang bukan fungsi bukan method: kalimat acuan, bukan "`int` bukan fungsi".
+            if isi == Some(false) && !matches!(m.label, Label::Enum { .. }) {
+                return Err(self.galat_tak_punya(m, name, sp));
             }
         }
         self.get_field_pintu(obj, name, sp, true)
@@ -138,6 +141,24 @@ impl Vm {
         }
     }
 
+    /// Struct/dict tanpa method (atau field) `name`; menyebut field/key yang MEMANG ada, karena
+    /// pembacanya biasanya salah ketik key, bukan salah ketik method.
+    fn galat_tak_punya(&self, m: &super::value::Peta, name: &str, sp: Option<crate::lexer::Span>) -> VmError {
+        let ns = m.nama_tipe().unwrap_or("dict");
+        let tipe = match &m.label {
+            Label::Struct(n) => format!("struct {}", n),
+            _ => "dict".to_string(),
+        };
+        let mut punya: Vec<String> = m.lock().unwrap().keys().cloned().collect();
+        punya.sort();
+        let tambahan = if punya.is_empty() { String::new() } else {
+            format!(" (kalau maksudnya field/key, yang ada: {})", punya.join(", "))
+        };
+        let calon = self.nama_metode_tipe(ns);
+        let saran = crate::diag::saran_nama_terdekat(name, calon.iter().map(|s| s.as_str()));
+        VmError::at(crate::interpreter::pesan_method_tak_ada(&tipe, name, &tambahan, saran.as_deref()), sp)
+    }
+
     fn get_field_khusus(&self, obj: &VmValue, name: &str, sp: Option<crate::lexer::Span>) -> VmResult<VmValue> {
         match obj {
             VmValue::Map(m) => {
@@ -162,23 +183,7 @@ impl Vm {
                     return Err(VmError::at(crate::interpreter::pesan_method_tak_ada(
                         &format!("enum:{}", tipe), name, "", saran.as_deref()), sp));
                 }
-                Err({
-                    let tipe = match &m.label {
-                        Label::Struct(n) => format!("struct {}", n),
-                        _ => "dict".to_string(),
-                    };
-                    // Sebut field/key yang MEMANG ada — pembacanya biasanya salah ketik
-                    // key, bukan salah ketik method.
-                    let mut punya: Vec<String> = m.lock().unwrap().keys().cloned().collect();
-                    punya.sort();
-                    let tambahan = if punya.is_empty() { String::new() } else {
-                        format!(" (kalau maksudnya field/key, yang ada: {})", punya.join(", "))
-                    };
-                    let calon = self.nama_metode_tipe(ns);
-                    let saran = crate::diag::saran_nama_terdekat(name, calon.iter().map(|s| s.as_str()));
-                    VmError::at(crate::interpreter::pesan_method_tak_ada(
-                        &tipe, name, &tambahan, saran.as_deref()), sp)
-                })
+                Err(self.galat_tak_punya(m, name, sp))
             }
             // Method kanvas dicari di namespace `canvas::`, pola yang sama
             // dengan array (`arr::`) dan channel (`chan::`).

@@ -14,6 +14,9 @@ pub fn cetak_bila_diminta() {
     {
         let jadi = super::modul::terkompilasi();
         if !jadi.is_empty() { eprintln!("[jit] dikompilasi: {}", jadi.join(", ")); }
+        for (nama, alasan) in super::modul::ditolak() {
+            eprintln!("[jit] ditolak: {}: {alasan}", crate::ruang_tipe::bersih(&nama));
+        }
         let d = super::deopt::jumlah();
         if d > 0 { eprintln!("[jit] deopt: {d}"); }
     }

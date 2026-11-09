@@ -102,6 +102,13 @@ impl Vm {
         Ok(())
     }
 
+    /// `--jit`: bingkai yang baru didorong dijalankan kode native kalau fungsinya sudah panas.
+    #[inline]
+    fn jit_masuk(&mut self) {
+        #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
+        if self.profil_jit && !self.profiling { crate::jit::panggil::coba(self); }
+    }
+
     /// Bingkai VM paling banyak di thread ber-stack besar.
     pub(crate) const BINGKAI_MAKS: usize = 1_000_000;
 
@@ -111,11 +118,7 @@ impl Vm {
                 self.periksa_arity(&func, argc, sp)?;
                 self.periksa_penerima(&func, argc, fn_idx, sp)?;
                 self.periksa_kedalaman(&func.name, sp)?;
-                if self.profil_jit {
-                    if let Some(p) = &func.chunk.profil { p.catat_panggilan(); }
-                    #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
-                    if !self.profiling && crate::jit::panggil::coba(self, &func, argc, fn_idx) { return Ok(()); }
-                }
+                if self.profil_jit { if let Some(p) = &func.chunk.profil { p.catat_panggilan(); } }
                 if self.profiling { crate::profiler::enter(&func.name); }
                 let diberi = diberi_tetap(&func, argc);
                 let argc = self.kemas_variadic(&func, argc);
@@ -123,6 +126,7 @@ impl Vm {
                 // punya slot di stack; prolog fungsinya yang mengisinya.
                 for _ in argc..func.arity as usize { self.push(VmValue::Nil); }
                 self.dorong_bingkai(CallFrame { func, ip: 0, slot: fn_idx, defers: Vec::new(), argc: diberi, closure: None });
+                self.jit_masuk();
                 Ok(())
             }
             // Sama seperti Function, cuma frame-nya ikut membawa closure-nya
@@ -137,6 +141,7 @@ impl Vm {
                 for _ in argc..c.func.arity as usize { self.push(VmValue::Nil); }
                 let func = Arc::clone(&c.func);
                 self.dorong_bingkai(CallFrame { func, ip: 0, slot: fn_idx, defers: Vec::new(), argc: diberi, closure: Some(c) });
+                self.jit_masuk();
                 Ok(())
             }
             VmValue::NativeFn(f) => {

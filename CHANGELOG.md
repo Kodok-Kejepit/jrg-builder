@@ -61,7 +61,10 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   daripada `--vm`; sisanya berjalan di VM sambil dicatat profilnya. Hasilnya, termasuk luapan ke 128 bit dan
   kalimat galat beserta lokasinya, sama persis dengan dua mesin lain. Kode mesin yang menemui kasus di luar
   tebakannya (luapan 64 bit, `% 0`, rekursi sangat dalam) diserahkan ke VM tepat di instruksi itu, tidak diulang
-  dari awal. `JRG_JIT_LOG=ringkas` melaporkan fungsi panas, yang dikompilasi, dan jumlah deopt.
+  dari awal. Fungsi yang juga memegang teks, larik atau nilai lain tetap dikompilasi sampai instruksi pertama yang
+  menyentuh nilai itu, dan loop panas di `main` naik ke kode mesin di tengah jalan — `for i in 0..n` dan `while`
+  atas bilangan bulat ±30x lebih sedikit instruksi daripada `--vm`. `JRG_JIT_LOG=ringkas` melaporkan fungsi panas,
+  yang dikompilasi, yang ditolak beserta alasannya, dan jumlah deopt.
 
 - `JRGC_BATAS_MEMORI=<MiB>` membatasi memori biner yang dijalankan `jrgc --emit-llvm`; yang melewatinya berhenti
   dengan "memori habis" alih-alih menghabiskan memori mesin.
@@ -178,6 +181,9 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Diperbaiki
 
+- `--vm`: `f.floor` atas bilangan (tanpa `()`) menjawab nilainya seperti interpreter, dulu `<native fn>`; method
+  yang tidak ada (`x.uper(f())`) ditolak SESUDAH argumennya dievaluasi; memanggil field yang bukan fungsi
+  (`p.x(2)`) menyebut field yang ada, dulu "`int` bukan fungsi".
 - Biner `--emit-llvm` menerima sebar di literal varian ber-field (`E::V { a: 5, ...x }`), dari struct atau dari
   varian enum yang sama; dulu ditolak saat kompilasi.
 - Biner `--emit-llvm`: method `Option`/`Result` (`x.is_some()`, `x.unwrap_or(0)`) atas variabel yang bisa berisi

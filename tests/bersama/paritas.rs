@@ -2,6 +2,8 @@
 // dibaca `backend_parity.rs` dan `llvm_parity.rs` lewat `include!`, jadi satu tabel dua tes.
 
 const PARITAS: &[(&str, &str)] = &[
+    // Fase J4 (#976): `f.floor` atas bilangan dulu `<native fn>` di `--vm`; acuan dan LLVM membacanya sebagai nilai.
+    ("method math:: atas bilangan tanpa kurung", "package main\npub fn main() { let f = 2.5\n let i = -3\n wok(f.floor, i.abs, f.round, (1.0).is_finite)\n wok(f.floor + 1.0) }"),
     // Fase REGEX-LINEAR (#841): `^.*x$` atas `abx` dulu `false` di dua mesin; `a+?` dibaca rakus.
     ("regex linear: mundur dan malas", "package main\npub fn main() { wok(re::test(\"^.*x$\", \"abx\"), re::test(\"^(a|ab)c$\", \"abc\"))\n wok(re::find_all(\"a+?\", \"aaa\"), re::replace_all(\"x*\", \"abc\", \"-\"))\n wok(re::test(\"(a+)+$\", \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab!\")) }"),
     // Fase DICT-LITERAL (#839): `dict { a: 1 }` dulu struct berlabel "dict" di `--vm` — `dict::`

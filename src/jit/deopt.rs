@@ -57,25 +57,46 @@ pub extern "C" fn undi() -> i32 {
     })
 }
 
-/// Susun ulang bingkai VM dari rekaman; bingkai terluar adalah fungsi di `fn_idx` yang dipanggil `coba`.
-pub(crate) fn pulihkan(vm: &mut Vm, fn_idx: usize, catatan: Catatan) {
+/// Susun ulang bingkai VM dari rekaman. Rekaman terluar milik bingkai VM teratas (yang menjalankan kode
+/// native): isinya diperbarui di tempat, posisi `Nilai` tetap nilai VM aslinya. Sisanya bingkai baru.
+pub(crate) fn pulihkan(vm: &mut Vm, catatan: Catatan) {
     JUMLAH.fetch_add(1, Ordering::Relaxed);
-    vm.stack.truncate(fn_idx + 1);
-    for (k, r) in catatan.into_iter().rev().enumerate() {
+    let mut rekaman = catatan.into_iter().rev();
+    if let Some(r) = rekaman.next() {
+        let (_, rencana) = super::modul::info(r.fid);
+        let jenis = rencana.keadaan[r.ip as usize].as_ref().expect("ip lanjut selalu terjangkau");
+        let fr = vm.frames.last_mut().expect("bingkai yang menjalankan kode native");
+        fr.ip = r.ip as usize;
+        let basis = fr.slot + 1;
+        let mut lama = vm.stack.split_off(basis);
+        for (i, v) in r.nilai.into_iter().enumerate() {
+            let nilai = match jenis[i] {
+                Jenis::Nilai => std::mem::replace(&mut lama[i], VmValue::Nil),
+                j => nilai_dari(j, v, &rencana.callee),
+            };
+            vm.stack.push(nilai);
+        }
+    }
+    for r in rekaman {
         let (f, rencana) = super::modul::info(r.fid);
-        let slot = if k == 0 { fn_idx } else {
-            vm.stack.push(VmValue::Function(Arc::clone(&f)));
-            vm.stack.len() - 1
-        };
+        vm.stack.push(VmValue::Function(Arc::clone(&f)));
+        let slot = vm.stack.len() - 1;
         let jenis = rencana.keadaan[r.ip as usize].as_ref().expect("ip lanjut selalu terjangkau");
         for (i, v) in r.nilai.into_iter().enumerate() {
-            vm.stack.push(match jenis[i] {
-                Jenis::Bulat => VmValue::Int(v as i128),
-                Jenis::Bool => VmValue::Bool(v != 0),
-                Jenis::Fungsi(c) => VmValue::Function(Arc::clone(&rencana.callee[c])),
-            });
+            vm.stack.push(nilai_dari(jenis[i], v, &rencana.callee));
         }
         let argc = f.arity as u8;
         vm.dorong_bingkai(CallFrame { func: f, ip: r.ip as usize, slot, defers: Vec::new(), argc, closure: None });
+    }
+}
+
+fn nilai_dari(j: Jenis, v: i64, callee: &[Arc<crate::vm::value::VmFunction>]) -> VmValue {
+    match j {
+        Jenis::Bulat => VmValue::Int(v as i128),
+        Jenis::Bool => VmValue::Bool(v != 0),
+        Jenis::Fungsi(c) => VmValue::Function(Arc::clone(&callee[c])),
+        Jenis::Kosong => VmValue::Nil,
+        // Bingkai callee native tidak pernah memegang nilai milik VM (argumennya selalu bulat).
+        Jenis::Nilai => unreachable!("posisi Nilai cuma ada di bingkai terluar"),
     }
 }

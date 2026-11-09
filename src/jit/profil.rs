@@ -37,6 +37,9 @@ pub struct ProfilFungsi {
     pub panggilan: AtomicU32,
     /// Lompatan mundur (badan loop) yang dijalankan di fungsi ini.
     pub putaran: AtomicU32,
+    /// Panggilan yang masuk kode native, dan yang keluar lewat deopt.
+    pub jit_masuk: AtomicU32,
+    pub jit_deopt: AtomicU32,
     /// Satu bitmask tipe per instruksi; hanya situs operator yang terisi.
     pub umpan: Box<[AtomicU8]>,
 }
@@ -45,7 +48,7 @@ impl ProfilFungsi {
     #[inline]
     pub fn catat_panggilan(&self) { self.panggilan.fetch_add(1, Ordering::Relaxed); }
     #[inline]
-    pub fn catat_putaran(&self) { self.putaran.fetch_add(1, Ordering::Relaxed); }
+    pub fn catat_putaran(&self) -> u32 { self.putaran.fetch_add(1, Ordering::Relaxed).wrapping_add(1) }
     #[inline]
     pub fn catat_tipe(&self, ip: usize, b: u8) {
         if let Some(s) = self.umpan.get(ip) { s.fetch_or(b, Ordering::Relaxed); }
@@ -62,6 +65,8 @@ pub fn baru(nama: &str, n: usize) -> Option<Arc<ProfilFungsi>> {
         nama: nama.to_string(),
         panggilan: AtomicU32::new(0),
         putaran: AtomicU32::new(0),
+        jit_masuk: AtomicU32::new(0),
+        jit_deopt: AtomicU32::new(0),
         umpan: (0..n).map(|_| AtomicU8::new(0)).collect(),
     });
     DAFTAR.lock().unwrap_or_else(|p| p.into_inner()).push(Arc::clone(&p));

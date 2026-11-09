@@ -147,6 +147,8 @@ pub struct Vm {
     pub(crate) basis: usize,
     /// Mode `--jit`: rekam profil T0 (`crate::jit::profil`).
     pub(crate) profil_jit: bool,
+    /// Umpan tipe per situs: belum dipakai JIT (J6), jadi cuma direkam untuk `JRG_JIT_LOG`.
+    pub(crate) umpan_jit: bool,
     pub(crate) profiling: bool,
     /// Berapa hook tampilan sedang bersarang. Lihat `tampil::MAX_SARANG_HOOK`.
     pub(crate) sarang_hook: usize,
@@ -154,6 +156,9 @@ pub struct Vm {
     pub(crate) namespace_modul: std::collections::HashSet<String>,
     /// Dari `PeriksaArgMetode` bertanda tunda ke `DeferPush` tepat sesudahnya.
     pub(crate) galat_tunda_metode: Option<VmError>,
+    /// Galat `GetMethod` yang dilaporkan sesudah argumennya (seperti acuan): posisi slot fungsinya dan
+    /// galatnya, diambil `PeriksaArgMetode` situs yang sama.
+    pub(crate) galat_metode: Vec<(usize, VmError)>,
 }
 
 impl Vm {
@@ -166,10 +171,12 @@ impl Vm {
             frames: Vec::with_capacity(64),
             basis: 0,
             profil_jit: crate::jit::aktif(),
+            umpan_jit: crate::jit::aktif() && std::env::var_os("JRG_JIT_LOG").is_some(),
             profiling: false,
             sarang_hook: 0,
             namespace_modul: std::collections::HashSet::new(),
             galat_tunda_metode: None,
+            galat_metode: Vec::new(),
         }
     }
 

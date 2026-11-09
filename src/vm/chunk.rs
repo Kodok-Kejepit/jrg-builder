@@ -53,8 +53,8 @@ pub struct Chunk {
     indeks_konstanta: HashMap<KunciKonstanta, u32>,
     /// Profil T0 (`--jit` saja); diisi `rampungkan`.
     pub(crate) profil: Option<Arc<crate::jit::profil::ProfilFungsi>>,
-    /// Kode native J2, dicoba sekali (`None` = tidak layak, tidak dicoba lagi).
-    pub(crate) kode_jit: std::sync::OnceLock<Option<crate::jit::KodeJit>>,
+    /// Kode native per titik masuk (panggilan dan OSR).
+    pub(crate) kode_jit: crate::jit::PintuJit,
 }
 
 impl Chunk {
@@ -71,7 +71,7 @@ impl Chunk {
             indeks_nama: HashMap::new(),
             indeks_konstanta: HashMap::new(),
             profil:      None,
-            kode_jit:    std::sync::OnceLock::new(),
+            kode_jit:    crate::jit::PintuJit::default(),
             span_kini:   0,
             name:        name.into(),
             arity,

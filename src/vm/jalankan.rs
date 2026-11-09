@@ -171,7 +171,7 @@ impl Vm {
 
             }
 
-            if PROFIL { self.catat_umpan(op, arg); }
+            if PROFIL && self.umpan_jit { self.catat_umpan(op, arg); }
             match op {
                 // ── Constants ─────────────────────────────────────────────
                 OpCode::Nil    => self.push(VmValue::Nil),
@@ -817,6 +817,14 @@ impl Vm {
                             .ok_or_else(|| VmError::new(format!("name idx {} OOB", arg)))?;
                         self.get_field(&obj, name, sp)?
                     };
+                    // Method `math::` atas bilangan yang ditulis tanpa `()` dibaca acuan (dan LLVM)
+                    // sebagai nilainya: `f.floor` = `f.floor()`.
+                    if matches!(obj, VmValue::Float(_) | VmValue::Int(_)) && matches!(val, VmValue::NativeFn(_)) {
+                        self.push(val);
+                        self.push(obj);
+                        self.call_value_at(1, sp, false)?;
+                        continue;
+                    }
                     self.push(val);
                 }
                 OpCode::GetMethod => {
@@ -829,7 +837,25 @@ impl Vm {
                             .ok_or_else(|| VmError::new(format!("name idx {} OOB", arg)))?;
                         // Jumlah argumen yang DITULIS diperiksa di sini karena sesudah `Call` ia
                         // sudah bercampur dengan penerima — dan tanpa ini `(2.5).sqrt(1)` dijawab …
-                        let v = self.get_method(&obj, name, sp)?;
+                        let nanti = argc == crate::vm::opcode::ARGC_NANTI as usize;
+                        let v = match self.get_method(&obj, name, sp) {
+                            Ok(v) => {
+                                if nanti {
+                                    let slot = self.stack.len().saturating_sub(1);
+                                    self.galat_metode.retain(|(i, _)| *i < slot);
+                                }
+                                v
+                            }
+                            // Acuan mengevaluasi argumennya dulu: galatnya menunggu `PeriksaArgMetode`
+                            // di slot fungsi (sesudah `Swap`, satu di bawah slot ini).
+                            Err(e) if nanti => {
+                                let slot = self.stack.len().saturating_sub(1);
+                                self.galat_metode.retain(|(i, _)| *i < slot);
+                                self.galat_metode.push((slot, e));
+                                VmValue::Nil
+                            }
+                            Err(e) => return Err(e),
+                        };
                         if argc != crate::vm::opcode::ARGC_NANTI as usize && matches!(v, VmValue::NativeFn(_)) {
                             if let Some(p) = Self::pesan_jumlah_arg(&obj, name, argc) {
                                 return Err(VmError::at(p, sp));
@@ -845,6 +871,14 @@ impl Vm {
                     let argc = (arg >> 24) as usize;
                     let n = self.stack.len();
                     if n < argc + 2 { return Err(VmError::at("stack underflow PeriksaArgMetode", sp)); }
+                    let slot = n - argc - 2;
+                    self.galat_metode.retain(|(i, _)| *i <= slot);
+                    if self.galat_metode.last().is_some_and(|(i, _)| *i == slot) {
+                        let (_, e) = self.galat_metode.pop().unwrap();
+                        if arg & TANDA_TUNDA == 0 { return Err(e); }
+                        self.galat_tunda_metode = Some(e);
+                        continue;
+                    }
                     let pesan = match &self.stack[n - argc - 2] {
                         VmValue::NativeFn(_) => {
                             let fr = self.frames.last()
@@ -1005,10 +1039,9 @@ impl Vm {
                 // ── Control flow ──────────────────────────────────────────
                 OpCode::Jump => {
                     let fr = self.frames.last_mut().unwrap();
-                    if PROFIL && (arg as usize) < fr.ip {
-                        if let Some(p) = &fr.func.chunk.profil { p.catat_putaran(); }
-                    }
+                    let mundur = (arg as usize) < fr.ip;
                     fr.ip = arg as usize;
+                    if PROFIL && mundur { self.putaran_jit(); }
                 }
                 OpCode::JumpFalse => {
                     let v = self.pop(sp)?;
@@ -1176,7 +1209,6 @@ impl Vm {
                 }
                 OpCode::IterMaju => {
                     let slot = self.frame_slot() + arg as usize;
-                    if PROFIL { self.catat_putaran_kini(); }
                     match self.stack.get_mut(slot) {
                         Some(VmValue::Int(n)) if *n < i128::MAX => *n += 1,
                         _ => return Err(VmError::at("state iterator rusak", sp)),
@@ -1194,6 +1226,7 @@ impl Vm {
                             }
                         }
                     }
+                    if PROFIL { self.putaran_jit(); }
                 }
                 OpCode::IterVar => {
                     let iter_slot = self.frame_slot() + (arg / 2) as usize;
@@ -1641,13 +1674,23 @@ impl Vm {
 }
 
 impl Vm {
-    fn catat_putaran_kini(&self) {
-        if let Some(p) = self.frames.last().and_then(|f| f.func.chunk.profil.as_ref()) { p.catat_putaran(); }
+    /// Satu putaran loop di bingkai teratas; sesekali dicoba OSR ke kode native (`--jit`).
+    fn putaran_jit(&mut self) {
+        let Some(p) = self.frames.last().and_then(|f| f.func.chunk.profil.as_ref()) else { return };
+        let _n = p.catat_putaran();
+        #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
+        if _n % crate::jit::osr_tiap() == 0 && !self.profiling { crate::jit::panggil::coba_osr(self); }
     }
 
     /// Umpan tipe T0 untuk situs operator: tipe operand yang SUDAH di stack saat opcode ini jalan.
+    /// Opcode diperiksa lebih dulu: sebagian besar instruksi bukan situs, dan tidak boleh membayar
+    /// pembacaan bingkai.
+    #[inline(always)]
     fn catat_umpan(&self, op: OpCode, arg: u32) {
         use crate::jit::profil::bit_tipe;
+        if !matches!(op, OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div | OpCode::Mod
+            | OpCode::Lt | OpCode::Le | OpCode::Gt | OpCode::Ge | OpCode::Eq | OpCode::Ne
+            | OpCode::GetField | OpCode::LokalHitung) { return; }
         let Some(fr) = self.frames.last() else { return };
         let Some(p) = fr.func.chunk.profil.as_ref() else { return };
         let ip = fr.ip.wrapping_sub(1);

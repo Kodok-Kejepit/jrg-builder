@@ -56,9 +56,9 @@ fn profil_t0_melihat_fungsi_panas() {
     assert!(h.sukses, "{}", h.stderr);
     assert_eq!(h.stdout, "610 45");
     // fib(15) memanggil fib tepat 1973 kali; angka lain berarti perekamnya salah hitung.
-    let baris = h.stderr.lines().find(|b| b.contains(" fib:")).unwrap_or_else(|| panic!("fib tidak dilaporkan:\n{}", h.stderr));
+    let baris = h.stderr.lines().find(|b| b.contains(" fib: panggilan")).unwrap_or_else(|| panic!("fib tidak dilaporkan:\n{}", h.stderr));
     assert!(baris.contains("panggilan 1973,"), "{baris}");
-    let utama = h.stderr.lines().find(|b| b.contains(" main:")).unwrap_or_else(|| panic!("main tidak dilaporkan:\n{}", h.stderr));
+    let utama = h.stderr.lines().find(|b| b.contains(" main: panggilan")).unwrap_or_else(|| panic!("main tidak dilaporkan:\n{}", h.stderr));
     assert!(utama.contains("putaran 10,"), "{utama}");
 }
 
@@ -157,4 +157,68 @@ fn deopt_acak_sama_dengan_interpreter() {
     let i = jalankan(src, &[], &[]);
     let j = jalankan(src, &["--jit"], &[STRES, ACAK]);
     assert_eq!((i.sukses, &i.stdout, &i.stderr), (j.sukses, &j.stdout, &j.stderr));
+}
+
+// ── J4: titik keluar, nilai milik VM di bingkai, OSR (`j4-rencana.md`) ─────────────────────────────
+
+include!("bersama/paritas_llvm.rs");
+include!("bersama/gagal_saat_jalan.rs");
+
+/// Dua mode yang memaksa kode native: semua dikompilasi seketika, dan ditambah deopt acak.
+const MODE_PAKSA: [&[(&str, &str)]; 2] = [&[STRES], &[STRES, ACAK]];
+
+#[test]
+fn paritas_llvm_lewat_jit() {
+    let mut gagal = Vec::new();
+    for (nama, src) in PARITAS_LLVM {
+        let i = jalankan(src, &[], &[]);
+        for env in MODE_PAKSA {
+            let j = jalankan(src, &["--jit"], env);
+            if i.sukses != j.sukses || i.stdout != j.stdout {
+                gagal.push(format!("  {nama} {env:?}\n     interpreter: {:?}\n     jit:         {:?}", i.stdout, j.stdout));
+            }
+        }
+    }
+    assert!(gagal.is_empty(), "{} kasus PARITAS_LLVM beda di --jit:\n{}", gagal.len(), gagal.join("\n"));
+}
+
+/// Galatnya identik dengan VM tempat kode native berjalan (termasuk jejaknya, yang kedalamannya milik
+/// VM), dan sama dengan acuan pada keluaran, status dan kalimat yang dicatat tabelnya.
+#[test]
+fn gagal_saat_jalan_sama_di_jit() {
+    let mut gagal = Vec::new();
+    for (nama, src, _, memuat) in GAGAL_SAAT_JALAN {
+        let i = jalankan(src, &[], &[]);
+        let v = jalankan(src, &["--vm"], &[]);
+        for env in MODE_PAKSA {
+            let j = jalankan(src, &["--jit"], env);
+            if (v.sukses, &v.stdout, &v.stderr) != (j.sukses, &j.stdout, &j.stderr)
+                || (i.sukses, &i.stdout) != (j.sukses, &j.stdout) || !j.stderr.contains(memuat) {
+                gagal.push(format!("  {nama} {env:?}\n     interpreter: {:?} {:?}\n     vm:          {:?}\n     jit:         {:?} {:?}",
+                    i.stdout, i.stderr, v.stderr, j.stdout, j.stderr));
+            }
+        }
+    }
+    assert!(gagal.is_empty(), "{} kasus GAGAL_SAAT_JALAN beda di --jit:\n{}", gagal.len(), gagal.join("\n"));
+}
+
+/// Loop di `main` (dipanggil sekali) naik lewat OSR sambil membawa teks yang tidak pernah disentuh native.
+const OSR: &str = "fn main() {\n  let label = \"jumlah\"\n  var s = 0\n  for i in 0..300000 { s = s + (i * 3) % 7 }\n  var j = 0\n  while j < 5000 { j += 1 }\n  wok(label, s, j)\n}\n";
+
+/// `Return` bool dari VM, dan fungsi dengan parameter teks yang keluar ke VM sesudah loop-nya.
+const KELUAR: &str = "fn genap(x) { return x % 2 == 0 }\nfn tempel(s, n) {\n  var t = 0\n  for i in 0..n { t = t + i }\n  return s + str(t)\n}\nfn main() {\n  var c = 0\n  for i in 0..3000 { if genap(i) { c += 1 } }\n  wok(c, tempel(\"t=\", 100))\n  wok(tempel(\"u=\", 7))\n}\n";
+
+#[test]
+fn osr_dan_titik_keluar() {
+    for (src, harus, nama) in [(OSR, "jumlah 899997 5000", &["main"][..]), (KELUAR, "1500 t=4950\nu=21", &["genap", "tempel"][..])] {
+        sama_dengan_interpreter(src);
+        let i = jalankan(src, &[], &[]);
+        assert_eq!(i.stdout, harus);
+        let h = jalankan(src, &["--jit"], &[ACAK, ("JRG_JIT_LOG", "ringkas")]);
+        assert_eq!(h.stdout, harus, "{}", h.stderr);
+        let h = jalankan(src, &["--jit"], &[("JRG_JIT_LOG", "ringkas")]);
+        assert_eq!(h.stdout, harus);
+        let jadi = h.stderr.lines().find(|b| b.contains("dikompilasi:")).unwrap_or_else(|| panic!("tidak ada yang dikompilasi:\n{}", h.stderr));
+        for n in nama { assert!(jadi.contains(n), "{n} tidak dikompilasi: {jadi}"); }
+    }
 }
