@@ -115,7 +115,7 @@ impl Vm {
                 // Parameter bernilai default yang tidak diisi tetap harus
                 // punya slot di stack; prolog fungsinya yang mengisinya.
                 for _ in argc..func.arity as usize { self.push(VmValue::Nil); }
-                self.frames.push(CallFrame { func, ip: 0, slot: fn_idx, defers: Vec::new(), argc: diberi, closure: None });
+                self.dorong_bingkai(CallFrame { func, ip: 0, slot: fn_idx, defers: Vec::new(), argc: diberi, closure: None });
                 Ok(())
             }
             // Sama seperti Function, cuma frame-nya ikut membawa closure-nya
@@ -128,7 +128,7 @@ impl Vm {
                 let argc = self.kemas_variadic(&c.func, argc);
                 for _ in argc..c.func.arity as usize { self.push(VmValue::Nil); }
                 let func = Arc::clone(&c.func);
-                self.frames.push(CallFrame { func, ip: 0, slot: fn_idx, defers: Vec::new(), argc: diberi, closure: Some(c) });
+                self.dorong_bingkai(CallFrame { func, ip: 0, slot: fn_idx, defers: Vec::new(), argc: diberi, closure: Some(c) });
                 Ok(())
             }
             VmValue::NativeFn(f) => {

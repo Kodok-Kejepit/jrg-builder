@@ -143,6 +143,8 @@ pub struct Vm {
     pub stack:    Vec<VmValue>,
     pub globals:  crate::hash_cepat::PetaCepat<String, VmValue>,
     pub(crate) frames:   Vec<CallFrame>,
+    /// Slot lokal pertama bingkai teratas (`slot + 1`); disegarkan HANYA lewat `dorong_bingkai`/`ambil_bingkai`.
+    pub(crate) basis: usize,
     pub(crate) profiling: bool,
     /// Berapa hook tampilan sedang bersarang. Lihat `tampil::MAX_SARANG_HOOK`.
     pub(crate) sarang_hook: usize,
@@ -160,6 +162,7 @@ impl Vm {
             stack: Vec::with_capacity(256),
             globals: Default::default(),
             frames: Vec::with_capacity(64),
+            basis: 0,
             profiling: false,
             sarang_hook: 0,
             namespace_modul: std::collections::HashSet::new(),
@@ -174,11 +177,12 @@ impl Vm {
     pub fn run(&mut self, chunk: Chunk) -> VmResult<()> {
         self.stack.clear();
         self.frames.clear();
+        self.basis = 0;
         let script_fn = Arc::new(VmFunction::new("<script>", 0, chunk));
         // `stack[slot]` milik yang dipanggil, lokal mulai sesudahnya — skrip juga, atau lokal di
         // initializer modul (`let K = a ?? b`) bergeser satu dan jatuh di luar stack.
         self.stack.push(VmValue::Nil);
-        self.frames.push(CallFrame { func: script_fn, ip: 0, slot: 0, defers: Vec::new(), argc: 0, closure: None });
+        self.dorong_bingkai(CallFrame { func: script_fn, ip: 0, slot: 0, defers: Vec::new(), argc: 0, closure: None });
         self.run_until(0)
     }
 
@@ -581,7 +585,17 @@ impl Vm {
         Ok(&self.stack[idx])
     }
     #[inline] pub(crate) fn frame_slot(&self) -> usize {
-        self.frames.last().map(|f| f.slot + 1).unwrap_or(0)
+        debug_assert_eq!(self.basis, self.frames.last().map(|f| f.slot + 1).unwrap_or(0));
+        self.basis
+    }
+    #[inline] pub(crate) fn dorong_bingkai(&mut self, f: CallFrame) {
+        self.basis = f.slot + 1;
+        self.frames.push(f);
+    }
+    #[inline] pub(crate) fn ambil_bingkai(&mut self) -> Option<CallFrame> {
+        let f = self.frames.pop();
+        self.basis = self.frames.last().map(|f| f.slot + 1).unwrap_or(0);
+        f
     }
 
     /// Sel tangkapan ke-`idx` milik closure yang sedang berjalan.

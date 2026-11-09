@@ -36,7 +36,7 @@ impl Vm {
         let mut galat = Some(e);
         while self.frames.len() > exit_depth {
             galat = self.run_defers(None, galat);
-            let Some(frame) = self.frames.pop() else { break };
+            let Some(frame) = self.ambil_bingkai() else { break };
             if self.profiling { crate::profiler::exit(); }
             self.stack.truncate(frame.slot);
         }
@@ -1256,7 +1256,7 @@ impl Vm {
                     let result = self.pop(sp)?;
                     // ── Defer: eksekusi semua deferred callables (LIFO) ──────
                     if let Some(e) = self.run_defers(sp, None) { return Err(e); }
-                    let frame  = self.frames.pop().ok_or_else(|| VmError::new("stack underflow Return"))?;
+                    let frame  = self.ambil_bingkai().ok_or_else(|| VmError::new("stack underflow Return"))?;
                     if self.profiling { crate::profiler::exit(); }
                     self.stack.truncate(frame.slot);
                     if self.frames.len() <= exit_depth { self.push(result); return Ok(()); }
@@ -1265,7 +1265,7 @@ impl Vm {
                 OpCode::ReturnNil => {
                     // ── Defer: eksekusi semua deferred callables (LIFO) ──────
                     if let Some(e) = self.run_defers(sp, None) { return Err(e); }
-                    let frame = self.frames.pop().ok_or_else(|| VmError::new("stack underflow ReturnNil"))?;
+                    let frame = self.ambil_bingkai().ok_or_else(|| VmError::new("stack underflow ReturnNil"))?;
                     if self.profiling { crate::profiler::exit(); }
                     self.stack.truncate(frame.slot);
                     if self.frames.len() <= exit_depth { return Ok(()); }
@@ -1481,7 +1481,7 @@ impl Vm {
 
                     if variant == "Err" || variant == "None" {
                         if let Some(e) = self.run_defers(sp, None) { return Err(e); }
-                        let frame = self.frames.pop().ok_or_else(|| VmError::new("stack underflow Propagate"))?;
+                        let frame = self.ambil_bingkai().ok_or_else(|| VmError::new("stack underflow Propagate"))?;
                         self.stack.truncate(frame.slot);
                         if self.frames.len() <= exit_depth {
                             self.push(v);
