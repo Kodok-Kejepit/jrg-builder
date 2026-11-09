@@ -64,3 +64,55 @@ fn profil_tidak_menyentuh_stdout() {
     assert_eq!(tanpa.stdout, dengan.stdout);
     assert!(tanpa.stderr.is_empty(), "tanpa JRG_JIT_LOG tidak boleh ada laporan: {}", tanpa.stderr);
 }
+
+// ── J2: fungsi bulat murni sebagai kode mesin (`dokumentasi/jit/j2-rencana.md`) ──────────────
+
+const STRES: (&str, &str) = ("JRG_JIT_AMBANG", "0");
+
+#[test]
+fn paritas_lewat_jit_stres() {
+    let mut gagal = Vec::new();
+    for (nama, src) in PARITAS {
+        let i = jalankan(src, &[], &[]);
+        let j = jalankan(src, &["--jit"], &[STRES]);
+        if i.sukses != j.sukses || i.stdout != j.stdout {
+            gagal.push(format!("  {nama}\n     interpreter ({}): {:?}\n     jit stres   ({}): {:?}",
+                i.sukses, i.stdout, j.sukses, j.stdout));
+        }
+    }
+    assert!(gagal.is_empty(), "{} kasus PARITAS beda di --jit (stres):\n{}", gagal.len(), gagal.join("\n"));
+}
+
+#[test]
+fn fungsi_bulat_dikompilasi() {
+    let h = jalankan(FIB, &["--jit"], &[("JRG_JIT_LOG", "ringkas")]);
+    assert!(h.sukses, "{}", h.stderr);
+    assert_eq!(h.stdout, "610 45");
+    assert!(h.stderr.lines().any(|b| b.contains("dikompilasi:") && b.contains("fib")), "fib tidak dikompilasi:\n{}", h.stderr);
+}
+
+/// Program yang hasilnya sama di interpreter dan `--jit` (stres): stdout, stderr dan status.
+fn sama_dengan_interpreter(src: &str) {
+    let i = jalankan(src, &[], &[]);
+    let j = jalankan(src, &["--jit"], &[STRES]);
+    assert_eq!((i.sukses, &i.stdout, &i.stderr), (j.sukses, &j.stdout, &j.stderr));
+}
+
+#[test]
+fn luapan_mundur_ke_128_bit() {
+    sama_dengan_interpreter("fn kali(a, b) { return a * b }\nfn tambah(a, b) { return a + b }\nfn main() {\n  wok(kali(3, 4))\n  wok(kali(kali(3037000500, 3037000500), 4))\n  wok(tambah(9223372036854775807, 1))\n}\n");
+}
+
+#[test]
+fn bagi_nol_berkalimat_sama() {
+    sama_dengan_interpreter("fn sisa(a, b) { return a % b }\nfn main() {\n  wok(sisa(7, 3), sisa(-7, 3))\n  wok(sisa(7, 0))\n}\n");
+}
+
+#[test]
+fn rekursi_dalam_mundur_ke_vm() {
+    let src = "fn turun(n) {\n  if n == 0 { return 0 }\n  return turun(n - 1) + 1\n}\nfn main() { wok(turun(20000)) }\n";
+    let v = jalankan(src, &["--vm"], &[]);
+    let j = jalankan(src, &["--jit"], &[STRES]);
+    assert_eq!((v.sukses, v.stdout.as_str()), (true, "20000"));
+    assert_eq!((j.sukses, j.stdout.as_str()), (true, "20000"));
+}

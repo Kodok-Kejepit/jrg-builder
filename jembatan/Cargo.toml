@@ -13,7 +13,7 @@ crate-type = ["cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
-jrgc = { path = ".." }
+jrgc = { path = "..", default-features = false, features = ["canvas"] }
 
 [profile.release]
 opt-level     = 2

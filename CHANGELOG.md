@@ -56,10 +56,11 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Baru
 
-- **`jrgc file.jrg --jit`**: pintu mesin eksekusi keempat. Untuk sementara ia menjalankan program di VM bytecode
-  sambil mencatat fungsi mana yang paling sering dipanggil, loop mana yang paling banyak berputar, dan jenis nilai
-  yang lewat di tiap operator; `JRG_JIT_LOG=ringkas` menampilkan ringkasannya ke stderr saat program selesai.
-  Keluarannya sama persis dengan `--vm`.
+- **`jrgc file.jrg --jit`**: mesin eksekusi keempat. Fungsi yang hanya menghitung bilangan bulat (seperti `fib`,
+  faktorial, `gcd`) dikompilasi jadi kode mesin saat program berjalan — `fib(25)` ±13x lebih sedikit instruksi
+  daripada `--vm`; sisanya berjalan di VM sambil dicatat profilnya. Hasilnya, termasuk luapan ke 128 bit dan
+  kalimat galat beserta lokasinya, sama persis dengan dua mesin lain. `JRG_JIT_LOG=ringkas` melaporkan fungsi
+  panas dan yang dikompilasi.
 
 - `JRGC_BATAS_MEMORI=<MiB>` membatasi memori biner yang dijalankan `jrgc --emit-llvm`; yang melewatinya berhenti
   dengan "memori habis" alih-alih menghabiskan memori mesin.

@@ -111,7 +111,11 @@ impl Vm {
                 self.periksa_arity(&func, argc, sp)?;
                 self.periksa_penerima(&func, argc, fn_idx, sp)?;
                 self.periksa_kedalaman(&func.name, sp)?;
-                if self.profil_jit { if let Some(p) = &func.chunk.profil { p.catat_panggilan(); } }
+                if self.profil_jit {
+                    if let Some(p) = &func.chunk.profil { p.catat_panggilan(); }
+                    #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
+                    if !self.profiling && crate::jit::panggil::coba(self, &func, argc, fn_idx) { return Ok(()); }
+                }
                 if self.profiling { crate::profiler::enter(&func.name); }
                 let diberi = diberi_tetap(&func, argc);
                 let argc = self.kemas_variadic(&func, argc);

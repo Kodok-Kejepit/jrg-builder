@@ -147,6 +147,8 @@ pub struct Vm {
     pub(crate) basis: usize,
     /// Mode `--jit`: rekam profil T0 (`crate::jit::profil`).
     pub(crate) profil_jit: bool,
+    /// Bingkai setinggi ini ke atas tidak mencoba kode JIT (sesudah rekursi native terlalu dalam).
+    pub(crate) jit_dilarang: usize,
     pub(crate) profiling: bool,
     /// Berapa hook tampilan sedang bersarang. Lihat `tampil::MAX_SARANG_HOOK`.
     pub(crate) sarang_hook: usize,
@@ -166,6 +168,7 @@ impl Vm {
             frames: Vec::with_capacity(64),
             basis: 0,
             profil_jit: crate::jit::aktif(),
+            jit_dilarang: usize::MAX,
             profiling: false,
             sarang_hook: 0,
             namespace_modul: std::collections::HashSet::new(),
