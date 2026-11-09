@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://jrg-lang.org/sitemap.xml
+Sitemap: https://jrg-lang.org/aethvirse/sitemap.xml

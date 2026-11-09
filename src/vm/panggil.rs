@@ -28,6 +28,7 @@ impl Vm {
     /// Pengecekan jumlah argumen, dengan pesan yang menyebut penyebabnya —
     /// bukan sekadar "butuh N dapat M", karena dengan nilai default jumlah
     /// yang sah adalah sebuah RENTANG.
+    #[inline]
     pub(crate) fn periksa_arity(&self, func: &VmFunction, argc: usize, sp: Option<crate::lexer::Span>) -> VmResult<()> {
         // Parameter pengumpul menerima berapa pun sisanya.
         if !func.variadic && argc > func.arity as usize {
@@ -46,6 +47,7 @@ impl Vm {
 
     /// Kemas argumen sisa jadi satu array untuk parameter TERAKHIR.
     /// (Prolog default membaca [`diberi_tetap`], bukan hasil pengemasan ini.)
+    #[inline]
     pub(crate) fn kemas_variadic(&mut self, func: &VmFunction, argc: usize) -> usize {
         if !func.variadic || func.arity == 0 { return argc; }
         let tetap = func.arity as usize - 1;

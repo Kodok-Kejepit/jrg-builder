@@ -78,7 +78,16 @@ impl Vm {
     /// Jalankan semua `defer` milik bingkai teratas, LIFO. `galat` adalah galat yang sedang membawa
     /// bingkainya keluar, kalau ada. Defer yang gagal tidak menghentikan defer berikutnya: galatnya
     /// menggantikan hasil yang sukses, atau jadi catatan di galat yang sudah ada — seperti acuan.
+    /// Bingkai tanpa `defer` (hampir semua) kembali tanpa mengambil dan melepas `Vec` kosong.
+    #[inline]
     pub(crate) fn run_defers(
+        &mut self, sp: Option<crate::lexer::Span>, galat: Option<VmError>,
+    ) -> Option<VmError> {
+        if self.frames.last().map_or(true, |f| f.defers.is_empty()) { return galat; }
+        self.run_defers_isi(sp, galat)
+    }
+
+    fn run_defers_isi(
         &mut self, sp: Option<crate::lexer::Span>, mut galat: Option<VmError>,
     ) -> Option<VmError> {
         let defers = match self.frames.last_mut() {

@@ -658,12 +658,18 @@ def bangun_profil(keluar: Path, cari: list):
                  "k": "Muhamad Surya Widianto, pembuat JawaRustGo++", "t": re.sub(r"<[^>]+>", " ", isi)[:800]})
 
 
+# Halaman di domain yang sama tapi dibangun di luar skrip ini (folder sendiri di server).
+HALAMAN_LUAR = [f"{SITUS}/aethvirse/"]
+PETA_LUAR = [f"{SITUS}/aethvirse/sitemap.xml"]
+
+
 def peta_situs(keluar: Path):
     """`sitemap.xml` dari halaman yang benar-benar ditulis, dan `robots.txt` yang menunjuknya."""
-    baris = "".join(f"  <url><loc>{esc(u)}</loc></url>\n" for u in sorted(set(HALAMAN)))
+    baris = "".join(f"  <url><loc>{esc(u)}</loc></url>\n" for u in sorted(set(HALAMAN + HALAMAN_LUAR)))
     tulis(keluar / "sitemap.xml", '<?xml version="1.0" encoding="UTF-8"?>\n'
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + baris + "</urlset>\n")
-    tulis(keluar / "robots.txt", f"User-agent: *\nAllow: /\n\nSitemap: {SITUS}/sitemap.xml\n")
+    peta = "".join(f"Sitemap: {u}\n" for u in [f"{SITUS}/sitemap.xml"] + PETA_LUAR)
+    tulis(keluar / "robots.txt", f"User-agent: *\nAllow: /\n\n{peta}")
 
 
 def main():
