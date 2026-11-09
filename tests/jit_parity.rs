@@ -22,9 +22,11 @@ fn jalankan(src: &str, arg: &[&str], env: &[(&str, &str)]) -> Hasil {
     for (k, v) in env { cmd.env(k, v); }
     let out = cmd.output().expect("jalankan jrgc");
     let _ = std::fs::remove_dir_all(&dir);
+    // Tiap jalan punya direktori sementara sendiri; jalurnya bukan bagian yang dibandingkan.
+    let jalur = file.display().to_string();
     Hasil {
         stdout: String::from_utf8_lossy(&out.stdout).trim().to_string(),
-        stderr: String::from_utf8_lossy(&out.stderr).to_string(),
+        stderr: String::from_utf8_lossy(&out.stderr).replace(&jalur, "<uji>"),
         sukses: out.status.success(),
     }
 }
@@ -45,9 +47,12 @@ fn paritas_lewat_jit() {
 
 const FIB: &str = "fn fib(n) {\n  if n < 2 { return n }\n  return fib(n - 1) + fib(n - 2)\n}\nfn main() {\n  var t = 0\n  for i in 0..10 { t = t + i }\n  wok(fib(15), t)\n}\n";
 
+/// Sama dengan `FIB`, tapi menyentuh teks: tidak layak dikompilasi J2, jadi tiap panggilan lewat VM.
+const FIB_VM: &str = "fn fib(n) {\n  let s = \"x\"\n  if n < 2 { return n }\n  return fib(n - 1) + fib(n - 2)\n}\nfn main() {\n  var t = 0\n  for i in 0..10 { t = t + i }\n  wok(fib(15), t)\n}\n";
+
 #[test]
 fn profil_t0_melihat_fungsi_panas() {
-    let h = jalankan(FIB, &["--jit"], &[("JRG_JIT_LOG", "ringkas")]);
+    let h = jalankan(FIB_VM, &["--jit"], &[("JRG_JIT_LOG", "ringkas")]);
     assert!(h.sukses, "{}", h.stderr);
     assert_eq!(h.stdout, "610 45");
     // fib(15) memanggil fib tepat 1973 kali; angka lain berarti perekamnya salah hitung.
