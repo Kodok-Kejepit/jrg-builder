@@ -2,7 +2,7 @@
 //! bingkainya (dan bingkai native pemanggilnya), lalu VM menyusun ulang bingkai-bingkai itu dan
 //! melanjutkan dari instruksi yang sama — tidak ada yang diulang dari awal.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
@@ -25,12 +25,20 @@ static JUMLAH: AtomicU64 = AtomicU64::new(0);
 /// Berapa kali kode native keluar lewat deopt, untuk `JRG_JIT_LOG`.
 pub fn jumlah() -> u64 { JUMLAH.load(Ordering::Relaxed) }
 
-/// Dipanggil kode native di blok deopt (jalur dingin).
-pub extern "C" fn catat(c: *mut Catatan, fid: i32, ip: i32, nilai: *const i64, n: i32) {
-    // `c` penyangga milik `panggil::coba` yang hidup selama panggilan native; `nilai` slot stack sebanyak `n`.
-    let (c, nilai) = unsafe { (&mut *c, std::slice::from_raw_parts(nilai, n as usize)) };
-    c.push(Rekaman { fid: fid as u32, ip: ip as u32, nilai: nilai.to_vec() });
+thread_local! {
+    /// Per thread, bukan parameter native: parameter keempat makan satu register di tiap panggilan.
+    static CATATAN: RefCell<Catatan> = const { RefCell::new(Vec::new()) };
 }
+
+/// Dipanggil kode native di blok deopt (jalur dingin).
+pub extern "C" fn catat(fid: i32, ip: i32, nilai: *const i64, n: i32) {
+    // `nilai` = slot stack bingkai native yang memanggil, berisi `n` bilangan.
+    let nilai = unsafe { std::slice::from_raw_parts(nilai, n as usize) };
+    CATATAN.with(|c| c.borrow_mut().push(Rekaman { fid: fid as u32, ip: ip as u32, nilai: nilai.to_vec() }));
+}
+
+/// Rekaman panggilan native yang baru keluar (dikosongkan).
+pub fn ambil() -> Catatan { CATATAN.with(|c| std::mem::take(&mut *c.borrow_mut())) }
 
 /// `JRG_JIT_STRES=deopt-acak`: tiap instruksi yang dikompilasi bisa keluar ke VM (07-kebenaran-dan-uji.md).
 pub fn acak_aktif() -> bool {

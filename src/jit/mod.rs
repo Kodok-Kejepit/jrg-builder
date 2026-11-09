@@ -25,10 +25,10 @@ pub fn aktifkan() { AKTIF.store(true, Ordering::Relaxed); }
 #[inline]
 pub fn aktif() -> bool { AKTIF.load(Ordering::Relaxed) }
 
-/// Pintu masuk kode native sebuah fungsi: `(args, kedalaman, keluar, catatan deopt) -> status`.
+/// Pintu masuk kode native sebuah fungsi: `(args, kedalaman, keluar) -> status`.
 #[derive(Clone, Copy)]
 pub struct KodeJit {
-    pub masuk: unsafe extern "C" fn(*const i64, i32, *mut i64, *mut u8) -> i32,
+    pub masuk: unsafe extern "C" fn(*const i64, i32, *mut i64) -> i32,
 }
 
 impl std::fmt::Debug for KodeJit {

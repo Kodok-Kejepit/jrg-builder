@@ -34,6 +34,9 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
         let _ = fb.set("opt_level", "speed");
         let _ = fb.set("is_pic", "false");
         let _ = fb.set("use_colocated_libcalls", "false");
+        // Verifier IR memeriksa `turun.rs` di build debug dan mode stres; di jalan biasa cuma biaya kompilasi.
+        let periksa = cfg!(debug_assertions) || std::env::var_os("JRG_JIT_STRES").is_some();
+        let _ = fb.set("enable_verifier", if periksa { "true" } else { "false" });
         let isa = cranelift_native::builder().ok()
             .and_then(|ib| ib.finish(settings::Flags::new(fb)).ok());
         Mutex::new(isa.and_then(|isa| {

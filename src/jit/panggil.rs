@@ -4,7 +4,7 @@
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use super::deopt::{self, Catatan};
+use super::deopt;
 use super::turun::{BERHASIL, DEOPT, KEDALAMAN_MAKS};
 use crate::vm::value::{VmFunction, VmValue};
 use crate::vm::vm::Vm;
@@ -38,10 +38,9 @@ pub(crate) fn coba(vm: &mut Vm, func: &Arc<VmFunction>, argc: usize, fn_idx: usi
     };
     let boleh = ((batas + 1).saturating_sub(vm.frames.len()) as i64).min(KEDALAMAN_MAKS);
     let mut keluar = 0i64;
-    let mut catatan: Catatan = Vec::new();
     // Kode ini dibangkitkan `turun.rs` dengan tanda tangan `KodeJit::masuk` persis.
     let st = unsafe {
-        (kode.masuk)(args.as_ptr(), (KEDALAMAN_MAKS - boleh) as i32, &mut keluar, &mut catatan as *mut Catatan as *mut u8)
+        (kode.masuk)(args.as_ptr(), (KEDALAMAN_MAKS - boleh) as i32, &mut keluar)
     } as i64;
     if st == BERHASIL {
         vm.stack.truncate(fn_idx);
@@ -49,7 +48,7 @@ pub(crate) fn coba(vm: &mut Vm, func: &Arc<VmFunction>, argc: usize, fn_idx: usi
         return true;
     }
     if st == DEOPT {
-        deopt::pulihkan(vm, fn_idx, catatan);
+        deopt::pulihkan(vm, fn_idx, deopt::ambil());
         return true;
     }
     // ULANG di bingkai terluar: belum ada yang dijalankan, VM memanggil seperti biasa.

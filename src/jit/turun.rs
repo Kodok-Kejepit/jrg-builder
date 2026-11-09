@@ -2,7 +2,7 @@
 //! abstrak = satu variabel `i64`; SSA-nya dibangun `FunctionBuilder`. Jaga yang gagal mencatat keadaan
 //! bingkai lewat `deopt::catat` lalu keluar; status 0 berhasil, 1 deopt, 2 panggilan belum dimulai.
 
-use cranelift_codegen::ir::{condcodes::IntCC, types, AbiParam, Block, FuncRef, InstBuilder, MemFlagsData, Signature, StackSlotData, StackSlotKind, Type, Value};
+use cranelift_codegen::ir::{condcodes::IntCC, types, AbiParam, Block, FuncRef, InstBuilder, MemFlagsData, Signature, StackSlot, StackSlotData, StackSlotKind, Type, Value};
 use cranelift_codegen::isa::CallConv;
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Variable};
 use cranelift_module::{FuncId, Module};
@@ -19,23 +19,22 @@ pub const ULANG: i64 = 2;
 /// Kedalaman panggilan native paling banyak; `panggil::coba` menurunkannya mendekati batas bingkai VM.
 pub const KEDALAMAN_MAKS: i64 = 4096;
 
-/// `fn(args: *const i64, kedalaman: i32, keluar: *mut i64, catatan: *mut Catatan) -> i32`, satu bentuk untuk semua.
+/// `fn(args: *const i64, kedalaman: i32, keluar: *mut i64) -> i32`, satu bentuk untuk semua.
 pub fn tanda_tangan(m: &impl Module, cc: CallConv) -> Signature {
     let ptr = m.target_config().pointer_type();
     let mut sig = Signature::new(cc);
     sig.params.push(AbiParam::new(ptr));
     sig.params.push(AbiParam::new(types::I32));
     sig.params.push(AbiParam::new(ptr));
-    sig.params.push(AbiParam::new(ptr));
     sig.returns.push(AbiParam::new(types::I32));
     sig
 }
 
-/// `deopt::catat(catatan, fid, ip, nilai, n)`.
+/// `deopt::catat(fid, ip, nilai, n)`.
 pub fn tanda_tangan_catat(m: &impl Module, cc: CallConv) -> Signature {
     let ptr = m.target_config().pointer_type();
     let mut sig = Signature::new(cc);
-    for t in [ptr, types::I32, types::I32, ptr, types::I32] { sig.params.push(AbiParam::new(t)); }
+    for t in [types::I32, types::I32, ptr, types::I32] { sig.params.push(AbiParam::new(t)); }
     sig
 }
 
@@ -49,11 +48,11 @@ pub fn tanda_tangan_undi(cc: CallConv) -> Signature {
 /// Fungsi impor dan identitas bingkai untuk blok deopt.
 pub struct Impor { pub catat: FuncId, pub undi: Option<FuncId>, pub fid: u32 }
 
-struct Keluar { catat: FuncRef, fid: i64, catatan: Value, ptr: Type }
+struct Keluar { catat: FuncRef, fid: i64, ptr: Type, slot: StackSlot }
 
 /// Blok saat ini menjadi keluar deopt: nilai stack `jenis` dicatat untuk dilanjutkan VM di `ip`.
 fn keluar_deopt(b: &mut FunctionBuilder, k: &Keluar, var: &[Variable], ip: usize, jenis: &[Jenis]) {
-    let slot = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, (jenis.len().max(1) * 8) as u32, 3));
+    let slot = k.slot;
     for (i, j) in jenis.iter().enumerate() {
         // Posisi fungsi tidak punya nilai native; VM membangunnya dari `Rencana::callee`.
         if matches!(j, Jenis::Fungsi(_)) { continue; }
@@ -64,7 +63,7 @@ fn keluar_deopt(b: &mut FunctionBuilder, k: &Keluar, var: &[Variable], ip: usize
     let fid = b.ins().iconst(types::I32, k.fid);
     let ipv = b.ins().iconst(types::I32, ip as i64);
     let n = b.ins().iconst(types::I32, jenis.len() as i64);
-    b.ins().call(k.catat, &[k.catatan, fid, ipv, pn, n]);
+    b.ins().call(k.catat, &[fid, ipv, pn, n]);
     let st = b.ins().iconst(types::I32, DEOPT);
     b.ins().return_(&[st]);
 }
@@ -101,11 +100,13 @@ pub fn turunkan(
     let masuk = b.create_block();
     b.append_block_params_for_function_params(masuk);
     b.switch_to_block(masuk);
-    let (args, kedalaman, keluar, catatan) = {
+    let (args, kedalaman, keluar) = {
         let p = b.block_params(masuk);
-        (p[0], p[1], p[2], p[3])
+        (p[0], p[1], p[2])
     };
-    let k = Keluar { catat: m.declare_func_in_func(impor.catat, b.func), fid: impor.fid as i64, catatan, ptr };
+    // Satu slot rekaman untuk semua titik deopt fungsi ini (cuma satu yang pernah dipakai per panggilan).
+    let slot = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, (r.maks.max(1) * 8) as u32, 3));
+    let k = Keluar { catat: m.declare_func_in_func(impor.catat, b.func), fid: impor.fid as i64, ptr, slot };
     let undi = impor.undi.map(|u| m.declare_func_in_func(u, b.func));
     let dalam = b.create_block();
     b.set_cold_block(dalam);
@@ -204,7 +205,7 @@ pub fn turunkan(
                 }
                 let pa = b.ins().stack_addr(ptr, slot, 0);
                 let ph = b.ins().stack_addr(ptr, hasil, 0);
-                let panggil = b.ins().call(fref, &[pa, kedalaman1, ph, catatan]);
+                let panggil = b.ins().call(fref, &[pa, kedalaman1, ph]);
                 let st = b.inst_results(panggil)[0];
                 let terus = b.create_block();
                 let gagal = b.create_block();
