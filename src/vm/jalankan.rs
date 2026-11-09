@@ -132,27 +132,7 @@ impl Vm {
             macro_rules! int_cepat {
             () => {
             if let [.., VmValue::Int(x), VmValue::Int(y)] = self.stack.as_slice() {
-            let (x, y) = (*x, *y);
-            let kecil = i64::try_from(x).ok().zip(i64::try_from(y).ok());
-            let h = match op {
-            OpCode::Add => x.checked_add(y).map(VmValue::Int),
-            OpCode::Sub => x.checked_sub(y).map(VmValue::Int),
-            OpCode::Mul => match kecil {
-            Some((p, q)) => Some(VmValue::Int(p as i128 * q as i128)),
-            None => x.checked_mul(y).map(VmValue::Int),
-            },
-            OpCode::Mod => match kecil {
-            Some((p, q)) if q != 0 && q != -1 => Some(VmValue::Int((p % q) as i128)),
-            _ => None,
-            },
-            OpCode::Eq => Some(VmValue::Bool(x == y)),
-            OpCode::Ne => Some(VmValue::Bool(x != y)),
-            OpCode::Lt => Some(VmValue::Bool(x < y)),
-            OpCode::Le => Some(VmValue::Bool(x <= y)),
-            OpCode::Gt => Some(VmValue::Bool(x > y)),
-            OpCode::Ge => Some(VmValue::Bool(x >= y)),
-            _ => None,
-            };
+            let h = int_biner(op, *x, *y);
             if let Some(h) = h {
             self.stack.pop();
             // Banding yang langsung diikuti `JumpFalse`: lompat tanpa menaruh `bool`-nya.
@@ -231,8 +211,32 @@ impl Vm {
                     self.push(if v.bisa_beralias() { v.deep_copy() } else { v });
                 }
 
-                OpCode::LoadLocal => {
+                OpCode::LoadLocal | OpCode::LokalHitung => {
                     let slot = self.frame_slot() + arg as usize;
+                    // Fusi `LoadLocal; IntImm|LoadLocal; Add|Sub|Mul|Mod` atas bulat: satu dispatch,
+                    // aturan `int_biner`; yang ditolaknya berjalan instruksi demi instruksi seperti biasa.
+                    if let (OpCode::LokalHitung, Some(VmValue::Int(x))) = (op, self.stack.get(slot)) {
+                        let (x, basis) = (*x, self.basis);
+                        let fr = self.frames.last_mut().unwrap();
+                        let kode = &fr.func.chunk.code;
+                        if let (Some(i1), Some(i2)) = (kode.get(fr.ip), kode.get(fr.ip + 1)) {
+                            if matches!(i2.op, OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Mod) {
+                                let y = match i1.op {
+                                    OpCode::IntImm => Some(i1.arg as i32 as i128),
+                                    OpCode::LoadLocal | OpCode::LokalHitung => match self.stack.get(basis + i1.arg as usize) {
+                                        Some(VmValue::Int(y)) => Some(*y),
+                                        _ => None,
+                                    },
+                                    _ => None,
+                                };
+                                if let Some(VmValue::Int(h)) = y.and_then(|y| int_biner(i2.op, x, y)) {
+                                    fr.ip += 2;
+                                    self.stack.push(VmValue::Int(h));
+                                    continue;
+                                }
+                            }
+                        }
+                    }
                     let v = self.stack.get(slot)
                         .ok_or_else(|| VmError::at(format!("local slot {} OOB", arg), sp))?
                         .clone();
@@ -1152,15 +1156,7 @@ impl Vm {
                 }
                 OpCode::IterAda => {
                     let slot = self.frame_slot() + arg as usize;
-                    let idx = match &self.stack[slot + 2] {
-                        VmValue::Int(n) => *n,
-                        _ => return Err(VmError::at("state iterator rusak", sp)),
-                    };
-                    let ada = match &self.stack[slot] {
-                        VmValue::Int(jumlah) => idx < *jumlah,
-                        VmValue::Array(a) => (idx as usize) < a.lock().unwrap().len(),
-                        _ => return Err(VmError::at("state iterator rusak", sp)),
-                    };
+                    let ada = self.iter_ada(slot, sp)?;
                     // Selalu diikuti `JumpFalse` di kepala `for`: lompat tanpa menaruh `bool`-nya.
                     let fr = self.frames.last_mut().unwrap();
                     if let Some(lompat) = fr.func.chunk.code.get(fr.ip).filter(|i| matches!(i.op, OpCode::JumpFalse)) {
@@ -1174,6 +1170,19 @@ impl Vm {
                     match self.stack.get_mut(slot) {
                         Some(VmValue::Int(n)) if *n < i128::MAX => *n += 1,
                         _ => return Err(VmError::at("state iterator rusak", sp)),
+                    }
+                    // Fusi `IterMaju; Jump kepala` dengan kepala `IterAda; JumpFalse` iterator yang sama.
+                    let fr = self.frames.last().unwrap();
+                    let kode = &fr.func.chunk.code;
+                    if let Some(j) = kode.get(fr.ip).filter(|i| i.op == OpCode::Jump) {
+                        let t = j.arg as usize;
+                        if let (Some(a), Some(jf)) = (kode.get(t), kode.get(t + 1)) {
+                            if a.op == OpCode::IterAda && jf.op == OpCode::JumpFalse && self.basis + a.arg as usize == slot - 2 {
+                                let keluar = jf.arg as usize;
+                                let ada = self.iter_ada(slot - 2, sp)?;
+                                self.frames.last_mut().unwrap().ip = if ada { t + 2 } else { keluar };
+                            }
+                        }
                     }
                 }
                 OpCode::IterVar => {
@@ -1576,4 +1585,47 @@ fn tambah_tempat(cur: &mut VmValue, rhs: &VmValue) -> bool {
 fn larik_milik_tunggal(v: &mut VmValue) -> Option<&mut Vec<VmValue>> {
     let VmValue::Array(a) = v else { return None };
     Arc::get_mut(a).map(|m| m.get_mut().unwrap_or_else(|p| p.into_inner()))
+}
+
+/// Dua bulat di jalur cepat; `None` = luapan, pembagi 0/-1, atau bukan operator ini (jalur biasa
+/// yang punya kalimatnya). Satu definisi untuk `int_cepat` dan fusi `LoadLocal`.
+#[inline]
+fn int_biner(op: OpCode, x: i128, y: i128) -> Option<VmValue> {
+    let kecil = i64::try_from(x).ok().zip(i64::try_from(y).ok());
+    match op {
+        OpCode::Add => x.checked_add(y).map(VmValue::Int),
+        OpCode::Sub => x.checked_sub(y).map(VmValue::Int),
+        OpCode::Mul => match kecil {
+            Some((p, q)) => Some(VmValue::Int(p as i128 * q as i128)),
+            None => x.checked_mul(y).map(VmValue::Int),
+        },
+        OpCode::Mod => match kecil {
+            Some((p, q)) if q != 0 && q != -1 => Some(VmValue::Int((p % q) as i128)),
+            _ => None,
+        },
+        OpCode::Eq => Some(VmValue::Bool(x == y)),
+        OpCode::Ne => Some(VmValue::Bool(x != y)),
+        OpCode::Lt => Some(VmValue::Bool(x < y)),
+        OpCode::Le => Some(VmValue::Bool(x <= y)),
+        OpCode::Gt => Some(VmValue::Bool(x > y)),
+        OpCode::Ge => Some(VmValue::Bool(x >= y)),
+        _ => None,
+    }
+}
+
+impl Vm {
+    /// Apakah iterator di `slot` (`[items, penanda, idx]`) masih punya elemen; satu definisi
+    /// untuk `IterAda` dan fusi `IterMaju`.
+    #[inline]
+    fn iter_ada(&self, slot: usize, sp: Option<crate::lexer::Span>) -> VmResult<bool> {
+        let idx = match self.stack.get(slot + 2) {
+            Some(VmValue::Int(n)) => *n,
+            _ => return Err(VmError::at("state iterator rusak", sp)),
+        };
+        match &self.stack[slot] {
+            VmValue::Int(jumlah) => Ok(idx < *jumlah),
+            VmValue::Array(a) => Ok((idx as usize) < a.lock().unwrap().len()),
+            _ => Err(VmError::at("state iterator rusak", sp)),
+        }
+    }
 }

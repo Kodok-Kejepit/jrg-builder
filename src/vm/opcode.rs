@@ -21,7 +21,9 @@ pub enum OpCode {
     CopyVal,
 
     // Locals
-    LoadLocal, StoreLocal,
+    LoadLocal,
+    /// `LoadLocal` yang diikuti `IntImm|LoadLocal; Add|Sub|Mul|Mod` (ditandai `Chunk::rampungkan`).
+    LokalHitung, StoreLocal,
 
     // ── Jalur penulisan (copy-on-write) ──────────────────────────────────
     PinjamLokal,
@@ -210,7 +212,7 @@ impl Instruction {
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.op {
-            OpCode::Const | OpCode::LoadLocal | OpCode::StoreLocal
+            OpCode::Const | OpCode::LoadLocal | OpCode::LokalHitung | OpCode::StoreLocal
             | OpCode::MakeClosure | OpCode::LoadUpval | OpCode::StoreUpval
             | OpCode::LoadGlobal | OpCode::StoreGlobal | OpCode::DefGlobal | OpCode::DefVar
             | OpCode::Jump | OpCode::JumpFalse | OpCode::JumpTrue

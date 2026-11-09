@@ -182,6 +182,14 @@ impl Chunk {
     /// Buang indeks kolam: cuma dipakai selama chunk ini DIBANGUN, dan chunk fungsi
     /// bersarang disalin `LoadFn` tiap kali jalan.
     pub(crate) fn rampungkan(mut self) -> Self {
+        // Fusi ditandai sekali di sini, bukan diintip tiap `LoadLocal` dijalankan.
+        for i in 0..self.code.len().saturating_sub(2) {
+            let (a, b, c) = (self.code[i].op, self.code[i + 1].op, self.code[i + 2].op);
+            if a == OpCode::LoadLocal && matches!(b, OpCode::IntImm | OpCode::LoadLocal)
+                && matches!(c, OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Mod) {
+                self.code[i].op = OpCode::LokalHitung;
+            }
+        }
         self.indeks_span = HashMap::new();
         self.indeks_nama = HashMap::new();
         self.indeks_konstanta = HashMap::new();
