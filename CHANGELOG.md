@@ -59,8 +59,9 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **`jrgc file.jrg --jit`**: mesin eksekusi keempat. Fungsi yang hanya menghitung bilangan bulat (seperti `fib`,
   faktorial, `gcd`) dikompilasi jadi kode mesin saat program berjalan — `fib(25)` ±13x lebih sedikit instruksi
   daripada `--vm`; sisanya berjalan di VM sambil dicatat profilnya. Hasilnya, termasuk luapan ke 128 bit dan
-  kalimat galat beserta lokasinya, sama persis dengan dua mesin lain. `JRG_JIT_LOG=ringkas` melaporkan fungsi
-  panas dan yang dikompilasi.
+  kalimat galat beserta lokasinya, sama persis dengan dua mesin lain. Kode mesin yang menemui kasus di luar
+  tebakannya (luapan 64 bit, `% 0`, rekursi sangat dalam) diserahkan ke VM tepat di instruksi itu, tidak diulang
+  dari awal. `JRG_JIT_LOG=ringkas` melaporkan fungsi panas, yang dikompilasi, dan jumlah deopt.
 
 - `JRGC_BATAS_MEMORI=<MiB>` membatasi memori biner yang dijalankan `jrgc --emit-llvm`; yang melewatinya berhenti
   dengan "memori habis" alih-alih menghabiskan memori mesin.

@@ -1,5 +1,6 @@
 //! JRGJIT, mesin eksekusi keempat (rancangan: `dokumentasi/jit/`). J1: VM berprofil; J2: fungsi bulat
-//! murni dikompilasi lewat Cranelift (`j2-rencana.md`), yang mundur diulang dari awal di VM.
+//! murni dikompilasi lewat Cranelift (`j2-rencana.md`); J3: jaga yang gagal deopt ke VM di instruksi
+//! yang sama, bingkai native disusun ulang jadi bingkai VM (`j3-rencana.md`).
 
 pub mod profil;
 pub mod laporan;
@@ -11,6 +12,8 @@ mod turun;
 pub(crate) mod modul;
 #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
 pub(crate) mod panggil;
+#[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
+pub(crate) mod deopt;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -22,10 +25,10 @@ pub fn aktifkan() { AKTIF.store(true, Ordering::Relaxed); }
 #[inline]
 pub fn aktif() -> bool { AKTIF.load(Ordering::Relaxed) }
 
-/// Pintu masuk kode native sebuah fungsi: `(args, kedalaman, keluar) -> status`.
+/// Pintu masuk kode native sebuah fungsi: `(args, kedalaman, keluar, catatan deopt) -> status`.
 #[derive(Clone, Copy)]
 pub struct KodeJit {
-    pub masuk: unsafe extern "C" fn(*const i64, i32, *mut i64) -> i32,
+    pub masuk: unsafe extern "C" fn(*const i64, i32, *mut i64, *mut u8) -> i32,
 }
 
 impl std::fmt::Debug for KodeJit {

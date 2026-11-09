@@ -121,3 +121,40 @@ fn rekursi_dalam_mundur_ke_vm() {
     assert_eq!((v.sukses, v.stdout.as_str()), (true, "20000"));
     assert_eq!((j.sukses, j.stdout.as_str()), (true, "20000"));
 }
+
+// ── J3: deopt di tengah fungsi, bingkai native disusun ulang jadi bingkai VM (`j3-rencana.md`) ───
+
+const ACAK: (&str, &str) = ("JRG_JIT_STRES", "deopt-acak");
+
+#[test]
+fn paritas_lewat_jit_deopt_acak() {
+    let mut gagal = Vec::new();
+    for (nama, src) in PARITAS {
+        let i = jalankan(src, &[], &[]);
+        let j = jalankan(src, &["--jit"], &[STRES, ACAK]);
+        if i.sukses != j.sukses || i.stdout != j.stdout {
+            gagal.push(format!("  {nama}\n     interpreter ({}): {:?}\n     deopt acak  ({}): {:?}",
+                i.sukses, i.stdout, j.sukses, j.stdout));
+        }
+    }
+    assert!(gagal.is_empty(), "{} kasus PARITAS beda di --jit (deopt acak):\n{}", gagal.len(), gagal.join("\n"));
+}
+
+/// Luapan di callee terdalam: seluruh rantai native lanjut di VM dari titik itu, hasilnya 128 bit.
+const RANTAI: &str = "fn g(x) { return x * x }\nfn f(n) {\n  if n == 0 { return g(4000000000) }\n  return f(n - 1) + 1\n}\nfn main() { wok(f(5), f(30)) }\n";
+
+#[test]
+fn deopt_di_tengah_rantai_native() {
+    sama_dengan_interpreter(RANTAI);
+    let h = jalankan(RANTAI, &["--jit"], &[STRES, ("JRG_JIT_LOG", "ringkas")]);
+    assert_eq!(h.stdout, "16000000000000000005 16000000000000000030");
+    assert!(h.stderr.lines().any(|b| b == "[jit] deopt: 2"), "tiap luapan tepat satu deopt:\n{}", h.stderr);
+}
+
+#[test]
+fn deopt_acak_sama_dengan_interpreter() {
+    let src = "fn sisa(a, b) { return a % b }\nfn fib(n) {\n  if n < 2 { return n }\n  return fib(n - 1) + fib(n - 2)\n}\nfn main() {\n  wok(fib(18), sisa(-7, 3))\n  wok(sisa(7, 0))\n}\n";
+    let i = jalankan(src, &[], &[]);
+    let j = jalankan(src, &["--jit"], &[STRES, ACAK]);
+    assert_eq!((i.sukses, &i.stdout, &i.stderr), (j.sukses, &j.stdout, &j.stderr));
+}

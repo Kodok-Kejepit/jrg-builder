@@ -1,8 +1,8 @@
 //! Bytecode fungsi bulat murni → Cranelift IR (`dokumentasi/jit/j2-rencana.md`). Tiap posisi stack
-//! abstrak = satu variabel `i64`; SSA-nya dibangun `FunctionBuilder`. Status: 0 berhasil, 1 mundur,
-//! 2 terlalu dalam — dua yang terakhir berarti panggilan itu diulang dari awal di VM.
+//! abstrak = satu variabel `i64`; SSA-nya dibangun `FunctionBuilder`. Jaga yang gagal mencatat keadaan
+//! bingkai lewat `deopt::catat` lalu keluar; status 0 berhasil, 1 deopt, 2 panggilan belum dimulai.
 
-use cranelift_codegen::ir::{condcodes::IntCC, types, AbiParam, Block, InstBuilder, MemFlagsData, Signature, StackSlotData, StackSlotKind};
+use cranelift_codegen::ir::{condcodes::IntCC, types, AbiParam, Block, FuncRef, InstBuilder, MemFlagsData, Signature, StackSlotData, StackSlotKind, Type, Value};
 use cranelift_codegen::isa::CallConv;
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Variable};
 use cranelift_module::{FuncId, Module};
@@ -12,20 +12,72 @@ use crate::vm::opcode::OpCode;
 use crate::vm::value::VmFunction;
 
 pub const BERHASIL: i64 = 0;
-pub const MUNDUR: i64 = 1;
-pub const TERLALU_DALAM: i64 = 2;
-/// Kedalaman panggilan native paling banyak; di atasnya VM yang meneruskan (stack Rust dijaga).
+/// Bingkai native sudah dicatat (yang paling dalam lebih dulu); VM melanjutkannya.
+pub const DEOPT: i64 = 1;
+/// Callee keluar sebelum mulai (terlalu dalam): pemanggilnya deopt DI instruksi `Call`, VM yang memanggil.
+pub const ULANG: i64 = 2;
+/// Kedalaman panggilan native paling banyak; `panggil::coba` menurunkannya mendekati batas bingkai VM.
 pub const KEDALAMAN_MAKS: i64 = 4096;
 
-/// `fn(args: *const i64, kedalaman: i32, keluar: *mut i64) -> i32`, satu bentuk untuk semua.
+/// `fn(args: *const i64, kedalaman: i32, keluar: *mut i64, catatan: *mut Catatan) -> i32`, satu bentuk untuk semua.
 pub fn tanda_tangan(m: &impl Module, cc: CallConv) -> Signature {
     let ptr = m.target_config().pointer_type();
     let mut sig = Signature::new(cc);
     sig.params.push(AbiParam::new(ptr));
     sig.params.push(AbiParam::new(types::I32));
     sig.params.push(AbiParam::new(ptr));
+    sig.params.push(AbiParam::new(ptr));
     sig.returns.push(AbiParam::new(types::I32));
     sig
+}
+
+/// `deopt::catat(catatan, fid, ip, nilai, n)`.
+pub fn tanda_tangan_catat(m: &impl Module, cc: CallConv) -> Signature {
+    let ptr = m.target_config().pointer_type();
+    let mut sig = Signature::new(cc);
+    for t in [ptr, types::I32, types::I32, ptr, types::I32] { sig.params.push(AbiParam::new(t)); }
+    sig
+}
+
+/// `deopt::undi() -> i32`.
+pub fn tanda_tangan_undi(cc: CallConv) -> Signature {
+    let mut sig = Signature::new(cc);
+    sig.returns.push(AbiParam::new(types::I32));
+    sig
+}
+
+/// Fungsi impor dan identitas bingkai untuk blok deopt.
+pub struct Impor { pub catat: FuncId, pub undi: Option<FuncId>, pub fid: u32 }
+
+struct Keluar { catat: FuncRef, fid: i64, catatan: Value, ptr: Type }
+
+/// Blok saat ini menjadi keluar deopt: nilai stack `jenis` dicatat untuk dilanjutkan VM di `ip`.
+fn keluar_deopt(b: &mut FunctionBuilder, k: &Keluar, var: &[Variable], ip: usize, jenis: &[Jenis]) {
+    let slot = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, (jenis.len().max(1) * 8) as u32, 3));
+    for (i, j) in jenis.iter().enumerate() {
+        // Posisi fungsi tidak punya nilai native; VM membangunnya dari `Rencana::callee`.
+        if matches!(j, Jenis::Fungsi(_)) { continue; }
+        let v = b.use_var(var[i]);
+        b.ins().stack_store(k.ptr, v, slot, (i * 8) as i32);
+    }
+    let pn = b.ins().stack_addr(k.ptr, slot, 0);
+    let fid = b.ins().iconst(types::I32, k.fid);
+    let ipv = b.ins().iconst(types::I32, ip as i64);
+    let n = b.ins().iconst(types::I32, jenis.len() as i64);
+    b.ins().call(k.catat, &[k.catatan, fid, ipv, pn, n]);
+    let st = b.ins().iconst(types::I32, DEOPT);
+    b.ins().return_(&[st]);
+}
+
+/// `cond` benar = deopt di `ip` dengan stack `jenis`; sesudahnya builder ada di blok lanjutan.
+fn jaga(b: &mut FunctionBuilder, k: &Keluar, var: &[Variable], cond: Value, ip: usize, jenis: &[Jenis]) {
+    let d = b.create_block();
+    b.set_cold_block(d);
+    let terus = b.create_block();
+    b.ins().brif(cond, d, &[], terus, &[]);
+    b.switch_to_block(d);
+    keluar_deopt(b, k, var, ip, jenis);
+    b.switch_to_block(terus);
 }
 
 pub fn turunkan(
@@ -35,6 +87,7 @@ pub fn turunkan(
     f: &VmFunction,
     r: &Rencana,
     id_callee: &[FuncId],
+    impor: &Impor,
 ) {
     let ptr = m.target_config().pointer_type();
     let mut b = FunctionBuilder::new(fungsi, fctx);
@@ -48,12 +101,14 @@ pub fn turunkan(
     let masuk = b.create_block();
     b.append_block_params_for_function_params(masuk);
     b.switch_to_block(masuk);
-    let (args, kedalaman, keluar) = {
+    let (args, kedalaman, keluar, catatan) = {
         let p = b.block_params(masuk);
-        (p[0], p[1], p[2])
+        (p[0], p[1], p[2], p[3])
     };
-    let mundur = b.create_block();
+    let k = Keluar { catat: m.declare_func_in_func(impor.catat, b.func), fid: impor.fid as i64, catatan, ptr };
+    let undi = impor.undi.map(|u| m.declare_func_in_func(u, b.func));
     let dalam = b.create_block();
+    b.set_cold_block(dalam);
     // Kedalaman native dijaga di pintu masuk; parameter dimuat dari penyangga argumen.
     let terlalu = b.ins().icmp_imm_s(IntCC::SignedGreaterThan, kedalaman, KEDALAMAN_MAKS);
     let mulai = b.create_block();
@@ -74,6 +129,11 @@ pub fn turunkan(
             b.switch_to_block(bl);
             terbuka = true;
         }
+        if let Some(u) = undi {
+            let c = b.ins().call(u, &[]);
+            let c = b.inst_results(c)[0];
+            jaga(&mut b, &k, &var, c, ip, s);
+        }
         let ins = kode[ip];
         let a = ins.arg as usize;
         let t = s.len();
@@ -89,9 +149,7 @@ pub fn turunkan(
                     OpCode::Sub => b.ins().ssub_overflow(x, y),
                     _ => b.ins().smul_overflow(x, y),
                 };
-                let terus = b.create_block();
-                b.ins().brif(luap, mundur, &[], terus, &[]);
-                b.switch_to_block(terus);
+                jaga(&mut b, &k, &var, luap, ip, s);
                 b.def_var(var[t - 2], h);
             }
             OpCode::Mod => {
@@ -100,9 +158,7 @@ pub fn turunkan(
                 let nol = b.ins().icmp_imm_s(IntCC::Equal, y, 0);
                 let min1 = b.ins().icmp_imm_s(IntCC::Equal, y, -1);
                 let tolak = b.ins().bor(nol, min1);
-                let terus = b.create_block();
-                b.ins().brif(tolak, mundur, &[], terus, &[]);
-                b.switch_to_block(terus);
+                jaga(&mut b, &k, &var, tolak, ip, s);
                 let h = b.ins().srem(x, y);
                 b.def_var(var[t - 2], h);
             }
@@ -148,15 +204,23 @@ pub fn turunkan(
                 }
                 let pa = b.ins().stack_addr(ptr, slot, 0);
                 let ph = b.ins().stack_addr(ptr, hasil, 0);
-                let panggil = b.ins().call(fref, &[pa, kedalaman1, ph]);
+                let panggil = b.ins().call(fref, &[pa, kedalaman1, ph, catatan]);
                 let st = b.inst_results(panggil)[0];
                 let terus = b.create_block();
                 let gagal = b.create_block();
-                b.append_block_param(gagal, types::I32);
-                b.ins().brif(st, gagal, &[st.into()], terus, &[]);
+                b.set_cold_block(gagal);
+                b.ins().brif(st, gagal, &[], terus, &[]);
                 b.switch_to_block(gagal);
-                let p = b.block_params(gagal)[0];
-                b.ins().return_(&[p]);
+                // Callee belum mulai: VM menjalankan `Call` ini sendiri. Callee sudah tercatat: lanjut sesudahnya.
+                let ulang = b.ins().icmp_imm_s(IntCC::Equal, st, ULANG);
+                let (bu, bb) = (b.create_block(), b.create_block());
+                b.set_cold_block(bu);
+                b.set_cold_block(bb);
+                b.ins().brif(ulang, bu, &[], bb, &[]);
+                b.switch_to_block(bu);
+                keluar_deopt(&mut b, &k, &var, ip, s);
+                b.switch_to_block(bb);
+                keluar_deopt(&mut b, &k, &var, ip + 1, &s[..t - a - 1]);
                 b.switch_to_block(terus);
                 let v = b.ins().stack_load(ptr, types::I64, hasil, 0);
                 b.def_var(var[t - a - 1], v);
@@ -164,11 +228,8 @@ pub fn turunkan(
             _ => unreachable!("dijamin layak.rs"),
         }
     }
-    b.switch_to_block(mundur);
-    let st = b.ins().iconst(types::I32, MUNDUR);
-    b.ins().return_(&[st]);
     b.switch_to_block(dalam);
-    let st = b.ins().iconst(types::I32, TERLALU_DALAM);
+    let st = b.ins().iconst(types::I32, ULANG);
     b.ins().return_(&[st]);
     b.seal_all_blocks();
     b.finalize(m.target_config());

@@ -1,19 +1,17 @@
 //! Pintu dari `Vm::call_value`: jaga di pintu masuk (semua argumen bulat 64 bit), kompilasi sekali per
-//! fungsi, jalankan kode native; MUNDUR = `false`, dan VM menjalankan panggilan itu seperti biasa.
+//! fungsi, jalankan kode native. Kode yang deopt dilanjutkan VM dari bingkai yang disusun ulang.
 
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use super::turun::{BERHASIL, TERLALU_DALAM};
+use super::deopt::{self, Catatan};
+use super::turun::{BERHASIL, DEOPT, KEDALAMAN_MAKS};
 use crate::vm::value::{VmFunction, VmValue};
 use crate::vm::vm::Vm;
 
-/// `true` = panggilan sudah selesai di kode native dan hasilnya ada di puncak stack.
+/// `true` = panggilan sudah ditangani: hasilnya di puncak stack, atau bingkainya sudah dilanjutkan VM.
 pub(crate) fn coba(vm: &mut Vm, func: &Arc<VmFunction>, argc: usize, fn_idx: usize) -> bool {
     if argc != func.arity as usize || argc > 16 { return false; }
-    // Sesudah satu rantai rekursi terlalu dalam, bingkai VM di atasnya tidak mencoba native lagi.
-    if vm.frames.len() >= vm.jit_dilarang { return false; }
-    if vm.jit_dilarang != usize::MAX { vm.jit_dilarang = usize::MAX; }
     let Some(p) = func.chunk.profil.as_ref() else { return false };
     if p.panggilan.load(Ordering::Relaxed) < super::ambang().max(1) { return false; }
     let kode = *func.chunk.kode_jit.get_or_init(|| {
@@ -32,14 +30,28 @@ pub(crate) fn coba(vm: &mut Vm, func: &Arc<VmFunction>, argc: usize, fn_idx: usi
             _ => return false,
         }
     }
+    // Panggilan native ke-k sama dengan bingkai VM ke-(F+k): yang akan ditolak `periksa_kedalaman`
+    // tidak dijalankan native, tapi diserahkan ke VM lewat deopt di instruksi `Call`-nya.
+    let batas = match crate::interpreter::stack_menipis() {
+        Some(_) => Vm::BINGKAI_MAKS,
+        None => crate::interpreter::Interpreter::MAX_CALL_DEPTH,
+    };
+    let boleh = ((batas + 1).saturating_sub(vm.frames.len()) as i64).min(KEDALAMAN_MAKS);
     let mut keluar = 0i64;
+    let mut catatan: Catatan = Vec::new();
     // Kode ini dibangkitkan `turun.rs` dengan tanda tangan `KodeJit::masuk` persis.
-    let st = unsafe { (kode.masuk)(args.as_ptr(), 0, &mut keluar) } as i64;
+    let st = unsafe {
+        (kode.masuk)(args.as_ptr(), (KEDALAMAN_MAKS - boleh) as i32, &mut keluar, &mut catatan as *mut Catatan as *mut u8)
+    } as i64;
     if st == BERHASIL {
         vm.stack.truncate(fn_idx);
         vm.stack.push(VmValue::Int(keluar as i128));
         return true;
     }
-    if st == TERLALU_DALAM { vm.jit_dilarang = vm.frames.len() + 1; }
+    if st == DEOPT {
+        deopt::pulihkan(vm, fn_idx, catatan);
+        return true;
+    }
+    // ULANG di bingkai terluar: belum ada yang dijalankan, VM memanggil seperti biasa.
     false
 }

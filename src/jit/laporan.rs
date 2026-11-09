@@ -14,6 +14,8 @@ pub fn cetak_bila_diminta() {
     {
         let jadi = super::modul::terkompilasi();
         if !jadi.is_empty() { eprintln!("[jit] dikompilasi: {}", jadi.join(", ")); }
+        let d = super::deopt::jumlah();
+        if d > 0 { eprintln!("[jit] deopt: {d}"); }
     }
     for p in semua.iter().take(20) {
         let situs: Vec<u8> = p.umpan.iter().map(|s| s.load(Ordering::Relaxed)).filter(|b| *b != 0).collect();
