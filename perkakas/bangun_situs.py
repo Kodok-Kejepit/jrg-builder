@@ -639,7 +639,9 @@ def data_terstruktur() -> str:
          "inLanguage": "id"},
         {"@context": "https://schema.org", "@type": "ComputerLanguage", "name": "JawaRustGo++",
          "alternateName": "JRG", "url": f"{SITUS}/", "sameAs": [REPO],
-         "creator": {"@type": "Person", "name": "Muhamad Surya Widianto", "url": f"{SITUS}/profil.html"}},
+         "creator": {"@type": "Person", "name": "Muhamad Surya Widianto", "url": f"{SITUS}/profil.html",
+                     "sameAs": ["https://github.com/Kodok-Kejepit", "https://freease.cloud",
+                                "https://www.linkedin.com/in/muhamad-surya-widianto-3567ab40a"]}},
     ]
     return "".join(f'\n<script type="application/ld+json">{json.dumps(d, ensure_ascii=False)}</script>'
                    for d in data)

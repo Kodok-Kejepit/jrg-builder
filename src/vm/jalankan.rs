@@ -399,6 +399,13 @@ impl Vm {
                 OpCode::IndeksLokal => {
                     let slot = self.frame_slot() + arg as usize;
                     let idx = self.pop(sp)?;
+                    // Larik milik tunggal dibaca tanpa kunci; aturan indeks tetap `norm_idx`.
+                    if let (Some(v), VmValue::Int(i)) = (self.stack.get_mut(slot).and_then(larik_milik_tunggal), &idx) {
+                        let i = norm_idx(*i, v.len(), "array", "elemen", sp)?;
+                        let val = v[i].clone();
+                        self.push(val);
+                        continue;
+                    }
                     let val = match self.stack.get(slot) {
                         Some(VmValue::Cell(c)) => {
                             let wadah = c.lock().unwrap_or_else(|p| p.into_inner()).clone();
@@ -427,7 +434,14 @@ impl Vm {
                             };
                             self.set_index(&wadah, &idx, val, sp)?;
                         }
-                        None => self.set_index(&self.stack[slot], &idx, val, sp)?,
+                        None => match (larik_milik_tunggal(&mut self.stack[slot]), &idx) {
+                            // Sesudah `pisahkan` larik ini milik tunggal: tulis tanpa kunci.
+                            (Some(v), VmValue::Int(i)) => {
+                                let i = norm_idx(*i, v.len(), "array", "elemen", sp)?;
+                                v[i] = val;
+                            }
+                            _ => self.set_index(&self.stack[slot], &idx, val, sp)?,
+                        },
                     }
                 }
                 OpCode::TumbuhIndexLokal => {
@@ -1556,4 +1570,10 @@ fn tambah_tempat(cur: &mut VmValue, rhs: &VmValue) -> bool {
     let lama = std::mem::replace(cur, VmValue::Nil);
     *cur = lama.tambah_milik(rhs).expect("teks + skalar dan array + array tidak pernah gagal");
     true
+}
+
+/// Isi larik yang cuma dimiliki slot ini, tanpa kunci (`Arc::get_mut` + `Mutex::get_mut`).
+fn larik_milik_tunggal(v: &mut VmValue) -> Option<&mut Vec<VmValue>> {
+    let VmValue::Array(a) = v else { return None };
+    Arc::get_mut(a).map(|m| m.get_mut().unwrap_or_else(|p| p.into_inner()))
 }
