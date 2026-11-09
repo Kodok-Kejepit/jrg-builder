@@ -79,6 +79,10 @@ struct Cli {
     #[arg(long = "vm")]
     use_vm: bool,
 
+    /// Mesin keempat (JRGJIT); fase J1: VM yang merekam profil (`JRG_JIT_LOG=ringkas`)
+    #[arg(long = "jit", conflicts_with = "emit_llvm")]
+    jit: bool,
+
     /// Kompilasi jadi biner native lewat clang
     #[arg(long = "emit-llvm")]
     emit_llvm: bool,
@@ -497,11 +501,13 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
                     keluar(1)
                 });
         }
-        return vm::run_file_with_paths(&ast, jalur, cli.emit_bc, cli.profile)
+        let hasil = vm::run_file_with_paths(&ast, jalur, cli.emit_bc, cli.profile)
             .map_err(|e| {
                 diag::laporkan_vm(&mut source_map, &e);
                 Vec::new()
             });
+        jrgc::jit::laporan::cetak_bila_diminta();
+        return hasil;
     }
 
     // 4b. Tree-Walking Interpreter (default)
@@ -629,6 +635,10 @@ fn utama() {
         keluar(0);
     }
     let mut cli = Cli::parse();
+    if cli.jit {
+        cli.use_vm = true;
+        jrgc::jit::aktifkan();
+    }
     if let Some(p) = &cli.profile_json {
         cli.profile = true;
         profiler::tulis_json_ke(p.clone());

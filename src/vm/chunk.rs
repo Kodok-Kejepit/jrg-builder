@@ -51,6 +51,8 @@ pub struct Chunk {
     indeks_span: HashMap<crate::lexer::Span, u32>,
     indeks_nama: HashMap<String, u32>,
     indeks_konstanta: HashMap<KunciKonstanta, u32>,
+    /// Profil T0 (`--jit` saja); diisi `rampungkan`.
+    pub(crate) profil: Option<Arc<crate::jit::profil::ProfilFungsi>>,
 }
 
 impl Chunk {
@@ -66,6 +68,7 @@ impl Chunk {
             indeks_span: HashMap::from([(crate::lexer::Span::dummy(), 0)]),
             indeks_nama: HashMap::new(),
             indeks_konstanta: HashMap::new(),
+            profil:      None,
             span_kini:   0,
             name:        name.into(),
             arity,
@@ -190,6 +193,7 @@ impl Chunk {
                 self.code[i].op = OpCode::LokalHitung;
             }
         }
+        self.profil = crate::jit::profil::baru(&self.name, self.code.len());
         self.indeks_span = HashMap::new();
         self.indeks_nama = HashMap::new();
         self.indeks_konstanta = HashMap::new();

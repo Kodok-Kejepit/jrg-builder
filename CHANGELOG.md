@@ -56,6 +56,11 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Baru
 
+- **`jrgc file.jrg --jit`**: pintu mesin eksekusi keempat. Untuk sementara ia menjalankan program di VM bytecode
+  sambil mencatat fungsi mana yang paling sering dipanggil, loop mana yang paling banyak berputar, dan jenis nilai
+  yang lewat di tiap operator; `JRG_JIT_LOG=ringkas` menampilkan ringkasannya ke stderr saat program selesai.
+  Keluarannya sama persis dengan `--vm`.
+
 - `JRGC_BATAS_MEMORI=<MiB>` membatasi memori biner yang dijalankan `jrgc --emit-llvm`; yang melewatinya berhenti
   dengan "memori habis" alih-alih menghabiskan memori mesin.
 
@@ -159,6 +164,10 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   padanan `hmac.compare_digest` di Python. Pakai ini, bukan `==`, saat memeriksa HMAC webhook atau token rahasia.
 
 ### Kinerja
+
+- **`--vm` 2–28% lebih cepat** di kernel acuan: membaca dan menulis `a[i]` atas larik yang dimiliki satu variabel
+  tidak lagi mengunci, `x + 1`/`i % k`/`a * b` atas bilangan bulat dan langkah maju `for` dikerjakan sebagai satu
+  instruksi, dan memanggil fungsi tanpa `defer` tidak lagi membayar pemeriksaannya.
 
 - Biner `--emit-llvm`: `str(x % n)` dan `str(rekaman.field)` di tengah sambungan teks tidak lagi membuat teks
   sementara.

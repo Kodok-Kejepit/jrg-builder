@@ -14,7 +14,9 @@ impl Vm {
     /// Pembungkus: jalankan, lalu kalau gagal ISI JEJAKNYA sebelum galat itu
     /// keluar — `self.frames` masih utuh di titik ini, karena tidak ada yang …
     pub(crate) fn run_until(&mut self, exit_depth: usize) -> VmResult<()> {
-        match self.run_until_inner(exit_depth) {
+        // Dua salinan loop: `--jit` merekam profil, `--vm` tanpa satu cabang pun untuk itu.
+        let hasil = if self.profil_jit { self.run_until_inner::<true>(exit_depth) } else { self.run_until_inner::<false>(exit_depth) };
+        match hasil {
             Ok(v) => Ok(v),
             Err(mut e) => {
                 // `run_until` dipanggil ulang secara bersarang (lihat
@@ -77,7 +79,7 @@ impl Vm {
         (out, sisa)
     }
 
-    pub(crate) fn run_until_inner(&mut self, exit_depth: usize) -> VmResult<()> {
+    pub(crate) fn run_until_inner<const PROFIL: bool>(&mut self, exit_depth: usize) -> VmResult<()> {
         loop {
             if self.frames.len() <= exit_depth { return Ok(()); }
             let (op, arg, sp) = {
@@ -169,6 +171,7 @@ impl Vm {
 
             }
 
+            if PROFIL { self.catat_umpan(op, arg); }
             match op {
                 // ── Constants ─────────────────────────────────────────────
                 OpCode::Nil    => self.push(VmValue::Nil),
@@ -1000,7 +1003,13 @@ impl Vm {
                 }
 
                 // ── Control flow ──────────────────────────────────────────
-                OpCode::Jump => { self.frames.last_mut().unwrap().ip = arg as usize; }
+                OpCode::Jump => {
+                    let fr = self.frames.last_mut().unwrap();
+                    if PROFIL && (arg as usize) < fr.ip {
+                        if let Some(p) = &fr.func.chunk.profil { p.catat_putaran(); }
+                    }
+                    fr.ip = arg as usize;
+                }
                 OpCode::JumpFalse => {
                     let v = self.pop(sp)?;
                     if !v.is_truthy() { self.frames.last_mut().unwrap().ip = arg as usize; }
@@ -1167,6 +1176,7 @@ impl Vm {
                 }
                 OpCode::IterMaju => {
                     let slot = self.frame_slot() + arg as usize;
+                    if PROFIL { self.catat_putaran_kini(); }
                     match self.stack.get_mut(slot) {
                         Some(VmValue::Int(n)) if *n < i128::MAX => *n += 1,
                         _ => return Err(VmError::at("state iterator rusak", sp)),
@@ -1627,5 +1637,32 @@ impl Vm {
             VmValue::Array(a) => Ok((idx as usize) < a.lock().unwrap().len()),
             _ => Err(VmError::at("state iterator rusak", sp)),
         }
+    }
+}
+
+impl Vm {
+    fn catat_putaran_kini(&self) {
+        if let Some(p) = self.frames.last().and_then(|f| f.func.chunk.profil.as_ref()) { p.catat_putaran(); }
+    }
+
+    /// Umpan tipe T0 untuk situs operator: tipe operand yang SUDAH di stack saat opcode ini jalan.
+    fn catat_umpan(&self, op: OpCode, arg: u32) {
+        use crate::jit::profil::bit_tipe;
+        let Some(fr) = self.frames.last() else { return };
+        let Some(p) = fr.func.chunk.profil.as_ref() else { return };
+        let ip = fr.ip.wrapping_sub(1);
+        let n = self.stack.len();
+        let b = match op {
+            OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div | OpCode::Mod
+            | OpCode::Lt | OpCode::Le | OpCode::Gt | OpCode::Ge | OpCode::Eq | OpCode::Ne if n >= 2 =>
+                bit_tipe(&self.stack[n - 1]) | bit_tipe(&self.stack[n - 2]),
+            OpCode::GetField if n >= 1 => bit_tipe(&self.stack[n - 1]),
+            OpCode::LokalHitung => match self.stack.get(self.basis + arg as usize) {
+                Some(v) => bit_tipe(v),
+                None => return,
+            },
+            _ => return,
+        };
+        p.catat_tipe(ip, b);
     }
 }

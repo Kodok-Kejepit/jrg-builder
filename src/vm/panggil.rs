@@ -111,6 +111,7 @@ impl Vm {
                 self.periksa_arity(&func, argc, sp)?;
                 self.periksa_penerima(&func, argc, fn_idx, sp)?;
                 self.periksa_kedalaman(&func.name, sp)?;
+                if self.profil_jit { if let Some(p) = &func.chunk.profil { p.catat_panggilan(); } }
                 if self.profiling { crate::profiler::enter(&func.name); }
                 let diberi = diberi_tetap(&func, argc);
                 let argc = self.kemas_variadic(&func, argc);
@@ -125,6 +126,7 @@ impl Vm {
             VmValue::Closure(c) => {
                 self.periksa_arity(&c.func, argc, sp)?;
                 self.periksa_kedalaman(&c.func.name, sp)?;
+                if self.profil_jit { if let Some(p) = &c.func.chunk.profil { p.catat_panggilan(); } }
                 if self.profiling { crate::profiler::enter(&c.func.name); }
                 let diberi = diberi_tetap(&c.func, argc);
                 let argc = self.kemas_variadic(&c.func, argc);

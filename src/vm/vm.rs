@@ -145,6 +145,8 @@ pub struct Vm {
     pub(crate) frames:   Vec<CallFrame>,
     /// Slot lokal pertama bingkai teratas (`slot + 1`); disegarkan HANYA lewat `dorong_bingkai`/`ambil_bingkai`.
     pub(crate) basis: usize,
+    /// Mode `--jit`: rekam profil T0 (`crate::jit::profil`).
+    pub(crate) profil_jit: bool,
     pub(crate) profiling: bool,
     /// Berapa hook tampilan sedang bersarang. Lihat `tampil::MAX_SARANG_HOOK`.
     pub(crate) sarang_hook: usize,
@@ -163,6 +165,7 @@ impl Vm {
             globals: Default::default(),
             frames: Vec::with_capacity(64),
             basis: 0,
+            profil_jit: crate::jit::aktif(),
             profiling: false,
             sarang_hook: 0,
             namespace_modul: std::collections::HashSet::new(),

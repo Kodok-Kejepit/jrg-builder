@@ -24,6 +24,7 @@ pub mod profiler;
 pub mod module;
 pub mod editor_src;
 pub mod vm;
+pub mod jit;
 
 /// Backend ketiga: lowering AST ke LLVM IR, lalu native lewat `clang`.
 pub mod llvm;
