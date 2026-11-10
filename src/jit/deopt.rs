@@ -71,7 +71,7 @@ pub(crate) fn pulihkan(vm: &mut Vm, catatan: Catatan) {
         let mut lama = vm.stack.split_off(basis);
         for (i, v) in r.nilai.into_iter().enumerate() {
             let nilai = match jenis[i] {
-                Jenis::Nilai => std::mem::replace(&mut lama[i], VmValue::Nil),
+                Jenis::Nilai | Jenis::Bawaan => std::mem::replace(&mut lama[i], VmValue::Nil),
                 j => nilai_dari(j, v, &rencana.callee),
             };
             vm.stack.push(nilai);
@@ -98,6 +98,6 @@ fn nilai_dari(j: Jenis, v: i64, callee: &[Arc<crate::vm::value::VmFunction>]) ->
         Jenis::Fungsi(c) => VmValue::Function(Arc::clone(&callee[c])),
         Jenis::Kosong => VmValue::Nil,
         // Bingkai callee native tidak pernah memegang nilai milik VM (argumennya selalu bulat).
-        Jenis::Nilai => unreachable!("posisi Nilai cuma ada di bingkai terluar"),
+        Jenis::Nilai | Jenis::Bawaan => unreachable!("posisi Nilai cuma ada di bingkai terluar"),
     }
 }

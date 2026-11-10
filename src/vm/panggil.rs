@@ -104,9 +104,10 @@ impl Vm {
 
     /// `--jit`: bingkai yang baru didorong dijalankan kode native kalau fungsinya sudah panas.
     #[inline]
-    fn jit_masuk(&mut self) {
+    fn jit_masuk(&mut self) -> VmResult<()> {
         #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
-        if self.profil_jit && !self.profiling { crate::jit::panggil::coba(self); }
+        if self.profil_jit && !self.profiling { return crate::jit::panggil::coba(self); }
+        Ok(())
     }
 
     /// Bingkai VM paling banyak di thread ber-stack besar.
@@ -126,8 +127,7 @@ impl Vm {
                 // punya slot di stack; prolog fungsinya yang mengisinya.
                 for _ in argc..func.arity as usize { self.push(VmValue::Nil); }
                 self.dorong_bingkai(CallFrame { func, ip: 0, slot: fn_idx, defers: Vec::new(), argc: diberi, closure: None });
-                self.jit_masuk();
-                Ok(())
+                self.jit_masuk()
             }
             // Sama seperti Function, cuma frame-nya ikut membawa closure-nya
             // supaya `LoadUpval`/`StoreUpval` punya sel yang mau dibaca.
@@ -141,8 +141,7 @@ impl Vm {
                 for _ in argc..c.func.arity as usize { self.push(VmValue::Nil); }
                 let func = Arc::clone(&c.func);
                 self.dorong_bingkai(CallFrame { func, ip: 0, slot: fn_idx, defers: Vec::new(), argc: diberi, closure: Some(c) });
-                self.jit_masuk();
-                Ok(())
+                self.jit_masuk()
             }
             VmValue::NativeFn(f) => {
                 // SATU pencarian per panggilan: batas argumen, layanan khusus, cetak.

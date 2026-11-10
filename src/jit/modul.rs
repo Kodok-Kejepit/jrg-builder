@@ -23,6 +23,7 @@ struct ModulJit {
     undi: Option<FuncId>,
     baca: FuncId,
     tulis: FuncId,
+    lambat: turun::ImporLambat,
     fctx: FunctionBuilderContext,
     urut: u32,
     /// Fungsi yang ditolak dan alasannya, untuk `JRG_JIT_LOG`.
@@ -50,15 +51,38 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
             jb.symbol("jrg_jit_undi", deopt::undi as *const u8);
             jb.symbol("jrg_jit_baca", lambat::baca as *const u8);
             jb.symbol("jrg_jit_tulis", lambat::tulis as *const u8);
+            jb.symbol("jrg_jit_langkah", lambat::langkah as *const u8);
+            jb.symbol("jrg_jit_muat", lambat::muat as *const u8);
+            jb.symbol("jrg_jit_buang", lambat::buang as *const u8);
+            jb.symbol("jrg_jit_benar", lambat::benar as *const u8);
+            jb.symbol("jrg_jit_buka", lambat::buka as *const u8);
+            jb.symbol("jrg_jit_taruh", lambat::taruh as *const u8);
+            jb.symbol("jrg_jit_ambil", lambat::ambil as *const u8);
+            jb.symbol("jrg_jit_simpan", lambat::simpan as *const u8);
             let mut m = JITModule::new(jb);
             let cc = m.isa().default_call_conv();
             let catat = m.declare_function("jrg_jit_catat", Linkage::Import, &turun::tanda_tangan_catat(&m, cc)).ok()?;
             let baca = m.declare_function("jrg_jit_baca", Linkage::Import, &turun::tanda_tangan_baca(&m, cc)).ok()?;
             let tulis = m.declare_function("jrg_jit_tulis", Linkage::Import, &turun::tanda_tangan_tulis(cc)).ok()?;
+            use cranelift_codegen::ir::types::{I32, I64};
+            let p = m.target_config().pointer_type();
+            let mut impor = |nama: &str, param: &[cranelift_codegen::ir::Type], hasil| {
+                m.declare_function(nama, Linkage::Import, &turun::tanda_tangan_umum(cc, param, hasil)).ok()
+            };
+            let lambat = turun::ImporLambat {
+                langkah: impor("jrg_jit_langkah", &[I64, p, I64, I64, I64, p], Some(I32))?,
+                muat: impor("jrg_jit_muat", &[I64, I64], None)?,
+                buang: impor("jrg_jit_buang", &[I64], None)?,
+                benar: impor("jrg_jit_benar", &[I64, I32], Some(I32))?,
+                buka: impor("jrg_jit_buka", &[I64, I32, p], Some(I32))?,
+                taruh: impor("jrg_jit_taruh", &[I64, p], None)?,
+                ambil: impor("jrg_jit_ambil", &[I64, I64], None)?,
+                simpan: impor("jrg_jit_simpan", &[I64, I64, I64, I32, I32], None)?,
+            };
             let undi = if deopt::acak_aktif() {
                 Some(m.declare_function("jrg_jit_undi", Linkage::Import, &turun::tanda_tangan_undi(cc)).ok()?)
             } else { None };
-            Some(ModulJit { m, jadi: HashMap::new(), info: Vec::new(), catat, undi, baca, tulis, fctx: FunctionBuilderContext::new(), urut: 0, tolak: Vec::new() })
+            Some(ModulJit { m, jadi: HashMap::new(), info: Vec::new(), catat, undi, baca, tulis, lambat, fctx: FunctionBuilderContext::new(), urut: 0, tolak: Vec::new() })
         }))
     })
 }
@@ -158,7 +182,7 @@ pub fn kompilasi(
     for (i, (_, h, r)) in baru.iter().enumerate() {
         let callee: Vec<FuncId> = r.callee.iter().map(|c| id_dari(c, mj)).collect();
         ctx.func.signature = sig.clone();
-        let impor = turun::Impor { catat: mj.catat, undi: mj.undi, baca: mj.baca, tulis: mj.tulis, fid: fid0 + i as u32 };
+        let impor = turun::Impor { catat: mj.catat, undi: mj.undi, baca: mj.baca, tulis: mj.tulis, fid: fid0 + i as u32, lambat: &mj.lambat };
         turun::turunkan(&mut mj.m, &mut ctx.func, &mut mj.fctx, h, r, &callee, &impor);
         utuh = mj.m.define_function(id_baru[i], &mut ctx).is_ok();
         mj.m.clear_context(&mut ctx);

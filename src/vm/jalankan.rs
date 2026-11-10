@@ -15,7 +15,7 @@ impl Vm {
     /// keluar — `self.frames` masih utuh di titik ini, karena tidak ada yang …
     pub(crate) fn run_until(&mut self, exit_depth: usize) -> VmResult<()> {
         // Dua salinan loop: `--jit` merekam profil, `--vm` tanpa satu cabang pun untuk itu.
-        let hasil = if self.profil_jit { self.run_until_inner::<true>(exit_depth) } else { self.run_until_inner::<false>(exit_depth) };
+        let hasil = if self.profil_jit { self.run_until_inner::<true, false>(exit_depth) } else { self.run_until_inner::<false, false>(exit_depth) };
         match hasil {
             Ok(v) => Ok(v),
             Err(mut e) => {
@@ -79,8 +79,12 @@ impl Vm {
         (out, sisa)
     }
 
-    pub(crate) fn run_until_inner<const PROFIL: bool>(&mut self, exit_depth: usize) -> VmResult<()> {
+    /// `SATU`: jalankan tepat satu instruksi (jalur lambat JIT, `jit::lambat::langkah`) — salinan
+    /// sendiri, supaya loop biasa tidak membayar pemeriksaannya.
+    pub(crate) fn run_until_inner<const PROFIL: bool, const SATU: bool>(&mut self, exit_depth: usize) -> VmResult<()> {
+        let mut sudah = false;
         loop {
+            if SATU { if sudah { return Ok(()); } sudah = true; }
             if self.frames.len() <= exit_depth { return Ok(()); }
             let (op, arg, sp) = {
                 let fr = self.frames.last_mut()
@@ -240,16 +244,8 @@ impl Vm {
                             }
                         }
                     }
-                    let v = self.stack.get(slot)
-                        .ok_or_else(|| VmError::at(format!("local slot {} OOB", arg), sp))?
-                        .clone();
-                    // Slot yang ditangkap closure menyimpan SEL, bukan nilai.
-                    // Dari sisi bahasa itu tidak boleh kelihatan: membaca
-                    // variabel tetap memberi nilainya.
-                    let v = match v {
-                        VmValue::Cell(c) => c.lock().unwrap_or_else(|p| p.into_inner()).clone(),
-                        lain => lain,
-                    };
+                    let v = self.baca_lokal(slot)
+                        .ok_or_else(|| VmError::at(format!("local slot {} OOB", arg), sp))?;
                     self.push(v);
                 }
                 // ── Jalur penulisan (copy-on-write) ───────────────────────
@@ -351,19 +347,7 @@ impl Vm {
                 }
                 OpCode::AmbilLokal => {
                     let slot = self.frame_slot() + arg as usize;
-                    let v = match self.stack.get_mut(slot) {
-                        // Binding tertangkap closure: selnya tidak boleh
-                        // dikosongkan, jadi cuma dibaca. Hasilnya tetap
-                        // benar, cuma tidak ikut jalur cepatnya.
-                        Some(VmValue::Cell(c)) => {
-                            let c = Arc::clone(c);
-                            let g = c.lock().unwrap_or_else(|p| p.into_inner());
-                            g.clone()
-                        }
-                        Some(tempat) => std::mem::replace(tempat, VmValue::Nil),
-                        None => return Err(VmError::at(
-                            format!("local slot {} OOB", arg), sp)),
-                    };
+                    let v = self.ambil_lokal(slot).ok_or_else(|| VmError::at(format!("local slot {} OOB", arg), sp))?;
                     self.push(v);
                 }
                 OpCode::PinjamUpval => {
@@ -506,14 +490,7 @@ impl Vm {
                 OpCode::SimpanBuang => {
                     let slot = self.frame_slot() + arg as usize;
                     let v = self.pop(sp)?;
-                    match self.stack.get_mut(slot) {
-                        Some(VmValue::Cell(c)) => {
-                            let c = Arc::clone(c);
-                            *c.lock().unwrap_or_else(|p| p.into_inner()) = v;
-                        }
-                        Some(tempat) => *tempat = v,
-                        None => {}
-                    }
+                    self.simpan_lokal(slot, v);
                 }
                 OpCode::LokalPolos => {
                     let slot = self.frame_slot() + arg as usize;
@@ -523,16 +500,7 @@ impl Vm {
                 OpCode::StoreLocal => {
                     let slot = self.frame_slot() + arg as usize;
                     let v = self.peek(0, sp)?.clone();
-                    if slot < self.stack.len() {
-                        // Kalau binding-nya sudah dipromosikan jadi sel, tulisannya harus MENEMBUS
-                        // sel itu, bukan menimpa slotnya.
-                        if let VmValue::Cell(c) = &self.stack[slot] {
-                            let c = Arc::clone(c);
-                            *c.lock().unwrap_or_else(|p| p.into_inner()) = v;
-                        } else {
-                            self.stack[slot] = v;
-                        }
-                    }
+                    self.simpan_lokal(slot, v);
                 }
 
                 // ── Closure / upvalue ─────────────────────────────────────
@@ -1041,7 +1009,7 @@ impl Vm {
                     let fr = self.frames.last_mut().unwrap();
                     let mundur = (arg as usize) < fr.ip;
                     fr.ip = arg as usize;
-                    if PROFIL && mundur { self.putaran_jit(); }
+                    if PROFIL && mundur { self.putaran_jit()?; }
                 }
                 OpCode::JumpFalse => {
                     let v = self.pop(sp)?;
@@ -1226,7 +1194,7 @@ impl Vm {
                             }
                         }
                     }
-                    if PROFIL { self.putaran_jit(); }
+                    if PROFIL { self.putaran_jit()?; }
                 }
                 OpCode::IterVar => {
                     let iter_slot = self.frame_slot() + (arg / 2) as usize;
@@ -1674,12 +1642,43 @@ impl Vm {
 }
 
 impl Vm {
+    /// Isi slot lokal (`LoadLocal`): slot yang ditangkap closure menyimpan SEL, dan membaca variabelnya
+    /// tetap memberi nilainya.
+    #[inline]
+    pub(crate) fn baca_lokal(&self, slot: usize) -> Option<VmValue> {
+        Some(match self.stack.get(slot)? {
+            VmValue::Cell(c) => c.lock().unwrap_or_else(|p| p.into_inner()).clone(),
+            lain => lain.clone(),
+        })
+    }
+
+    /// `AmbilLokal`: nilai slot keluar dan slotnya jadi lubang. Binding tertangkap closure: selnya tidak
+    /// boleh dikosongkan, jadi cuma dibaca (hasilnya tetap benar, cuma tidak ikut jalur cepatnya).
+    #[inline]
+    pub(crate) fn ambil_lokal(&mut self, slot: usize) -> Option<VmValue> {
+        Some(match self.stack.get_mut(slot)? {
+            VmValue::Cell(c) => c.lock().unwrap_or_else(|p| p.into_inner()).clone(),
+            tempat => std::mem::replace(tempat, VmValue::Nil),
+        })
+    }
+
+    /// `StoreLocal`/`SimpanBuang`: binding yang sudah jadi sel ditulis MENEMBUS selnya.
+    #[inline]
+    pub(crate) fn simpan_lokal(&mut self, slot: usize, v: VmValue) {
+        match self.stack.get_mut(slot) {
+            Some(VmValue::Cell(c)) => *c.lock().unwrap_or_else(|p| p.into_inner()) = v,
+            Some(tempat) => *tempat = v,
+            None => {}
+        }
+    }
+
     /// Satu putaran loop di bingkai teratas; sesekali dicoba OSR ke kode native (`--jit`).
-    fn putaran_jit(&mut self) {
-        let Some(p) = self.frames.last().and_then(|f| f.func.chunk.profil.as_ref()) else { return };
+    fn putaran_jit(&mut self) -> VmResult<()> {
+        let Some(p) = self.frames.last().and_then(|f| f.func.chunk.profil.as_ref()) else { return Ok(()) };
         let _n = p.catat_putaran();
         #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
-        if _n % crate::jit::osr_tiap() == 0 && !self.profiling { crate::jit::panggil::coba_osr(self); }
+        if _n % crate::jit::osr_tiap() == 0 && !self.profiling { return crate::jit::panggil::coba_osr(self); }
+        Ok(())
     }
 
     /// Umpan tipe T0 untuk situs operator: tipe operand yang SUDAH di stack saat opcode ini jalan.

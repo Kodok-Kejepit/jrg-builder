@@ -6,10 +6,10 @@ use std::sync::Arc;
 
 use super::deopt;
 use super::layak::{jenis_nilai, Jenis, KEMBALI_SKALAR, KEMBALI_TIDAK};
-use super::turun::{BERHASIL, BERHASIL_BOOL, BERHASIL_PECAHAN, DEOPT, KEDALAMAN_MAKS, ULANG};
+use super::turun::{BERHASIL, BERHASIL_BOOL, BERHASIL_NILAI, BERHASIL_PECAHAN, BERHASIL_UNIT, DEOPT, GAGAL, KEDALAMAN_MAKS, ULANG};
 use super::{KodeJit, Masuk};
 use crate::vm::value::{VmFunction, VmValue};
-use crate::vm::vm::Vm;
+use crate::vm::vm::{Vm, VmError};
 
 /// Titik masuk per chunk paling banyak (tiap susunan jenis berbeda dikompilasi sendiri).
 const MAKS_MASUK: usize = 8;
@@ -22,29 +22,31 @@ fn kode_jenis(j: Jenis) -> u8 {
         Jenis::Bool => 2,
         Jenis::Kosong => 3,
         Jenis::Pecahan => 5,
-        Jenis::Nilai | Jenis::Fungsi(_) => 4,
+        Jenis::Nilai | Jenis::Bawaan | Jenis::Fungsi(_) => 4,
     }
 }
 
-/// Panggilan baru: bingkainya baru didorong `call_value`.
-pub(crate) fn coba(vm: &mut Vm) {
-    let Some(fr) = vm.frames.last() else { return };
-    let Some(p) = fr.func.chunk.profil.as_ref() else { return };
-    if p.panggilan.load(Ordering::Relaxed) < super::ambang().max(1) { return; }
-    if fr.func.chunk.kode_jit.panggilan_mati.load(Ordering::Relaxed) { return; }
+/// Panggilan baru: bingkainya baru didorong `call_value`. `Err` = instruksi yang dijalankan VM dari
+/// dalam kode native gagal; bingkainya sudah dalam keadaan VM di titik galat itu.
+pub(crate) fn coba(vm: &mut Vm) -> Result<(), VmError> {
+    let Some(fr) = vm.frames.last() else { return Ok(()) };
+    let Some(p) = fr.func.chunk.profil.as_ref() else { return Ok(()) };
+    if p.panggilan.load(Ordering::Relaxed) < super::ambang().max(1) { return Ok(()); }
+    if fr.func.chunk.kode_jit.panggilan_mati.load(Ordering::Relaxed) { return Ok(()); }
     // Kode yang lebih sering deopt daripada selesai cuma menambah ongkos masuk-keluar: VM saja.
     let (m, d) = (p.jit_masuk.load(Ordering::Relaxed), p.jit_deopt.load(Ordering::Relaxed));
-    if d >= 64 && d * 2 > m { return; }
+    if d >= 64 && d * 2 > m { return Ok(()); }
     let p = Arc::clone(p);
     p.jit_masuk.fetch_add(1, Ordering::Relaxed);
-    if jalankan(vm, KEMBALI_SKALAR) == DEOPT { p.jit_deopt.fetch_add(1, Ordering::Relaxed); }
+    if jalankan(vm, KEMBALI_SKALAR)? == DEOPT { p.jit_deopt.fetch_add(1, Ordering::Relaxed); }
+    Ok(())
 }
 
 /// OSR: VM baru melompat mundur ke kepala loop di bingkai teratas.
-pub(crate) fn coba_osr(vm: &mut Vm) {
+pub(crate) fn coba_osr(vm: &mut Vm) -> Result<(), VmError> {
     // `defer` yang sudah terdaftar dijalankan `Return` VM; kode OSR tidak pernah kembali sendiri.
-    if vm.frames.last().is_none_or(|f| !f.defers.is_empty()) { return; }
-    let _ = jalankan(vm, KEMBALI_TIDAK);
+    if vm.frames.last().is_none_or(|f| !f.defers.is_empty()) { return Ok(()); }
+    jalankan(vm, KEMBALI_TIDAK).map(|_| ())
 }
 
 fn kode_untuk(vm: &Vm, func: &Arc<VmFunction>, ip: usize, kembali: u8, basis: usize) -> Option<KodeJit> {
@@ -70,11 +72,11 @@ fn kode_untuk(vm: &Vm, func: &Arc<VmFunction>, ip: usize, kembali: u8, basis: us
 }
 
 /// Status kode native (`ULANG` juga untuk "tidak dijalankan").
-fn jalankan(vm: &mut Vm, kembali: u8) -> i64 {
-    let Some(fr) = vm.frames.last() else { return ULANG };
+fn jalankan(vm: &mut Vm, kembali: u8) -> Result<i64, VmError> {
+    let Some(fr) = vm.frames.last() else { return Ok(ULANG) };
     let (func, ip, basis) = (Arc::clone(&fr.func), fr.ip, fr.slot + 1);
-    if vm.stack.len() < basis || vm.stack.len() - basis > MAKS_POSISI { return ULANG; }
-    let Some(kode) = kode_untuk(vm, &func, ip, kembali, basis) else { return ULANG };
+    if vm.stack.len() < basis || vm.stack.len() - basis > MAKS_POSISI { return Ok(ULANG); }
+    let Some(kode) = kode_untuk(vm, &func, ip, kembali, basis) else { return Ok(ULANG) };
     // Bingkai kecil (hampir semua panggilan) tidak membayar alokasi.
     let isi = &vm.stack[basis..];
     let mut kecil = [0i64; 32];
@@ -104,17 +106,25 @@ fn jalankan(vm: &mut Vm, kembali: u8) -> i64 {
     let st = super::lambat::dengan_konteks(pvm, basis, || unsafe {
         (kode.masuk)(args.as_ptr(), (KEDALAMAN_MAKS - boleh) as i32, &mut keluar)
     }) as i64;
-    if st == BERHASIL || st == BERHASIL_BOOL || st == BERHASIL_PECAHAN {
-        // `Return` native: bingkainya tanpa `defer` (`DeferPush` selalu titik keluar).
-        if let Some(fr) = vm.ambil_bingkai() { vm.stack.truncate(fr.slot); }
-        vm.stack.push(match st {
-            BERHASIL => VmValue::Int(keluar as i128),
-            BERHASIL_BOOL => VmValue::Bool(keluar != 0),
-            _ => VmValue::Float(f64::from_bits(keluar as u64)),
-        });
-    } else if st == DEOPT {
-        deopt::pulihkan(vm, deopt::ambil());
+    match st {
+        BERHASIL | BERHASIL_BOOL | BERHASIL_PECAHAN | BERHASIL_NILAI | BERHASIL_UNIT => {
+            let hasil = match st {
+                BERHASIL => VmValue::Int(keluar as i128),
+                BERHASIL_BOOL => VmValue::Bool(keluar != 0),
+                BERHASIL_PECAHAN => VmValue::Float(f64::from_bits(keluar as u64)),
+                // Posisi `keluar` bingkai ini, di stack VM.
+                BERHASIL_NILAI => vm.stack.get_mut(basis + keluar as usize).map(|v| std::mem::replace(v, VmValue::Nil))
+                    .expect("bug di jrgc: hasil JIT di luar stack VM"),
+                _ => VmValue::Unit,
+            };
+            // `Return` native: bingkainya tanpa `defer` (`DeferPush` selalu titik keluar).
+            if let Some(fr) = vm.ambil_bingkai() { vm.stack.truncate(fr.slot); }
+            vm.stack.push(hasil);
+        }
+        DEOPT => deopt::pulihkan(vm, deopt::ambil()),
+        GAGAL => return Err(super::lambat::ambil_galat()),
+        // ULANG: belum ada yang dijalankan; VM melanjutkan bingkainya dari `ip` yang sama.
+        _ => {}
     }
-    // ULANG: belum ada yang dijalankan; VM melanjutkan bingkainya dari `ip` yang sama.
-    st
+    Ok(st)
 }

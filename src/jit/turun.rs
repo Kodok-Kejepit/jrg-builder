@@ -7,7 +7,7 @@ use cranelift_codegen::isa::CallConv;
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Variable};
 use cranelift_module::{FuncId, Module};
 
-use super::layak::{Jenis, Rencana};
+use super::layak::{Cara, Jenis, Rencana};
 use crate::vm::opcode::OpCode;
 use crate::vm::value::VmFunction;
 
@@ -20,6 +20,12 @@ pub const ULANG: i64 = 2;
 pub const BERHASIL_PECAHAN: i64 = 4;
 /// Berhasil, hasilnya `bool` (cuma kode yang dimasuki dari VM, `KEMBALI_SKALAR`).
 pub const BERHASIL_BOOL: i64 = 3;
+/// Instruksi yang dijalankan VM dari dalam kode native gagal; galatnya di `lambat::ambil_galat`.
+pub const GAGAL: i64 = 5;
+/// Berhasil, hasilnya nilai milik VM di posisi `keluar` bingkai (cuma `KEMBALI_SKALAR`).
+pub const BERHASIL_NILAI: i64 = 6;
+/// `ReturnNil` (cuma `KEMBALI_SKALAR`).
+pub const BERHASIL_UNIT: i64 = 7;
 /// Kedalaman panggilan native paling banyak; `panggil::coba` menurunkannya mendekati batas bingkai VM.
 pub const KEDALAMAN_MAKS: i64 = 4096;
 
@@ -65,8 +71,31 @@ pub fn tanda_tangan_tulis(cc: CallConv) -> Signature {
     sig
 }
 
+/// Tanda tangan fungsi `lambat` lainnya (`i64` dan penunjuk sama lebar di sasaran JIT).
+pub fn tanda_tangan_umum(cc: CallConv, param: &[Type], hasil: Option<Type>) -> Signature {
+    let mut sig = Signature::new(cc);
+    for t in param { sig.params.push(AbiParam::new(*t)); }
+    if let Some(h) = hasil { sig.returns.push(AbiParam::new(h)); }
+    sig
+}
+
+/// Fungsi `lambat` di luar `baca`/`tulis`.
+pub struct ImporLambat {
+    pub langkah: FuncId, pub muat: FuncId, pub buang: FuncId, pub benar: FuncId, pub buka: FuncId,
+    pub taruh: FuncId, pub ambil: FuncId, pub simpan: FuncId,
+}
+
 /// Fungsi impor dan identitas bingkai untuk blok deopt.
-pub struct Impor { pub catat: FuncId, pub undi: Option<FuncId>, pub baca: FuncId, pub tulis: FuncId, pub fid: u32 }
+pub struct Impor<'a> {
+    pub catat: FuncId, pub undi: Option<FuncId>, pub baca: FuncId, pub tulis: FuncId, pub fid: u32,
+    pub lambat: &'a ImporLambat,
+}
+
+/// Kembali dengan status `st` tanpa mencatat apa pun.
+fn kembali_status(b: &mut FunctionBuilder, st: i64) {
+    let v = b.ins().iconst(types::I32, st);
+    b.ins().return_(&[v]);
+}
 
 struct Keluar { catat: FuncRef, fid: i64, ptr: Type, slot: StackSlot }
 
@@ -140,6 +169,10 @@ pub fn turunkan(
     let undi = impor.undi.map(|u| m.declare_func_in_func(u, b.func));
     let (baca, tulis) = (m.declare_func_in_func(impor.baca, b.func), m.declare_func_in_func(impor.tulis, b.func));
     let wadah = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 8, 3));
+    let il = impor.lambat;
+    let [f_langkah, f_muat, f_buang, f_benar, f_buka, f_taruh, f_ambil, f_simpan] =
+        [il.langkah, il.muat, il.buang, il.benar, il.buka, il.taruh, il.ambil, il.simpan]
+        .map(|id| m.declare_func_in_func(id, b.func));
     let dalam = b.create_block();
     b.set_cold_block(dalam);
     // Kedalaman native dijaga di pintu masuk; parameter dimuat dari penyangga argumen.
@@ -180,6 +213,108 @@ pub fn turunkan(
         let ins = kode[ip];
         let a = ins.arg as usize;
         let atas = |b: &mut FunctionBuilder, k: usize| b.use_var(var[t - k]);
+        let i64c = |b: &mut FunctionBuilder, v: i64| b.ins().iconst(types::I64, v);
+        let mut buka_s;
+        let s: &Vec<Jenis> = match &r.cara[ip] {
+            Cara::Asli => s,
+            Cara::Buka(daftar) => {
+                // Nilai milik VM yang dipakai sebagai angka: jaga jenisnya, lalu instruksinya asli.
+                buka_s = s.clone();
+                for &(p, j) in daftar {
+                    let pk = b.ins().stack_addr(ptr, wadah, 0);
+                    let (pv, jv) = (i64c(&mut b, p as i64), b.ins().iconst(types::I32, if j == Jenis::Pecahan { 5 } else { 1 }));
+                    let c = b.ins().call(f_buka, &[pv, jv, pk]);
+                    let st = b.inst_results(c)[0];
+                    jaga(&mut b, &k, &var, st, ip, s);
+                    let v = b.ins().stack_load(ptr, types::I64, wadah, 0);
+                    b.def_var(var[p], v);
+                    buka_s[p] = j;
+                }
+                &buka_s
+            }
+            Cara::Langkah { ambil, taruh } => {
+                // Operand milik kode native ke slot rekaman, lalu VM menjalankan instruksinya.
+                for i in t - ambil..t {
+                    if !matches!(s[i], Jenis::Bulat | Jenis::Bool | Jenis::Pecahan) { continue; }
+                    let v = b.use_var(var[i]);
+                    b.ins().stack_store(ptr, v, slot, (i * 8) as i32);
+                }
+                let args = [
+                    i64c(&mut b, ip as i64), i64c(&mut b, s.as_ptr() as i64), i64c(&mut b, t as i64),
+                    i64c(&mut b, *ambil as i64), i64c(&mut b, (t - ambil + taruh) as i64),
+                    b.ins().stack_addr(ptr, slot, 0),
+                ];
+                let c = b.ins().call(f_langkah, &args);
+                let st = b.inst_results(c)[0];
+                let (gagal, terus) = (b.create_block(), b.create_block());
+                b.set_cold_block(gagal);
+                b.ins().brif(st, gagal, &[], terus, &[]);
+                b.switch_to_block(gagal);
+                kembali_status(&mut b, GAGAL);
+                b.switch_to_block(terus);
+                continue;
+            }
+            Cara::Muat => {
+                let (d, ke) = (i64c(&mut b, a as i64), i64c(&mut b, t as i64));
+                b.ins().call(f_muat, &[d, ke]);
+                continue;
+            }
+            Cara::Konstanta => {
+                let k = if ins.op == OpCode::Const { &f.chunk.constants[a] as *const _ as i64 } else { 0 };
+                let (ke, kv) = (i64c(&mut b, t as i64), i64c(&mut b, k));
+                b.ins().call(f_taruh, &[ke, kv]);
+                continue;
+            }
+            Cara::Ambil => {
+                let (d, ke) = (i64c(&mut b, a as i64), i64c(&mut b, t as i64));
+                b.ins().call(f_ambil, &[d, ke]);
+                continue;
+            }
+            Cara::Simpan => {
+                let j = s[t - 1];
+                let kode = match j { Jenis::Bulat => 1, Jenis::Bool => 2, Jenis::Kosong => 3, Jenis::Pecahan => 5, _ => 4 };
+                let v = if matches!(kode, 1 | 2 | 5) { b.use_var(var[t - 1]) } else { i64c(&mut b, 0) };
+                let args = [
+                    i64c(&mut b, a as i64), i64c(&mut b, t as i64 - 1), v,
+                    b.ins().iconst(types::I32, kode), b.ins().iconst(types::I32, (ins.op == OpCode::SimpanBuang) as i64),
+                ];
+                b.ins().call(f_simpan, &args);
+                continue;
+            }
+            Cara::Buang => {
+                let p = i64c(&mut b, t as i64 - 1);
+                b.ins().call(f_buang, &[p]);
+                continue;
+            }
+            Cara::Benar => {
+                let p = i64c(&mut b, t as i64 - 1);
+                let simpan = matches!(ins.op, OpCode::JumpFalseKeep | OpCode::JumpTrueKeep);
+                let lepas = b.ins().iconst(types::I32, (!simpan) as i64);
+                let c = b.ins().call(f_benar, &[p, lepas]);
+                let c = b.inst_results(c)[0];
+                let v = b.ins().uextend(types::I64, c);
+                if ins.op == OpCode::KeBool { b.def_var(var[t - 1], v); continue; }
+                let (sesudah, sasaran) = (blok[ip + 1].expect("sesudah cabang"), blok[a].expect("sasaran cabang"));
+                let (ya, tidak) = if matches!(ins.op, OpCode::JumpFalse | OpCode::JumpFalseKeep) {
+                    (sesudah, sasaran)
+                } else { (sasaran, sesudah) };
+                b.ins().brif(v, ya, &[], tidak, &[]);
+                terbuka = false;
+                continue;
+            }
+            Cara::KembaliNilai => {
+                let p = i64c(&mut b, t as i64 - 1);
+                b.ins().store(fl, p, keluar, 0);
+                kembali_status(&mut b, BERHASIL_NILAI);
+                terbuka = false;
+                continue;
+            }
+            Cara::KembaliUnit => {
+                kembali_status(&mut b, BERHASIL_UNIT);
+                terbuka = false;
+                continue;
+            }
+        };
         match ins.op {
             OpCode::LoadLocal | OpCode::LokalHitung => { let v = b.use_var(var[a]); b.def_var(var[t], v); }
             OpCode::IntImm => { let v = b.ins().iconst(types::I64, ins.arg as i32 as i64); b.def_var(var[t], v); }

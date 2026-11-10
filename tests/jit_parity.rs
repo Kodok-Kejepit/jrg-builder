@@ -17,16 +17,19 @@ fn jalankan(src: &str, arg: &[&str], env: &[(&str, &str)]) -> Hasil {
     let file = dir.join("uji.jrg");
     std::fs::write(&file, src).expect("tulis sumber");
     let mut cmd = Command::new(jrgc());
-    cmd.arg(&file).args(arg).env("JRG_SOPAN", "1").env_remove("JRG_JIT_LOG")
+    // `TMPDIR` sendiri: tiga tes tabel berjalan bersamaan, dan kasus `fs:` memakai jalur tetap di bawah
+    // `fs::temp_dir()`.
+    cmd.arg(&file).args(arg).env("JRG_SOPAN", "1").env_remove("JRG_JIT_LOG").env("TMPDIR", &dir)
         .stdin(std::process::Stdio::null());
     for (k, v) in env { cmd.env(k, v); }
     let out = cmd.output().expect("jalankan jrgc");
     let _ = std::fs::remove_dir_all(&dir);
     // Tiap jalan punya direktori sementara sendiri; jalurnya bukan bagian yang dibandingkan.
-    let jalur = file.display().to_string();
+    let (jalur, sementara) = (file.display().to_string(), dir.display().to_string());
+    let normal = |b: &[u8]| String::from_utf8_lossy(b).replace(&jalur, "<uji>").replace(&sementara, "<tmp>");
     Hasil {
-        stdout: String::from_utf8_lossy(&out.stdout).trim().to_string(),
-        stderr: String::from_utf8_lossy(&out.stderr).replace(&jalur, "<uji>"),
+        stdout: normal(&out.stdout).trim().to_string(),
+        stderr: normal(&out.stderr),
         sukses: out.status.success(),
     }
 }
@@ -250,4 +253,69 @@ fn larik_lewat_jalur_lambat() {
     assert_eq!(i.stdout, "735 735 435 2000\n435 77\n[1, 2.5, x]\n[2, 5, 8]");
     let h = jalankan(LARIK, &["--jit"], &[("JRG_JIT_LOG", "ringkas")]);
     assert!(h.stderr.lines().any(|b| b.contains("dikompilasi:") && b.contains("main")), "{}", h.stderr);
+}
+
+// ── J4 langkah 4: jalur lambat umum (`lambat::langkah`, `dokumentasi/jit/j4-rencana.md`) ────────
+
+const UMUM: &str = r#"fn gabung(xs) {
+    var s = ""
+    var n = 0
+    for i in 0..len(xs) {
+        let v = xs[i]
+        if v { n = n + v % 7 }
+        s = s + str(v % 3)
+    }
+    return s + ":" + str(n)
+}
+fn label(k) { return "k" + str(k) }
+fn diam(n) { var t = 0; for i in 0..n { t = t + i } }
+fn ambil(d, k) { return d[k] * 2 }
+fn main() {
+    var d = dict::new()
+    for i in 0..400 { d[str(i % 13)] = i }
+    var tot = 0
+    for i in 0..400 { tot = tot + d[str(i % 13)] % 5 }
+    wok(len(dict::keys(d)), tot)
+    var xs = []
+    for i in 0..40 { xs = xs + [i * 3] }
+    for k in 0..6 { wok_(gabung(xs), " ") }
+    wok("")
+    var p = 0
+    for i in 0..200 { p = p + len(label(i)) }
+    wok(p, diam(50))
+    var f = 0.5
+    let a = [1.5, 2.5]
+    for i in 0..300 { f = f + a[i % 2] * 2.0 }
+    wok(f)
+    var hit = 0
+    let tambah = |x| { hit = hit + x }
+    for i in 0..300 { tambah(i); hit = hit + 1 }
+    wok(hit)
+    var campur = [1, "a", 2.5, nil, [3]]
+    var teks = []
+    for i in 0..50 { let c = campur[i % 5]; if c { teks = teks + [typeof(c)] } }
+    wok(len(teks), teks[0], teks[3])
+    var u = 0
+    for i in 0..300 { u = u + ambil(d, str(i % 13)) }
+    wok(u)
+    var g = 0
+    for i in 0..300 { g = g + ambil(d, str(i % 20)) }
+    wok(g)
+}
+"#;
+
+#[test]
+fn jalur_lambat_umum() {
+    // Teks, dict, panggilan bawaan, truthiness nilai VM, sel tangkapan, `Return` nilai VM dan unit,
+    // pecahan dibuka dari larik, dan galat dari instruksi yang dijalankan VM di dalam kode native.
+    sama_dengan_interpreter(UMUM);
+    let i = jalankan(UMUM, &[], &[]);
+    let j = jalankan(UMUM, &["--jit"], &[STRES, ACAK]);
+    assert_eq!((i.sukses, &i.stdout, &i.stderr), (j.sukses, &j.stdout, &j.stderr));
+    let biasa = jalankan(UMUM, &["--jit"], &[]);
+    assert_eq!((i.sukses, &i.stdout, &i.stderr), (biasa.sukses, &biasa.stdout, &biasa.stderr));
+    assert!(!i.sukses && i.stderr.contains("jejak: `ambil` dipanggil"), "{}", i.stderr);
+    assert!(i.stdout.starts_with("13 890\n") && i.stdout.ends_with("1200.5\n45150\n40 int array\n235794"), "{}", i.stdout);
+    let h = jalankan(UMUM, &["--jit"], &[("JRG_JIT_LOG", "ringkas")]);
+    assert!(h.stderr.lines().any(|b| b.contains("dikompilasi:") && b.contains("gabung") && b.contains("ambil")), "{}", h.stderr);
 }
