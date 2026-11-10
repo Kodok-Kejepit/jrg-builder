@@ -214,8 +214,8 @@ const SEBAB_DISEBUT: &[(&str, &str, &str)] = &[
     (
         "var [] tak tersimpulkan dipakai sebagai string",
         "package main\nvar jejak = []\nfn catat(s) { jejak = arr::push(jejak, s) }\n\
-         pub fn main() { catat(bikin())\n assert_eq(jejak, [\"a\"]) }\n\
-         fn bikin() { return \"a\" }\n",
+         pub fn main() { catat(bikin(1))\n assert_eq(jejak, [\"a\"]) }\n\
+         fn bikin(n) { return \"a\" }\n",
         "`jejak` dideklarasikan sebagai array kosong",
     ),
 ];
