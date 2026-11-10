@@ -203,16 +203,19 @@ impl Codegen {
             self.emit(format!("{} = icmp ne i32 {}, {}", c, w, kata));
             let kotak = v.clone();
             self.gagal_bila(&c, |cg| {
-                // `Ptr` milik `ptr::` (tanpa field `kind`) ditolak acuan dengan kalimatnya sendiri.
+                // `Ptr` milik `ptr::` (titipan jembatan, bukan struct buram pengguna) ditolak khusus.
                 if let Ok(t) = cg.typeof_any(&kotak) {
                     let (tp, tl) = cg.split_str(&t);
                     let k = cg.intern_string("struct:Ptr");
                     let (kp, kl) = cg.split_str(&k);
                     cg.ensure_extern("declare i32 @jrg_str_eq(ptr, i64, ptr, i64)", "jrg_str_eq");
-                    let (r, b) = (cg.fresh("jwt."), cg.fresh("jwt."));
+                    let (r, b, g, nb, s) = (cg.fresh("jwt."), cg.fresh("jwt."), cg.fresh("jwt."), cg.fresh("jwt."), cg.fresh("jwt."));
                     cg.emit(format!("{} = call i32 @jrg_str_eq(ptr {}, i64 {}, ptr {}, i64 {})", r, tp, tl, kp, kl));
                     cg.emit(format!("{} = icmp ne i32 {}, 0", b, r));
-                    cg.gagal_bila(&b, |cg| cg.panik(&format!("{}: handle tidak valid (field `kind` hilang)", nama)));
+                    cg.emit(format!("{} = and i32 {}, 255", g, w));
+                    cg.emit(format!("{} = icmp ne i32 {}, {}", nb, g, super::codegen_any::TAG_BURAM));
+                    cg.emit(format!("{} = and i1 {}, {}", s, b, nb));
+                    cg.gagal_bila(&s, |cg| cg.panik(&format!("{}: handle tidak valid (field `kind` hilang)", nama)));
                 }
                 cg.panik_tipe_any(&kotak, |t| crate::interpreter::builtin::heap::pesan_bukan_ptr(nama, t))
             });

@@ -305,7 +305,7 @@ impl Codegen {
 }
 
 /// Elemen yang ditambahkan `e` ke array `nama`: `arr::push(nama, v)`, `nama.push(v)`, `nama + [..]`.
-fn elemen_didorong<'a>(e: &'a Expr, nama: &str) -> Vec<&'a Expr> {
+pub(crate) fn elemen_didorong<'a>(e: &'a Expr, nama: &str) -> Vec<&'a Expr> {
     let diri = |x: &Expr| matches!(x, Expr::Ident(n, _) if n == nama);
     match e {
         Expr::Call { func, args, .. } if args.len() == 2 && diri(&args[0])

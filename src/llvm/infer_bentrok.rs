@@ -118,11 +118,40 @@ pub fn lokal_skalar_bentrok(
             let e = tipe.entry(n.to_string()).or_default();
             if !e.contains(&t) { e.push(t); }
         }
+        fn tipe_di_lokal(
+            cg: &Codegen, e: &Expr, lokal: &Lokal, subst: &TypeSubst, harapan: Option<&JrgType>,
+        ) -> Option<JrgType> {
+            if let Some(t) = cg.tipe_ekspresi(e, lokal, subst, "") { return Some(t); }
+            let Expr::Call { func, args, .. } = e else { return None };
+            if args.len() != 1 { return None; }
+            let ctor = match &**func {
+                Expr::Ident(n, _) => n.as_str(),
+                Expr::PathExpr { segments, .. } if segments.len() == 2
+                    && matches!(segments[0].as_str(), "Result" | "Option") => segments[1].as_str(),
+                _ => return None,
+            };
+            if !matches!(ctor, "Ok" | "Err" | "Some") { return None; }
+            let isi = tipe_di_lokal(cg, &args[0], lokal, subst, None)?;
+            // `Err(..)` ke `Result<T, any>` (dan `Ok(..)` ke `Result<any, E>`) muat tanpa bentrok.
+            if let Some(JrgType::Enum(h)) = harapan {
+                if (ctor == "Ok" && h.starts_with("Result$any$"))
+                    || (ctor == "Err" && h.starts_with("Result$") && h.ends_with("$any"))
+                {
+                    return Some(JrgType::Enum(h.clone()));
+                }
+            }
+            let m = match ctor {
+                "Some" => super::mangle::mangle_option(&isi),
+                "Ok" => super::mangle::mangle_result(&isi, &JrgType::Any),
+                _ => super::mangle::mangle_result(&JrgType::Any, &isi),
+            };
+            Some(JrgType::Enum(m))
+        }
         for st in &b.stmts {
             match st {
                 Stmt::Var(v) if v.ty.is_none() => {
                     if let Some(init) = &v.init {
-                        let t = cg.tipe_ekspresi(init, lokal, subst, "");
+                        let t = tipe_di_lokal(cg, init, lokal, subst, None);
                         // Koleksi ikut hanya kalau ia berganti GOLONGAN (array jadi dict); tumbuhnya
                         // tetap urusan `lokal_yang_tumbuh`, supaya satu persoalan punya satu aturan.
                         if matches!(t, Some(JrgType::Bool) | Some(JrgType::Str)
@@ -145,7 +174,7 @@ pub fn lokal_skalar_bentrok(
                 Stmt::Let(l) => {
                     if let Some(n) = pola_nama(&l.pattern) {
                         if let Some(t) = l.ty.as_ref().and_then(|te| cg.tipe_dari_anotasi(te, subst))
-                            .or_else(|| cg.tipe_ekspresi(&l.init, lokal, subst, ""))
+                            .or_else(|| tipe_di_lokal(cg, &l.init, lokal, subst, None))
                         {
                             lokal.insert(n, t);
                         }
@@ -155,7 +184,8 @@ pub fn lokal_skalar_bentrok(
                     for (t, val) in a.targets.iter().zip(a.values.iter()) {
                         let Expr::Ident(n, _) = t else { continue };
                         if !lahir.contains(n) { continue; }
-                        catat(tipe, n, cg.tipe_ekspresi(val, lokal, subst, ""));
+                        let harapan = lokal.get(n);
+                        catat(tipe, n, tipe_di_lokal(cg, val, lokal, subst, harapan));
                     }
                 }
                 Stmt::Block(bb) => jelajah(cg, bb, lokal, subst, lahir, tipe),
@@ -243,9 +273,9 @@ pub fn dict_ditulis_jenis_lain(cg: &Codegen, b: &crate::parser::Block, subst: &T
     hasil
 }
 
-/// `var` modul bertipe dict yang ditulisi nilai berjenis lain dari fungsi mana pun: tipe barunya.
+/// `var` modul bertipe dict atau array yang ditulisi nilai berjenis lain dari fungsi mana pun.
 pub fn dict_global_ditulis(cg: &Codegen, nama: &str, awal: &JrgType) -> Option<JrgType> {
-    if !matches!(awal, JrgType::Dict(_)) { return None; }
+    if !matches!(awal, JrgType::Dict(_) | JrgType::Array(..) | JrgType::Slice(_)) { return None; }
     let mut fs: Vec<_> = cg.tables.functions.values().cloned().collect();
     for m in cg.tables.impls.values() { fs.extend(m.values().cloned()); }
     fs.sort_by(|a, b| a.name.cmp(&b.name));
@@ -797,6 +827,12 @@ impl Codegen {
                     _ => None,
                 };
                 if let Some(x) = elem {
+                    if !semua.contains(&x) { semua.push(x); }
+                }
+            }
+            for d in super::infer_tumbuh::elemen_didorong(e, nama) {
+                if let Some(tx) = self.tipe_ekspresi(d, &lokal, &subst, "") {
+                    let x = super::codegen_any::luruh(&tx);
                     if !semua.contains(&x) { semua.push(x); }
                 }
             }

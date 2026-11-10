@@ -989,4 +989,30 @@ pub fn main() {
         "sebelum",
         "`8 << 200` — integer JRG cuma 128 bit",
     ),
+    (
+        "handle: struct Ptr milik pengguna ditolak jawa::get",
+        r#"package main
+struct Ptr { pub id: int, pub kind: string }
+pub fn main() {
+    let asli = jawa::alloc(99)
+    let palsu = Ptr { id: 1, kind: "single" }
+    wok("sebelum", jawa::get(asli))
+    wok(jawa::get(palsu))
+}"#,
+        "sebelum 99",
+        "jawa::get: butuh Ptr (dari jawa::alloc/array/buffer), dapat `struct:Ptr`",
+    ),
+    (
+        "handle: menulis field .id pada handle asli tetap ditolak walau ada struct Ptr pengguna",
+        r#"package main
+struct Ptr { pub id: int, pub kind: string }
+pub fn main() {
+    let _p = Ptr { id: 1, kind: "single" }
+    var asli = jawa::alloc(99)
+    wok("sebelum")
+    asli.id = 2
+}"#,
+        "sebelum",
+        "`Ptr` adalah handle buatan pustaka — field `id` tidak bisa ditulis",
+    ),
 ];

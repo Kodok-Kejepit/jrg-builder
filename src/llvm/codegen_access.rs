@@ -555,6 +555,41 @@ impl Codegen {
             || matches!(t.nama_typeof().as_str(), "int" | "float")
     }
 
+    /// Nama handle pustaka (`Ptr`, `Future`, `Task`), kalau tipe ini memegangnya secara statis.
+    pub(crate) fn nama_handle_pustaka(t: &JrgType) -> Option<&'static str> {
+        match t {
+            JrgType::Struct(n) => crate::interpreter::galat_index::HANDLE_PUSTAKA.iter().copied().find(|h| *h == n.as_str()),
+            JrgType::Masa(_, false) => Some("Future"),
+            JrgType::Masa(_, true) => Some("Task"),
+            _ => None,
+        }
+    }
+
+    /// Alamat sasaran penugasan: menulis ke field sebuah handle pustaka ditolak saat jalan.
+    pub(crate) fn tempat_tulis(&mut self, t: &Expr) -> Result<(String, JrgType), String> {
+        match t {
+            Expr::Field { obj, field, span } => {
+                if let Some(h) = self.tipe_jalur(obj).and_then(|ty| Self::nama_handle_pustaka(&ty)) {
+                    self.tulis_antara = true;
+                    let _ = self.get_place(obj)?;
+                    return self.tempat_tiruan_sesudah(
+                        &crate::interpreter::galat_index::tulis_handle(h, field), *span);
+                }
+            }
+            Expr::Index { obj, idx, span } => {
+                if let Some(h) = self.tipe_jalur(obj).and_then(|ty| Self::nama_handle_pustaka(&ty)) {
+                    let k = self.kunci_struct(idx, *span)?;
+                    self.tulis_antara = true;
+                    let _ = self.get_place(obj)?;
+                    return self.tempat_tiruan_sesudah(
+                        &crate::interpreter::galat_index::tulis_handle(h, &k), *span);
+                }
+            }
+            _ => {}
+        }
+        self.get_place(t)
+    }
+
     pub(crate) fn get_field_place(&mut self, optr: &str, oty: &JrgType, field: &str, span: Span) -> Result<(String, JrgType), String> {
         match oty {
             JrgType::Struct(name) => {

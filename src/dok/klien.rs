@@ -191,6 +191,36 @@ fn kirim(s: &mut Sambungan, u: &Url, metode: &str, badan: &[u8], kepala: &[(Stri
     s.write_all(&semua).map_err(|e| format!("mengirim ke {}: {}", u.host, crate::host::galat_io(&e)))
 }
 
+/// Batas baris kepala dan jumlah kepala jawaban di klien (sepadan dengan `dok::serve`).
+const MAKS_BARIS_KEPALA: usize = 8 * 1024;
+const MAKS_KEPALA: usize = 100;
+
+fn baca_baris_terbatas<R: BufRead>(r: &mut R, konteks: &str) -> Result<String, String> {
+    let mut buf = Vec::new();
+    let n = r.take(MAKS_BARIS_KEPALA as u64 + 1).read_until(b'\n', &mut buf)
+        .map_err(|e| format!("{}: {}", konteks, crate::host::galat_io(&e)))?;
+    if n == 0 { return Ok(String::new()); }
+    if buf.len() > MAKS_BARIS_KEPALA {
+        return Err(format!("{}: baris melewati {} byte", konteks, MAKS_BARIS_KEPALA));
+    }
+    String::from_utf8(buf).map_err(|_| format!("{}: baris bukan teks UTF-8 yang sah", konteks))
+}
+
+fn baca_kepala_jawaban<R: BufRead>(r: &mut R, host: &str) -> Result<Vec<String>, String> {
+    let mut kepala = Vec::new();
+    loop {
+        let b = baca_baris_terbatas(r, "membaca kepala jawaban")?;
+        if b.is_empty() { return Err(format!("{} menutup sambungan sebelum menjawab", host)); }
+        let b = b.trim_end_matches(['\r', '\n']).to_string();
+        if b.is_empty() { break; }
+        if kepala.len() > MAKS_KEPALA {
+            return Err(format!("jawaban {} memiliki lebih dari {} kepala", host, MAKS_KEPALA));
+        }
+        kepala.push(b);
+    }
+    Ok(kepala)
+}
+
 /// Badan `Transfer-Encoding: chunked` jadi badan utuh; yang rusak DITOLAK, bukan dipotong diam-diam.
 pub fn urai_berpotongan(b: &[u8]) -> Result<Vec<u8>, String> {
     let mut keluar = Vec::new();
@@ -201,8 +231,7 @@ pub fn urai_berpotongan(b: &[u8]) -> Result<Vec<u8>, String> {
 fn salin_berpotongan<R: BufRead, W: Write>(r: &mut R, w: &mut W) -> Result<u64, String> {
     let mut total = 0u64;
     loop {
-        let mut baris = String::new();
-        r.read_line(&mut baris).map_err(|e| format!("badan berpotongan: {}", crate::host::galat_io(&e)))?;
+        let baris = baca_baris_terbatas(r, "badan berpotongan")?;
         if baris.is_empty() { return Err("badan berpotongan terputus sebelum potongan terakhir".into()); }
         let ukuran = baris.trim().split(';').next().unwrap_or("");
         let n = u64::from_str_radix(ukuran.trim(), 16)
@@ -210,9 +239,12 @@ fn salin_berpotongan<R: BufRead, W: Write>(r: &mut R, w: &mut W) -> Result<u64, 
         if n == 0 { return Ok(total); }
         let disalin = std::io::copy(&mut r.by_ref().take(n), w).map_err(|e| crate::host::galat_io(&e))?;
         if disalin != n { return Err("badan berpotongan terputus di tengah potongan".into()); }
-        total += n;
+        total = total.checked_add(n).ok_or_else(|| "badan berpotongan meluap".to_string())?;
         let mut crlf = [0u8; 2];
         r.read_exact(&mut crlf).map_err(|_| "badan berpotongan terputus sesudah potongan".to_string())?;
+        if crlf != *b"\r\n" {
+            return Err("badan berpotongan rusak: potongan tidak ditutup CRLF".into());
+        }
     }
 }
 
@@ -247,15 +279,7 @@ pub fn unduh(url: &str, berkas: &str, agen: &str) -> Result<HasilUnduh, String> 
         let mut s = sambung(&u)?;
         kirim(&mut s, &u, "GET", &[], &[], agen)?;
         let mut r = BufReader::new(s);
-        let mut kepala = Vec::new();
-        loop {
-            let mut b = String::new();
-            let n = r.read_line(&mut b).map_err(|e| format!("membaca kepala jawaban: {}", crate::host::galat_io(&e)))?;
-            if n == 0 { return Err(format!("{} menutup sambungan sebelum menjawab", u.host)); }
-            let b = b.trim_end().to_string();
-            if b.is_empty() { break; }
-            kepala.push(b);
-        }
+        let kepala = baca_kepala_jawaban(&mut r, &u.host)?;
         let status: u16 = kepala.first().and_then(|l| l.split_whitespace().nth(1)).and_then(|s| s.parse().ok())
             .ok_or_else(|| format!("jawaban {} bukan HTTP", u.host))?;
         let cari = |nama: &str| kepala.iter().skip(1).find_map(|l| {
@@ -368,5 +392,19 @@ mod tes {
         assert_eq!(urai_berpotongan(b"4\r\nWiki\r\n5;x=1\r\npedia\r\n0\r\n\r\n").unwrap(), b"Wikipedia");
         assert!(urai_berpotongan(b"zz\r\nab\r\n").unwrap_err().contains("bukan heksadesimal"));
         assert!(urai_berpotongan(b"4\r\nWi").unwrap_err().contains("terputus"));
+        // Potongan yang tidak ditutup CRLF ditolak, bukan memakan 2 byte badan berikutnya.
+        assert!(urai_berpotongan(b"4\r\nWikiXX0\r\n\r\n").unwrap_err().contains("CRLF"));
+        let raksasa = format!("4;{}\r\nWiki\r\n0\r\n\r\n", "a".repeat(MAKS_BARIS_KEPALA + 10));
+        assert!(urai_berpotongan(raksasa.as_bytes()).unwrap_err().contains("melewati"));
+    }
+
+    #[test]
+    fn kepala_jawaban_unduh_berbatas() {
+        let panjang = format!("HTTP/1.1 200 OK\r\nX: {}\r\n\r\n", "a".repeat(MAKS_BARIS_KEPALA));
+        assert!(baca_kepala_jawaban(&mut BufReader::new(panjang.as_bytes()), "h").unwrap_err().contains("melewati"));
+        let banyak = format!("HTTP/1.1 200 OK\r\n{}\r\n", "X: 1\r\n".repeat(MAKS_KEPALA + 1));
+        assert!(baca_kepala_jawaban(&mut BufReader::new(banyak.as_bytes()), "h").unwrap_err().contains("lebih dari"));
+        let sah = b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok";
+        assert_eq!(baca_kepala_jawaban(&mut BufReader::new(&sah[..]), "h").unwrap().len(), 2);
     }
 }

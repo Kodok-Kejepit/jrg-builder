@@ -834,13 +834,21 @@ fn try_serve_static(mounts: &[(String, PathBuf)], path: &str) -> Option<(i128, S
         let path_norm = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
         if !path_norm.starts_with(&prefix_norm) && path != prefix.trim_end_matches('/') { continue; }
         let rel = path.strip_prefix(prefix.as_str()).unwrap_or("").trim_start_matches('/');
-        // Cegah path traversal: tolak segmen ".." mentah-mentah sebelum
-        // menyentuh filesystem sama sekali.
-        if rel.split('/').any(|seg| seg == "..") { return Some((403, "text/plain".to_string(), b"Forbidden".to_vec())); }
-        let full = dir.join(if rel.is_empty() { "index.html" } else { rel });
+        let sasaran = if rel.is_empty() { "index.html" } else { rel };
+        let Some(dasar) = dir.to_str() else { continue };
+        // `gabung_aman` menolak `..`, `\`, NUL, dan tautan simbolik yang keluar dari `dir`.
+        let Ok(penuh) = crate::stdlib::fs::gabung_aman(dasar, sasaran) else {
+            return Some((403, "text/plain".to_string(), b"Forbidden".to_vec()));
+        };
+        let full = Path::new(&penuh);
         if full.is_file() {
-            if let Ok(bytes) = std::fs::read(&full) {
-                let ctype = guess_content_type(&full);
+            if let Ok(m) = std::fs::metadata(full) {
+                if m.len() > MAKS_BADAN as u64 {
+                    return Some((413, "text/plain".to_string(), b"Payload Too Large".to_vec()));
+                }
+            }
+            if let Ok(bytes) = std::fs::read(full) {
+                let ctype = guess_content_type(full);
                 return Some((200, ctype.to_string(), bytes));
             }
         }
@@ -1304,5 +1312,29 @@ mod tes_permintaan {
         drop(p);
         assert_eq!(parse_request_dgn(&mut std::io::Cursor::new(biner(muat + 1)), &HITUNG, 1000).err(), Some((413, "Payload Too Large")));
         assert_eq!(HITUNG.load(Ordering::Acquire), 0);
+    }
+
+    #[test]
+    fn berkas_statis_menolak_tautan_simbolik_ke_luar_dan_lintas_jalur() {
+        let akar = std::env::temp_dir().join(format!("jrg-uji-statis-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&akar);
+        let (publik, luar) = (akar.join("publik"), akar.join("luar"));
+        std::fs::create_dir_all(&publik).unwrap();
+        std::fs::create_dir_all(&luar).unwrap();
+        std::fs::write(publik.join("biasa.txt"), b"aman").unwrap();
+        std::fs::write(luar.join("rahasia.txt"), b"bocor").unwrap();
+        let mounts = vec![("/aset".to_string(), publik.clone())];
+        assert_eq!(try_serve_static(&mounts, "/aset/biasa.txt").map(|x| x.0), Some(200));
+        assert_eq!(try_serve_static(&mounts, "/aset/../luar/rahasia.txt").map(|x| x.0), Some(403));
+        assert_eq!(try_serve_static(&mounts, "/aset/a\\b").map(|x| x.0), Some(403));
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::symlink;
+            symlink(luar.join("rahasia.txt"), publik.join("tautan.txt")).unwrap();
+            symlink(&luar, publik.join("folder_luar")).unwrap();
+            assert_eq!(try_serve_static(&mounts, "/aset/tautan.txt").map(|x| x.0), Some(403));
+            assert_eq!(try_serve_static(&mounts, "/aset/folder_luar/rahasia.txt").map(|x| x.0), Some(403));
+        }
+        let _ = std::fs::remove_dir_all(&akar);
     }
 }

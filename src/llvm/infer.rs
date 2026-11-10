@@ -785,9 +785,21 @@ impl Codegen {
                 }
                 // Rekursi: menyimpulkan tipe `f` dari `return f(..)` butuh
                 // tipe `f` itu sendiri. Digugurkan, tidak ditebak.
-                if n == nama_diri { return None; }
+                if n == nama_diri || nama_diri.strip_prefix('\u{0}') == Some(n.as_str()) { return None; }
                 let f = self.tables.functions.get(&self.k(n))?;
-                self.tipe_dari_anotasi(f.ret_type.as_ref()?, subst)
+                if let Some(te) = f.ret_type.as_ref() {
+                    return self.tipe_dari_anotasi(te, subst);
+                }
+                // Fungsi 0-argumen tanpa anotasi (`fn ubah() { return [8] }`): disimpulkan 1 lapis.
+                if !nama_diri.starts_with('\u{0}') && f.generics.params.is_empty() && f.params.is_empty() {
+                    if let FnBody::Block(b) = &*f.body {
+                        let batas = format!("\u{0}{}", f.name);
+                        let mut ketemu: Option<JrgType> = None;
+                        self.telusuri_blok(b, &mut Lokal::new(), &TypeSubst::new(), &mut ketemu, &batas);
+                        return ketemu.filter(|t| *t != JrgType::Never);
+                    }
+                }
+                None
             }
 
             // Ternary, `if … else`, dan `match`: tipe lengannya, kalau SEMUA lengan terbaca dan

@@ -230,10 +230,10 @@ impl JrgType {
             // dijawab acuannya.
             JrgType::DictCampur(_) => "dict".into(),
             JrgType::Tuple(_) => "tuple".into(),
-            JrgType::Struct(n) => format!("struct:{}", super::generik::dasar(n)),
+            JrgType::Struct(n) => format!("struct:{}", crate::ruang_tipe::bersih(super::generik::dasar(n))),
             // Nama SUMBERNYA, bukan nama termangel: `Option<int>` di backend ini bernama
             // `Option$i64`, tapi `typeof` menjawab sesuatu yang dibaca program — dan …
-            JrgType::Enum(n) => format!("enum:{}", n.split('$').next().unwrap_or(n)),
+            JrgType::Enum(n) => format!("enum:{}", crate::ruang_tipe::bersih(n.split('$').next().unwrap_or(n))),
             JrgType::Fn(..) => "function".into(),
             JrgType::Chan(_) => "channel".into(),
             JrgType::Masa(_, t) => if *t { "struct:Task".into() } else { "struct:Future".into() },

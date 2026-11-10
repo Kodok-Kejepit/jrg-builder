@@ -384,7 +384,16 @@ impl Codegen {
                         }
                         }
                     }
-                    JrgType::Array(e, _) => JrgType::Slice(e.clone()),
+                    JrgType::Array(e, _) => {
+                        let elem = super::codegen_any::luruh(e);
+                        let mut semua = vec![elem.clone()];
+                        for t in self.tipe_elemen_var_global_konflik(&v.name) {
+                            let tl = super::codegen_any::luruh(&t);
+                            if !semua.contains(&tl) { semua.push(tl); }
+                        }
+                        let awal = JrgType::Slice(Box::new(if semua.len() > 1 { JrgType::Any } else { elem }));
+                        super::infer::dict_global_ditulis(self, &v.name, &awal).unwrap_or(awal)
+                    }
                     // Skalar tingkat modul yang tipenya berganti.
                     lain if super::infer::skalar_global_bentrok(self, &v.name, lain) =>
                         JrgType::Any,

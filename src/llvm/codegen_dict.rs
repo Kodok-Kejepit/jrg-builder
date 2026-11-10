@@ -57,12 +57,7 @@ impl Codegen {
     pub fn kunci_dict(&mut self, e: &Expr, span: Span) -> Result<Val, String> {
         let k = self.codegen_expr(e, Some(&JrgType::Str))?;
         if k.ty == JrgType::Str { return Ok(k); }
-        if !(k.ty.is_int() || k.ty.is_float() || matches!(k.ty, JrgType::Bool | JrgType::Rune | JrgType::Any)) {
-            return Err(super::galat::tandai(span, format!(
-                "kunci dict bertipe `{}` belum didukung backend `--emit-llvm` — baru teks, angka, bool dan rune\n  \
-                 bantuan: ubah jadi teks dulu dengan `str(x)`", k.ty.nama_typeof())));
-        }
-        self.do_cast(&k, &JrgType::Str, span)
+        self.val_to_str(&k).map_err(|m| super::galat::tandai(span, m))
     }
 
     /// `dict::get_or(d, k, bawaan)` — nilainya, atau `bawaan` kalau kuncinya tidak ada.

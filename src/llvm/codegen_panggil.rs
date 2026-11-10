@@ -930,7 +930,12 @@ impl Codegen {
                 &["push", "contains", "sum", "reverse", "sort", "min", "max"];
             if METODE_ARR.contains(&method) {
                 let mut semua = Vec::with_capacity(args.len() + 1);
-                semua.push(obj.clone());
+                let penerima = if matches!(obj, Expr::Array { elems, .. } if elems.is_empty()) {
+                    obj.clone()
+                } else {
+                    self.lokal_sementara(optr.clone(), oty.clone(), span)
+                };
+                semua.push(penerima);
                 semua.extend(args.iter().cloned());
                 if let Some(r) = self.coba_builtin_arr(
                     &format!("arr::{}", method), &semua, span)
@@ -947,7 +952,7 @@ impl Codegen {
                 &["len", "is_empty", "has", "get", "keys", "values", "remove", "merge"];
             if METODE_DICT.contains(&method) {
                 let mut semua = Vec::with_capacity(args.len() + 1);
-                semua.push(obj.clone());
+                semua.push(self.lokal_sementara(optr.clone(), oty.clone(), span));
                 semua.extend(args.iter().cloned());
                 if let Some(r) = self.coba_builtin_dict(
                     &format!("dict::{}", method), &semua, None, span)

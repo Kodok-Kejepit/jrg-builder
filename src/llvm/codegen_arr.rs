@@ -124,7 +124,14 @@ impl Codegen {
             let x = self.codegen_expr(&args[1], Some(&elem))?;
             (koleksi, elem, x)
         };
-        let x = self.coerce(&x, &elem);
+        let (koleksi, elem, x) = if super::codegen_any::ganti_jenis_isi(&elem, &x.ty) {
+            let k = self.coerce(&koleksi, &JrgType::Slice(Box::new(JrgType::Any)));
+            let x = self.coerce(&x, &JrgType::Any);
+            (k, JrgType::Any, x)
+        } else {
+            let x = self.coerce(&x, &elem);
+            (koleksi, elem, x)
+        };
 
         // Bungkus `x` jadi array satu elemen, lalu sambung.
         let satu_ty = JrgType::Array(Box::new(elem.clone()), 1);

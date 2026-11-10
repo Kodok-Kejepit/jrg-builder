@@ -195,23 +195,25 @@ impl Codegen {
             // Struct milik `jrgc` yang NAMANYA sama dengan struct milik program (`Warna` dari
             // `canvas::get_pixel`): disusun jadi struct program itu, seperti di dua mesin lain.
             t => {
-                // Cuma struct yang DITULIS program (bukan tata letak internal seperti `Ptr` milik `jawa::`).
-                let cocok: Vec<String> = self.tables.structs.keys()
-                    .filter(|k| super::modul::tampil(k) == t && self.param_struct(k).is_none()
-                        && self.types.structs.contains_key(*k)).cloned().collect();
-                if let [kunci] = cocok.as_slice() {
-                    let layout = self.types.structs.get(kunci).cloned().ok_or("struct hilang")?;
-                    let sty = JrgType::Struct(kunci.clone());
-                    let mut kini = "undef".to_string();
-                    for (i, (f, ft)) in layout.fields.iter().enumerate() {
-                        let x = self.field_titipan(&v, f, span)?;
-                        let x = self.coerce(&x, &ft.tanpa_kotak());
-                        let x = if let JrgType::Kotak(t) = ft { self.kotakkan_nilai(t, &x) } else { x };
-                        let r = self.fresh("jbs.");
-                        self.emit(format!("{} = insertvalue {} {}, {} {}, {}", r, sty.llvm_ty(), kini, ft.llvm_ty(), x.text, i));
-                        kini = r;
+                // Cuma struct data (`Warna` dll.), bukan handle pustaka seperti `Ptr` atau `DokRouter`.
+                if !crate::interpreter::galat_index::HANDLE_PUSTAKA.contains(&t) {
+                    let cocok: Vec<String> = self.tables.structs.keys()
+                        .filter(|k| super::modul::tampil(k) == t && self.param_struct(k).is_none()
+                            && self.types.structs.contains_key(*k)).cloned().collect();
+                    if let [kunci] = cocok.as_slice() {
+                        let layout = self.types.structs.get(kunci).cloned().ok_or("struct hilang")?;
+                        let sty = JrgType::Struct(kunci.clone());
+                        let mut kini = "undef".to_string();
+                        for (i, (f, ft)) in layout.fields.iter().enumerate() {
+                            let x = self.field_titipan(&v, f, span)?;
+                            let x = self.coerce(&x, &ft.tanpa_kotak());
+                            let x = if let JrgType::Kotak(t) = ft { self.kotakkan_nilai(t, &x) } else { x };
+                            let r = self.fresh("jbs.");
+                            self.emit(format!("{} = insertvalue {} {}, {} {}, {}", r, sty.llvm_ty(), kini, ft.llvm_ty(), x.text, i));
+                            kini = r;
+                        }
+                        return Ok(Val { text: kini, ty: sty });
                     }
-                    return Ok(Val { text: kini, ty: sty });
                 }
                 return Ok(v);
             }

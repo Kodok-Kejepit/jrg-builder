@@ -4419,4 +4419,60 @@ pub fn main() {
     for k, v in e["p"] { wok(k, v) }
 }"#),
     ("jawa::stats dari registry biner sendiri", "package main\npub fn main() { let a = jawa::alloc(1)\n let b = jawa::array(3, 0)\n wok(jawa::stats().alive_total, jawa::stats())\n jawir::free(a)\n wok(jawa::stats().alive_total, typeof(jawa::stats()))\n jawir::free(b) }"),
+    ("struct pengguna bernama Ptr/Task/DokRouter terpisah dari handle pustaka", r#"package main
+struct Ptr { pub id: int, pub kind: string }
+struct Task { pub id: int }
+struct DokRouter { pub id: int }
+pub fn main() {
+    var p = Ptr { id: 7, kind: "single" }
+    p.id = 8
+    let asli = jawa::alloc(99)
+    wok(p, p.id, typeof(p), jawa::get(asli), typeof(asli))
+    jawir::free(asli)
+    let t = Task { id: 3 }
+    let h = Task::spawn(|| 42)
+    wok(t.id, task::join(h))
+    let r = DokRouter { id: 5 }
+    wok(r.id, typeof(dok::router_new()))
+}"#),
+    ("var modul array didorong elemen berjenis lain dan penerima method dievaluasi sekali", r#"package main
+var A = [1]
+var H = 0
+fn ubah() { A[0] = 55; return [8] }
+fn buat() -> []int { H = H + 1; return [10, 20] }
+pub fn main() {
+    A = A + ubah()
+    wok(A)
+    A = A.push(ubah())
+    wok(A)
+    A = A.concat(ubah())
+    wok(A)
+    wok(buat().push(30), H)
+}"#),
+    ("lokal Result berganti jenis muatan Ok/Err jadi nilai bertag", r#"package main
+pub fn main() {
+    var r = Ok(1)
+    r = Ok("s")
+    wok(r, r.is_ok(), r.unwrap())
+    var s = Ok(1)
+    s = Ok(s)
+    wok(s)
+    match s { Ok(v) => wok(v), Err(e) => wok(e) }
+    var e = Err(1)
+    e = Err("gagal")
+    wok(e, e.is_err(), e.unwrap_or(9))
+}"#),
+    ("kunci dict bertipe nil, array, tuple, struct, enum, dan dict", r#"package main
+struct P { pub x: int }
+enum E { A, B(int) }
+pub fn main() {
+    var d = {"awal": 0}
+    d[nil] = 10
+    d[[1, 2]] = 20
+    d[(3, 4)] = 30
+    d[P { x: 5 }] = 40
+    d[E::B(6)] = 50
+    wok(d[nil], d[[1, 2]], d[(3, 4)], d[P { x: 5 }], d[E::B(6)])
+    wok(dict::has(d, [1, 2]), dict::get_or(d, nil, 0))
+}"#),
 ];

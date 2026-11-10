@@ -181,6 +181,17 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Diperbaiki
 
+- `struct Ptr`, `struct Task`, `struct DokRouter` (dan nama handle pustaka lain) yang dideklarasikan program sendiri
+  tidak lagi bisa memalsukan handle pustaka atau membuka tulis `.id` pada handle asli; `Task::spawn` dan `Future::new`
+  tetap bisa dipanggil dari berkas yang mendeklarasikan struct bernama sama.
+- Biner `--emit-llvm`: `var` modul array yang didorong elemen berjenis lain (`A = A.push(ubah())`), variabel `Result`
+  yang berganti jenis muatan (`r = Ok(1)` lalu `r = Ok("s")` atau `r = Ok(r)`), dan kunci dict bertipe `nil`, `array`,
+  `tuple`, `struct`, `enum`, atau `dict` sekarang berjalan sama dengan interpreter dan `--vm`; penerima method array
+  dan dict (`f().push(x)`, `A.push(ubah())`) dievaluasi tepat sekali di atas salinan yang aman dari mutasi argumen.
+- Keamanan jaringan dan pelayan HTTP: `dok::router_static` menolak tautan simbolik yang keluar dari folder dasar
+  (`fs::safe_join`, 403); `http::unduh` membatasi panjang dan jumlah baris kepala jawaban serta memeriksa penutup CRLF
+  tiap potongan `Transfer-Encoding: chunked`; `dok::ws_recv` menolak frame klien tanpa mask dan urutan fragmen yang
+  melanggar RFC 6455 (kode 1002).
 - `--vm`: `f.floor` atas bilangan (tanpa `()`) menjawab nilainya seperti interpreter, dulu `<native fn>`; method
   yang tidak ada (`x.uper(f())`) ditolak SESUDAH argumennya dievaluasi; memanggil field yang bukan fungsi
   (`p.x(2)`) menyebut field yang ada, dulu "`int` bukan fungsi".

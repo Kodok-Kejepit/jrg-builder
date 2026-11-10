@@ -134,6 +134,7 @@ fn jenis_dari(op: u8) -> Option<Jenis> {
     })
 }
 
+#[derive(Debug)]
 struct Frame { fin: bool, jenis: Jenis, muatan: Vec<u8> }
 
 /// Coba baca satu frame dari `buf`. `Ok(None)` berarti byte-nya belum cukup —
@@ -179,16 +180,37 @@ fn baca_frame(buf: &[u8]) -> Result<Option<(Frame, usize)>, String> {
         if panjang > 125 { return Err("ws: frame kontrol lebih dari 125 byte".into()); }
         if !fin { return Err("ws: frame kontrol tidak boleh terfragmentasi".into()); }
     }
-    let mask = if masked {
-        if buf.len() < i + 4 { return Ok(None); }
-        let m = [buf[i], buf[i + 1], buf[i + 2], buf[i + 3]]; i += 4; Some(m)
-    } else { None };
+    if !masked {
+        return Err("ws: frame dari klien wajib bermask (RFC 6455 §5.1)".into());
+    }
+    if buf.len() < i + 4 { return Ok(None); }
+    let m = [buf[i], buf[i + 1], buf[i + 2], buf[i + 3]]; i += 4;
     if buf.len() < i + panjang { return Ok(None); }
     let mut muatan = buf[i..i + panjang].to_vec();
-    if let Some(m) = mask {
-        for (k, b) in muatan.iter_mut().enumerate() { *b ^= m[k % 4]; }
-    }
+    for (k, b) in muatan.iter_mut().enumerate() { *b ^= m[k % 4]; }
     Ok(Some((Frame { fin, jenis, muatan }, i + panjang)))
+}
+
+/// Rakit fragmen data sesuai urutan RFC 6455 §5.4; mengembalikan kode tutup protokol bila melanggar.
+fn gabung_fragmen(
+    jenis_awal: &mut Option<Jenis>, gabung: &mut Vec<u8>, f: Frame,
+) -> Result<Option<(Jenis, Vec<u8>)>, (u16, String)> {
+    match (*jenis_awal, f.jenis) {
+        (None, Jenis::Lanjutan) =>
+            return Err((1002, "ws: frame lanjutan tanpa frame pembuka (kode 1002)".into())),
+        (Some(_), Jenis::Teks | Jenis::Biner) =>
+            return Err((1002, "ws: frame data baru di tengah pesan terfragmentasi (kode 1002)".into())),
+        (None, j) => *jenis_awal = Some(j),
+        (Some(_), Jenis::Lanjutan) => {}
+        _ => {}
+    }
+    if gabung.len() + f.muatan.len() > MAKS_PESAN {
+        return Err((1009, format!("ws: pesan gabungan melebihi batas {} byte", MAKS_PESAN)));
+    }
+    gabung.extend_from_slice(&f.muatan);
+    if !f.fin { return Ok(None); }
+    let jenis = jenis_awal.take().unwrap_or(Jenis::Teks);
+    Ok(Some((jenis, std::mem::take(gabung))))
 }
 
 /// Rakit satu frame untuk dikirim. Server TIDAK memasang mask (RFC 6455 §5.1).
@@ -239,27 +261,27 @@ pub fn ws_recv(args: &[Value]) -> Result<Value, String> {
                         k.tandai_tutup();
                         return Ok(none());
                     }
-                    j => {
-                        if jenis_awal.is_none() { jenis_awal = Some(j); }
-                        if gabung.len() + f.muatan.len() > MAKS_PESAN {
-                            k.tandai_tutup();
-                            return Err(format!(
-                                "ws: pesan gabungan melebihi batas {} byte", MAKS_PESAN));
-                        }
-                        gabung.extend_from_slice(&f.muatan);
-                        if f.fin {
-                            if matches!(jenis_awal, Some(Jenis::Biner)) {
-                                return Ok(some(super::crypto::byte_ke_array(gabung)));
-                            }
-                            // RFC 6455 §8.1: pesan teks yang bukan UTF-8 menutup koneksi (1007).
-                            let Ok(teks) = String::from_utf8(gabung) else {
-                                let _ = k.kirim(&tulis_frame(Jenis::Tutup, &[0x03, 0xEF]));
+                    _ => {
+                        match gabung_fragmen(&mut jenis_awal, &mut gabung, f) {
+                            Err((kode, pesan)) => {
+                                let _ = k.kirim(&tulis_frame(Jenis::Tutup, &kode.to_be_bytes()));
                                 k.tandai_tutup();
-                                return Err("ws: pesan teks dari klien bukan UTF-8 yang sah; koneksinya ditutup (kode 1007)".to_string());
-                            };
-                            return Ok(some(Value::Str(std::sync::Arc::new(teks))));
+                                return Err(pesan);
+                            }
+                            Ok(None) => continue,
+                            Ok(Some((Jenis::Biner, isi))) => {
+                                return Ok(some(super::crypto::byte_ke_array(isi)));
+                            }
+                            Ok(Some((_, isi))) => {
+                                // RFC 6455 §8.1: pesan teks yang bukan UTF-8 menutup koneksi (1007).
+                                let Ok(teks) = String::from_utf8(isi) else {
+                                    let _ = k.kirim(&tulis_frame(Jenis::Tutup, &[0x03, 0xEF]));
+                                    k.tandai_tutup();
+                                    return Err("ws: pesan teks dari klien bukan UTF-8 yang sah; koneksinya ditutup (kode 1007)".to_string());
+                                };
+                                return Ok(some(Value::Str(std::sync::Arc::new(teks))));
+                            }
                         }
-                        continue;
                     }
                 }
             }
@@ -381,5 +403,17 @@ mod tes {
     fn frame_kontrol_wajib_pendek_dan_utuh() {
         assert!(baca_frame(&[0x89, 126, 0, 200]).is_err());  // ping > 125
         assert!(baca_frame(&[0x09, 0x00]).is_err());         // ping terfragmentasi
+    }
+
+    #[test]
+    fn frame_tanpa_mask_dan_fragmen_kacau_ditolak() {
+        assert!(baca_frame(&[0x81, 0x04, b'h', b'a', b'l', b'o']).unwrap_err().contains("bermask"));
+        let (mut awal, mut gabung) = (None, Vec::new());
+        let lanjutan_yatim = Frame { fin: true, jenis: Jenis::Lanjutan, muatan: b"x".to_vec() };
+        assert_eq!(gabung_fragmen(&mut awal, &mut gabung, lanjutan_yatim).unwrap_err().0, 1002);
+        let buka = Frame { fin: false, jenis: Jenis::Teks, muatan: b"ha".to_vec() };
+        assert!(gabung_fragmen(&mut awal, &mut gabung, buka).unwrap().is_none());
+        let tabrak = Frame { fin: true, jenis: Jenis::Biner, muatan: b"lo".to_vec() };
+        assert_eq!(gabung_fragmen(&mut awal, &mut gabung, tabrak).unwrap_err().0, 1002);
     }
 }
