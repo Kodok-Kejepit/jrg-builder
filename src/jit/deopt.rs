@@ -94,6 +94,7 @@ fn nilai_dari(j: Jenis, v: i64, callee: &[Arc<crate::vm::value::VmFunction>]) ->
     match j {
         Jenis::Bulat => VmValue::Int(v as i128),
         Jenis::Bool => VmValue::Bool(v != 0),
+        Jenis::Pecahan => VmValue::Float(f64::from_bits(v as u64)),
         Jenis::Fungsi(c) => VmValue::Function(Arc::clone(&callee[c])),
         Jenis::Kosong => VmValue::Nil,
         // Bingkai callee native tidak pernah memegang nilai milik VM (argumennya selalu bulat).

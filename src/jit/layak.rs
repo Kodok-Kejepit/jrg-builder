@@ -12,6 +12,8 @@ use crate::vm::value::{VmFunction, VmValue};
 pub enum Jenis {
     Bulat,
     Bool,
+    /// `f64`; bitnya disimpan di variabel `i64`.
+    Pecahan,
     /// Rujukan ke `Rencana::callee[i]` (hasil `LoadGlobal`, cuma boleh dipanggil).
     Fungsi(usize),
     /// `nil` (juga lubang yang ditinggal `AmbilLokal`).
@@ -29,6 +31,7 @@ pub fn jenis_nilai(v: &VmValue) -> Jenis {
     match v {
         VmValue::Int(n) if i64::try_from(*n).is_ok() => Jenis::Bulat,
         VmValue::Bool(_) => Jenis::Bool,
+        VmValue::Float(_) => Jenis::Pecahan,
         VmValue::Nil => Jenis::Kosong,
         _ => Jenis::Nilai,
     }
@@ -40,7 +43,7 @@ pub struct Rencana {
     pub masuk: usize,
     pub jenis_masuk: Vec<Jenis>,
     /// `Return` native: `KEMBALI_TIDAK` (OSR; VM yang mengembalikan), `KEMBALI_BULAT` (callee native),
-    /// `KEMBALI_SKALAR` (masuk dari VM: bulat atau bool).
+    /// `KEMBALI_SKALAR` (masuk dari VM: bulat, bool atau pecahan).
     pub kembali: u8,
     /// Stack abstrak SEBELUM tiap instruksi; `None` = tak terjangkau.
     pub keadaan: Vec<Option<Vec<Jenis>>>,
@@ -52,7 +55,7 @@ pub struct Rencana {
     pub pemimpin: Vec<bool>,
     /// Kedalaman stack terbesar (jumlah variabel yang dibutuhkan).
     pub maks: usize,
-    /// Nilai `Const` bulat per instruksi.
+    /// Nilai `Const` bulat (atau bit pecahan) per instruksi.
     pub konstanta: Vec<Option<i64>>,
 }
 
@@ -138,7 +141,14 @@ fn langkah(
     use Jenis::*;
     let ins = f.chunk.code[ip];
     let a = ins.arg as usize;
-    let skalar = |j: Jenis| matches!(j, Bulat | Bool | Kosong);
+    let skalar = |j: Jenis| matches!(j, Bulat | Bool | Pecahan | Kosong);
+    let angka = |j: Jenis| matches!(j, Bulat | Pecahan);
+    // Dua angka: bulat dengan bulat tetap bulat, selain itu pecahan (aturan `VmValue::add` dkk.).
+    let angka2 = |s: &mut Vec<Jenis>| -> Option<Jenis> {
+        let y = s.pop()?; let x = s.pop()?;
+        if !angka(x) || !angka(y) { return None; }
+        Some(if x == Bulat && y == Bulat { Bulat } else { Pecahan })
+    };
     let bulat2 = |s: &mut Vec<Jenis>| -> Option<()> {
         let y = s.pop()?; let x = s.pop()?;
         (x == Bulat && y == Bulat).then_some(())
@@ -156,18 +166,33 @@ fn langkah(
             s[a] = Kosong;
             s.push(j);
         }
+        // Larik milik VM di lokal `a`, lewat `lambat::baca`/`tulis` (bukan larik bulat = titik keluar saat jalan).
+        OpCode::IndeksLokal => {
+            if s.pop()? != Bulat || *s.get(a)? != Nilai { return None; }
+            s.push(Bulat);
+        }
+        OpCode::TulisIndexLokal => {
+            let (i, v) = (s.pop()?, s.pop()?);
+            if i != Bulat || !matches!(v, Bulat | Bool | Pecahan) || *s.get(a)? != Nilai { return None; }
+        }
         OpCode::IntImm => s.push(Bulat),
         OpCode::True | OpCode::False => s.push(Bool),
         OpCode::Nil => s.push(Kosong),
         OpCode::Const => match f.chunk.constants.get(a)? {
             VmValue::Int(v) => { r.konstanta[ip] = Some(i64::try_from(*v).ok()?); s.push(Bulat) }
+            VmValue::Float(x) => { r.konstanta[ip] = Some(x.to_bits() as i64); s.push(Pecahan) }
             _ => return None,
         },
-        OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Mod => { bulat2(&mut s)?; s.push(Bulat) }
-        OpCode::Lt | OpCode::Le | OpCode::Gt | OpCode::Ge | OpCode::Eq | OpCode::Ne => {
-            bulat2(&mut s)?; s.push(Bool)
+        OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div => { let j = angka2(&mut s)?; s.push(j) }
+        // `%` pecahan adalah `fmod`, yang tidak punya instruksi mesin: VM yang menghitungnya.
+        OpCode::Mod => { bulat2(&mut s)?; s.push(Bulat) }
+        OpCode::Lt | OpCode::Le | OpCode::Gt | OpCode::Ge => { angka2(&mut s)?; s.push(Bool) }
+        OpCode::Eq | OpCode::Ne => {
+            let t = s.len();
+            if t >= 2 && s[t - 1] == Bool && s[t - 2] == Bool { s.truncate(t - 2); } else { angka2(&mut s)?; }
+            s.push(Bool)
         }
-        OpCode::Neg => if *s.last()? != Bulat { return None },
+        OpCode::Neg => if !angka(*s.last()?) { return None },
         OpCode::Not => if *s.last()? != Bool { return None },
         OpCode::KeBool => {
             if !matches!(s.pop()?, Bulat | Bool) { return None; }
@@ -204,7 +229,7 @@ fn langkah(
         OpCode::Return => {
             let ok = match r.kembali {
                 KEMBALI_BULAT => *s.last()? == Bulat,
-                KEMBALI_SKALAR => matches!(*s.last()?, Bulat | Bool),
+                KEMBALI_SKALAR => matches!(*s.last()?, Bulat | Bool | Pecahan),
                 _ => false,
             };
             if !ok { return None; }

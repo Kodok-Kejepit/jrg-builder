@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use super::deopt;
 use super::layak::{jenis_nilai, Jenis, KEMBALI_SKALAR, KEMBALI_TIDAK};
-use super::turun::{BERHASIL, BERHASIL_BOOL, DEOPT, KEDALAMAN_MAKS, ULANG};
+use super::turun::{BERHASIL, BERHASIL_BOOL, BERHASIL_PECAHAN, DEOPT, KEDALAMAN_MAKS, ULANG};
 use super::{KodeJit, Masuk};
 use crate::vm::value::{VmFunction, VmValue};
 use crate::vm::vm::Vm;
@@ -21,6 +21,7 @@ fn kode_jenis(j: Jenis) -> u8 {
         Jenis::Bulat => 1,
         Jenis::Bool => 2,
         Jenis::Kosong => 3,
+        Jenis::Pecahan => 5,
         Jenis::Nilai | Jenis::Fungsi(_) => 4,
     }
 }
@@ -86,6 +87,7 @@ fn jalankan(vm: &mut Vm, kembali: u8) -> i64 {
         *a = match v {
             VmValue::Int(n) => *n as i64,
             VmValue::Bool(b) => *b as i64,
+            VmValue::Float(f) => f.to_bits() as i64,
             _ => 0,
         };
     }
@@ -98,13 +100,18 @@ fn jalankan(vm: &mut Vm, kembali: u8) -> i64 {
     let boleh = ((batas + 2).saturating_sub(vm.frames.len()) as i64).min(KEDALAMAN_MAKS);
     let mut keluar = 0i64;
     // Kode ini dibangkitkan `turun.rs` dengan tanda tangan `KodeJit::masuk` persis.
-    let st = unsafe {
+    let pvm: *mut Vm = vm;
+    let st = super::lambat::dengan_konteks(pvm, basis, || unsafe {
         (kode.masuk)(args.as_ptr(), (KEDALAMAN_MAKS - boleh) as i32, &mut keluar)
-    } as i64;
-    if st == BERHASIL || st == BERHASIL_BOOL {
+    }) as i64;
+    if st == BERHASIL || st == BERHASIL_BOOL || st == BERHASIL_PECAHAN {
         // `Return` native: bingkainya tanpa `defer` (`DeferPush` selalu titik keluar).
         if let Some(fr) = vm.ambil_bingkai() { vm.stack.truncate(fr.slot); }
-        vm.stack.push(if st == BERHASIL { VmValue::Int(keluar as i128) } else { VmValue::Bool(keluar != 0) });
+        vm.stack.push(match st {
+            BERHASIL => VmValue::Int(keluar as i128),
+            BERHASIL_BOOL => VmValue::Bool(keluar != 0),
+            _ => VmValue::Float(f64::from_bits(keluar as u64)),
+        });
     } else if st == DEOPT {
         deopt::pulihkan(vm, deopt::ambil());
     }

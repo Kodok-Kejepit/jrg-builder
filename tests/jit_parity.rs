@@ -222,3 +222,32 @@ fn osr_dan_titik_keluar() {
         for n in nama { assert!(jadi.contains(n), "{n} tidak dikompilasi: {jadi}"); }
     }
 }
+
+/// J4 langkah 2: pecahan (NaN, tak hingga, `-0.0`, campur bulat), `/` bulat memotong, `5 / 0` lewat VM.
+const PECAHAN: &str = "fn ukur(x, y) {\n  var s = 0.0\n  var i = 0\n  while i < 2000 {\n    s = s + x * 1.5 - y / 3\n    if s > 1000.0 { s = s - 999.5 }\n    i += 1\n  }\n  return s\n}\nfn bagi(a, b) { return a / b }\nfn banding(a, b) { return a < b }\nfn main() {\n  let nan = 0.0 / 0.0\n  wok(ukur(2.5, 7), ukur(1, 2.0), ukur(-0.0, 0))\n  wok(bagi(7, 2), bagi(-7, 2), bagi(7, -2), bagi(7.0, 2), bagi(1.0, 0.0), bagi(-1, 0.0))\n  wok(banding(nan, 1.0), banding(1.0, nan), nan == nan, nan != nan, banding(2, 2.5))\n  var t = 0.0\n  for i in 0..100000 { t = t + i * 0.5 }\n  wok(t, -t, 0.0 * -1.0)\n  wok(bagi(5, 0))\n}\n";
+
+#[test]
+fn pecahan_dan_bagi() {
+    sama_dengan_interpreter(PECAHAN);
+    let i = jalankan(PECAHAN, &[], &[]);
+    let j = jalankan(PECAHAN, &["--jit"], &[STRES, ACAK]);
+    assert_eq!((i.sukses, &i.stdout, &i.stderr), (j.sukses, &j.stdout, &j.stderr));
+    let h = jalankan(PECAHAN, &["--jit"], &[("JRG_JIT_LOG", "ringkas")]);
+    let jadi = h.stderr.lines().find(|b| b.contains("dikompilasi:")).unwrap_or_default();
+    for n in ["ukur", "main"] { assert!(jadi.contains(n), "{n} tidak dikompilasi:\n{}", h.stderr); }
+}
+
+/// J4 langkah 3: larik milik VM dibaca dan ditulis lewat jalur lambat — salin-saat-tulis, elemen campur,
+/// indeks negatif, dan indeks di luar batas (kalimat VM).
+const LARIK: &str = "fn isi(a, n) {\n  for i in 0..n { a[i] = a[i] * 2 + i }\n  return a\n}\nfn main() {\n  var a = [0; 2000]\n  for k in 0..30 {\n    for i in 0..2000 { a[i] = a[i] + i % 13 + k }\n  }\n  wok(a[1999], a[-1], a[0], len(a))\n  var b = a\n  b[0] = 77\n  wok(a[0], b[0])\n  var c = [1, 2.5, \"x\"]\n  for i in 0..2 { c[i] = c[i] }\n  wok(c)\n  let d = isi([1, 2, 3], 3)\n  wok(d)\n  var e = [5, 6]\n  for i in 0..3 { e[i] = i }\n}\n";
+
+#[test]
+fn larik_lewat_jalur_lambat() {
+    sama_dengan_interpreter(LARIK);
+    let i = jalankan(LARIK, &[], &[]);
+    let j = jalankan(LARIK, &["--jit"], &[STRES, ACAK]);
+    assert_eq!((i.sukses, &i.stdout, &i.stderr), (j.sukses, &j.stdout, &j.stderr));
+    assert_eq!(i.stdout, "735 735 435 2000\n435 77\n[1, 2.5, x]\n[2, 5, 8]");
+    let h = jalankan(LARIK, &["--jit"], &[("JRG_JIT_LOG", "ringkas")]);
+    assert!(h.stderr.lines().any(|b| b.contains("dikompilasi:") && b.contains("main")), "{}", h.stderr);
+}

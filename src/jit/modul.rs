@@ -10,7 +10,7 @@ use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{FuncId, Linkage, Module};
 
 use super::layak::Jenis;
-use super::{deopt, layak, turun, KodeJit};
+use super::{deopt, lambat, layak, turun, KodeJit};
 use crate::vm::value::VmFunction;
 
 struct ModulJit {
@@ -21,6 +21,8 @@ struct ModulJit {
     info: Vec<(Arc<VmFunction>, Arc<layak::Rencana>)>,
     catat: FuncId,
     undi: Option<FuncId>,
+    baca: FuncId,
+    tulis: FuncId,
     fctx: FunctionBuilderContext,
     urut: u32,
     /// Fungsi yang ditolak dan alasannya, untuk `JRG_JIT_LOG`.
@@ -46,13 +48,17 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
             let mut jb = JITBuilder::with_isa(isa, cranelift_module::default_libcall_names());
             jb.symbol("jrg_jit_catat", deopt::catat as *const u8);
             jb.symbol("jrg_jit_undi", deopt::undi as *const u8);
+            jb.symbol("jrg_jit_baca", lambat::baca as *const u8);
+            jb.symbol("jrg_jit_tulis", lambat::tulis as *const u8);
             let mut m = JITModule::new(jb);
             let cc = m.isa().default_call_conv();
             let catat = m.declare_function("jrg_jit_catat", Linkage::Import, &turun::tanda_tangan_catat(&m, cc)).ok()?;
+            let baca = m.declare_function("jrg_jit_baca", Linkage::Import, &turun::tanda_tangan_baca(&m, cc)).ok()?;
+            let tulis = m.declare_function("jrg_jit_tulis", Linkage::Import, &turun::tanda_tangan_tulis(cc)).ok()?;
             let undi = if deopt::acak_aktif() {
                 Some(m.declare_function("jrg_jit_undi", Linkage::Import, &turun::tanda_tangan_undi(cc)).ok()?)
             } else { None };
-            Some(ModulJit { m, jadi: HashMap::new(), info: Vec::new(), catat, undi, fctx: FunctionBuilderContext::new(), urut: 0, tolak: Vec::new() })
+            Some(ModulJit { m, jadi: HashMap::new(), info: Vec::new(), catat, undi, baca, tulis, fctx: FunctionBuilderContext::new(), urut: 0, tolak: Vec::new() })
         }))
     })
 }
@@ -152,7 +158,7 @@ pub fn kompilasi(
     for (i, (_, h, r)) in baru.iter().enumerate() {
         let callee: Vec<FuncId> = r.callee.iter().map(|c| id_dari(c, mj)).collect();
         ctx.func.signature = sig.clone();
-        let impor = turun::Impor { catat: mj.catat, undi: mj.undi, fid: fid0 + i as u32 };
+        let impor = turun::Impor { catat: mj.catat, undi: mj.undi, baca: mj.baca, tulis: mj.tulis, fid: fid0 + i as u32 };
         turun::turunkan(&mut mj.m, &mut ctx.func, &mut mj.fctx, h, r, &callee, &impor);
         utuh = mj.m.define_function(id_baru[i], &mut ctx).is_ok();
         mj.m.clear_context(&mut ctx);
