@@ -3,8 +3,14 @@
 
 use std::sync::atomic::Ordering;
 
+/// `JRG_JIT_LOG` dipasang (dibaca sekali).
+pub fn diminta() -> bool {
+    static A: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *A.get_or_init(|| std::env::var_os("JRG_JIT_LOG").is_some())
+}
+
 pub fn cetak_bila_diminta() {
-    if !super::aktif() || std::env::var_os("JRG_JIT_LOG").is_none() { return; }
+    if !super::aktif() || !diminta() { return; }
     let mut semua = super::profil::semua();
     semua.retain(|p| p.panggilan.load(Ordering::Relaxed) + p.putaran.load(Ordering::Relaxed) > 0);
     semua.sort_by_key(|p| std::cmp::Reverse(
@@ -19,9 +25,10 @@ pub fn cetak_bila_diminta() {
         }
         let d = super::deopt::jumlah();
         if d > 0 { eprintln!("[jit] deopt: {d}"); }
+        for (sebab, n) in super::deopt::sebab().iter().take(12) { eprintln!("[jit]   {sebab}: {n}"); }
     }
     for p in semua.iter().take(20) {
-        let situs: Vec<u8> = p.umpan.iter().map(|s| s.load(Ordering::Relaxed)).filter(|b| *b != 0).collect();
+        let situs: Vec<u16> = p.umpan.iter().map(|s| s.load(Ordering::Relaxed)).filter(|b| *b != 0).collect();
         let mono = situs.iter().filter(|b| b.count_ones() == 1).count();
         eprintln!("[jit]   {}: panggilan {}, putaran {}, situs {} ({} monomorfik)",
             crate::ruang_tipe::bersih(&p.nama), p.panggilan.load(Ordering::Relaxed),

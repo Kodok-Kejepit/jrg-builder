@@ -17,7 +17,9 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal
           rustup target add wasm32-unknown-unknown
-          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb imagemagick python3-pil > /dev/null
+          # Jaringan apt runner kadang mati berjam-jam (2026-11-11: gagal tiga kali, lalu menggantung sejam). Image
+          # runner sudah membawa xvfb/ImageMagick; yang benar-benar hilang membuat langkah Sapuan gagal menyebutnya.
+          timeout 300 sh -c 'sudo apt-get -o Acquire::Retries=2 update -qq && sudo apt-get -o Acquire::Retries=2 install -y -qq xvfb imagemagick python3-pil > /dev/null' || echo "apt gagal; memakai paket bawaan image"
 
       - uses: Swatinem/rust-cache@v2
 

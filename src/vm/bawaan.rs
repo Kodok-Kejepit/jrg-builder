@@ -241,7 +241,7 @@ impl Vm {
             };
             if let Some((boleh, sebutan)) = sasaran {
                 let peta = isi.lock().unwrap();
-                if let Some(f) = crate::interpreter::galat_index::field_sebar_liar(peta.keys(), &boleh) {
+                if let Some(f) = crate::interpreter::galat_index::field_sebar_liar(peta.keys().map(|k| &**k), &boleh) {
                     return Err(crate::interpreter::galat_index::sebar_field_liar(&sebutan, f));
                 }
             }
@@ -563,17 +563,33 @@ impl Vm {
         )* } }
         // `abs`/`sqrt`/`floor`/`ceil`/`round` telanjang ada di tabel alias: ditulis di sini
         // keduanya jadi DUA closure, yang cuma beralamat sama kalau pengoptimal menggabungnya.
-        math_acuan!(
-            "math::abs" => MathAbs,         "math::sqrt" => MathSqrt,
-            "math::floor" => MathFloor,     "math::ceil" => MathCeil,
-            "math::round" => MathRound,
+        // Pecahan satu argumen atas angka: tabel `unary_f64` yang sama dengan acuan, tanpa jembatan nilai.
+        macro_rules! math_pecahan { ($($n:expr => $k:ident),* $(,)?) => { $(
+            self.def($n, |a| {
+                use crate::interpreter::builtin::NativeFnKind as K;
+                let op = crate::interpreter::Interpreter::unary_f64(&K::$k).expect("math_pecahan");
+                match a {
+                    [Float(f)] => Ok(Float(op(*f))),
+                    [Int(n)] => Ok(Float(op(*n as f64))),
+                    _ => crate::stdlib::sistem::lewat(a, |v|
+                        crate::interpreter::Interpreter::dispatch_math_lepas(&K::$k, v)),
+                }
+            });
+        )* } }
+        math_pecahan!(
+            "math::sqrt" => MathSqrt,       "math::floor" => MathFloor,
+            "math::ceil" => MathCeil,       "math::round" => MathRound,
             "math::trunc" => MathTrunc,     "math::sin" => MathSin,
             "math::cos" => MathCos,         "math::tan" => MathTan,
             "math::asin" => MathAsin,       "math::acos" => MathAcos,
-            "math::atan" => MathAtan,       "math::atan2" => MathAtan2,
-            "math::ln" => MathLn,           "math::log" => MathLog,
+            "math::atan" => MathAtan,       "math::ln" => MathLn,
             "math::log2" => MathLog2,       "math::log10" => MathLog10,
-            "math::exp" => MathExp,         "math::pow" => MathPow,
+            "math::exp" => MathExp,
+        );
+        math_acuan!(
+            "math::abs" => MathAbs,
+            "math::atan2" => MathAtan2,     "math::log" => MathLog,
+            "math::pow" => MathPow,
             "math::min" => MathMin,         "math::max" => MathMax,
             "math::clamp" => MathClamp,     "math::sign" => MathSign,
             "math::factorial" => MathFact,  "math::gcd" => MathGcd,

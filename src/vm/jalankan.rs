@@ -1,6 +1,5 @@
 // src/vm/jalankan.rs — loop dispatch opcode
 
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use super::opcode::OpCode;
@@ -15,20 +14,19 @@ impl Vm {
     /// keluar — `self.frames` masih utuh di titik ini, karena tidak ada yang …
     pub(crate) fn run_until(&mut self, exit_depth: usize) -> VmResult<()> {
         // Dua salinan loop: `--jit` merekam profil, `--vm` tanpa satu cabang pun untuk itu.
-        let hasil = if self.profil_jit { self.run_until_inner::<true>(exit_depth) } else { self.run_until_inner::<false>(exit_depth) };
-        match hasil {
-            Ok(v) => Ok(v),
-            Err(mut e) => {
-                // `run_until` dipanggil ulang secara bersarang (lihat
-                // `call_value_immediate`), jadi yang terdalam mengisi duluan dan yang di …
-                if e.jejak.is_empty() {
-                    let (jejak, sisa) = self.jejak_sekarang();
-                    e.jejak = jejak;
-                    e.jejak_sisa = sisa;
-                }
-                Err(self.lepas_bingkai(exit_depth, e))
-            }
+        let hasil = if self.profil_jit { self.run_until_inner::<true, false>(exit_depth) } else { self.run_until_inner::<false, false>(exit_depth) };
+        hasil.map_err(|e| self.galat_keluar(exit_depth, e))
+    }
+
+    /// Galat yang keluar sampai `exit_depth`: jejaknya diisi (yang terdalam duluan, `run_until`
+    /// bersarang lewat `call_value_immediate`), lalu bingkai di atasnya dilepas beserta `defer`-nya.
+    pub(crate) fn galat_keluar(&mut self, exit_depth: usize, mut e: VmError) -> VmError {
+        if e.jejak.is_empty() {
+            let (jejak, sisa) = self.jejak_sekarang();
+            e.jejak = jejak;
+            e.jejak_sisa = sisa;
         }
+        self.lepas_bingkai(exit_depth, e)
     }
 
     /// Galat keluar: tiap bingkai di atas `exit_depth` dilepas dari yang terdalam dan `defer`-nya
@@ -79,8 +77,12 @@ impl Vm {
         (out, sisa)
     }
 
-    pub(crate) fn run_until_inner<const PROFIL: bool>(&mut self, exit_depth: usize) -> VmResult<()> {
+    /// `SATU`: jalankan tepat satu instruksi (jalur lambat JIT, `jit::lambat::langkah`) — salinan
+    /// sendiri, supaya loop biasa tidak membayar pemeriksaannya.
+    pub(crate) fn run_until_inner<const PROFIL: bool, const SATU: bool>(&mut self, exit_depth: usize) -> VmResult<()> {
+        let mut sudah = false;
         loop {
+            if SATU { if sudah { return Ok(()); } sudah = true; }
             if self.frames.len() <= exit_depth { return Ok(()); }
             let (op, arg, sp) = {
                 let fr = self.frames.last_mut()
@@ -98,39 +100,8 @@ impl Vm {
                 (op, arg, sp)
             };
 
-            // Operator yang didefinisikan pengguna didahulukan atas aturan
-
-            // bawaan di SETIAP situs di bawah. Ditulis sebagai makro dan
-
-            // bukan disalin 15 kali: aturan yang punya lima belas salinan
-
-            // akan melenceng, dan yang paling mungkin terlewat justru
-
-            // operator yang jarang dipakai — persis yang paling sulit
-
-            // ketahuan.
-
-            macro_rules! biner_pengguna {
-
-            ($op:expr, $a:expr, $b:expr) => {
-
-            match self.operator_biner_pengguna(&$op, &$a, &$b) {
-
-            Err(e) => return Err(if e.span.is_none() { VmError::at(e.msg, sp) } else { e }),
-
-            Ok(Some(h)) => { self.push(h); continue; }
-
-            Ok(None) => {}
-
-            }
-
-            };
-
-            }
-
-            // Dua bilangan bulat tidak pernah punya operator milik pemakai dan bukan jalur
-            // tampilan, jadi dijawab DI TEMPAT tanpa mengangkat keduanya dari stack. Luapan dan
-            // pembagi nol jatuh ke jalur biasa (kalimatnya di sana).
+            // Dua bulat tidak punya operator milik pemakai: dijawab di tempat. Sisanya (operator pemakai,
+            // luapan, pembagi nol) lewat `op_biner` (src/vm/op.rs), satu tempat juga untuk jalur lambat JIT.
             macro_rules! int_cepat {
             () => {
             if let [.., VmValue::Int(x), VmValue::Int(y)] = self.stack.as_slice() {
@@ -140,7 +111,8 @@ impl Vm {
             // Banding yang langsung diikuti `JumpFalse`: lompat tanpa menaruh `bool`-nya.
             if let VmValue::Bool(benar) = h {
             let fr = self.frames.last_mut().unwrap();
-            if let Some(lompat) = fr.func.chunk.code.get(fr.ip).filter(|i| matches!(i.op, OpCode::JumpFalse)) {
+            // Langkah tunggal JIT tidak menggabungkan: `JumpFalse`-nya dijalankan kode native.
+            if let Some(lompat) = fr.func.chunk.code.get(fr.ip).filter(|i| !SATU && matches!(i.op, OpCode::JumpFalse)) {
             fr.ip = if benar { fr.ip + 1 } else { lompat.arg as usize };
             self.stack.pop();
             continue;
@@ -209,10 +181,7 @@ impl Vm {
 
                 // ── Locals ────────────────────────────────────────────────
                 // Lihat catatan pada `OpCode::CopyVal` di opcode.rs.
-                OpCode::CopyVal => {
-                    let v = self.pop(sp)?;
-                    self.push(if v.bisa_beralias() { v.deep_copy() } else { v });
-                }
+                OpCode::CopyVal => self.op_copy_val(sp)?,
 
                 OpCode::LoadLocal | OpCode::LokalHitung => {
                     let slot = self.frame_slot() + arg as usize;
@@ -240,16 +209,8 @@ impl Vm {
                             }
                         }
                     }
-                    let v = self.stack.get(slot)
-                        .ok_or_else(|| VmError::at(format!("local slot {} OOB", arg), sp))?
-                        .clone();
-                    // Slot yang ditangkap closure menyimpan SEL, bukan nilai.
-                    // Dari sisi bahasa itu tidak boleh kelihatan: membaca
-                    // variabel tetap memberi nilainya.
-                    let v = match v {
-                        VmValue::Cell(c) => c.lock().unwrap_or_else(|p| p.into_inner()).clone(),
-                        lain => lain,
-                    };
+                    let v = self.baca_lokal(slot)
+                        .ok_or_else(|| VmError::at(format!("local slot {} OOB", arg), sp))?;
                     self.push(v);
                 }
                 // ── Jalur penulisan (copy-on-write) ───────────────────────
@@ -351,19 +312,7 @@ impl Vm {
                 }
                 OpCode::AmbilLokal => {
                     let slot = self.frame_slot() + arg as usize;
-                    let v = match self.stack.get_mut(slot) {
-                        // Binding tertangkap closure: selnya tidak boleh
-                        // dikosongkan, jadi cuma dibaca. Hasilnya tetap
-                        // benar, cuma tidak ikut jalur cepatnya.
-                        Some(VmValue::Cell(c)) => {
-                            let c = Arc::clone(c);
-                            let g = c.lock().unwrap_or_else(|p| p.into_inner());
-                            g.clone()
-                        }
-                        Some(tempat) => std::mem::replace(tempat, VmValue::Nil),
-                        None => return Err(VmError::at(
-                            format!("local slot {} OOB", arg), sp)),
-                    };
+                    let v = self.ambil_lokal(slot).ok_or_else(|| VmError::at(format!("local slot {} OOB", arg), sp))?;
                     self.push(v);
                 }
                 OpCode::PinjamUpval => {
@@ -410,6 +359,8 @@ impl Vm {
                     if let (Some(v), VmValue::Int(i)) = (self.stack.get_mut(slot).and_then(larik_milik_tunggal), &idx) {
                         let i = norm_idx(*i, v.len(), "array", "elemen", sp)?;
                         let val = v[i].clone();
+                        // Umpan jenis elemen untuk JIT (`IndeksLokal` atas larik pecahan).
+                        if PROFIL { self.catat_hasil(&val); }
                         self.push(val);
                         continue;
                     }
@@ -421,6 +372,7 @@ impl Vm {
                         Some(wadah) => self.get_index(wadah, &idx, sp)?,
                         None => return Err(VmError::at(format!("local slot {} OOB", arg), sp)),
                     };
+                    if PROFIL { self.catat_hasil(&val); }
                     self.push(val);
                 }
                 OpCode::TulisIndexLokal => {
@@ -506,14 +458,7 @@ impl Vm {
                 OpCode::SimpanBuang => {
                     let slot = self.frame_slot() + arg as usize;
                     let v = self.pop(sp)?;
-                    match self.stack.get_mut(slot) {
-                        Some(VmValue::Cell(c)) => {
-                            let c = Arc::clone(c);
-                            *c.lock().unwrap_or_else(|p| p.into_inner()) = v;
-                        }
-                        Some(tempat) => *tempat = v,
-                        None => {}
-                    }
+                    self.simpan_lokal(slot, v);
                 }
                 OpCode::LokalPolos => {
                     let slot = self.frame_slot() + arg as usize;
@@ -523,16 +468,7 @@ impl Vm {
                 OpCode::StoreLocal => {
                     let slot = self.frame_slot() + arg as usize;
                     let v = self.peek(0, sp)?.clone();
-                    if slot < self.stack.len() {
-                        // Kalau binding-nya sudah dipromosikan jadi sel, tulisannya harus MENEMBUS
-                        // sel itu, bukan menimpa slotnya.
-                        if let VmValue::Cell(c) = &self.stack[slot] {
-                            let c = Arc::clone(c);
-                            *c.lock().unwrap_or_else(|p| p.into_inner()) = v;
-                        } else {
-                            self.stack[slot] = v;
-                        }
-                    }
+                    self.simpan_lokal(slot, v);
                 }
 
                 // ── Closure / upvalue ─────────────────────────────────────
@@ -612,6 +548,7 @@ impl Vm {
                 OpCode::LoadUpval => {
                     let cell = self.upval_at(arg, sp)?;
                     let v = cell.lock().unwrap_or_else(|p| p.into_inner()).clone();
+                    if PROFIL { self.catat_hasil(&v); }
                     self.push(v);
                 }
                 OpCode::StoreUpval => {
@@ -638,7 +575,7 @@ impl Vm {
                         }
                     };
                     match found {
-                        Some(v) => self.push(v),
+                        Some(v) => { if PROFIL { self.catat_hasil(&v); } self.push(v) }
                         None => {
                             let name = self.name_at(arg)?;
                             return Err(VmError::at(self.jelaskan_global_hilang_kini(&name), sp));
@@ -672,39 +609,39 @@ impl Vm {
                 // ── Arithmetic ──────────────────────────────────────────── `tambah_milik`,
                 // bukan `add`: sisi kiri sudah kita miliki (baru saja di-pop), jadi kalau …
 
-                OpCode::Add  => {
-                    int_cepat!();
-                    let (a, b) = self.pop2(sp)?;
-                    biner_pengguna!(crate::parser::BinaryOp::Add, a, b);
-                    // `"x" + nilai` adalah jalur TAMPILAN, jadi ia lewat hook seperti `wok`.
-                    let (a, b) = self.siapkan_gabung_string(a, b)
-                        .map_err(|e| if e.span.is_none() { VmError::at(e.msg, sp) } else { e })?;
-                    self.push(a.tambah_milik(&b).map_err(|e| VmError::at(e, sp))?);
-                }
-                OpCode::Sub  => { int_cepat!(); let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Sub, a, b); self.push(a.sub(&b).map_err(|e| VmError::at(e, sp))?); }
-                OpCode::Mul  => { int_cepat!(); let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Mul, a, b); self.push(a.mul(&b).map_err(|e| VmError::at(e, sp))?); }
-                OpCode::Div  => { let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Div, a, b); self.push(a.div(&b).map_err(|e| VmError::at(e, sp))?); }
-                OpCode::Mod  => { int_cepat!(); let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Rem, a, b); self.push(a.modulo(&b).map_err(|e| VmError::at(e, sp))?); }
-                OpCode::Pow  => { let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Pow, a, b); self.push(a.pow(&b).map_err(|e| VmError::at(e, sp))?); }
+                // Badan bukan-bulat satu definisi dengan jalur lambat JIT (`op_biner`).
+                OpCode::Add  => { int_cepat!(); let (a, b) = self.pop2(sp)?; let h = self.op_biner(op, a, b, sp)?; self.push(h); }
+                OpCode::Sub | OpCode::Mul | OpCode::Mod => { int_cepat!(); let (a, b) = self.pop2(sp)?; let h = self.op_biner(op, a, b, sp)?; self.push(h); }
+                OpCode::Div | OpCode::Pow => { let (a, b) = self.pop2(sp)?; let h = self.op_biner(op, a, b, sp)?; self.push(h); }
                 OpCode::Neg  => { let a = self.pop(sp)?; unary_pengguna!(crate::parser::UnaryOp::Neg, a); self.push(a.neg().map_err(|e| VmError::at(e, sp))?); }
-                OpCode::BitAnd => { let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::BitAnd, a, b); self.push(a.bit_and(&b).map_err(|e| VmError::at(e, sp))?); }
-                OpCode::BitOr  => { let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::BitOr, a, b); self.push(a.bit_or(&b).map_err(|e| VmError::at(e, sp))?); }
-                OpCode::BitXor => { let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::BitXor, a, b); self.push(a.bit_xor(&b).map_err(|e| VmError::at(e, sp))?); }
-                OpCode::Shl    => { let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Shl, a, b); self.push(a.shl(&b).map_err(|e| VmError::at(e, sp))?); }
-                OpCode::Shr    => { let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Shr, a, b); self.push(a.shr(&b).map_err(|e| VmError::at(e, sp))?); }
-                OpCode::AndNot => { let (a,b) = self.pop2(sp)?; self.push(a.and_not(&b).map_err(|e| VmError::at(e, sp))?); }
+                OpCode::BitAnd | OpCode::BitOr | OpCode::BitXor | OpCode::Shl | OpCode::Shr | OpCode::AndNot => {
+                    // Dua bulat (tanpa operator milik pemakai, tanpa galat): di tempat, seperti `int_cepat`.
+                    if let [.., VmValue::Int(x), VmValue::Int(y)] = self.stack.as_mut_slice() {
+                        let h = match op {
+                            OpCode::BitAnd => Some(*x & *y),
+                            OpCode::BitOr => Some(*x | *y),
+                            OpCode::BitXor => Some(*x ^ *y),
+                            OpCode::AndNot => Some(*x & !*y),
+                            _ => None,
+                        };
+                        if let Some(h) = h { *x = h; self.stack.pop(); continue; }
+                    }
+                    let (a, b) = self.pop2(sp)?;
+                    let h = self.op_biner(op, a, b, sp)?;
+                    self.push(h);
+                }
                 // `~` ikut operator milik pemakai (`bit_not`) seperti `-` dan `!` — dulu tidak, jadi
                 // `~p` jalan di interpreter dan ditolak di sini.
                 OpCode::BitNot => { let a = self.pop(sp)?; unary_pengguna!(crate::parser::UnaryOp::BitNot, a); self.push(a.bit_not().map_err(|e| VmError::at(e, sp))?); }
                 OpCode::KeBool => { let a = self.pop(sp)?; self.push(VmValue::Bool(a.is_truthy())); }
 
                 // ── Comparison ────────────────────────────────────────────
-                OpCode::Eq   => { int_cepat!(); let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Eq, a, b); self.push(VmValue::Bool(a.vm_eq(&b).map_err(|e| VmError::at(e, sp))?)); }
-                OpCode::Ne   => { int_cepat!(); let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Ne, a, b); self.push(VmValue::Bool(!a.vm_eq(&b).map_err(|e| VmError::at(e, sp))?)); }
-                OpCode::Lt   => { int_cepat!(); let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Lt, a, b); self.push(VmValue::Bool(a.lt(&b).map_err(|e| VmError::at(e, sp))?)); }
-                OpCode::Le   => { int_cepat!(); let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Le, a, b); self.push(VmValue::Bool(a.le(&b).map_err(|e| VmError::at(e, sp))?)); }
-                OpCode::Gt   => { int_cepat!(); let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Gt, a, b); self.push(VmValue::Bool(a.gt(&b).map_err(|e| VmError::at(e, sp))?)); }
-                OpCode::Ge   => { int_cepat!(); let (a,b) = self.pop2(sp)?; biner_pengguna!(crate::parser::BinaryOp::Ge, a, b); self.push(VmValue::Bool(a.ge(&b).map_err(|e| VmError::at(e, sp))?)); }
+                OpCode::Eq | OpCode::Ne | OpCode::Lt | OpCode::Le | OpCode::Gt | OpCode::Ge => {
+                    int_cepat!();
+                    let (a, b) = self.pop2(sp)?;
+                    let h = self.op_biner(op, a, b, sp)?;
+                    self.push(h);
+                }
                 // `!` cuma untuk bool — sama seperti interpreter.
                 OpCode::Not  => {
                     let a = self.pop(sp)?;
@@ -729,29 +666,16 @@ impl Vm {
                 }
 
                 // ── Collections ───────────────────────────────────────────
-                OpCode::BuildArray => {
-                    let n = arg as usize;
-                    let start = self.stack.len().saturating_sub(n);
-                    let items: Vec<VmValue> = self.stack.drain(start..).collect();
-                    self.push(VmValue::array(items));
-                }
-                OpCode::BuildTuple => {
-                    let n = arg as usize;
-                    let start = self.stack.len().saturating_sub(n);
-                    let items: Vec<VmValue> = self.stack.drain(start..).collect();
-                    self.push(VmValue::tuple(items));
-                }
+                OpCode::BuildArray => self.op_build_larik(arg, false),
+                OpCode::BuildTuple => self.op_build_larik(arg, true),
                 OpCode::BuildMap => {
                     let n = arg as usize;
                     let start = self.stack.len().saturating_sub(n * 2);
                     let kv: Vec<VmValue> = self.stack.drain(start..).collect();
-                    let mut map = HashMap::new();
-                    for chunk in kv.chunks(2) {
-                        if let [k, v] = chunk {
-                            map.insert(format!("{}", k), v.clone());
-                        }
-                    }
-                    self.push(VmValue::map(map));
+                    self.push(VmValue::map(kv.chunks(2).filter_map(|c| match c {
+                        [k, v] => Some((format!("{}", k), v.clone())),
+                        _ => None,
+                    })));
                 }
                 OpCode::MergeMap => {
                     let overrides = self.pop(sp)?;
@@ -773,24 +697,9 @@ impl Vm {
                     };
                     merged.extend(o.lock().unwrap().clone());
                     // Label dari literalnya sendiri: `P { a: 9, ...q }` adalah sebuah `P`.
-                    self.push(VmValue::Map(Arc::new(Peta::baru(o.label.clone(), merged))));
+                    self.push(VmValue::Map(Arc::new(Peta::dari_isi(o.label.clone(), merged))));
                 }
-                OpCode::BuildStruct => {
-                    let n = arg as usize;
-                    let start = self.stack.len().saturating_sub(n * 2);
-                    let kv: Vec<VmValue> = self.stack.drain(start..).collect();
-                    let label = match self.pop(sp)? {
-                        VmValue::Map(p) => p.label.clone(),
-                        lain => return Err(VmError::at(format!(
-                            "BuildStruct: prototipe harus struct, dapat `{}`", lain.type_name_penuh()), sp)),
-                    };
-                    let mut isi = HashMap::with_capacity(n);
-                    let mut it = kv.into_iter();
-                    while let (Some(k), Some(v)) = (it.next(), it.next()) {
-                        isi.insert(k.to_string(), v);
-                    }
-                    self.push(VmValue::Map(Arc::new(Peta::baru(label, isi))));
-                }
+                OpCode::BuildStruct => self.op_build_struct(arg, sp)?,
                 OpCode::BuildEnum => {
                     let payload = self.pop(sp)?;
                     let (tipe, varian) = match self.const_at(arg)? {
@@ -800,10 +709,7 @@ impl Vm {
                         },
                         _ => return Err(VmError::at("BuildEnum: prototipe bukan enum", sp)),
                     };
-                    self.push(VmValue::Map(Arc::new(Peta::baru(
-                        Label::Enum { tipe, varian, payload: Some(payload) },
-                        HashMap::new(),
-                    ))));
+                    self.push(VmValue::varian_berisi(tipe, varian, payload));
                 }
 
                 // ── Field / Index ───────────────────────────────────────── Sama seperti
@@ -817,6 +723,7 @@ impl Vm {
                             .ok_or_else(|| VmError::new(format!("name idx {} OOB", arg)))?;
                         self.get_field(&obj, name, sp)?
                     };
+                    if PROFIL { self.catat_hasil(&val); }
                     // Method `math::` atas bilangan yang ditulis tanpa `()` dibaca acuan (dan LLVM)
                     // sebagai nilainya: `f.floor` = `f.floor()`.
                     if matches!(obj, VmValue::Float(_) | VmValue::Int(_)) && matches!(val, VmValue::NativeFn(_)) {
@@ -828,72 +735,13 @@ impl Vm {
                     self.push(val);
                 }
                 OpCode::GetMethod => {
-                    let obj = self.pop(sp)?;
-                    let argc = (arg >> 24) as usize;
-                    let val = {
-                        let fr = self.frames.last()
-                            .ok_or_else(|| VmError::new("no active frame"))?;
-                        let name = fr.func.chunk.names.get((arg & 0x00FF_FFFF) as usize)
-                            .ok_or_else(|| VmError::new(format!("name idx {} OOB", arg)))?;
-                        // Jumlah argumen yang DITULIS diperiksa di sini karena sesudah `Call` ia
-                        // sudah bercampur dengan penerima — dan tanpa ini `(2.5).sqrt(1)` dijawab …
-                        let nanti = argc == crate::vm::opcode::ARGC_NANTI as usize;
-                        let v = match self.get_method(&obj, name, sp) {
-                            Ok(v) => {
-                                if nanti {
-                                    let slot = self.stack.len().saturating_sub(1);
-                                    self.galat_metode.retain(|(i, _)| *i < slot);
-                                }
-                                v
-                            }
-                            // Acuan mengevaluasi argumennya dulu: galatnya menunggu `PeriksaArgMetode`
-                            // di slot fungsi (sesudah `Swap`, satu di bawah slot ini).
-                            Err(e) if nanti => {
-                                let slot = self.stack.len().saturating_sub(1);
-                                self.galat_metode.retain(|(i, _)| *i < slot);
-                                self.galat_metode.push((slot, e));
-                                VmValue::Nil
-                            }
-                            Err(e) => return Err(e),
-                        };
-                        if argc != crate::vm::opcode::ARGC_NANTI as usize && matches!(v, VmValue::NativeFn(_)) {
-                            if let Some(p) = Self::pesan_jumlah_arg(&obj, name, argc) {
-                                return Err(VmError::at(p, sp));
-                            }
-                        }
-                        v
-                    };
-                    self.push(val);
+                    // Umpan method sekali per situs (bahan tembolok method JIT): label penerima dan method-nya.
+                    let label = if PROFIL { self.label_metode_baru() } else { None };
+                    self.op_get_method(arg, sp)?;
+                    if let Some(label) = label { self.catat_metode(label); }
                 }
                 // Stack: [fungsi, penerima, arg0..argN-1]; tidak ada yang diambil.
-                OpCode::PeriksaArgMetode => {
-                    use crate::vm::opcode::TANDA_TUNDA;
-                    let argc = (arg >> 24) as usize;
-                    let n = self.stack.len();
-                    if n < argc + 2 { return Err(VmError::at("stack underflow PeriksaArgMetode", sp)); }
-                    let slot = n - argc - 2;
-                    self.galat_metode.retain(|(i, _)| *i <= slot);
-                    if self.galat_metode.last().is_some_and(|(i, _)| *i == slot) {
-                        let (_, e) = self.galat_metode.pop().unwrap();
-                        if arg & TANDA_TUNDA == 0 { return Err(e); }
-                        self.galat_tunda_metode = Some(e);
-                        continue;
-                    }
-                    let pesan = match &self.stack[n - argc - 2] {
-                        VmValue::NativeFn(_) => {
-                            let fr = self.frames.last()
-                                .ok_or_else(|| VmError::new("no active frame"))?;
-                            let name = fr.func.chunk.names.get((arg & (TANDA_TUNDA - 1)) as usize)
-                                .ok_or_else(|| VmError::new(format!("name idx {} OOB", arg)))?;
-                            Self::pesan_jumlah_arg(&self.stack[n - argc - 1], name, argc)
-                        }
-                        _ => None,
-                    };
-                    if let Some(p) = pesan {
-                        if arg & TANDA_TUNDA == 0 { return Err(VmError::at(p, sp)); }
-                        self.galat_tunda_metode = Some(VmError::at(p, sp));
-                    }
-                }
+                OpCode::PeriksaArgMetode => self.op_periksa_arg_metode(arg, sp)?,
                 OpCode::SetField => {
                     let name = self.name_at(arg)?;
                     let val  = self.pop(sp)?;
@@ -928,38 +776,7 @@ impl Vm {
                 OpCode::CekEnum => {
                     let v = self.pop(sp)?;
                     let desc = self.const_at(arg)?;
-                    let cocok = match (&desc, v.bagian_enum()) {
-                        (VmValue::Tuple(d), Some((tipe, varian, payload))) => {
-                            let d = crate::vm::value::isi_tuple(d);
-                            let tipe_cocok = match &d[0] { VmValue::Str(t) => t.as_str() == tipe, _ => true };
-                            let varian_cocok = matches!(&d[1], VmValue::Str(s) if s.as_str() == varian);
-                            let payload_cocok = !matches!(d[2], VmValue::Bool(true)) || payload.is_some();
-                            // Nama varian cocok tapi jumlah sub-polanya tidak:
-                            // salah ketik, bukan "tidak cocok". Di sini, supaya
-                            // waktu gagalnya sama dengan interpreter.
-                            if tipe_cocok && varian_cocok {
-                                if let Some(VmValue::Int(dapat)) = d.get(3) {
-                                    let butuh = match payload {
-                                        None => 0usize,
-                                        Some(VmValue::Tuple(t)) => crate::vm::value::isi_tuple(t).len(),
-                                        Some(_) => 1,
-                                    };
-                                    let dapat = *dapat as usize;
-                                    if dapat != butuh && !(dapat == 1 && butuh > 1) {
-                                        let nama = match (&d[0], &d[1]) {
-                                            (VmValue::Str(t), VmValue::Str(x)) => format!("{}::{}", t, x),
-                                            (_, VmValue::Str(x)) => x.to_string(),
-                                            _ => varian.to_string(),
-                                        };
-                                        return Err(VmError::at(
-                                            crate::interpreter::pesan_subpola_varian(&nama, butuh, dapat), sp));
-                                    }
-                                }
-                            }
-                            tipe_cocok && varian_cocok && payload_cocok
-                        }
-                        _ => false,
-                    };
+                    let cocok = cocok_enum(&v, &desc).map_err(|p| VmError::at(p, sp))?;
                     self.push(VmValue::Bool(cocok));
                 }
                 OpCode::CekStruct => {
@@ -983,7 +800,7 @@ impl Vm {
                         if let Some(minta) = minta {
                             let punya: Vec<String> = match &v {
                                 VmValue::Map(m) => {
-                                    let mut k: Vec<String> = m.lock().map(|g| g.keys().cloned().collect())
+                                    let mut k: Vec<String> = m.lock().map(|g| g.keys().map(|k| k.to_string()).collect())
                                         .unwrap_or_default();
                                     k.sort();
                                     k
@@ -1013,18 +830,16 @@ impl Vm {
                         _ => return Err(VmError::at(format!(
                             "pola enum: `{}` tidak membawa payload", v.type_name_penuh()), sp)),
                     };
+                    if PROFIL { self.catat_hasil(&payload); }
                     self.push(payload);
                 }
                 OpCode::GetIndex => {
                     let (obj, idx) = self.pop2(sp)?;
                     let val = self.get_index(&obj, &idx, sp)?;
+                    if PROFIL { self.catat_hasil(&val); }
                     self.push(val);
                 }
-                OpCode::SetIndex => {
-                    let val = self.pop(sp)?;
-                    let (obj, idx) = self.pop2(sp)?;
-                    self.set_index(&obj, &idx, val, sp)?;
-                }
+                OpCode::SetIndex => self.op_set_index(sp)?,
                 OpCode::Slice => {
                     let hi = self.pop(sp)?;
                     let lo = self.pop(sp)?;
@@ -1041,7 +856,7 @@ impl Vm {
                     let fr = self.frames.last_mut().unwrap();
                     let mundur = (arg as usize) < fr.ip;
                     fr.ip = arg as usize;
-                    if PROFIL && mundur { self.putaran_jit(); }
+                    if PROFIL && mundur { self.putaran_jit()?; }
                 }
                 OpCode::JumpFalse => {
                     let v = self.pop(sp)?;
@@ -1087,7 +902,7 @@ impl Vm {
                             let g = m.lock().unwrap_or_else(|p| p.into_inner());
                             // Kunci diurutkan supaya urutannya deterministik,
                             // sama seperti `dict::keys`.
-                            let mut kunci: Vec<String> = g.keys().cloned().collect();
+                            let mut kunci: Vec<String> = g.keys().map(|k| k.to_string()).collect();
                             kunci.sort();
                             (kunci.into_iter()
                                 .map(|k| { let v = g[&k].clone(); VmValue::tuple(vec![VmValue::str(k), v]) })
@@ -1201,7 +1016,7 @@ impl Vm {
                     let ada = self.iter_ada(slot, sp)?;
                     // Selalu diikuti `JumpFalse` di kepala `for`: lompat tanpa menaruh `bool`-nya.
                     let fr = self.frames.last_mut().unwrap();
-                    if let Some(lompat) = fr.func.chunk.code.get(fr.ip).filter(|i| matches!(i.op, OpCode::JumpFalse)) {
+                    if let Some(lompat) = fr.func.chunk.code.get(fr.ip).filter(|i| !SATU && matches!(i.op, OpCode::JumpFalse)) {
                         fr.ip = if ada { fr.ip + 1 } else { lompat.arg as usize };
                         continue;
                     }
@@ -1226,7 +1041,7 @@ impl Vm {
                             }
                         }
                     }
-                    if PROFIL { self.putaran_jit(); }
+                    if PROFIL { self.putaran_jit()?; }
                 }
                 OpCode::IterVar => {
                     let iter_slot = self.frame_slot() + (arg / 2) as usize;
@@ -1283,7 +1098,10 @@ impl Vm {
                 // ── Call / Return ─────────────────────────────────────────
                 OpCode::Call => {
                     let argc = arg as usize;
+                    let d = self.frames.len();
                     self.call_value_at(argc, sp, true)?;
+                    // Panggilan yang selesai di tempat (bawaan): jenis hasilnya umpan spekulasi JIT.
+                    if PROFIL && self.frames.len() == d { if let Some(v) = self.stack.last() { self.catat_hasil(v); } }
                 }
                 // arr::map/filter/reduce/any/all/find — lihat komentar panjang di opcode.rs
                 // & compiler.rs (is_hof_name) buat alasan kenapa ini opcode terpisah, bukan …
@@ -1311,6 +1129,8 @@ impl Vm {
                     let frame  = self.ambil_bingkai().ok_or_else(|| VmError::new("stack underflow Return"))?;
                     if self.profiling { crate::profiler::exit(); }
                     self.stack.truncate(frame.slot);
+                    // Jenis hasil per situs `Call` pemanggil, bahan spekulasi JIT.
+                    if PROFIL { self.catat_hasil(&result); }
                     if self.frames.len() <= exit_depth { self.push(result); return Ok(()); }
                     self.push(result);
                 }
@@ -1551,15 +1371,8 @@ impl Vm {
                 }
 
                 // ── Misc ──────────────────────────────────────────────────
-                OpCode::Typeof => {
-                    let v = self.pop(sp)?;
-                    self.push(VmValue::str(v.type_name()));
-                }
-                OpCode::Len => {
-                    let v = self.pop(sp)?;
-                    let n = self.vm_len(&v, sp)?;
-                    self.push(VmValue::Int(n as i128));
-                }
+                OpCode::Typeof => self.op_typeof(sp)?,
+                OpCode::Len => self.op_len(sp)?,
                 OpCode::Print => {
                     let v = self.pop(sp)?;
                     crate::host::tulis_baris(&v.to_string());
@@ -1625,9 +1438,9 @@ fn tambah_tempat(cur: &mut VmValue, rhs: &VmValue) -> bool {
 }
 
 /// Isi larik yang cuma dimiliki slot ini, tanpa kunci (`Arc::get_mut` + `Mutex::get_mut`).
-fn larik_milik_tunggal(v: &mut VmValue) -> Option<&mut Vec<VmValue>> {
+pub(crate) fn larik_milik_tunggal(v: &mut VmValue) -> Option<&mut Vec<VmValue>> {
     let VmValue::Array(a) = v else { return None };
-    Arc::get_mut(a).map(|m| m.get_mut().unwrap_or_else(|p| p.into_inner()))
+    crate::vm::value::tunggal(a).map(|m| m.get_mut().unwrap_or_else(|p| p.into_inner()))
 }
 
 /// Dua bulat di jalur cepat; `None` = luapan, pembagi 0/-1, atau bukan operator ini (jalur biasa
@@ -1660,7 +1473,7 @@ impl Vm {
     /// Apakah iterator di `slot` (`[items, penanda, idx]`) masih punya elemen; satu definisi
     /// untuk `IterAda` dan fusi `IterMaju`.
     #[inline]
-    fn iter_ada(&self, slot: usize, sp: Option<crate::lexer::Span>) -> VmResult<bool> {
+    pub(crate) fn iter_ada(&self, slot: usize, sp: Option<crate::lexer::Span>) -> VmResult<bool> {
         let idx = match self.stack.get(slot + 2) {
             Some(VmValue::Int(n)) => *n,
             _ => return Err(VmError::at("state iterator rusak", sp)),
@@ -1674,12 +1487,68 @@ impl Vm {
 }
 
 impl Vm {
+    /// Isi slot lokal (`LoadLocal`): slot yang ditangkap closure menyimpan SEL, dan membaca variabelnya
+    /// tetap memberi nilainya.
+    #[inline]
+    pub(crate) fn baca_lokal(&self, slot: usize) -> Option<VmValue> {
+        Some(match self.stack.get(slot)? {
+            VmValue::Cell(c) => c.lock().unwrap_or_else(|p| p.into_inner()).clone(),
+            lain => lain.clone(),
+        })
+    }
+
+    /// `AmbilLokal`: nilai slot keluar dan slotnya jadi lubang. Binding tertangkap closure: selnya tidak
+    /// boleh dikosongkan, jadi cuma dibaca (hasilnya tetap benar, cuma tidak ikut jalur cepatnya).
+    #[inline]
+    pub(crate) fn ambil_lokal(&mut self, slot: usize) -> Option<VmValue> {
+        Some(match self.stack.get_mut(slot)? {
+            VmValue::Cell(c) => c.lock().unwrap_or_else(|p| p.into_inner()).clone(),
+            tempat => std::mem::replace(tempat, VmValue::Nil),
+        })
+    }
+
+    /// `StoreLocal`/`SimpanBuang`: binding yang sudah jadi sel ditulis MENEMBUS selnya.
+    #[inline]
+    pub(crate) fn simpan_lokal(&mut self, slot: usize, v: VmValue) {
+        match self.stack.get_mut(slot) {
+            Some(VmValue::Cell(c)) => *c.lock().unwrap_or_else(|p| p.into_inner()) = v,
+            Some(tempat) => *tempat = v,
+            None => {}
+        }
+    }
+
     /// Satu putaran loop di bingkai teratas; sesekali dicoba OSR ke kode native (`--jit`).
-    fn putaran_jit(&mut self) {
-        let Some(p) = self.frames.last().and_then(|f| f.func.chunk.profil.as_ref()) else { return };
+    fn putaran_jit(&mut self) -> VmResult<()> {
+        let Some(p) = self.frames.last().and_then(|f| f.func.chunk.profil.as_ref()) else { return Ok(()) };
         let _n = p.catat_putaran();
         #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
-        if _n % crate::jit::osr_tiap() == 0 && !self.profiling { crate::jit::panggil::coba_osr(self); }
+        if _n % crate::jit::osr_tiap() == 0 && !self.profiling { return crate::jit::panggil::coba_osr(self); }
+        Ok(())
+    }
+
+    /// Label tipe penerima `GetMethod` yang situsnya belum pernah direkam (umpan `LAIN` menandainya).
+    #[inline]
+    fn label_metode_baru(&self) -> Option<String> {
+        let fr = self.frames.last()?;
+        let p = fr.func.chunk.profil.as_ref()?;
+        let ip = fr.ip.wrapping_sub(1);
+        if p.umpan.get(ip)?.load(std::sync::atomic::Ordering::Relaxed) != 0 { return None; }
+        p.catat_tipe(ip, crate::jit::profil::bit::LAIN);
+        Some(self.stack.last()?.nama_tipe()?.to_string())
+    }
+
+    /// Method pemakai hasil `GetMethod` (puncak stack) dicatat untuk label `label`.
+    fn catat_metode(&self, label: String) {
+        let (Some(fr), Some(VmValue::Function(f))) = (self.frames.last(), self.stack.last()) else { return };
+        fr.func.chunk.kode_jit.catat_metode(fr.ip.wrapping_sub(1), label, Arc::clone(f));
+    }
+
+    /// Jenis nilai yang dihasilkan instruksi yang baru jalan (`ip - 1` bingkai teratas), untuk spekulasi JIT.
+    #[inline]
+    pub(crate) fn catat_hasil(&self, v: &VmValue) {
+        if let Some(fr) = self.frames.last() {
+            if let Some(p) = fr.func.chunk.profil.as_ref() { p.catat_tipe(fr.ip.wrapping_sub(1), crate::jit::profil::bit_tipe(v)); }
+        }
     }
 
     /// Umpan tipe T0 untuk situs operator: tipe operand yang SUDAH di stack saat opcode ini jalan.
@@ -1690,7 +1559,7 @@ impl Vm {
         use crate::jit::profil::bit_tipe;
         if !matches!(op, OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div | OpCode::Mod
             | OpCode::Lt | OpCode::Le | OpCode::Gt | OpCode::Ge | OpCode::Eq | OpCode::Ne
-            | OpCode::GetField | OpCode::LokalHitung) { return; }
+            | OpCode::LokalHitung) { return; }
         let Some(fr) = self.frames.last() else { return };
         let Some(p) = fr.func.chunk.profil.as_ref() else { return };
         let ip = fr.ip.wrapping_sub(1);
@@ -1699,7 +1568,6 @@ impl Vm {
             OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div | OpCode::Mod
             | OpCode::Lt | OpCode::Le | OpCode::Gt | OpCode::Ge | OpCode::Eq | OpCode::Ne if n >= 2 =>
                 bit_tipe(&self.stack[n - 1]) | bit_tipe(&self.stack[n - 2]),
-            OpCode::GetField if n >= 1 => bit_tipe(&self.stack[n - 1]),
             OpCode::LokalHitung => match self.stack.get(self.basis + arg as usize) {
                 Some(v) => bit_tipe(v),
                 None => return,
@@ -1708,4 +1576,42 @@ impl Vm {
         };
         p.catat_tipe(ip, b);
     }
+}
+
+/// Pola enum `desc` (`(tipe, varian, berpayload, jumlah sub-pola)`) atas `v`; `Err` = kalimat galat
+/// sub-pola yang jumlahnya salah. Satu definisi untuk VM dan jalur lambat JIT.
+pub(crate) fn cocok_enum(v: &VmValue, desc: &VmValue) -> Result<bool, String> {
+    let cocok = match (desc, v.bagian_enum()) {
+        (VmValue::Tuple(d), Some((tipe, varian, payload))) => {
+            // Dibaca di tempat: deskriptornya konstanta chunk, payload-nya cuma dihitung.
+            let d = d.lock().unwrap_or_else(|p| p.into_inner());
+            let tipe_cocok = match &d[0] { VmValue::Str(t) => t.as_str() == tipe, _ => true };
+            let varian_cocok = matches!(&d[1], VmValue::Str(s) if s.as_str() == varian);
+            let payload_cocok = !matches!(d[2], VmValue::Bool(true)) || payload.is_some();
+            // Nama varian cocok tapi jumlah sub-polanya tidak:
+            // salah ketik, bukan "tidak cocok". Di sini, supaya
+            // waktu gagalnya sama dengan interpreter.
+            if tipe_cocok && varian_cocok {
+                if let Some(VmValue::Int(dapat)) = d.get(3) {
+                    let butuh = match payload {
+                        None => 0usize,
+                        Some(VmValue::Tuple(t)) => t.lock().unwrap_or_else(|p| p.into_inner()).len(),
+                        Some(_) => 1,
+                    };
+                    let dapat = *dapat as usize;
+                    if dapat != butuh && !(dapat == 1 && butuh > 1) {
+                        let nama = match (&d[0], &d[1]) {
+                            (VmValue::Str(t), VmValue::Str(x)) => format!("{}::{}", t, x),
+                            (_, VmValue::Str(x)) => x.to_string(),
+                            _ => varian.to_string(),
+                        };
+                        return Err(crate::interpreter::pesan_subpola_varian(&nama, butuh, dapat));
+                    }
+                }
+            }
+            tipe_cocok && varian_cocok && payload_cocok
+        }
+        _ => false,
+    };
+    Ok(cocok)
 }

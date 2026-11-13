@@ -1068,15 +1068,13 @@ pub fn main() {
      "package main\npub fn main() {\n \
       let ch = make_chan(int)\n \
       spawn { ch <- 1\n \
-              var i = 0\n \
-              while i < 200000 { i = i + 1 }\n \
+              time::sleep_ms(300)\n \
               wok(\"goroutine selesai\") }\n \
       wok(<-ch) }"),
     // Tanpa channel sama sekali: goroutine yang cuma mencetak tetap tercetak.
     ("goroutine: tanpa channel pun ditunggu",
      "package main\npub fn main() {\n \
-      spawn { var i = 0\n \
-              while i < 200000 { i = i + 1 }\n \
+      spawn { time::sleep_ms(300)\n \
               wok(\"selesai tanpa channel\") }\n \
       wok(\"utama\") }"),
     ("tugas: is_done berkali lalu await",    "package main\npub fn main() { let a = Future::new(|| { time::sleep_ms(400)\n  return 7 })\n wok(future::is_done(a))\n wok(future::is_done(a))\n wok(future::await(a)) }"),
@@ -2726,5 +2724,13 @@ pub fn main() {
       var k = K { v: V { x: 1 }, s: \"k\" }\n k.v += V { x: 2 }\n k.s += V { x: 3 }\n wok(k.v.x, k.s)\n\
       var a = [V { x: 1 }]\n a[0] += V { x: 4 }\n var t = \"t\"\n t += V { x: 9 }\n wok(a[0].x, t) }"),
     ("for atas rentang tak berawal 0: indeks, lalu (indeks, nilai)",
-     "for i in 5..8 { wok(i) }\nfor i, x in 5..=7 { wok(i, x) }\nlet a = 3\nfor i, x in a..a + 2 { wok(i, x) }\n"),
+     "for i in 5..8 { wok(i) }\nfor i, x in 5..=7 { wok(i, x) }\nlet a = 3\nfor i, x in a..a + 2 { wok(i, x) }\n"),    ("struct berisi banyak kunci dari json::merge, tulis field, sebar (hasher struct berbatas)",
+     "struct P { pub x: int, pub y: int }\nvar d = dict::new()\nfor i in 0..200 { d = dict::set(d, «k${i}», i) }\n\
+      let m = json::merge(d, P { x: 1, y: 2 })\nvar t = 0\nfor i in 0..200 { t = t + m[«k${i}»] }\n\
+      wok(typeof(m), len(json::keys(m)), t, m.x, m.y)\nvar p = P { x: 3, y: 4 }\np.x = p.x + p.y\n\
+      let q = P { y: 9, ...p }\nwok(p, q, q.x * q.y)\n"),
+    ("struct 20 field lewat batas bentuk rapat, sebar, == lintas jalur, dict literal (J7 bentuk)",
+     "struct B { pub f0: int = 0, pub f1: int = 1, pub f2: int = 2, pub f3: int = 3, pub f4: int = 4, pub f5: int = 5, pub f6: int = 6, pub f7: int = 7, pub f8: int = 8, pub f9: int = 9, pub f10: int = 10, pub f11: int = 11, pub f12: int = 12, pub f13: int = 13, pub f14: int = 14, pub f15: int = 15, pub f16: int = 16, pub f17: int = 17, pub f18: int = 18, pub f19: int = 19 }\nstruct P { pub x: int, pub y: int }\npub fn main() {\n    var b = B { f3: 30, f19: 190 }\n    b.f7 = b.f3 + b.f19\n    wok(b.f0, b.f3, b.f7, b.f19, len(json::keys(b)))\n    let c = B { f1: 11, ...b }\n    wok(c.f1, c.f7, c == b, B {} == B {})\n    let p = P { x: 1, y: 2 }\n    let q = json::merge(dict { y: 2 }, P { x: 1, y: 0 })\n    wok(p, q, p == P { y: 2, x: 1 }, q.y)\n    let d = dict { a: 1, b: 2 }\n    wok(d, typeof(d), d[\"a\"] + d.b)\n    var r = P { x: 5, y: 6 }\n    r.y = r.x * r.y\n    wok(r, r.y)\n}\n"),
+    ("pola literal adalah uji == (2 cocok dengan 2.0, seperti rentang), juga di lengan atau",
+     "fn k(v) { match v { 2 => 7, _ => 13 } }\nfn f(v) { match v { 2.0 => 7, _ => 13 } }\nfn s(v) { match v { \"a\" => 1, \"x\" => 2, _ => 3 } }\nfn n(v) { match v { -5 => 1, 0 => 2, _ => 3 } }\nfn c(v) { match v { 'a' => 1, 97 => 2, _ => 3 } }\nfn b(v) { match v { true => 1, 1 => 2, _ => 3 } }\nwok(k(2.0), k(2), f(2), f(2.0), f(2.5))\nwok(s(\"a\"), s(\"x\"), s(1))\nwok(n(-5), n(-5.0), n(0.0), n(nil))\nwok(c('a'), c(97), c(97.0))\nwok(b(true), b(1), b(1.0), b(false))\nlet x = 2.0\nwok(match x { 1 | 2 | 3 => \"dua\", 4..=8 => \"rentang\", _ => \"lain\" })\n"),
 ];

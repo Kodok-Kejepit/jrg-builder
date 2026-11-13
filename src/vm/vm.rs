@@ -198,17 +198,31 @@ impl Vm {
 
     /// Used by channel.rs to call a function value from a spawned goroutine.
     pub fn call_value_immediate(&mut self, fn_val: VmValue, args: Vec<VmValue>) -> VmResult<VmValue> {
+        let (dasar, tinggi) = (self.frames.len(), self.stack.len());
         let argc = args.len();
-        let dasar = self.frames.len();
-        let tinggi = self.stack.len();
         self.push(fn_val);
         for a in args { self.push(a); }
+        self.selesaikan_panggilan(argc, dasar, tinggi)
+    }
+
+    /// `call_value_immediate` dengan argumen tetap, tanpa `Vec` per panggilan (pemanggilan balik HOF).
+    pub(crate) fn call_value_immediate_n<const N: usize>(&mut self, fn_val: &VmValue, args: [VmValue; N]) -> VmResult<VmValue> {
+        let (dasar, tinggi) = (self.frames.len(), self.stack.len());
+        self.push(fn_val.clone());
+        for a in args { self.push(a); }
+        self.selesaikan_panggilan(N, dasar, tinggi)
+    }
+
+    /// Fungsi dan `argc` argumennya sudah di stack di atas `tinggi`: jalankan sampai kembali ke `dasar`.
+    #[inline]
+    fn selesaikan_panggilan(&mut self, argc: usize, dasar: usize, tinggi: usize) -> VmResult<VmValue> {
         // Native dan `extern "C"` selesai di dalam `call_value_at` tanpa bingkai baru. Menjalankan
         // `run_until` untuk mereka melanjutkan bingkai PEMANGGIL dari tengah instruksinya.
         let hasil = self.call_value_at(argc, None, false)
             .and_then(|_| if self.frames.len() > dasar { self.run_until(dasar) } else { Ok(()) });
         if let Err(e) = hasil {
-            // Bingkainya sudah dilepas `run_until`; fungsi dan argumennya dibuang di sini.
+            // Bingkainya sudah dilepas `run_until`, kecuali galat dari kode JIT yang dimasuki `call_value_at`.
+            let e = if self.frames.len() > dasar { self.galat_keluar(dasar, e) } else { e };
             self.stack.truncate(tinggi);
             return Err(e);
         }
@@ -271,11 +285,11 @@ impl Vm {
         let mut kelompok: std::collections::HashMap<String, Vec<VmValue>> =
             std::collections::HashMap::new();
         for item in items {
-            let kunci = format!("{}", self.call_value_immediate(f.clone(), vec![item.clone()])?);
+            let kunci = format!("{}", self.call_value_immediate_n(&f, [item.clone()])?);
             kelompok.entry(kunci).or_default().push(item);
         }
         Ok(VmValue::map(
-            kelompok.into_iter().map(|(k, isi)| (k, VmValue::array(isi))).collect(),
+            kelompok.into_iter().map(|(k, isi)| (k, VmValue::array(isi))),
         ))
     }
 
@@ -287,7 +301,7 @@ impl Vm {
         sp: Option<crate::lexer::Span>,
     ) -> VmResult<Vec<VmValue>> {
         crate::interpreter::urut_sisip_biner(items, |item, pembanding| {
-            match self.call_value_immediate(f.clone(), vec![item.clone(), pembanding.clone()])? {
+            match self.call_value_immediate_n(&f, [item.clone(), pembanding.clone()])? {
                 VmValue::Int(n) => Ok(n),
                 VmValue::Float(x) => Ok(if x < 0.0 { -1 } else if x > 0.0 { 1 } else { 0 }),
                 // Bool DITOLAK: `true`/`false` tidak membedakan "lebih kecil" dari "sama".
@@ -307,7 +321,7 @@ impl Vm {
     ) -> VmResult<Vec<VmValue>> {
         let mut pasangan: Vec<(VmValue, VmValue)> = Vec::with_capacity(items.len());
         for item in items {
-            let k = self.call_value_immediate(f.clone(), vec![item.clone()])?;
+            let k = self.call_value_immediate_n(&f, [item.clone()])?;
             pasangan.push((k, item));
         }
         let urut = crate::interpreter::urut_stabil(pasangan, |(ka, _), (kb, _)| {
@@ -333,9 +347,9 @@ impl Vm {
             return Err(VmError::at(crate::interpreter::pesan_koleksi_kosong(
                 konteks, if cari_min { "nilai terkecil" } else { "nilai terbesar" }), sp));
         };
-        let mut kunci = self.call_value_immediate(f.clone(), vec![terbaik.clone()])?;
+        let mut kunci = self.call_value_immediate_n(&f, [terbaik.clone()])?;
         for v in it {
-            let k = self.call_value_immediate(f.clone(), vec![v.clone()])?;
+            let k = self.call_value_immediate_n(&f, [v.clone()])?;
             let o = crate::stdlib::koleksi::cmp_vm(&k, &kunci).ok_or_else(|| VmError::at(
                 crate::interpreter::pesan_kunci_tak_sebanding(
                     konteks, &k.type_name_penuh(), &kunci.type_name_penuh()), sp))?;
@@ -412,14 +426,14 @@ impl Vm {
                 "map" => {
                     let mut out = Vec::with_capacity(items.len());
                     for item in items {
-                        out.push(self.call_value_immediate(a0.clone(), vec![item])?);
+                        out.push(self.call_value_immediate_n(&a0, [item])?);
                     }
                     self.push(VmValue::array(out));
                 }
                 "filter" => {
                     let mut out = Vec::new();
                     for item in items {
-                        if self.call_value_immediate(a0.clone(), vec![item.clone()])?.is_truthy() {
+                        if self.call_value_immediate_n(&a0, [item.clone()])?.is_truthy() {
                             out.push(item);
                         }
                     }
@@ -428,7 +442,7 @@ impl Vm {
                 "any" => {
                     let mut found = false;
                     for item in items {
-                        if self.call_value_immediate(a0.clone(), vec![item])?.is_truthy() {
+                        if self.call_value_immediate_n(&a0, [item])?.is_truthy() {
                             found = true;
                             break;
                         }
@@ -438,7 +452,7 @@ impl Vm {
                 "all" => {
                     let mut all = true;
                     for item in items {
-                        if !self.call_value_immediate(a0.clone(), vec![item])?.is_truthy() {
+                        if !self.call_value_immediate_n(&a0, [item])?.is_truthy() {
                             all = false;
                             break;
                         }
@@ -449,7 +463,7 @@ impl Vm {
                 "find" => {
                     let mut found = opsi_none();
                     for item in items {
-                        if self.call_value_immediate(a0.clone(), vec![item.clone()])?.is_truthy() {
+                        if self.call_value_immediate_n(&a0, [item.clone()])?.is_truthy() {
                             found = opsi_some(item);
                             break;
                         }
@@ -460,7 +474,7 @@ impl Vm {
                     let mut yes = Vec::new();
                     let mut no = Vec::new();
                     for item in items {
-                        if self.call_value_immediate(a0.clone(), vec![item.clone()])?.is_truthy() {
+                        if self.call_value_immediate_n(&a0, [item.clone()])?.is_truthy() {
                             yes.push(item);
                         } else {
                             no.push(item);
@@ -473,14 +487,14 @@ impl Vm {
                 // dirangkai", dan yang dirangkai justru hasil yang dibuang.
                 "each" => {
                     for item in items {
-                        self.call_value_immediate(a0.clone(), vec![item])?;
+                        self.call_value_immediate_n(&a0, [item])?;
                     }
                     self.push(VmValue::Unit);
                 }
                 "count_if" => {
                     let mut n: i128 = 0;
                     for item in items {
-                        if self.call_value_immediate(a0.clone(), vec![item])?.is_truthy() {
+                        if self.call_value_immediate_n(&a0, [item])?.is_truthy() {
                             n += 1;
                         }
                     }
@@ -490,7 +504,7 @@ impl Vm {
                 "find_idx" => {
                     let mut ketemu = opsi_none();
                     for (i, item) in items.into_iter().enumerate() {
-                        if self.call_value_immediate(a0.clone(), vec![item])?.is_truthy() {
+                        if self.call_value_immediate_n(&a0, [item])?.is_truthy() {
                             ketemu = opsi_some(VmValue::Int(i as i128));
                             break;
                         }
@@ -500,7 +514,7 @@ impl Vm {
                 "flat_map" => {
                     let mut out = Vec::new();
                     for item in items {
-                        match self.call_value_immediate(a0.clone(), vec![item])? {
+                        match self.call_value_immediate_n(&a0, [item])? {
                             VmValue::Array(inner) => out.extend(inner.lock().unwrap().iter().cloned()),
                             lain => out.push(lain),
                         }
@@ -533,7 +547,7 @@ impl Vm {
                 "reduce" => {
                     let mut acc = a1;
                     for item in items {
-                        acc = self.call_value_immediate(a0.clone(), vec![acc, item])?;
+                        acc = self.call_value_immediate_n(&a0, [acc, item])?;
                     }
                     self.push(acc);
                 }
@@ -541,7 +555,7 @@ impl Vm {
                 "fold" => {
                     let mut acc = a0;
                     for item in items {
-                        acc = self.call_value_immediate(a1.clone(), vec![acc, item])?;
+                        acc = self.call_value_immediate_n(&a1, [acc, item])?;
                     }
                     self.push(acc);
                 }
@@ -549,7 +563,7 @@ impl Vm {
                     let right = self.expect_array(&a0, "zip_with", sp)?;
                     let mut out = Vec::with_capacity(items.len().min(right.len()));
                     for (x, y) in items.into_iter().zip(right) {
-                        out.push(self.call_value_immediate(a1.clone(), vec![x, y])?);
+                        out.push(self.call_value_immediate_n(&a1, [x, y])?);
                     }
                     self.push(VmValue::array(out));
                 }

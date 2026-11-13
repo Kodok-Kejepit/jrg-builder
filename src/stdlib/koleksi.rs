@@ -573,25 +573,42 @@ fn daftar_str(vm: &mut Vm) {
     vm.def("str::words", |a| lewat(a, |v| Interpreter::dispatch_str_inner(
         &NativeFnKind::StrWords, v)));
 
-    // Sepuluh nama yang dulu ditulis ulang di `vm/vm.rs`, sekarang memanggil
-    // implementasi interpreter yang SAMA. Lihat catatan di tempat asalnya
-    // untuk apa yang melenceng selama ada dua salinan.
-    vm.def("str::upper", |a| lewat(a, |v| Interpreter::dispatch_str_inner(
-        &NativeFnKind::StrUpper, v)));
-    vm.def("str::lower", |a| lewat(a, |v| Interpreter::dispatch_str_inner(
-        &NativeFnKind::StrLower, v)));
-    vm.def("str::trim", |a| lewat(a, |v| Interpreter::dispatch_str_inner(
-        &NativeFnKind::StrTrim, v)));
-    vm.def("str::reverse", |a| lewat(a, |v| Interpreter::dispatch_str_inner(
-        &NativeFnKind::StrReverse, v)));
-    vm.def("str::contains", |a| lewat(a, |v| Interpreter::dispatch_str_inner(
-        &NativeFnKind::StrContains, v)));
-    vm.def("str::starts_with", |a| lewat(a, |v| Interpreter::dispatch_str_inner(
-        &NativeFnKind::StrStartsWith, v)));
-    vm.def("str::ends_with", |a| lewat(a, |v| Interpreter::dispatch_str_inner(
-        &NativeFnKind::StrEndsWith, v)));
-    vm.def("str::replace", |a| lewat(a, |v| Interpreter::dispatch_str_inner(
-        &NativeFnKind::StrReplace, v)));
+    // Implementasi interpreter yang SAMA (dulu salinan kedua di `vm/vm.rs` melenceng). Argumen teks: inti
+    // `str_ops::inti` langsung, tanpa jembatan nilai; bentuk lain (rune, bukan teks — dengan kalimat
+    // galatnya) lewat jembatan.
+    use crate::interpreter::builtin::str_ops::inti;
+    vm.def("str::upper", |a| match a {
+        [VmValue::Str(s)] => Ok(VmValue::str(inti::upper(s))),
+        _ => lewat(a, |v| Interpreter::dispatch_str_inner(&NativeFnKind::StrUpper, v)),
+    });
+    vm.def("str::lower", |a| match a {
+        [VmValue::Str(s)] => Ok(VmValue::str(inti::lower(s))),
+        _ => lewat(a, |v| Interpreter::dispatch_str_inner(&NativeFnKind::StrLower, v)),
+    });
+    vm.def("str::trim", |a| match a {
+        [VmValue::Str(s)] => Ok(VmValue::str(inti::trim(s))),
+        _ => lewat(a, |v| Interpreter::dispatch_str_inner(&NativeFnKind::StrTrim, v)),
+    });
+    vm.def("str::reverse", |a| match a {
+        [VmValue::Str(s)] => Ok(VmValue::str(inti::reverse(s))),
+        _ => lewat(a, |v| Interpreter::dispatch_str_inner(&NativeFnKind::StrReverse, v)),
+    });
+    vm.def("str::contains", |a| match a {
+        [VmValue::Str(s), VmValue::Str(p)] => Ok(VmValue::Bool(inti::contains(s, p))),
+        _ => lewat(a, |v| Interpreter::dispatch_str_inner(&NativeFnKind::StrContains, v)),
+    });
+    vm.def("str::starts_with", |a| match a {
+        [VmValue::Str(s), VmValue::Str(p)] => Ok(VmValue::Bool(inti::starts_with(s, p))),
+        _ => lewat(a, |v| Interpreter::dispatch_str_inner(&NativeFnKind::StrStartsWith, v)),
+    });
+    vm.def("str::ends_with", |a| match a {
+        [VmValue::Str(s), VmValue::Str(p)] => Ok(VmValue::Bool(inti::ends_with(s, p))),
+        _ => lewat(a, |v| Interpreter::dispatch_str_inner(&NativeFnKind::StrEndsWith, v)),
+    });
+    vm.def("str::replace", |a| match a {
+        [VmValue::Str(s), VmValue::Str(d), VmValue::Str(k)] => Ok(VmValue::str(inti::replace(s, d, k))),
+        _ => lewat(a, |v| Interpreter::dispatch_str_inner(&NativeFnKind::StrReplace, v)),
+    });
     vm.def("str::split", |a| lewat(a, |v| Interpreter::dispatch_str_inner(
         &NativeFnKind::StrSplit, v)));
     vm.def("str::title", |a| lewat(a, |v| Interpreter::dispatch_str_inner(

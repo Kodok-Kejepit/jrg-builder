@@ -7,6 +7,7 @@ pub mod chunk;
 pub mod ffi_jembatan;
 pub mod ffi_asing;
 pub mod value;
+pub mod peta;
 pub mod channel;
 pub mod visibilitas;
 pub mod compiler;
@@ -20,10 +21,12 @@ pub mod vm;
 // impl inheren dipecah lintas modul dalam satu crate, dan itu yang
 // membuat `vm.rs` bisa tinggal jadi rangkanya saja.
 mod jalankan;
+pub(crate) use jalankan::{cocok_enum, larik_milik_tunggal};
 mod panggil;
 pub(crate) mod info_native;
 mod akses;
-mod hof;
+pub(crate) mod hof;
+mod op;
 pub(crate) mod bawaan;
 
 pub use compiler::{compile, CompileError};

@@ -201,12 +201,17 @@ pub fn di_stack_lega<R: Send>(f: impl FnOnce() -> R + Send) -> R {
 /// `Some(true)` kalau stack thread ini tinggal seperdelapan; `None` kalau puncaknya tidak tercatat.
 /// Rekursi dibatasi sumber daya, seperti di LLVM — bukan angka karangan.
 pub fn stack_menipis() -> Option<bool> {
+    let ukuran = Interpreter::INTERPRETER_STACK_SIZE;
+    stack_terpakai().map(|t| t > ukuran - ukuran / 8)
+}
+
+/// Byte stack thread ini yang sudah terpakai sejak `catat_puncak_stack`; `None` = thread tanpa catatan.
+pub fn stack_terpakai() -> Option<usize> {
     let puncak = PUNCAK_STACK.with(|c| c.get());
     if puncak == 0 { return None; }
     let p = 0u8;
     let kini = std::hint::black_box(&p) as *const u8 as usize;
-    let ukuran = Interpreter::INTERPRETER_STACK_SIZE;
-    Some(puncak.saturating_sub(kini) > ukuran - ukuran / 8)
+    Some(puncak.saturating_sub(kini))
 }
 
 impl Interpreter {

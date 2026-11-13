@@ -79,7 +79,7 @@ pub(crate) fn vm_ke_nilai_dgn(
                 let g = m.lock().unwrap_or_else(|p| p.into_inner());
                 let mut f = std::collections::HashMap::new();
                 for (k, v) in g.iter() {
-                    f.insert(k.clone(), vm_ke_nilai_dgn(v, fungsi)?);
+                    f.insert(k.to_string(), vm_ke_nilai_dgn(v, fungsi)?);
                 }
                 Value::Struct { name: nama, fields: f.into() }
             }

@@ -119,6 +119,10 @@ impl Vm {
     /// field menyerahkan methodnya sebagai nilai, sementara acuan memanggilnya.
     pub(crate) fn get_field_pintu(&self, obj: &VmValue, name: &str, sp: Option<crate::lexer::Span>,
                                   pintu_metode: bool) -> VmResult<VmValue> {
+        // Field yang ada di struct/dict selalu menang di dua pintu (langkah 1 `get_field_khusus`).
+        if let VmValue::Map(m) = obj {
+            if let Some(v) = m.lock().unwrap().get(name) { return Ok(v.clone()); }
+        }
         if !pintu_metode {
             let tn = obj.type_name();
             if matches!(obj, VmValue::Asing(_)) {
@@ -149,7 +153,7 @@ impl Vm {
             Label::Struct(n) => format!("struct {}", n),
             _ => "dict".to_string(),
         };
-        let mut punya: Vec<String> = m.lock().unwrap().keys().cloned().collect();
+        let mut punya: Vec<String> = m.lock().unwrap().keys().map(|k| k.to_string()).collect();
         punya.sort();
         let tambahan = if punya.is_empty() { String::new() } else {
             format!(" (kalau maksudnya field/key, yang ada: {})", punya.join(", "))
@@ -336,7 +340,7 @@ impl Vm {
                         }
                     }
                 }
-                m.lock().unwrap().insert(name.to_string(), val);
+                m.sisip(name.to_string(), val);
                 Ok(())
             }
             _ => Err(VmError::at(
@@ -345,8 +349,8 @@ impl Vm {
     }
 
 /// Kalimat untuk key/field yang tidak ada di sebuah dict atau struct.
-fn pesan_map_hilang(label: &Label, g: &std::collections::HashMap<String, VmValue>, k: &str) -> String {
-    let ada: Vec<String> = g.keys().cloned().collect();
+fn pesan_map_hilang(label: &Label, g: &crate::vm::value::IsiPeta, k: &str) -> String {
+    let ada: Vec<String> = g.keys().map(|k| k.to_string()).collect();
     match label {
         Label::Struct(t) => crate::interpreter::galat_index::field_hilang(t, k, &ada),
         _ => crate::interpreter::galat_index::key_hilang(k, &ada),
@@ -510,7 +514,7 @@ fn pesan_map_hilang(label: &Label, g: &std::collections::HashMap<String, VmValue
                 self.set_field(obj, &k, val, sp)
             }
             (VmValue::Map(m), _) if !matches!(m.label, Label::Enum { .. }) => {
-                m.lock().unwrap().insert(format!("{}", idx), val);
+                m.lock().unwrap().insert(super::value::Kunci::dari_nilai(&idx), val);
                 Ok(())
             }
             // Kalimat yang sama dengan langkah tengah (`pinjam_index`) dan dengan interpreter.

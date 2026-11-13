@@ -1,7 +1,6 @@
 // src/vm/value.rs — src/vm/value.rs  (Arc-based — thread-safe)
 
 use std::sync::{Arc, Mutex};
-use std::collections::HashMap;
 use std::fmt;
 
 use super::chunk::Chunk;
@@ -180,20 +179,171 @@ pub enum Label {
     Enum { tipe: Arc<str>, varian: Arc<str>, payload: Option<VmValue> },
 }
 
+/// Hasher isi `Peta`: dict memakai SipHash berkunci acak (kuncinya bisa datang dari luar — HashDoS,
+/// Fase AMAN-7); struct dan enum hash cepat, tapi cuma sampai `KUNCI_CEPAT` kunci (`json::merge` bisa
+/// memberi struct kunci dari dict) — tabrakan sebanyak itu tidak berarti apa-apa.
+#[derive(Clone, Debug)]
+pub struct HashPeta(pub(crate) Option<std::collections::hash_map::RandomState>);
+
+pub enum PengacakPeta {
+    Sip(std::collections::hash_map::DefaultHasher),
+    Cepat(u64),
+}
+
+impl std::hash::Hasher for PengacakPeta {
+    #[inline(always)]
+    fn write_u8(&mut self, x: u8) {
+        match self { PengacakPeta::Sip(h) => h.write_u8(x), PengacakPeta::Cepat(s) => *s = (s.rotate_left(5) ^ x as u64).wrapping_mul(0x51_7c_c1_b7_27_22_0a_95) }
+    }
+    #[inline(always)]
+    fn write(&mut self, b: &[u8]) {
+        match self {
+            PengacakPeta::Sip(h) => h.write(b),
+            // FxHash: dua instruksi per 8 byte.
+            PengacakPeta::Cepat(s) => {
+                let mut c = b.chunks_exact(8);
+                for k in &mut c { *s = (s.rotate_left(5) ^ u64::from_le_bytes(k.try_into().unwrap())).wrapping_mul(0x51_7c_c1_b7_27_22_0a_95); }
+                for &x in c.remainder() { *s = (s.rotate_left(5) ^ x as u64).wrapping_mul(0x51_7c_c1_b7_27_22_0a_95); }
+            }
+        }
+    }
+    #[inline(always)]
+    fn finish(&self) -> u64 {
+        match self { PengacakPeta::Sip(h) => h.finish(), PengacakPeta::Cepat(s) => *s }
+    }
+}
+
+impl std::hash::BuildHasher for HashPeta {
+    type Hasher = PengacakPeta;
+    #[inline(always)]
+    fn build_hasher(&self) -> PengacakPeta {
+        match &self.0 { Some(r) => PengacakPeta::Sip(r.build_hasher()), None => PengacakPeta::Cepat(0) }
+    }
+}
+
+
+/// Kunci `Peta`: teks bersama, jadi struct baru tidak menyalin nama field-nya (dibagi dengan konstanta chunk).
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct Kunci(pub Arc<String>);
+
+impl std::borrow::Borrow<str> for Kunci { fn borrow(&self) -> &str { self.0.as_str() } }
+impl std::borrow::Borrow<String> for Kunci { fn borrow(&self) -> &String { &self.0 } }
+impl std::ops::Deref for Kunci { type Target = String; fn deref(&self) -> &String { &self.0 } }
+impl std::fmt::Display for Kunci { fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { f.write_str(&self.0) } }
+impl From<String> for Kunci { fn from(s: String) -> Self { Kunci(Arc::new(s)) } }
+impl From<&str> for Kunci { fn from(s: &str) -> Self { Kunci(Arc::new(s.to_string())) } }
+impl From<&String> for Kunci { fn from(s: &String) -> Self { Kunci(Arc::new(s.clone())) } }
+impl From<Kunci> for String { fn from(k: Kunci) -> String { Arc::try_unwrap(k.0).unwrap_or_else(|a| (*a).clone()) } }
+impl Kunci {
+    /// Kunci dari nilai indeks: teks dipakai bersama, yang lain bentuk tampilnya (aturan kunci dict).
+    pub fn dari_nilai(v: &VmValue) -> Kunci {
+        match v { VmValue::Str(s) => Kunci(s.clone()), lain => format!("{}", lain).into() }
+    }
+}
+
+impl PartialEq<str> for Kunci { fn eq(&self, o: &str) -> bool { self.0.as_str() == o } }
+impl PartialEq<String> for Kunci { fn eq(&self, o: &String) -> bool { *self.0 == *o } }
+
+/// Isi sebuah `Peta`.
+pub use super::peta::IsiPeta;
+use super::peta::{Bentuk, RAPAT_MAKS};
+
 /// Isi sebuah `Map` plus labelnya. Isinya cuma field atau key milik program.
 #[derive(Debug)]
 pub struct Peta {
     pub label: Label,
-    isi: Mutex<HashMap<String, VmValue>>,
+    isi: Mutex<IsiPeta>,
 }
 
 impl Peta {
-    pub fn baru(label: Label, isi: HashMap<String, VmValue>) -> Self {
+    pub fn baru<K: Into<Kunci>>(label: Label, isi: impl IntoIterator<Item = (K, VmValue)>) -> Self {
+        let it = isi.into_iter();
+        let n = it.size_hint().0;
+        Self::baru_n(label, n, it)
+    }
+
+    /// Dict: tabel SipHash. Struct/enum sampai `RAPAT_MAKS` field tanpa nama kembar: bentuk rapat; selebihnya
+    /// tabel ber-hash cepat yang pindah ke SipHash di atas `KUNCI_CEPAT` (`IsiPeta::insert`).
+    pub fn baru_n<K: Into<Kunci>>(label: Label, n: usize, isi: impl IntoIterator<Item = (K, VmValue)>) -> Self {
+        let dict = matches!(label, Label::Dict);
+        let isi = isi.into_iter().map(|(k, v)| (k.into(), v));
+        if dict {
+            let mut peta = IsiPeta::tabel(n, true);
+            peta.extend(isi);
+            return Peta { label, isi: Mutex::new(peta) };
+        }
+        let (nama, nilai): (Vec<Kunci>, Vec<VmValue>) = isi.unzip();
+        // Isi kosong (varian enum, `S {}` tanpa field): tabel kosong tidak mengalokasi apa pun.
+        let peta = if !nama.is_empty() && nama.len() <= RAPAT_MAKS && Bentuk::unik(&nama) {
+            IsiPeta::rapat(Bentuk::baru(nama), nilai)
+        } else {
+            let mut t = IsiPeta::tabel(nama.len(), false);
+            t.extend(nama.into_iter().zip(nilai));
+            t
+        };
+        Peta { label, isi: Mutex::new(peta) }
+    }
+
+    /// Isi kosong sesuai label (dict: SipHash).
+    pub fn isi_untuk(label: &Label, n: usize) -> IsiPeta { IsiPeta::tabel(n, matches!(label, Label::Dict)) }
+
+    /// Dari isi yang sudah jadi (salinan peta lain); dict selalu ber-SipHash.
+    pub fn dari_isi(label: Label, isi: IsiPeta) -> Self {
+        if matches!(label, Label::Dict) && !isi.pakai_sip() {
+            let mut baru = IsiPeta::tabel(isi.len(), true);
+            baru.extend(isi);
+            return Peta { label, isi: Mutex::new(baru) };
+        }
         Peta { label, isi: Mutex::new(isi) }
     }
 
-    pub fn lock(&self) -> std::sync::LockResult<std::sync::MutexGuard<'_, HashMap<String, VmValue>>> {
+    /// Prototipe literal: nama field berurutan (juga untuk dict — cuma pembawa urutan, tidak pernah dibaca).
+    pub fn prototipe(label: Label, nama: Vec<Kunci>) -> Self {
+        let n = nama.len();
+        Peta { label, isi: Mutex::new(IsiPeta::rapat(Bentuk::intern(nama), vec![VmValue::Nil; n])) }
+    }
+
+    /// Struct dari literal (`BuildStruct`): nilai field berurutan menurut bentuk prototipenya (`bentuk()`),
+    /// yang dibagi; dict dan nama kembar lewat jalur tabel.
+    pub fn struktur_dari(label: Label, bentuk: Arc<Bentuk>, nilai: Vec<VmValue>) -> Peta {
+        if bentuk.unik && !matches!(label, Label::Dict) {
+            Peta::dari_isi(label, IsiPeta::rapat(bentuk, nilai))
+        } else {
+            let n = nilai.len();
+            Peta::baru_n(label, n, bentuk.nama.iter().cloned().zip(nilai))
+        }
+    }
+
+    /// `struktur_dari` langsung di dalam `Arc`-nya: `Peta` (±150 byte) tidak dibangun di stack lalu disalin.
+    #[inline]
+    pub fn struktur_arc(label: Label, bentuk: Arc<Bentuk>, nilai: Vec<VmValue>) -> Arc<Peta> {
+        if bentuk.unik && !matches!(label, Label::Dict) {
+            Arc::new(Peta { label, isi: Mutex::new(IsiPeta::Rapat { bentuk, nilai }) })
+        } else {
+            Arc::new(Peta::struktur_dari(label, bentuk, nilai))
+        }
+    }
+
+    /// Bentuk rapat isi ini, kalau rapat.
+    pub fn bentuk(&self) -> Option<Arc<Bentuk>> {
+        match &*self.isi.lock().unwrap_or_else(|p| p.into_inner()) {
+            IsiPeta::Rapat { bentuk, .. } => Some(bentuk.clone()),
+            IsiPeta::Hash(_) => None,
+        }
+    }
+
+    pub fn sisip(&self, k: impl Into<Kunci>, v: VmValue) {
+        self.isi.lock().unwrap_or_else(|p| p.into_inner()).insert(k.into(), v);
+    }
+
+    pub fn lock(&self) -> std::sync::LockResult<std::sync::MutexGuard<'_, IsiPeta>> {
         self.isi.lock()
+    }
+
+    /// Isi peta milik tunggal pemegang ini, tanpa kunci (`tunggal`).
+    #[inline]
+    pub fn isi_tunggal(m: &mut Arc<Peta>) -> Option<&mut IsiPeta> {
+        tunggal(m).map(|p| p.isi.get_mut().unwrap_or_else(|e| e.into_inner()))
     }
 
     /// Nama tipe untuk mencari method (`P::m`, `Option::m`); `None` untuk dict.
@@ -204,6 +354,17 @@ impl Peta {
             Label::Enum { tipe, .. } => Some(tipe.as_ref()),
         }
     }
+}
+
+/// Isi penyimpanan yang tidak dipegang `Arc` lain (kuat maupun lemah), tanpa operasi atomik tulis-baca:
+/// pemegang `&mut` ini satu-satunya jalan ke sana, jadi thread lain tidak bisa menjangkaunya. Pagar Acquire
+/// menyusul pelepasan pemegang terakhir sebelumnya. Satu definisi untuk larik dan peta.
+#[inline]
+pub fn tunggal<T>(a: &mut Arc<T>) -> Option<&mut T> {
+    if Arc::strong_count(a) != 1 || Arc::weak_count(a) != 0 { return None; }
+    std::sync::atomic::fence(std::sync::atomic::Ordering::Acquire);
+    // SAFETY: tidak ada `Arc` lain ke isinya dan `a` dipinjam eksklusif selama hasil ini hidup.
+    Some(unsafe { &mut *(Arc::as_ptr(a) as *mut T) })
 }
 
 // ─── Constructors ─────────────────────────────────────────────────────────
@@ -223,7 +384,7 @@ impl VmValue {
                 VmValue::array(isi.iter().map(|v| v.deep_copy()).collect())
             }
             VmValue::Map(m) => {
-                let isi: HashMap<String, VmValue> = m.lock().unwrap_or_else(|p| p.into_inner())
+                let isi: Vec<(Kunci, VmValue)> = m.lock().unwrap_or_else(|p| p.into_inner())
                     .iter().map(|(k, v)| (k.clone(), v.deep_copy())).collect();
                 let label = match &m.label {
                     Label::Enum { tipe, varian, payload } => Label::Enum {
@@ -275,18 +436,26 @@ impl VmValue {
     pub fn tuple(v: Vec<VmValue>)    -> Self { VmValue::Tuple(Arc::new(Mutex::new(v))) }
     pub fn function(f: VmFunction)   -> Self { VmValue::Function(Arc::new(f)) }
     /// Dict biasa.
-    pub fn map(m: HashMap<String, VmValue>) -> Self {
+    pub fn map<K: Into<Kunci>>(m: impl IntoIterator<Item = (K, VmValue)>) -> Self {
         VmValue::Map(Arc::new(Peta::baru(Label::Dict, m)))
     }
     /// Instance struct `nama`, termasuk handle bawaan (`Ptr`, `Future`, `Regex`, …).
-    pub fn struktur(nama: &str, isi: HashMap<String, VmValue>) -> Self {
+    pub fn struktur<K: Into<Kunci>>(nama: &str, isi: impl IntoIterator<Item = (K, VmValue)>) -> Self {
         VmValue::Map(Arc::new(Peta::baru(Label::Struct(Arc::from(nama)), isi)))
     }
     /// Varian enum `tipe::varian`, dengan payload kalau ada.
     pub fn varian(tipe: &str, varian: &str, payload: Option<VmValue>) -> Self {
         VmValue::Map(Arc::new(Peta::baru(
             Label::Enum { tipe: Arc::from(tipe), varian: Arc::from(varian), payload },
-            HashMap::new(),
+            std::iter::empty::<(Kunci, VmValue)>(),
+        )))
+    }
+    /// Varian berpayload dari nama milik prototipenya (`BuildEnum`, juga dipakai JIT).
+    #[inline(always)]
+    pub fn varian_berisi(tipe: Arc<str>, varian: Arc<str>, payload: VmValue) -> Self {
+        VmValue::Map(Arc::new(Peta::baru(
+            Label::Enum { tipe, varian, payload: Some(payload) },
+            std::iter::empty::<(Kunci, VmValue)>(),
         )))
     }
     /// `(tipe, varian, payload)` kalau nilai ini enum.
@@ -830,7 +999,7 @@ impl fmt::Display for VmValue {
                 },
                 label => {
                     let g = m.lock().unwrap();
-                    let mut kunci: Vec<&String> = g.keys().collect();
+                    let mut kunci: Vec<&String> = g.keys().map(|k| &**k).collect();
                     kunci.sort();
                     // Struct punya nama tipe; dict biasa diberi awalan `dict`.
                     let awalan = match label { Label::Struct(n) => n.as_ref(), _ => "dict" };

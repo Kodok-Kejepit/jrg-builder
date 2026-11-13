@@ -5911,11 +5911,11 @@ fn argumen_kurang_dijelaskan_di_tiap_pintu() {
 /// di akhir baris menelan baris berikutnya; tidak satu sapuan pun mengambil builtin sebagai nilai.
 #[test]
 fn tiap_builtin_dipanggil_lewat_nilainya_menjawab_sama() {
-    // Menulis ke terminal tanpa baris baru, atau menjalankan program lain; acak dua elemen bisa
-    // kebetulan sama di dua jalan; dan tiga `future::` menanyakan PENJADWAL (sudah selesaikah
+    // Terminal/program lain; acak (dua elemen, port `tcp_local_addr`) bisa kebetulan sama di dua jalan
+    // pembanding sehingga tidak terturunkan; tiga `future::` menanyakan PENJADWAL (sudah selesaikah
     // thread-nya?), yang dua jawabannya sama-sama benar — terukur beda antar-mesin di profil dev.
     const LEWATI: &[&str] = &["term::", "proses::", "arr::sample", "arr::shuffle", "rand::",
-                              "future::is_done", "future::timeout", "future::try_get"];
+                              "future::is_done", "future::timeout", "future::try_get", "dok::tcp_local_addr"];
     let kasus: Vec<_> = CONTOH_ARGUMEN.iter()
         .filter(|(n, _, _)| !LEWATI.iter().any(|l| n.starts_with(l))).collect();
     let langsung: Vec<String> = kasus.iter()

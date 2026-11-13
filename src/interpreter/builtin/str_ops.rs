@@ -37,6 +37,19 @@ pub(crate) fn gabung(nama: &str, args: &[Value]) -> EvalResult {
 }
 
 /// Argumen pertama dari daftar argumen, kosong dibaca sebagai `nil` seperti dulu.
+/// Inti teks murni untuk dua pintu: lengan interpreter di bawah dan pintu VM (`stdlib::koleksi`, yang
+/// memanggilnya langsung kalau argumennya teks — tanpa jembatan nilai). Satu definisi per operasi.
+pub(crate) mod inti {
+    pub fn upper(s: &str) -> String { s.to_uppercase() }
+    pub fn lower(s: &str) -> String { s.to_lowercase() }
+    pub fn trim(s: &str) -> String { s.trim().to_string() }
+    pub fn reverse(s: &str) -> String { s.chars().rev().collect() }
+    pub fn replace(s: &str, dari: &str, ke: &str) -> String { s.replace(dari, ke) }
+    pub fn contains(s: &str, p: &str) -> bool { s.contains(p) }
+    pub fn starts_with(s: &str, p: &str) -> bool { s.starts_with(p) }
+    pub fn ends_with(s: &str, p: &str) -> bool { s.ends_with(p) }
+}
+
 fn teks1(args: &[Value], siapa: &str) -> Result<std::sync::Arc<String>, Signal> {
     teks(args.first().unwrap_or(&Value::Nil), siapa)
 }
@@ -186,7 +199,7 @@ impl Interpreter {
                 }).collect();
                 Ok(Value::Str(std::sync::Arc::new(r)))
             }
-            StrReverse   => { let s = teks1(args, "str::reverse")?; Ok(Value::teks(s.chars().rev().collect::<String>())) }
+            StrReverse   => { let s = teks1(args, "str::reverse")?; Ok(Value::teks(inti::reverse(&s))) }
             StrCount => {
                 if args.len() < 2 { return runtime_err!("str::count butuh (s, sub)"); }
                 let s = teks(&args[0], "str::count")?; let sub = teks_peran(&args[1], "str::count", "yang dihitung")?;
@@ -195,17 +208,17 @@ impl Interpreter {
             StrStartsWith => {
                 if args.len() < 2 { return runtime_err!("str::starts_with butuh (s, prefix)"); }
                 let s = teks(&args[0], "str::starts_with")?; let p = teks_peran(&args[1], "str::starts_with", "awalan yang dicocokkan")?;
-                Ok(Value::Bool(s.starts_with(&p as &str)))
+                Ok(Value::Bool(inti::starts_with(&s, &p)))
             }
             StrEndsWith => {
                 if args.len() < 2 { return runtime_err!("str::ends_with butuh (s, suffix)"); }
                 let s = teks(&args[0], "str::ends_with")?; let p = teks_peran(&args[1], "str::ends_with", "akhiran yang dicocokkan")?;
-                Ok(Value::Bool(s.ends_with(&p as &str)))
+                Ok(Value::Bool(inti::ends_with(&s, &p)))
             }
             StrContains => {
                 if args.len() < 2 { return runtime_err!("str::contains butuh (s, sub)"); }
                 let s = teks(&args[0], "str::contains")?; let p = teks_peran(&args[1], "str::contains", "yang dicari")?;
-                Ok(Value::Bool(s.contains(&p as &str)))
+                Ok(Value::Bool(inti::contains(&s, &p)))
             }
             StrSplit => {
                 if args.len() < 2 { return runtime_err!("str::split butuh (s, sep)"); }
@@ -213,15 +226,15 @@ impl Interpreter {
                 Ok(Value::Array(s.split(&sep as &str).map(|p| Value::Str(std::sync::Arc::new(p.to_string()))).collect()))
             }
             StrJoin => gabung("str::join", args),
-            StrTrim    => { let s = teks1(args, "str::trim")?; Ok(Value::Str(std::sync::Arc::new(s.trim().to_string())))    }
-            StrUpper   => { let s = teks1(args, "str::upper")?; Ok(Value::Str(std::sync::Arc::new(s.to_uppercase())))         }
-            StrLower   => { let s = teks1(args, "str::lower")?; Ok(Value::Str(std::sync::Arc::new(s.to_lowercase())))         }
+            StrTrim    => { let s = teks1(args, "str::trim")?; Ok(Value::Str(std::sync::Arc::new(inti::trim(&s))))    }
+            StrUpper   => { let s = teks1(args, "str::upper")?; Ok(Value::Str(std::sync::Arc::new(inti::upper(&s))))  }
+            StrLower   => { let s = teks1(args, "str::lower")?; Ok(Value::Str(std::sync::Arc::new(inti::lower(&s))))  }
             StrReplace => {
                 if args.len() < 3 { return runtime_err!("str::replace butuh (s, from, to)"); }
                 let s    = teks(&args[0], "str::replace")?;
                 let from = teks_peran(&args[1], "str::replace", "yang diganti")?;
                 let to   = format!("{}", args[2]);
-                Ok(Value::Str(std::sync::Arc::new(s.replace(&from as &str, &to))))
+                Ok(Value::Str(std::sync::Arc::new(inti::replace(&s, &from, &to))))
             }
             // Sama persis dengan `s[awal:akhir]` — dilempar ke `eval_slice` yang sama,
             // bukan diimplementasikan ulang di sini.

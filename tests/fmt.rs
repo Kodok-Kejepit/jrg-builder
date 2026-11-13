@@ -213,12 +213,8 @@ fn sumber_rusak_ditolak_bukan_ditulis() {
 
 // ─── Subperintah yang menolak ──────────────────────────────────────────────
 
-fn jrgm() -> PathBuf {
-    let mut p = std::env::current_exe().unwrap();
-    p.pop();
-    if p.ends_with("deps") { p.pop(); }
-    p.join("jrgm")
-}
+// Dari Cargo, bukan dari letak biner tes: tata letak direktori build berubah antar versi Cargo.
+fn jrgm() -> PathBuf { PathBuf::from(env!("CARGO_BIN_EXE_jrgm")) }
 
 /// `jrgm new --kind web` harus menghasilkan aplikasi yang LANGSUNG MELAYANI,
 /// bukan kerangka yang masih perlu ditambal.
