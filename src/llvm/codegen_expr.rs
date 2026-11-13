@@ -55,6 +55,21 @@ pub(crate) fn eksponen_negatif_tertulis(e: &Expr) -> Option<f64> {
     }
 }
 
+/// Ubah literal pola menjadi ekspresi (`-5` di pola disimpan parser sebagai `Int((-5) as u128)`).
+fn expr_dari_lit_pola(lit: &LitKind, span: Span) -> Expr {
+    match lit {
+        LitKind::Int(n) if (*n as i128) < 0 => {
+            let pos = (*n as i128).wrapping_neg() as u128;
+            Expr::Unary {
+                op: UnaryOp::Neg,
+                expr: Box::new(Expr::Literal(LitKind::Int(pos), span)),
+                span,
+            }
+        }
+        _ => Expr::Literal(lit.clone(), span),
+    }
+}
+
 impl Codegen {
     /// Pembungkus: jalankan lowering-nya, lalu kalau gagal TANPA lokasi, tandai
     /// dengan span ekspresi ini.
@@ -272,6 +287,37 @@ impl Codegen {
         }
     }
 
+    /// Petunjuk tipe untuk sisi KEDUA, dari tipe nyata sisi pertama.
+    fn petunjuk_biner(ty: &JrgType) -> Option<JrgType> {
+        // `nil` dan `()` tidak pernah memaksa tipe sisi lain (`kosong() == 6`).
+        if matches!(ty, JrgType::Nil | JrgType::Unit) {
+            return None;
+        }
+        // String dan pegangan (`Atomic`, `Mutex`, channel) tidak memaksa tipe sisi lain.
+        if *ty == JrgType::Str || matches!(ty, JrgType::Sinkron(_) | JrgType::Chan(_)) {
+            None
+        } else {
+            Some(ty.clone())
+        }
+    }
+
+    fn koersi_dengan_lawan(&mut self, op: &BinaryOp, e: &Expr, v: Val, lawan: &JrgType, punya_hint: bool) -> Val {
+        let skalar = |t: &JrgType| !matches!(t, JrgType::Array(_, _) | JrgType::Slice(_)
+                                           | JrgType::Tuple(_) | JrgType::Struct(_));
+        // Literal pecahan tidak dipotong ke int; literal angka di `==` tidak ikut rune/bool.
+        let boleh_ikut = |dari: &JrgType, ke: &JrgType| !(dari.is_float() && ke.is_int());
+        let angka_ke_non = matches!(op, BinaryOp::Eq | BinaryOp::Ne)
+            && tipe_bawaan_ekspresi(e).is_some()
+            && matches!(lawan, JrgType::Bool | JrgType::Rune);
+        if is_malleable_literal(e) && punya_hint && !angka_ke_non
+            && skalar(&v.ty) && skalar(lawan) && boleh_ikut(&v.ty, lawan)
+        {
+            self.coerce_longgar(&v, lawan)
+        } else {
+            v
+        }
+    }
+
     fn codegen_binary(&mut self, op: &BinaryOp, lhs: &Expr, rhs: &Expr, span: Span) -> Result<Val, String> {
         if matches!(op, BinaryOp::And | BinaryOp::Or) {
             return self.codegen_short_circuit(op, lhs, rhs, span);
@@ -284,73 +330,88 @@ impl Codegen {
         let lhs_malleable = is_malleable_literal(lhs);
         let rhs_malleable = is_malleable_literal(rhs);
 
-        /// Petunjuk tipe untuk sisi KEDUA, dari tipe nyata sisi pertama.
-        fn petunjuk(ty: &JrgType) -> Option<JrgType> {
-            // `nil` dan `()` tidak pernah memaksa tipe sisi lain — `()` yang
-            // memaksa membuat literal `6` di `kosong() == 6` ikut jadi `()`.
-            if matches!(ty, JrgType::Nil | JrgType::Unit) {
-                return None;
-            }
-            // Sebuah string tidak pernah memaksa tipe sisi lain, operator APA PUN — pegangan
-            // (`Atomic`, `Mutex`, channel) juga: `a == 1` menjawab `false`, seperti dua mesin lain.
-            if *ty == JrgType::Str || matches!(ty, JrgType::Sinkron(_) | JrgType::Chan(_)) {
-                None
-            } else {
-                Some(ty.clone())
-            }
-        }
-
-        // Koersi penyatuan di bawah ini untuk literal ANGKA: `1 + 2.5` menjadikan
-        // `1` sebuah f64.
-        fn skalar(t: &JrgType) -> bool {
-            !matches!(t, JrgType::Array(_, _) | JrgType::Slice(_)
-                       | JrgType::Tuple(_) | JrgType::Struct(_))
-        }
-
-        // Literal PECAHAN tidak pernah menyesuaikan diri ke bilangan bulat: itu memotong.
-        let boleh_ikut = |dari: &JrgType, ke: &JrgType| !(dari.is_float() && ke.is_int());
         let (lv, rv) = if lhs_malleable && !rhs_malleable {
             let rv = self.codegen_expr(rhs, None)?;
-            let h = petunjuk(&rv.ty);
+            let h = Self::petunjuk_biner(&rv.ty);
             let lv = self.codegen_expr(lhs, h.as_ref())?;
-            let lv = if h.is_some() && skalar(&lv.ty) && skalar(&rv.ty) && boleh_ikut(&lv.ty, &rv.ty) {
-                self.coerce_longgar(&lv, &rv.ty)
-            } else { lv };
+            let lv = self.koersi_dengan_lawan(op, lhs, lv, &rv.ty, h.is_some());
             (lv, rv)
         } else {
             let lv = self.codegen_expr(lhs, None)?;
-            // Operan kiri milik `var` modul masih menunjuk penyangganya; operan kanan yang bisa
-            // menulisnya akan ikut terbaca di sini. Acuannya: kiri dibaca LEBIH DULU.
+            // Operan kiri milik `var` modul disalin dulu bila operan kanan bisa menulisnya.
             let lv = if (Self::punya_penunjuk(&lv.ty) || self.isi_dalam_perlu_salin(&lv.ty))
                 && self.akar_var_modul(lhs) && self.bisa_menulis_modul(rhs) { self.salin_dalam(&lv) } else { lv };
-            let h = petunjuk(&lv.ty);
+            let h = Self::petunjuk_biner(&lv.ty);
             let rv = self.codegen_expr(rhs, h.as_ref())?;
-            let rv = if rhs_malleable && h.is_some() && skalar(&lv.ty) && skalar(&rv.ty)
-                && boleh_ikut(&rv.ty, &lv.ty) {
-                self.coerce_longgar(&rv, &lv.ty)
+            let rv = if rhs_malleable {
+                self.koersi_dengan_lawan(op, rhs, rv, &lv.ty, h.is_some())
             } else { rv };
             (lv, rv)
         };
-        // `==` lintas golongan skalar diputuskan SEBELUM penyatuan: literal angka di samping rune
-        // atau bool sudah ikut tipenya, padahal `'o' == 111` dan `true == 1` tidak pernah sama.
+        self.gabung_biner_nilai(op, lv, Some(lhs), rv, Some(rhs), true, span)
+    }
+
+    /// Satukan dua nilai ter-lower memakai aturan operator biner LLVM (juga dipakai pola literal).
+    fn gabung_biner_nilai(
+        &mut self,
+        op: &BinaryOp,
+        lv: Val,
+        lhs: Option<&Expr>,
+        rv: Val,
+        rhs: Option<&Expr>,
+        pakai_user_op: bool,
+        span: Span,
+    ) -> Result<Val, String> {
+        // `==` lintas golongan skalar diputuskan sebelum penyatuan (`'o' == 111`, `true == -5`).
         if matches!(op, BinaryOp::Eq | BinaryOp::Ne) {
-            let angka = |e: &Expr| matches!(e, Expr::Literal(LitKind::Int(_) | LitKind::Float(_), _));
+            let angka = |e: &Expr| tipe_bawaan_ekspresi(e).is_some();
             let bukan_angka = |t: &JrgType| matches!(t, JrgType::Rune | JrgType::Bool);
-            if (angka(lhs) && bukan_angka(&rv.ty)) || (angka(rhs) && bukan_angka(&lv.ty)) {
+            if (lhs.is_some_and(angka) && bukan_angka(&rv.ty))
+                || (rhs.is_some_and(angka) && bukan_angka(&lv.ty))
+            {
                 return Ok(Val { text: if *op == BinaryOp::Ne { "1" } else { "0" }.to_string(), ty: JrgType::Bool });
             }
-            if let Some(v) = Self::banding_beda_golongan(op, &lv.ty, &rv.ty) { return Ok(v); }
         }
         let (lv, rv) = self.naikkan_campuran(lv, rv);
         if *op == BinaryOp::Pow && lv.ty.is_int() && rv.ty.is_int() {
-            if let Some(k) = eksponen_negatif_tertulis(rhs) { return Ok(self.pangkat_pecahan(&lv, k)); }
+            if let Some(k) = rhs.and_then(eksponen_negatif_tertulis) { return Ok(self.pangkat_pecahan(&lv, k)); }
         }
-
-        // Operator yang didefinisikan pengguna didahulukan atas aturan bawaan.
-        if let Some(h) = self.operator_pengguna_biner(op, &lv, &rv, span)? {
-            return Ok(h);
+        if pakai_user_op {
+            if let Some(h) = self.operator_pengguna_biner(op, &lv, &rv, span)? {
+                return Ok(h);
+            }
         }
+        if let Some(v) = Self::banding_beda_golongan(op, &lv.ty, &rv.ty) { return Ok(v); }
         self.gabung_nilai(op, lv, rv, span)
+    }
+
+    /// Uji `lv == lit` dengan definisi `==` yang sama dengan operator `==` biner.
+    pub(crate) fn bandingkan_eq_literal(&mut self, lv: Val, lit: &LitKind, span: Span) -> Result<Val, String> {
+        let rhs = expr_dari_lit_pola(lit, span);
+        let rhs_malleable = is_malleable_literal(&rhs);
+        let (h, boleh_koersi) = match lit {
+            LitKind::Int(n) if lv.ty.is_int() => {
+                let val = *n as i128;
+                let (lo, hi) = super::codegen_konversi::jangkauan(&lv.ty);
+                if val >= lo && val <= hi {
+                    (Some(lv.ty.clone()), true)
+                } else if val >= i64::MIN as i128 && val <= i64::MAX as i128 {
+                    (None, false)
+                } else {
+                    (Some(JrgType::I128), false)
+                }
+            }
+            _ => {
+                let h = Self::petunjuk_biner(&lv.ty);
+                let ok = h.is_some();
+                (h, ok)
+            }
+        };
+        let rv = self.codegen_expr(&rhs, h.as_ref())?;
+        let rv = if rhs_malleable {
+            self.koersi_dengan_lawan(&BinaryOp::Eq, &rhs, rv, &lv.ty, boleh_koersi)
+        } else { rv };
+        self.gabung_biner_nilai(&BinaryOp::Eq, lv, None, rv, Some(&rhs), false, span)
     }
 
     /// Bulat lawan pecahan: yang bulat NAIK jadi pecahan, aturan acuan — `1 + 2.5` = 3.5 dan
@@ -1217,8 +1278,7 @@ impl Codegen {
         }
     }
 
-    /// `==`/`!=` dua skalar dari golongan BERBEDA (teks, rune, bool, angka):
-    /// tidak pernah sama, seperti di dua mesin lain. `None` untuk pasangan lain.
+    /// `==`/`!=` dua nilai dari golongan BERBEDA: tidak pernah sama, seperti di dua mesin lain.
     fn banding_beda_golongan(op: &BinaryOp, l: &JrgType, r: &JrgType) -> Option<Val> {
         if !matches!(op, BinaryOp::Eq | BinaryOp::Ne) { return None; }
         let golongan = |t: &JrgType| match t {
@@ -1228,6 +1288,13 @@ impl Codegen {
             t if t.is_int() || t.is_float() => Some(3),
             JrgType::Sinkron(k) => Some(4 + *k as i32),
             JrgType::Chan(_) => Some(6),
+            JrgType::Array(_, _) | JrgType::Slice(_) => Some(7),
+            JrgType::Tuple(_) => Some(8),
+            JrgType::Struct(_) => Some(9),
+            JrgType::Enum(_) => Some(10),
+            JrgType::Dict(_) | JrgType::DictCampur(_) => Some(11),
+            JrgType::Fn(..) => Some(12),
+            JrgType::Masa(..) => Some(13),
             _ => None,
         };
         let (a, b) = (golongan(l)?, golongan(r)?);

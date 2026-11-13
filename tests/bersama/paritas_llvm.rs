@@ -4475,4 +4475,78 @@ pub fn main() {
     wok(d[nil], d[[1, 2]], d[(3, 4)], d[P { x: 5 }], d[E::B(6)])
     wok(dict::has(d, [1, 2]), dict::get_or(d, nil, 0))
 }"#),
+    ("pola literal berjenis lain dan NaN mengikuti aturan ==", r#"package main
+fn pecah_atas_bulat(v: int) -> string {
+    match v {
+        -5.0 => "min5",
+        0.0 => "nol",
+        2.0 => "dua",
+        3 => "tiga",
+        _ => "lain",
+    }
+}
+fn bulat_atas_pecah(v: float) -> string {
+    match v {
+        -5 => "min5",
+        0 => "nol",
+        2 => "dua",
+        2.5 => "setengah",
+        _ => "lain",
+    }
+}
+fn bulat_atas_f32(v: f32) -> string {
+    match v {
+        -5 => "min5",
+        2 => "dua",
+        _ => "lain",
+    }
+}
+fn kelas(v) -> string {
+    match v {
+        -5.0 => "min5f",
+        0 => "nol",
+        2.0 => "dua",
+        "a" => "str_a",
+        'a' => "rune_a",
+        true => "bool_t",
+        nil => "nil",
+        _ => "lain",
+    }
+}
+fn bertag_campur(v) -> string {
+    match v {
+        -5 => "min5i",
+        0.0 => "nol_f",
+        2 => "dua_i",
+        97 => "int_97",
+        1 => "int_1",
+        _ => "lain",
+    }
+}
+fn u8_pola(x: u8) -> string {
+    match x {
+        -5 => "neg",
+        300 => "besar",
+        2.0 => "dua",
+        5 => "lima",
+        _ => "lain",
+    }
+}
+pub fn main() {
+    wok(pecah_atas_bulat(-5), pecah_atas_bulat(0), pecah_atas_bulat(2), pecah_atas_bulat(3), pecah_atas_bulat(5))
+    wok(bulat_atas_pecah(-5.0), bulat_atas_pecah(-0.0), bulat_atas_pecah(2.0), bulat_atas_pecah(2.5), bulat_atas_pecah(math::NAN))
+    wok(bulat_atas_f32(-5.0 as f32), bulat_atas_f32(2.0 as f32), bulat_atas_f32(1.5 as f32))
+    wok(kelas(-5), kelas(-5.0), kelas(0.0), kelas(2), kelas(2.0), kelas("a"), kelas('a'), kelas(true), kelas(nil))
+    wok(kelas(97), kelas(1), kelas(false), kelas(math::NAN))
+    wok(bertag_campur(-5.0), bertag_campur(0), bertag_campur(2.0), bertag_campur('a'), bertag_campur(true), bertag_campur(math::NAN))
+    wok(u8_pola(2 as u8), u8_pola(5 as u8), u8_pola(9 as u8))
+    let m = (2, "x")
+    wok(match m { (2.0, "x") => "ok", _ => "no" })
+    let t = (1, 2)
+    wok(match t { 2 => "a", _ => "b" })
+    let x = 2
+    wok(match x { 1.0 | 2.0 | 3.0 => "ya", _ => "tdk" })
+    let nan = math::NAN
+    wok(match nan { 0 | 0.0 | 2 | 2.0 => "cocok", _ => "tdk" })
+}"#),
 ];
