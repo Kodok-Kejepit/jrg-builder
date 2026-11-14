@@ -18,6 +18,8 @@ pub enum Jenis {
     Fungsi(usize),
     /// `nil` (juga lubang yang ditinggal `AmbilLokal`).
     Kosong,
+    /// `()`: seperti `Kosong`, tidak ditulis ke stack VM sampai ada yang perlu isinya (tepi, deopt, langkah VM).
+    Satuan,
     /// Nilai lain, milik bingkai VM: tetap di stack VM di indeks yang sama, cuma disentuh lewat `lambat`.
     Nilai,
     /// Fungsi bawaan dari konstanta ke-`i` (`Const`): maya — tidak ditulis ke stack VM, diwujudkan dari
@@ -73,6 +75,7 @@ impl Jenis {
             Jenis::Pecahan => 5,
             Jenis::Lebar => 6,
             Jenis::Rune => 7,
+            Jenis::Satuan => 8,
             Jenis::Nilai | Jenis::Bawaan(_) | Jenis::Bungkus(..) | Jenis::Fungsi(_) | Jenis::Salinan(_) => 4,
         }
     }
@@ -186,6 +189,7 @@ pub fn jenis_nilai(v: &VmValue) -> Jenis {
         VmValue::Bool(_) => Jenis::Bool,
         VmValue::Float(_) => Jenis::Pecahan,
         VmValue::Nil => Jenis::Kosong,
+        VmValue::Unit => Jenis::Satuan,
         _ => Jenis::Nilai,
     }
 }
@@ -339,7 +343,7 @@ fn gabung(a: &[Jenis], b: &[Jenis], boleh_lebar: bool) -> Option<Vec<Jenis>> {
 
 /// Jenis masuk yang diperlebar supaya `datang` bertemu dengannya: posisi yang beda jadi `Nilai`.
 fn perlebar(masuk: &[Jenis], datang: &[Jenis]) -> Option<Vec<Jenis>> {
-    let ok = |j: &Jenis| matches!(j, Jenis::Bulat | Jenis::Bool | Jenis::Pecahan | Jenis::Kosong | Jenis::Nilai | Jenis::Lebar);
+    let ok = |j: &Jenis| matches!(j, Jenis::Bulat | Jenis::Bool | Jenis::Pecahan | Jenis::Kosong | Jenis::Satuan | Jenis::Nilai | Jenis::Lebar);
     if masuk.len() != datang.len() || !masuk.iter().chain(datang).all(ok) { return None; }
     Some(masuk.iter().zip(datang).map(|(a, b)| match (a, b) {
         _ if a == b => *a,
@@ -1021,7 +1025,7 @@ fn langkah_asli(
     let a = ins.arg as usize;
     // `Lebar` cuma di bingkai yang punya stack VM (bukan callee bulat).
     let lebar = r.kembali != KEMBALI_BULAT;
-    let skalar = |j: Jenis| matches!(j, Bulat | Bool | Pecahan | Kosong) || (lebar && j == Lebar);
+    let skalar = |j: Jenis| matches!(j, Bulat | Bool | Pecahan | Kosong | Satuan) || (lebar && j == Lebar);
     let angka = |j: Jenis| matches!(j, Bulat | Pecahan);
     // Dua bulat yang salah satunya `Lebar`: hasilnya `Lebar`.
     let lebar2 = |x: Jenis, y: Jenis| lebar && matches!((x, y), (Lebar, Bulat | Lebar) | (Bulat, Lebar));
@@ -1079,6 +1083,7 @@ fn langkah_asli(
         }
         OpCode::True | OpCode::False => s.push(Bool),
         OpCode::Nil => s.push(Kosong),
+        OpCode::Unit => s.push(Satuan),
         OpCode::Const => match f.chunk.constants.get(a)? {
             VmValue::Int(v) => match i64::try_from(*v) {
                 Ok(k) => { r.konstanta[ip] = Some(k); s.push(Bulat) }

@@ -55,7 +55,7 @@ pub enum VmValue {
 
 /// Isi `VmValue::Ktor`: varian mana yang dibangun, dan berapa payload-nya.
 #[derive(Debug)]
-pub struct Ktor { pub tipe: Arc<str>, pub varian: Arc<str>, pub arity: usize }
+pub struct Ktor { pub nama: &'static NamaVarian, pub arity: usize }
 
 pub type VmNativeFn = fn(&[VmValue]) -> Result<VmValue, String>;
 
@@ -176,7 +176,33 @@ impl VmClosure {
 pub enum Label {
     Dict,
     Struct(Arc<str>),
-    Enum { tipe: Arc<str>, varian: Arc<str>, payload: Option<VmValue> },
+    Enum { nama: &'static NamaVarian, payload: Option<VmValue> },
+}
+
+/// Nama varian enum, diintern per proses: satu alamat per (tipe, varian), hidup selamanya. Menyalin atau
+/// melepas sebuah enum jadi tidak menyentuh hitungan referensi nama, dan dua nama sama cukup dibanding alamatnya.
+/// Terbatas oleh teks program (deklarasi, `Option`/`Result`, nama dari jembatan), jadi tidak tumbuh saat jalan.
+#[derive(Debug)]
+pub struct NamaVarian { pub tipe: Arc<str>, pub varian: Arc<str> }
+
+impl NamaVarian {
+    pub fn intern(tipe: &str, varian: &str) -> &'static NamaVarian {
+        type Tabel = std::collections::HashMap<Box<str>, std::collections::HashMap<Box<str>, &'static NamaVarian>>;
+        static TABEL: std::sync::OnceLock<Mutex<Tabel>> = std::sync::OnceLock::new();
+        let mut t = TABEL.get_or_init(Default::default).lock().unwrap_or_else(|p| p.into_inner());
+        if let Some(n) = t.get(tipe).and_then(|m| m.get(varian)) { return n; }
+        let n: &'static NamaVarian = Box::leak(Box::new(NamaVarian { tipe: Arc::from(tipe), varian: Arc::from(varian) }));
+        t.entry(tipe.into()).or_default().insert(varian.into(), n);
+        n
+    }
+}
+
+/// `Option`/`Result`: diintern sekali, dipakai tiap `Some(..)`/`Ok(..)` yang dibangun pustaka.
+macro_rules! nama_tetap {
+    ($tipe:literal, $varian:literal) => {{
+        static N: std::sync::OnceLock<&'static NamaVarian> = std::sync::OnceLock::new();
+        *N.get_or_init(|| NamaVarian::intern($tipe, $varian))
+    }};
 }
 
 /// Hasher isi `Peta`: dict memakai SipHash berkunci acak (kuncinya bisa datang dari luar — HashDoS,
@@ -351,7 +377,7 @@ impl Peta {
         match &self.label {
             Label::Dict => None,
             Label::Struct(n) => Some(n.as_ref()),
-            Label::Enum { tipe, .. } => Some(tipe.as_ref()),
+            Label::Enum { nama, .. } => Some(nama.tipe.as_ref()),
         }
     }
 }
@@ -387,9 +413,8 @@ impl VmValue {
                 let isi: Vec<(Kunci, VmValue)> = m.lock().unwrap_or_else(|p| p.into_inner())
                     .iter().map(|(k, v)| (k.clone(), v.deep_copy())).collect();
                 let label = match &m.label {
-                    Label::Enum { tipe, varian, payload } => Label::Enum {
-                        tipe: tipe.clone(), varian: varian.clone(),
-                        payload: payload.as_ref().map(|p| p.deep_copy()),
+                    Label::Enum { nama, payload } => Label::Enum {
+                        nama, payload: payload.as_ref().map(|p| p.deep_copy()),
                     },
                     lain => lain.clone(),
                 };
@@ -445,25 +470,25 @@ impl VmValue {
     }
     /// Varian enum `tipe::varian`, dengan payload kalau ada.
     pub fn varian(tipe: &str, varian: &str, payload: Option<VmValue>) -> Self {
-        VmValue::Map(Arc::new(Peta::baru(
-            Label::Enum { tipe: Arc::from(tipe), varian: Arc::from(varian), payload },
-            std::iter::empty::<(Kunci, VmValue)>(),
-        )))
+        VmValue::varian_nama(NamaVarian::intern(tipe, varian), payload)
+    }
+    /// Varian dari nama yang sudah diintern (prototipe konstanta, `Option`/`Result` tetap).
+    #[inline(always)]
+    pub fn varian_nama(nama: &'static NamaVarian, payload: Option<VmValue>) -> Self {
+        // Dibangun langsung di dalam `Arc`-nya (isi kosong = tabel tanpa alokasi), tanpa `Peta` antara yang disalin.
+        VmValue::Map(Arc::new(Peta { label: Label::Enum { nama, payload }, isi: Mutex::new(IsiPeta::tabel(0, false)) }))
     }
     /// Varian berpayload dari nama milik prototipenya (`BuildEnum`, juga dipakai JIT).
     #[inline(always)]
-    pub fn varian_berisi(tipe: Arc<str>, varian: Arc<str>, payload: VmValue) -> Self {
-        VmValue::Map(Arc::new(Peta::baru(
-            Label::Enum { tipe, varian, payload: Some(payload) },
-            std::iter::empty::<(Kunci, VmValue)>(),
-        )))
+    pub fn varian_berisi(nama: &'static NamaVarian, payload: VmValue) -> Self {
+        VmValue::varian_nama(nama, Some(payload))
     }
     /// `(tipe, varian, payload)` kalau nilai ini enum.
     pub fn bagian_enum(&self) -> Option<(&str, &str, Option<&VmValue>)> {
         match self {
             VmValue::Map(m) => match &m.label {
-                Label::Enum { tipe, varian, payload } =>
-                    Some((tipe.as_ref(), varian.as_ref(), payload.as_ref())),
+                Label::Enum { nama, payload } =>
+                    Some((nama.tipe.as_ref(), nama.varian.as_ref(), payload.as_ref())),
                 _ => None,
             },
             _ => None,
@@ -527,14 +552,14 @@ impl VmValue {
 
     /// Konstruktor varian `tipe::varian` ber-payload `arity` sebagai nilai.
     pub fn ktor(tipe: &str, varian: &str, arity: usize) -> Self {
-        VmValue::Ktor(Arc::new(Ktor { tipe: Arc::from(tipe), varian: Arc::from(varian), arity }))
+        VmValue::Ktor(Arc::new(Ktor { nama: NamaVarian::intern(tipe, varian), arity }))
     }
 
     /// `Option::Some(v)` — SATU definisi; dulu ada lima salinan berkunci teks.
-    pub fn some(v: VmValue) -> VmValue { VmValue::varian("Option", "Some", Some(v)) }
+    pub fn some(v: VmValue) -> VmValue { VmValue::varian_nama(nama_tetap!("Option", "Some"), Some(v)) }
 
     /// `Option::None` sebagai `VmValue`.
-    pub fn none() -> VmValue { VmValue::varian("Option", "None", None) }
+    pub fn none() -> VmValue { VmValue::varian_nama(nama_tetap!("Option", "None"), None) }
 
     /// Nama tipe LENGKAP seperti yang dijawab `typeof` di interpreter.
     pub fn type_name_penuh(&self) -> String {
@@ -542,9 +567,9 @@ impl VmValue {
             VmValue::Map(m) => match &m.label {
                 Label::Dict => "dict".to_string(),
                 Label::Struct(n) => format!("struct:{}", n),
-                Label::Enum { tipe, .. } => format!("enum:{}", tipe),
+                Label::Enum { nama, .. } => format!("enum:{}", nama.tipe),
             },
-            VmValue::Ktor(k) => format!("enum_ctor:{}::{}", k.tipe, k.varian),
+            VmValue::Ktor(k) => format!("enum_ctor:{}::{}", k.nama.tipe, k.nama.varian),
             lain => lain.type_name().to_string(),
         }
     }
@@ -609,7 +634,11 @@ impl VmValue {
         // tempat kalau Arc-nya unik — `make_mut` menyalin cuma kalau dipegang bersama.
         if let VmValue::Str(mut a) = self {
             use std::fmt::Write;
-            write!(Arc::make_mut(&mut a), "{}", rhs).expect("Display VmValue tidak boleh gagal");
+            // Tampilan teks adalah isinya sendiri: disalin langsung, tanpa mesin `fmt`.
+            match rhs {
+                VmValue::Str(r) => Arc::make_mut(&mut a).push_str(r),
+                _ => write!(Arc::make_mut(&mut a), "{}", rhs).expect("Display VmValue tidak boleh gagal"),
+            }
             return Ok(VmValue::Str(a));
         }
         self.add(rhs)
@@ -822,9 +851,8 @@ impl VmValue {
                 let label_sama = match (&a.label, &b.label) {
                     (Label::Dict, Label::Dict) => true,
                     (Label::Struct(x), Label::Struct(y)) => x == y,
-                    (Label::Enum { tipe: t1, varian: v1, payload: p1 },
-                     Label::Enum { tipe: t2, varian: v2, payload: p2 }) =>
-                        t1 == t2 && v1 == v2 && match (p1, p2) {
+                    (Label::Enum { nama: n1, payload: p1 }, Label::Enum { nama: n2, payload: p2 }) =>
+                        std::ptr::eq(*n1, *n2) && match (p1, p2) {
                             (Some(x), Some(y)) => x.vm_eq(y)?,
                             (None, None) => true,
                             _ => false,
@@ -993,9 +1021,9 @@ impl fmt::Display for VmValue {
             // Map dipakai VM untuk tiga hal sekaligus; jenisnya dibaca dari labelnya.
             VmValue::Map(m)       => match &m.label {
                 // Enum: `Tipe::Varian` atau `Tipe::Varian(payload)`.
-                Label::Enum { tipe, varian, payload } => match payload {
-                    Some(p) => write!(f, "{}::{}({})", crate::ruang_tipe::bersih(tipe), varian, p),
-                    None    => write!(f, "{}::{}", crate::ruang_tipe::bersih(tipe), varian),
+                Label::Enum { nama, payload } => match payload {
+                    Some(p) => write!(f, "{}::{}({})", crate::ruang_tipe::bersih(&nama.tipe), nama.varian, p),
+                    None    => write!(f, "{}::{}", crate::ruang_tipe::bersih(&nama.tipe), nama.varian),
                 },
                 label => {
                     let g = m.lock().unwrap();
@@ -1028,7 +1056,7 @@ impl fmt::Display for VmValue {
             VmValue::Sinkron(p)    => write!(f, "{}", p.tampil()),
             VmValue::Asing(a)      => write!(f, "{}", a.tampil()),
             VmValue::Cell(c)       => write!(f, "{}", c.lock().unwrap_or_else(|p| p.into_inner())),
-            VmValue::Ktor(k)       => write!(f, "<ctor {}::{}>", crate::ruang_tipe::bersih(&k.tipe), k.varian),
+            VmValue::Ktor(k)       => write!(f, "<ctor {}::{}>", crate::ruang_tipe::bersih(&k.nama.tipe), k.nama.varian),
         }
     }
 }

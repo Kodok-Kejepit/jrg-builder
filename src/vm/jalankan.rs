@@ -702,14 +702,14 @@ impl Vm {
                 OpCode::BuildStruct => self.op_build_struct(arg, sp)?,
                 OpCode::BuildEnum => {
                     let payload = self.pop(sp)?;
-                    let (tipe, varian) = match self.const_at(arg)? {
+                    let nama = match self.const_at(arg)? {
                         VmValue::Map(p) => match &p.label {
-                            Label::Enum { tipe, varian, .. } => (tipe.clone(), varian.clone()),
+                            Label::Enum { nama, .. } => *nama,
                             _ => return Err(VmError::at("BuildEnum: prototipe bukan enum", sp)),
                         },
                         _ => return Err(VmError::at("BuildEnum: prototipe bukan enum", sp)),
                     };
-                    self.push(VmValue::varian_berisi(tipe, varian, payload));
+                    self.push(VmValue::varian_berisi(nama, payload));
                 }
 
                 // ── Field / Index ───────────────────────────────────────── Sama seperti
@@ -1585,8 +1585,10 @@ pub(crate) fn cocok_enum(v: &VmValue, desc: &VmValue) -> Result<bool, String> {
         (VmValue::Tuple(d), Some((tipe, varian, payload))) => {
             // Dibaca di tempat: deskriptornya konstanta chunk, payload-nya cuma dihitung.
             let d = d.lock().unwrap_or_else(|p| p.into_inner());
+            // Varian lebih dulu: yang tidak cocok (kebanyakan lengan) selesai tanpa membanding tipenya.
+            if !matches!(&d[1], VmValue::Str(s) if s.as_str() == varian) { return Ok(false); }
             let tipe_cocok = match &d[0] { VmValue::Str(t) => t.as_str() == tipe, _ => true };
-            let varian_cocok = matches!(&d[1], VmValue::Str(s) if s.as_str() == varian);
+            let varian_cocok = true;
             let payload_cocok = !matches!(d[2], VmValue::Bool(true)) || payload.is_some();
             // Nama varian cocok tapi jumlah sub-polanya tidak:
             // salah ketik, bukan "tidak cocok". Di sini, supaya

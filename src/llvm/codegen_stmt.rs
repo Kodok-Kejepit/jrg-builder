@@ -26,7 +26,8 @@ impl Codegen {
         match stmt {
             Stmt::Let(l) => self.codegen_let(l),
             Stmt::Var(v) => self.codegen_var(v),
-            Stmt::Const(_) => Ok(()), // module-level consts folded at use; local consts: treat as let
+            // `const` lokal sudah jadi `let` di `modul::muat` (`Ruang::const_lokal_jadi_let`).
+            Stmt::Const(c) => Err(super::galat::tandai(c.span, "bug di jrgc: `const` lokal tidak ditulis ulang jadi `let`")),
             // An `if` in statement position keeps the original statement lowering: no
             // result slot and no cross-branch type unification, so `if c { 1 } else { …
             Stmt::Expr(e) => self.codegen_expr_discarding(e),
@@ -49,7 +50,7 @@ impl Codegen {
             Stmt::Break(b) => self.codegen_break(b),
             Stmt::Continue(c) => self.codegen_continue(c),
             Stmt::Block(b) => { self.push_scope(); self.codegen_stmt_block(b)?; self.pop_scope(); Ok(()) }
-            // Fungsi bersarang bernama: didukung interpreter, belum di backend LLVM.
+            // Fungsi bersarang bernama sudah diangkat `hoist_fn_bersarang` di awal bloknya.
             Stmt::Fn(_) => Ok(()),
             Stmt::Spawn(s) => self.codegen_spawn(s),
             Stmt::Select(s) => self.codegen_select(s),

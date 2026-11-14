@@ -51,6 +51,8 @@ pub struct Ruang {
     pemilik: HashMap<String, String>,
     unit: HashMap<String, Unit>,
     nomor: usize,
+    /// LLVM: `const` lokal ditulis ulang jadi `let` supaya semua penyimpul LLVM melihatnya.
+    pub const_lokal_jadi_let: bool,
 }
 
 pub type RuangBersama = Arc<Mutex<Ruang>>;
@@ -383,6 +385,15 @@ impl Penulis<'_> {
             Stmt::Var(v) => {
                 if let Some(t) = &mut v.ty { self.anotasi(t); }
                 if let Some(e) = &mut v.init { self.expr(e); }
+            }
+            Stmt::Const(c) if self.ruang.const_lokal_jadi_let => {
+                let span = c.span;
+                let l = LetStmt { is_mut: false, ownership: None,
+                    pattern: Pattern::Ident { name: c.name.clone(), is_mut: false, span },
+                    ty: c.ty.take(), init: std::mem::replace(&mut c.value, Box::new(Expr::Error(span))),
+                    lifetime: None, span };
+                *s = Stmt::Let(l);
+                if let Stmt::Let(l) = s { self.let_(l); }
             }
             Stmt::Const(c) => self.expr(&mut c.value),
             Stmt::Expr(e) => self.expr(e),

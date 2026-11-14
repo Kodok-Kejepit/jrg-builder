@@ -124,19 +124,24 @@ impl Codegen {
 
     pub fn codegen_block_expr(&mut self, block: &Block, expected: Option<&JrgType>) -> Result<Val, String> {
         self.push_scope();
-        for stmt in &block.stmts {
-            self.codegen_stmt(stmt)?;
-            if self.is_terminated() { break; }
-        }
-        let result = if self.is_terminated() {
-            Val { text: "undef".into(), ty: expected.cloned().unwrap_or(JrgType::Unit) }
-        } else if let Some(tail) = &block.tail {
-            self.codegen_expr(tail, expected)?
-        } else {
-            Val::unit()
-        };
+        // Fungsi bernama di blok diangkat seperti di badan fungsi (`codegen_stmt_block`).
+        self.hoist_fn_bersarang(block);
+        let r = (|cg: &mut Self| {
+            for stmt in &block.stmts {
+                cg.codegen_stmt(stmt)?;
+                if cg.is_terminated() { break; }
+            }
+            Ok(if cg.is_terminated() {
+                Val { text: "undef".into(), ty: expected.cloned().unwrap_or(JrgType::Unit) }
+            } else if let Some(tail) = &block.tail {
+                cg.codegen_expr(tail, expected)?
+            } else {
+                Val::unit()
+            })
+        })(self);
+        self.fn_bersarang.pop();
         self.pop_scope();
-        Ok(result)
+        r
     }
 
     // ── literals / idents ───────────────────────────────────────────────

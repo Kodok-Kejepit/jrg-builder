@@ -218,7 +218,7 @@ impl Vm {
             VmValue::Ktor(k) => {
                 if argc != k.arity {
                     return Err(VmError::at(crate::interpreter::pesan_konstruktor_argumen(
-                        &k.tipe, &k.varian, k.arity, argc), sp));
+                        &k.nama.tipe, &k.nama.varian, k.arity, argc), sp));
                 }
                 let mut args: Vec<VmValue> = self.stack[fn_idx + 1..].to_vec();
                 self.stack.truncate(fn_idx);
@@ -228,7 +228,7 @@ impl Vm {
                     _ => Some(VmValue::tuple(args)),
                 };
                 self.push(VmValue::Map(Arc::new(super::value::Peta::baru(
-                    super::value::Label::Enum { tipe: k.tipe.clone(), varian: k.varian.clone(), payload },
+                    super::value::Label::Enum { nama: k.nama, payload },
                     std::iter::empty::<(crate::vm::value::Kunci, VmValue)>(),
                 ))));
                 Ok(())

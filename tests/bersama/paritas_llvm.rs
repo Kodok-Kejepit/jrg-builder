@@ -4549,4 +4549,12 @@ pub fn main() {
     let nan = math::NAN
     wok(match nan { 0 | 0.0 | 2 | 2.0 => "cocok", _ => "tdk" })
 }"#),
+    // `const` lokal dan fungsi bernama di ekor blok: LLVM dulu membuang `const` lokal (pakai
+    // `const` modul yang bernama sama), VM membaca fungsi modul dari ekor blok `for`/`if`/`{ }`.
+    ("const lokal: membayangi const modul, cakupan blok, closure, fungsi bersarang, anotasi",
+     "package main\nconst KOTA = \"jakarta\"\nconst K = 1\nfn tanpa_anotasi() { const K = 7; K * 2 }\nfn dalam() -> int { fn bantu() -> int { const Q = 3; Q + 1 }  bantu() }\npub fn main() {\n  const KOTA = \"bogor\"\n  wok(KOTA)\n  let n = 1\n  { const n = 2; wok(n) }\n  wok(n)\n  let f = |x| { const T = 10; x + T + K }\n  wok(f(5))\n  const S = \"luar\"\n  let g = || S\n  wok(g(), tanpa_anotasi(), dalam())\n  for i in 0..2 { const L = i * 10; wok(L) }\n  let m = match 2 { 2 => { const Q = \"lengan\"; Q }, _ => \"x\" }\n  const A: float = 2.5\n  wok(m, A + 1.0, K)\n}\n"),
+    ("fungsi bernama di blok dipanggil dari ekor blok: blok polos, for, if, if bernilai, lengan match",
+     "package main\nfn sapa() -> string { \"modul\" }\npub fn main() {\n  { fn a() -> int { b() + 1 }  fn b() -> int { 40 }  wok(a()) }\n  { fn sapa() -> string { \"blok\" }  wok(sapa()) }\n  for i in 0..1 { fn sapa() -> string { \"for\" } wok(sapa()) }\n  if true { fn sapa() -> string { \"if\" } wok(sapa()) }\n  while true { fn sapa() -> string { \"while\" }  wok(sapa()); break }\n  let v = if true { fn h() -> int { 9 } h() } else { 0 }\n  let m = match 2 { 2 => { fn j() -> string { \"lengan\" } j() }, _ => \"x\" }\n  wok(v, m, sapa())\n}\n"),
+    ("fungsi bernama di blok polos sebagai ekor main",
+     "package main\nfn sapa() -> string { \"modul\" }\npub fn main() { { fn sapa() -> string { \"blok\" }  wok(sapa()) } }\n"),
 ];

@@ -63,9 +63,9 @@ pub(crate) fn vm_ke_nilai_dgn(
         // Struct, enum, dict, dan handle `ptr::`/`jawa::` semuanya `Map` di VM; jenisnya
         // dari LABEL, jadi kunci `variant` milik data (mis. hasil JSON) tetap data.
         VmValue::Map(m) => match &m.label {
-            crate::vm::value::Label::Enum { tipe, varian, payload } => Value::Enum {
-                type_name: tipe.to_string(),
-                variant: varian.to_string(),
+            crate::vm::value::Label::Enum { nama, payload } => Value::Enum {
+                type_name: nama.tipe.to_string(),
+                variant: nama.varian.to_string(),
                 payload: match payload {
                     Some(p) => Some(Box::new(vm_ke_nilai_dgn(p, fungsi)?)),
                     None => None,
@@ -88,7 +88,7 @@ pub(crate) fn vm_ke_nilai_dgn(
         VmValue::Function(_) | VmValue::Closure(_) | VmValue::NativeFn(_) | VmValue::Channel(_) => return fungsi(v),
         // Konstruktor cuma data (tipe, varian, jumlah payload), jadi menyeberang utuh.
         VmValue::Ktor(k) => Value::EnumCtor {
-            type_name: k.tipe.to_string(), variant: k.varian.to_string(), arity: k.arity,
+            type_name: k.nama.tipe.to_string(), variant: k.nama.varian.to_string(), arity: k.arity,
         },
         lain => return Err(pesan_tak_menyeberang(lain)),
     })

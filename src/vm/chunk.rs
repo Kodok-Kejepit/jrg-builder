@@ -289,8 +289,8 @@ fn kunci_konstanta(v: &VmValue) -> Option<KunciKonstanta> {
         VmValue::NativeFn(f) => KunciKonstanta::Native(*f as usize),
         VmValue::Map(m) if m.lock().map_or(false, |g| g.is_empty()) => match &m.label {
             Label::Struct(n) => KunciKonstanta::Struct(Arc::clone(n)),
-            Label::Enum { tipe, varian, payload: None } => {
-                KunciKonstanta::Varian(Arc::clone(tipe), Arc::clone(varian))
+            Label::Enum { nama, payload: None } => {
+                KunciKonstanta::Varian(Arc::clone(&nama.tipe), Arc::clone(&nama.varian))
             }
             _ => return None,
         },

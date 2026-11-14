@@ -163,6 +163,7 @@ fn nilai_dari(j: Jenis, v: i64, callee: &[Arc<crate::vm::value::VmFunction>], ko
         Jenis::Rune => super::lambat::skalar_kode(7, v).expect("kode rune"),
         Jenis::Fungsi(c) => VmValue::Function(Arc::clone(&callee[c])),
         Jenis::Kosong => VmValue::Nil,
+        Jenis::Satuan => VmValue::Unit,
         // Bingkai callee native tidak pernah memegang nilai milik VM (argumennya selalu bulat).
         Jenis::Nilai | Jenis::Lebar | Jenis::Salinan(_) => unreachable!("posisi Nilai cuma ada di bingkai terluar"),
     }

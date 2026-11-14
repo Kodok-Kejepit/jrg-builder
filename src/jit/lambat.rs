@@ -51,9 +51,19 @@ fn tumbuh(vm: &mut Vm, i: usize) {
     while vm.stack.len() <= i { vm.stack.push(VmValue::Nil); }
 }
 
+/// Satu `match` atas jenisnya (sama artinya dengan `skalar_kode(j.kode())`, tanpa pembandingan `Lebar` dan
+/// kode antara): dipanggil per posisi di `bangun`, `masuk`, `bawaan`.
+#[inline(always)]
 fn nilai_skalar(j: Jenis, v: i64) -> Option<VmValue> {
-    if j == Jenis::Lebar { return None; }
-    skalar_kode(j.kode() as i32, v)
+    Some(match j {
+        Jenis::Bulat => VmValue::Int(v as i128),
+        Jenis::Pecahan => VmValue::Float(f64::from_bits(v as u64)),
+        Jenis::Bool => VmValue::Bool(v != 0),
+        Jenis::Kosong => VmValue::Nil,
+        Jenis::Satuan => VmValue::Unit,
+        Jenis::Rune => VmValue::Rune(char::from_u32(v as u32).expect("kode rune dari char")),
+        _ => return None,
+    })
 }
 
 /// Satu definisi isi native → nilai VM menurut `Jenis::kode`; `None` = milik VM (4) atau `Lebar` (6).
@@ -65,6 +75,7 @@ pub(crate) fn skalar_kode(kode: i32, nilai: i64) -> Option<VmValue> {
         5 => VmValue::Float(f64::from_bits(nilai as u64)),
         // Kode rune selalu lahir dari `char` (`karakter`, `buka` kode 7).
         7 => VmValue::Rune(char::from_u32(nilai as u32).expect("kode rune dari char")),
+        8 => VmValue::Unit,
         _ => return None,
     })
 }
@@ -72,10 +83,13 @@ pub(crate) fn skalar_kode(kode: i32, nilai: i64) -> Option<VmValue> {
 /// Satu situs `Cara::Bangun`, disiapkan saat kompilasi: struct (label + bentuk prototipe), larik, atau tuple.
 pub enum SitusBangun {
     Struktur(crate::vm::value::Label, Arc<crate::vm::peta::Bentuk>),
+    /// `Struktur` yang langsung dikembalikan (`Return` sesudahnya): lokal bingkai ini yang sebentuk, berlabel sama
+    /// dan milik tunggal — sesudah `Return` tidak terlihat siapa pun — dipakai ulang, nilainya ditimpa di tempat.
+    StrukturUlang(crate::vm::value::Label, Arc<crate::vm::peta::Bentuk>),
     Larik,
     Tuple,
-    /// `BuildEnum`: tipe dan varian milik prototipenya, payloadnya satu posisi.
-    Varian(Arc<str>, Arc<str>),
+    /// `BuildEnum`: nama varian milik prototipenya, payloadnya satu posisi.
+    Varian(&'static crate::vm::value::NamaVarian),
 }
 
 impl SitusBangun {
@@ -90,20 +104,41 @@ pub extern "C" fn bangun(situs: *const SitusBangun, jenis: *const Jenis, t: i64,
     let (t, n) = (t as usize, n as usize);
     let jenis = unsafe { std::slice::from_raw_parts(jenis, t) };
     let nilai = unsafe { std::slice::from_raw_parts(nilai, t) };
-    let mut isi = Vec::with_capacity(n);
-    for i in t - n..t {
-        isi.push(match nilai_skalar(jenis[i], nilai[i]) {
-            Some(v) => v,
-            None => std::mem::replace(sediakan(vm, basis, i), VmValue::Nil),
-        });
+    let situs = unsafe { &*situs };
+    // Varian: satu payload, tanpa `Vec` antara.
+    if let SitusBangun::Varian(nama) = situs {
+        let p = nilai_skalar(jenis[t - 1], nilai[t - 1])
+            .unwrap_or_else(|| std::mem::replace(sediakan(vm, basis, t - 1), VmValue::Nil));
+        *sediakan(vm, basis, t - n) = VmValue::varian_berisi(nama, p);
+        return;
     }
-    let v = match unsafe { &*situs } {
-        SitusBangun::Struktur(label, bentuk) =>
+    if let SitusBangun::StrukturUlang(label, bentuk) = situs {
+        if let Some(p) = vm.calon_pakai_ulang(basis, t - n, label, bentuk) {
+            let mut lama = std::mem::replace(&mut vm.stack[basis + p], VmValue::Nil);
+            let VmValue::Map(m) = &mut lama else { unreachable!("diperiksa pakai_ulang") };
+            let Some(crate::vm::peta::IsiPeta::Rapat { nilai: isi, .. }) = crate::vm::value::Peta::isi_tunggal(m)
+                else { unreachable!("diperiksa pakai_ulang") };
+            for (j, i) in (t - n..t).enumerate() {
+                isi[j] = match nilai_skalar(jenis[i], nilai[i]) {
+                    Some(v) => v,
+                    None => std::mem::replace(sediakan(vm, basis, i), VmValue::Nil),
+                };
+            }
+            *sediakan(vm, basis, t - n) = lama;
+            return;
+        }
+    }
+    // Rentang berukuran pasti: `collect` mengalokasi sekali tanpa cek kapasitas per elemen.
+    let isi: Vec<VmValue> = (t - n..t).map(|i| match nilai_skalar(jenis[i], nilai[i]) {
+        Some(v) => v,
+        None => std::mem::replace(sediakan(vm, basis, i), VmValue::Nil),
+    }).collect();
+    let v = match situs {
+        SitusBangun::Struktur(label, bentuk) | SitusBangun::StrukturUlang(label, bentuk) =>
             VmValue::Map(crate::vm::value::Peta::struktur_arc(label.clone(), Arc::clone(bentuk), isi)),
         SitusBangun::Tuple => VmValue::tuple(isi),
         SitusBangun::Larik => VmValue::array(isi),
-        SitusBangun::Varian(tipe, varian) =>
-            VmValue::varian_berisi(Arc::clone(tipe), Arc::clone(varian), isi.pop().expect("satu payload")),
+        SitusBangun::Varian(_) => unreachable!("ditangani di atas"),
     };
     *sediakan(vm, basis, t - n) = v;
 }
@@ -375,6 +410,39 @@ pub extern "C" fn bawaan(ip: i64, jenis: *const Jenis, t: i64, argc: i64, nilai:
         *sediakan(vm, basis, t - argc - 1) = v;
         return 0;
     }
+    let span = |vm: &mut Vm| {
+        let fr = vm.frames.last_mut().expect("bingkai terluar");
+        fr.ip = ip as usize + 1;
+        fr.func.chunk.code.get(ip as usize).and_then(|i| (i.span != 0).then(|| fr.func.chunk.spans.get(i.span as usize).copied()).flatten())
+    };
+    // Bawaan murni (tanpa layanan khusus, bukan cetak) dengan jumlah argumen yang sah: dipanggil langsung atas
+    // argumennya di stack VM, tanpa `Vec` per panggilan. Selebihnya — termasuk aritas salah, yang kalimatnya
+    // lahir di `panggil_native` — lewat pintu umum.
+    let polos = crate::vm::info_native::info(f).is_none_or(|i| i.khusus.is_none() && !i.cetak
+        && i.maks.is_none_or(|m| argc <= m) && i.min.is_none_or(|m| argc >= m));
+    if polos {
+        for i in t - argc..t {
+            if let Some(v) = nilai_skalar(jenis[i], nilai[i]) { *sediakan(vm, basis, i) = v; }
+        }
+        let _ = sediakan(vm, basis, t - 1);
+        let r = f(&vm.stack[basis + t - argc..basis + t]);
+        let r = r.map_err(|e| crate::vm::value::perjelas_pesan_native(e, &vm.stack[basis + t - argc..basis + t]));
+        // Argumennya dilepas di sini, seperti yang dulu dipindah ke larik argumen.
+        for i in t - argc..t { vm.stack[basis + i] = VmValue::Nil; }
+        return match r {
+            Ok(v) => {
+                let _ = span(vm);
+                vm.catat_hasil(&v);
+                *sediakan(vm, basis, t - argc - 1) = v;
+                0
+            }
+            Err(e) => {
+                let sp = span(vm);
+                GALAT.with(|g| *g.borrow_mut() = Some(crate::vm::VmError::at(e, sp)));
+                2
+            }
+        };
+    }
     let mut args = Vec::with_capacity(argc);
     for i in t - argc..t {
         args.push(match nilai_skalar(jenis[i], nilai[i]) {
@@ -382,9 +450,7 @@ pub extern "C" fn bawaan(ip: i64, jenis: *const Jenis, t: i64, argc: i64, nilai:
             None => std::mem::replace(sediakan(vm, basis, i), VmValue::Nil),
         });
     }
-    let fr = vm.frames.last_mut().expect("bingkai terluar");
-    let sp = fr.func.chunk.code.get(ip as usize).and_then(|i| (i.span != 0).then(|| fr.func.chunk.spans.get(i.span as usize).copied()).flatten());
-    fr.ip = ip as usize + 1;
+    let sp = span(vm);
     match vm.panggil_native(f, args, sp, true) {
         Ok(v) => {
             vm.catat_hasil(&v);
@@ -396,6 +462,24 @@ pub extern "C" fn bawaan(ip: i64, jenis: *const Jenis, t: i64, argc: i64, nilai:
             2
         }
     }
+}
+
+/// Desimal sebuah bulat 64 bit, sama dengan `{}` atas `i128` (yang dipakai tampilan `VmValue::Int`), tanpa mesin
+/// `fmt`: digit ditulis dari belakang ke penyangga di stack.
+fn desimal(n: i64) -> String {
+    let mut b = [0u8; 20];
+    let mut i = b.len();
+    let mut x = n.unsigned_abs();
+    loop {
+        i -= 1;
+        b[i] = b'0' + (x % 10) as u8;
+        x /= 10;
+        if x == 0 { break; }
+    }
+    let mut s = String::with_capacity(b.len() - i + 1);
+    if n < 0 { s.push('-'); }
+    s.push_str(std::str::from_utf8(&b[i..]).expect("digit ASCII"));
+    s
 }
 
 /// Bawaan yang dijawab di tempat, tanpa larik argumen dan jembatan nilai; `None` = jalur umum (yang juga
@@ -410,7 +494,7 @@ fn bawaan_cepat(vm: &Vm, basis: usize, jenis: &[Jenis], nilai: &[i64], t: usize,
     });
     match argc {
         // `str(n)` atas bulat native: tampilan `VmValue::Int` yang sama dengan bawaan `str`.
-        1 if f == teks && jenis[t - 1] == Jenis::Bulat => Some(VmValue::str(VmValue::Int(nilai[t - 1] as i128).to_string())),
+        1 if f == teks && jenis[t - 1] == Jenis::Bulat => Some(VmValue::str(desimal(nilai[t - 1]))),
         // `len(teks)` milik VM: `Vm::vm_len`, definisi yang sama dengan opcode `Len`.
         1 if f == len && jenis[t - 1].di_vm() => match vm.stack.get(basis + t - 1) {
             Some(v @ VmValue::Str(_)) => vm.vm_len(v, None).ok().map(|n| VmValue::Int(n as i128)),
@@ -537,8 +621,8 @@ pub extern "C" fn pola(p: i64, situs: *const SitusPola) -> i32 {
 }
 
 /// Satu situs pola enum (`CekEnum`): deskriptornya dan tembolok hasil per varian. Kunci = alamat nama varian
-/// milik nilainya (satu `Arc` cuma dimiliki satu tipe+varian; referensi kuatnya dibocorkan, jadi alamatnya
-/// tidak dipakai ulang) | bit payload, isi = hasilnya; `Err` (sub-pola salah jumlah) tidak pernah ditembolok.
+/// nilainya (diintern: satu alamat per tipe+varian, hidup selamanya) | bit payload, isi = hasilnya; `Err`
+/// (sub-pola salah jumlah) tidak pernah ditembolok.
 pub struct SitusPola {
     desc: *const VmValue,
     // Delapan: situs `CekEnum` melihat semua varian enum-nya, bukan cuma yang dicocokkannya.
@@ -556,24 +640,22 @@ impl SitusPola {
         use std::sync::atomic::Ordering::{Acquire, Relaxed, Release};
         let kunci = match v {
             VmValue::Map(m) => match &m.label {
-                crate::vm::value::Label::Enum { varian, payload, .. } =>
-                    Some((Arc::as_ptr(varian) as *const u8 as usize | (payload.is_some() as usize) << 1, varian)),
+                crate::vm::value::Label::Enum { nama, payload } =>
+                    Some(*nama as *const _ as usize | (payload.is_some() as usize) << 1),
                 _ => None,
             },
             _ => None,
         };
-        if let Some((k, _)) = kunci {
+        if let Some(k) = kunci {
             for e in &self.tembolok {
                 let isi = e.load(Acquire);
                 if isi & !1 == k { return Ok(isi & 1 == 1); }
             }
         }
         let hasil = crate::vm::cocok_enum(v, unsafe { &*self.desc })?;
-        if let Some((k, varian)) = kunci {
+        if let Some(k) = kunci {
             if let Some(e) = self.tembolok.iter().find(|e| e.load(Relaxed) == 0) {
-                if e.compare_exchange(0, k | hasil as usize, Release, Relaxed).is_ok() {
-                    std::mem::forget(Arc::clone(varian));
-                }
+                let _ = e.compare_exchange(0, k | hasil as usize, Release, Relaxed);
             }
         }
         Ok(hasil)
@@ -989,6 +1071,13 @@ fn norm_indeks(i: i64, n: usize) -> Option<usize> {
     ((j as u64) < n as u64).then_some(j as usize)
 }
 
+/// Alamat VM dan basis bingkai ini untuk jalur sebaris (`jit::tata_letak`): dibaca sekali di pintu masuk fungsi,
+/// tetap selama panggilannya (`masuk`/`keluar` memulihkannya sebelum kembali ke sini).
+pub extern "C" fn konteks_mentah(keluar: *mut usize) {
+    let (vm, basis) = KONTEKS.with(|k| k.get());
+    unsafe { *keluar = vm as usize; *keluar.add(1) = basis; }
+}
+
 /// `IndeksLokal` atas larik berelemen bulat 64 bit: 0 = `*keluar` terisi.
 pub extern "C" fn baca(rel: i64, i: i64, keluar: *mut i64) -> i32 {
     let bulat = |g: &[VmValue]| match g.get(norm_indeks(i, g.len())?)? {
@@ -1040,4 +1129,14 @@ pub extern "C" fn tulis(rel: i64, i: i64, nilai: i64, jenis: i32) -> i32 {
         Some(())
     });
     if ok.is_some() { 0 } else { 1 }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn desimal_sama_dengan_fmt() {
+        for n in [0i64, 1, -1, 9, 10, -10, 99, 100, 12345, i64::MAX, i64::MIN, i64::MIN + 1, 1 << 40, -(1 << 50)] {
+            assert_eq!(super::desimal(n), format!("{}", n as i128), "{n}");
+        }
+    }
 }

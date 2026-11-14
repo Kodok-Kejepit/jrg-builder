@@ -1814,3 +1814,264 @@ fn pemeriksa_match_tanpa_salinan() {
     let rencana = j.stderr.split("rencana exec").nth(1).expect("rencana exec dicetak");
     assert!(rencana.lines().take(3).any(|l| l.contains("LoadLocal 0 Salinan")), "{rencana}");
 }
+
+/// Jalur sebaris `a[i]` (J8, `tata_letak`): tiap bentuk yang tidak pasti jatuh ke pembantu dengan jawaban yang
+/// sama — larik dibagi variabel lain, larik di sel tangkapan closure, elemen di atas 64 bit, pecahan dan teks di
+/// larik bulat, indeks negatif, larik yang ditulis dan tumbuh di tengah loop, dan indeks di luar batas di akhir.
+const LARIK_SEBARIS: &str = r#"
+package main
+fn jumlah(a, n: int) -> int {
+    var s = 0
+    for i in 0..n { s = s + a[i] + a[-1 - (i % 3)] }
+    return s
+}
+pub fn main() {
+    var a = [3, 1, 4, 1, 5, 9, 2, 6]
+    var tot = 0
+    for r in 0..200 {
+        for i in 0..8 { tot = tot + a[i] * (r % 7) }
+        if (r == 50) { let b = a; tot = tot + b[2] }
+        if (r == 120) { a[3] = 1180591620717411303424 }
+        if (r == 121) { a[3] = 1 }
+        if (r == 150) { a = a + [7] }
+    }
+    wok(tot, jumlah(a, 9))
+    var c = [1, 2, 3]
+    let ubah = || { c[0] = c[0] + 10 }
+    var u = 0
+    for i in 0..300 {
+        u = u + c[i % 3]
+        if (i % 100 == 0) { ubah() }
+    }
+    wok(u, c)
+    var campur = [1, 2, 3, 4]
+    var v = 0
+    for i in 0..400 {
+        v = v + campur[i % 4]
+        if (i == 200) { campur[1] = 2.5 }
+    }
+    wok(v)
+    var bersama = [5, 6, 7]
+    let simpan = bersama
+    var w = 0
+    for i in 0..300 { w = w + bersama[i % 3] }
+    wok(w, simpan)
+    var teks = ["a", "b", 3]
+    var z = [[1], 2, 3]
+    var dulu = [1, 2, 3]
+    // Indeks bernama: bentuk yang diturunkan VM jadi `TulisIndexLokal` (jalur tulis sebaris).
+    for i in 0..300 {
+        let k = i % 3
+        let q = i % 4
+        teks[k] = i
+        z[k] = i * 2
+        if (i == 150) { let lama = dulu; dulu[0] = 99; wok(lama, dulu) }
+        dulu[k] = dulu[k] + 1
+        campur[q] = 0.5 * i
+    }
+    var nyala = [true, false, true]
+    for i in 0..300 { let k = i % 3; nyala[k] = i % 2 == 0 }
+    wok(teks, z, dulu, campur, nyala)
+    let x = [10, 20, 30]
+    var y = 0
+    for i in 0..300 { y = y + x[i % 3] }
+    wok(y, x[3])
+}
+"#;
+
+#[test]
+fn larik_sebaris_jatuh_ke_pembantu_bila_tak_pasti() {
+    let v = jalankan(LARIK_SEBARIS, &["--vm"], &[]);
+    assert!(v.stderr.contains("di luar"), "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(LARIK_SEBARIS, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    // IR yang ditolak verifier mematikan JIT diam-diam — jawabannya tetap benar lewat VM, jadi paritas saja tidak
+    // menangkapnya: `main` harus benar-benar dikompilasi. Verifier cuma menyala kalau `JRG_JIT_STRES` diset.
+    let j = jalankan(LARIK_SEBARIS, &["--jit"], &[STRES, ACAK, ("JRG_JIT_LOG", "ringkas")]);
+    let baris = j.stderr.lines().find(|l| l.contains("dikompilasi:")).unwrap_or("");
+    assert!(baris.contains("main"), "main tidak dikompilasi:\n{}", j.stderr);
+}
+
+/// `()` sebagai `Jenis::Satuan` (J8): tidak ditulis ke stack VM sampai ada yang butuh isinya. Nilai `if` tanpa
+/// `else` dipakai, disimpan, masuk larik, dikembalikan, ditanya `typeof`, dibandingkan, dan hidup di stack saat
+/// deopt (luapan 64 bit di putaran yang sama).
+const SATUAN_MAYA: &str = r#"
+package main
+fn kosong(n: int) { if (n > 5) { wok("besar") } }
+fn bare() { return }
+pub fn main() {
+    var simpan = []
+    var hitung = 0
+    var besar = 1
+    for i in 0..400 {
+        let u = if (i % 7 == 0) { hitung = hitung + 1 }
+        if (i % 100 == 0) { simpan = arr::push(simpan, u) }
+        let v = kosong(i % 3)
+        if (typeof(v) != "unit") { wok("salah") }
+        if (u != ()) { wok("beda") }
+        besar = (besar * 3 + i) % 1000000000000000000000
+        if (i == 390) { besar = 9223372036854775000 }
+    }
+    wok(hitung, simpan, typeof(bare()), besar + 1000, [(), 1])
+}
+"#;
+
+#[test]
+fn unit_tidak_ditulis_ke_stack_vm() {
+    let v = jalankan(SATUAN_MAYA, &["--vm"], &[]);
+    assert!(v.sukses, "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(SATUAN_MAYA, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(SATUAN_MAYA, &["--jit"], &[STRES, ACAK, ("JRG_JIT_LOG", "ringkas")]);
+    let baris = j.stderr.lines().find(|l| l.contains("dikompilasi:")).unwrap_or("");
+    assert!(baris.contains("main"), "main tidak dikompilasi:\n{}", j.stderr);
+}
+
+/// Bawaan murni dipanggil langsung atas argumennya di stack VM (J6 langkah 45): sesudah ratusan panggilan yang
+/// berhasil (terkompilasi), argumen berjenis salah harus gagal dengan kalimat, lokasi dan jejak yang sama.
+const BAWAAN_LANGSUNG: &str = r#"
+package main
+fn olah(x, i: int) -> string {
+    let a = str::upper(x)
+    let b = str::replace(a, "A", "b")
+    return str::reverse(b) + str(i)
+}
+pub fn main() {
+    var n = 0
+    for i in 0..400 {
+        let x = if (i == 350) { 42 } else { "aku-" + str(i % 7) }
+        n = n + len(olah(x, i))
+    }
+    wok(n)
+}
+"#;
+
+#[test]
+fn bawaan_langsung_gagal_sama() {
+    let v = jalankan(BAWAAN_LANGSUNG, &["--vm"], &[]);
+    assert!(!v.sukses && v.stderr.contains("str::upper"), "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(BAWAAN_LANGSUNG, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(BAWAAN_LANGSUNG, &["--jit"], &[STRES, ACAK, ("JRG_JIT_LOG", "ringkas")]);
+    let baris = j.stderr.lines().find(|l| l.contains("dikompilasi:")).unwrap_or("");
+    assert!(baris.contains("olah"), "olah tidak dikompilasi:\n{}", j.stderr);
+}
+
+/// Bacaan field lewat `field_lokal`/`field_lokal_banyak` di bentuk-bentuk yang tidak biasa — struct dibagi, di sel
+/// tangkapan, dict bernama field sama, struct di atas 16 field (tabel hash), dua bentuk di satu situs, field
+/// privat, field berisi jenis lain, dan deopt (luapan) di tengah bacaan. (Dari J8 tahap 5, yang dicabut.)
+const FIELD_SEBARIS: &str = r#"
+package main
+struct P { pub x: int, pub y: int, pub z: f64 }
+struct Q { pub y: int, pub x: int, pub z: f64, pub w: int }
+struct R { a: int, pub b: int }
+struct Besar { pub f0: int, pub f1: int, pub f2: int, pub f3: int, pub f4: int, pub f5: int, pub f6: int, pub f7: int,
+    pub f8: int, pub f9: int, pub f10: int, pub f11: int, pub f12: int, pub f13: int, pub f14: int, pub f15: int, pub f16: int }
+impl R { fn jumlah(self) -> int { self.a + self.b } }
+fn baca(p) -> f64 { (p.x + p.y) as f64 + p.z }
+pub fn main() {
+    var t = 0.0
+    for i in 0..400 {
+        var p = P { x: i, y: i * 2, z: 0.5 }
+        if (i % 3 == 0) { let salin = p; t = t + baca(salin) + (salin.x as f64) }
+        t = t + baca(p)
+        if (i % 5 == 0) { t = t + baca(Q { y: 1, x: 2, z: 0.25, w: 9 }) }
+        if (i == 300) { p.x = 9223372036854775000 }
+        t = t + (p.x % 1000) as f64
+    }
+    wok(t)
+    var c = P { x: 1, y: 2, z: 3.0 }
+    let ubah = || { c.x = c.x + 1 }
+    var u = 0
+    for i in 0..300 { u = u + c.x + c.y; if (i % 50 == 0) { ubah() } }
+    wok(u, c.x)
+    var d = dict { x: 1, y: 2, z: 0.5 }
+    var v = 0.0
+    for i in 0..300 { v = v + baca(d) }
+    wok(v)
+    let b = Besar { f0: 0, f1: 1, f2: 2, f3: 3, f4: 4, f5: 5, f6: 6, f7: 7, f8: 8, f9: 9, f10: 10, f11: 11, f12: 12,
+        f13: 13, f14: 14, f15: 15, f16: 16 }
+    var w = 0
+    for i in 0..300 { w = w + b.f3 + b.f16 + b.f0 }
+    wok(w)
+    var r = R { a: 3, b: 4 }
+    var x = 0
+    for i in 0..300 { x = x + r.jumlah() + r.b }
+    wok(x)
+    var campur = P { x: 1, y: 2, z: 3.0 }
+    var y = 0
+    for i in 0..300 { y = y + campur.x; if (i == 200) { campur = P { x: 5, y: 6, z: 7.0 } } }
+    wok(y, typeof(baca(P { x: 1, y: 2, z: 0.5 })))
+}
+"#;
+
+#[test]
+fn field_sebaris_jatuh_ke_pembantu_bila_tak_pasti() {
+    let v = jalankan(FIELD_SEBARIS, &["--vm"], &[]);
+    assert!(v.sukses, "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(FIELD_SEBARIS, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(FIELD_SEBARIS, &["--jit"], &[STRES, ACAK, ("JRG_JIT_LOG", "ringkas")]);
+    let baris = j.stderr.lines().find(|l| l.contains("dikompilasi:")).unwrap_or("");
+    assert!(baris.contains("main") && baris.contains("baca"), "main/baca tidak dikompilasi:\n{}", j.stderr);
+}
+
+/// Struct yang langsung dikembalikan memakai ulang lokal sebentuk milik tunggal (J6 langkah 46). Yang tidak boleh
+/// teramati: salinan penerima yang masih dipegang pemanggil tetap utuh, tipe lain bernama field sama tidak ikut,
+/// struct yang memuat `self` tidak menimpa `self`, sel tangkapan tidak dipakai, dan deopt di tengahnya.
+const PAKAI_ULANG: &str = r#"
+package main
+struct P { pub x: int, pub y: f64 }
+struct Q { pub x: int, pub y: f64 }
+struct N { pub isi: P, pub n: int }
+impl P {
+    fn maju(self, d: f64) -> P { return P { x: self.x + 1, y: self.y + d } }
+    fn jadi_q(self) -> Q { return Q { x: self.x, y: self.y } }
+    fn bungkus(self) -> N { return N { isi: self, n: self.x } }
+}
+fn gabung(a: P, b: P) -> P { return P { x: a.x + b.x, y: a.y * b.y } }
+pub fn main() {
+    var p = P { x: 0, y: 0.5 }
+    var simpan = []
+    for i in 0..400 {
+        if (i % 100 == 0) { let lama = p; p = p.maju(0.25); simpan = arr::push(simpan, lama) } else { p = p.maju(0.25) }
+        if (i == 300) { p = P { x: 9223372036854775000, y: p.y } }
+    }
+    wok(p, simpan)
+    var q = Q { x: 0, y: 0.0 }
+    var n = N { isi: P { x: 0, y: 0.0 }, n: 0 }
+    var g = P { x: 1, y: 1.0 }
+    for i in 0..300 {
+        q = p.jadi_q()
+        n = P { x: i, y: 2.0 }.bungkus()
+        g = gabung(P { x: i, y: 1.5 }, P { x: 2, y: 2.0 })
+    }
+    wok(q, n, g)
+    var c = P { x: 5, y: 1.0 }
+    let lihat = || c.x
+    var s = 0
+    for i in 0..300 { c = c.maju(1.0); s = s + lihat() }
+    wok(c, s)
+}
+"#;
+
+#[test]
+fn struct_dipakai_ulang_tidak_teramati() {
+    let v = jalankan(PAKAI_ULANG, &["--vm"], &[]);
+    assert!(v.sukses, "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(PAKAI_ULANG, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(PAKAI_ULANG, &["--jit"], &[STRES, ACAK, ("JRG_JIT_LOG", "ringkas")]);
+    let baris = j.stderr.lines().find(|l| l.contains("dikompilasi:")).unwrap_or("");
+    assert!(baris.contains("P::maju") && baris.contains("gabung"), "maju/gabung tidak dikompilasi:\n{}", j.stderr);
+}

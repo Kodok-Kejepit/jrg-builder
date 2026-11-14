@@ -100,6 +100,7 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
             jb.symbol("jrg_jit_metode_tukar", lambat::metode_tukar as *const u8);
             jb.symbol("jrg_jit_metode_lokal", lambat::metode_lokal as *const u8);
             jb.symbol("jrg_jit_karakter_lokal", lambat::karakter_lokal as *const u8);
+            jb.symbol("jrg_jit_konteks_mentah", lambat::konteks_mentah as *const u8);
             jb.symbol("jrg_jit_masuk_ringan", lambat::masuk_ringan as *const u8);
             jb.symbol("jrg_jit_keluar_ringan", lambat::keluar_ringan as *const u8);
             jb.symbol("jrg_jit_karakter", lambat::karakter as *const u8);
@@ -157,6 +158,7 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
                 metode_tukar: impor("jrg_jit_metode_tukar", &[I64, I64], Some(I32))?,
                 metode_lokal: impor("jrg_jit_metode_lokal", &[I64, I64, I64, I32], Some(I32))?,
                 karakter_lokal: impor("jrg_jit_karakter_lokal", &[I64, I64], Some(I64))?,
+                konteks_mentah: impor("jrg_jit_konteks_mentah", &[p], None)?,
                 masuk_ringan: impor("jrg_jit_masuk_ringan", &[I64, p, I64, I64, p, p, p], Some(I32))?,
                 keluar_ringan: impor("jrg_jit_keluar_ringan", &[I64, I64, p], Some(I32))?,
                 karakter: impor("jrg_jit_karakter", &[I64, I64], Some(I64))?,

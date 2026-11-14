@@ -1160,13 +1160,13 @@ impl Compiler {
         let saudara_lama = self.saudara.len();
         self.hoist_fn_bersarang(&blk.stmts)?;
         for s in &blk.stmts { self.compile_stmt(s)?; }
-        // Fungsi bersarang cuma terlihat di bloknya sendiri.
-        self.saudara.truncate(saudara_lama);
         // tail expression (block value) — compile tapi langsung pop
         if let Some(tail) = &blk.tail {
             self.compile_expr(tail)?;
             self.chunk.emit(OpCode::Pop);
         }
+        // Fungsi bersarang cuma terlihat di bloknya sendiri — ekornya TERMASUK.
+        self.saudara.truncate(saudara_lama);
         Ok(())
     }
 

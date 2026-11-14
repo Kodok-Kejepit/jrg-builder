@@ -79,7 +79,7 @@ impl Vm {
             VmValue::Sinkron(p) => p.ns_metode()?,
             VmValue::Map(m) => match &m.label {
                 Label::Dict => "dict",
-                Label::Enum { tipe, .. } if matches!(tipe.as_ref(), "Option" | "Result") => tipe.as_ref(),
+                Label::Enum { nama, .. } if matches!(nama.tipe.as_ref(), "Option" | "Result") => nama.tipe.as_ref(),
                 _ => return None,
             },
             _ => return None,
@@ -178,7 +178,8 @@ impl Vm {
                         crate::interpreter::galat_index::metode_tanpa_kurung(ns, name), sp));
                 }
                 // Tidak ada langkah ketiga.
-                if let Label::Enum { tipe, .. } = &m.label {
+                if let Label::Enum { nama, .. } = &m.label {
+                    let tipe = &nama.tipe;
                     let mut calon: Vec<String> = crate::interpreter::calon_method_enum(tipe)
                         .iter().map(|s| s.to_string()).collect();
                     calon.extend(self.nama_metode_tipe(tipe));
