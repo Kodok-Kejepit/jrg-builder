@@ -442,11 +442,13 @@ impl Interpreter {
         }
 
         let n = resolved.len();
+        // Titik mulai acak seragam lewat `rand::int` — fungsi yang sama dengan yang dipanggil bytecode `--vm`.
         let poll_start_offset = || -> usize {
-            if n == 0 { return 0; }
-            crate::host::sejak_epoch()
-                .map(|d| d.subsec_nanos() as usize)
-                .unwrap_or(0) % n
+            if n < 2 { return 0; }
+            match Self::dispatch_rand_inner(&crate::interpreter::builtin::NativeFnKind::RandInt, &[Value::Int(0), Value::Int(n as i128 - 1)]) {
+                Ok(Value::Int(k)) => k as usize,
+                _ => 0,
+            }
         };
 
         loop {

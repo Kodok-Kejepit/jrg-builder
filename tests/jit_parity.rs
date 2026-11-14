@@ -2143,3 +2143,65 @@ fn pola_berkualifikasi_sama_dengan_vm() {
     let j = jalankan(POLA_SEBARIS, &["--jit"], &[STRES, ACAK, ("JRG_JIT_LOG", "ringkas")]);
     assert!(j.stderr.contains("dikompilasi: apa, main, nilai_a, nilai_b"), "{}", j.stderr);
 }
+
+/// Lokal yang mati sesudah dibaca dipindah, bukan disalin (`mati_sesudah`): yang dibaca lagi sesudah panggilan,
+/// di putaran berikutnya, lewat sel tangkapan closure, atau di cabang tetap utuh; callee yang deopt atau
+/// menerima jenis lain di tengah loop — jawabannya sama dengan `--vm`.
+const PINDAH_LOKAL: &str = r#"
+package main
+enum Op { A(int), B }
+struct P { pub x: int }
+fn nilai(o: Op) -> int {
+    match o { Op::A(k) => k, Op::B => 1 }
+}
+fn ukur(p: P, k: int) -> int { p.x * k }
+fn sisa(o: Op, n: int) -> int {
+    if (n > 2990) { return 1180591620717411303424 % 1000 + nilai(o) }
+    nilai(o)
+}
+pub fn main() {
+    var tot = 0
+    var tetap = Op::A(3)
+    for i in 0..3000 {
+        let o = if (i % 2 == 0) { Op::A(i) } else { Op::B }
+        tot = tot + nilai(o)
+        tot = tot + nilai(o)
+        let p = P { x: i }
+        tot = tot + ukur(p, 2)
+        if (i % 7 == 0) { tot = tot + p.x }
+        tot = tot + nilai(tetap)
+        let q = Op::A(i % 5)
+        tot = tot + sisa(q, i)
+    }
+    wok(tot, nilai(tetap))
+    var c = Op::B
+    let lihat = || nilai(c)
+    var u = 0
+    for i in 0..500 {
+        let d = c
+        u = u + nilai(d) + nilai(c)
+        if (i == 250) { c = Op::A(7) }
+    }
+    wok(u, lihat())
+    var w = 0
+    for i in 0..400 {
+        let r = if (i < 399) { Op::B } else { Op::A(1) }
+        w = w + nilai(r)
+        let z = P { x: i }
+        w = w + ukur(z, if (i == 399) { "dua" } else { 2 })
+    }
+    wok(w)
+}
+"#;
+
+#[test]
+fn lokal_mati_dipindah_tidak_teramati() {
+    let v = jalankan(PINDAH_LOKAL, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout.starts_with("14158458 3\n3988 7\n"), "{}", v.stdout);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(PINDAH_LOKAL, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(PINDAH_LOKAL, &["--jit"], &[STRES, ACAK, ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("main, nilai, sisa, ukur"), "{}", j.stderr);
+}

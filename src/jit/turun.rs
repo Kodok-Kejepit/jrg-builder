@@ -262,6 +262,39 @@ fn cse_aman(op: OpCode, cara: &Cara) -> bool {
     }
 }
 
+/// Lokal `a` mati sesudah `LoadLocal a` di `ip`: di jalur lurus berikutnya (lompat tanpa syarat diikuti) ia
+/// ditimpa, di-`Pop` atau fungsinya kembali sebelum dibaca. Cuma opcode yang efek stack-nya pasti; lainnya,
+/// cabang bersyarat, atau salinan maya atas `a` = dianggap hidup. Sel tangkapan aman: `ambil` menyalin isinya.
+fn mati_sesudah(f: &VmFunction, r: &Rencana, ip: usize, a: usize) -> bool {
+    use OpCode::*;
+    let kode = &f.chunk.code;
+    let mut j = ip + 1;
+    for _ in 0..64 {
+        let (Some(ins), Some(Some(s))) = (kode.get(j), r.keadaan.get(j)) else { return false };
+        if s.iter().any(|x| *x == Jenis::Salinan(a as u32)) { return false; }
+        let (h, arg) = (s.len(), ins.arg as usize);
+        if h <= a { return true; }
+        // Posisi teratas yang dibaca instruksi ini (`h` = tidak membaca stack).
+        let baca = match ins.op {
+            LoadLocal | LokalHitung if arg == a => return false,
+            LoadLocal | LokalHitung | IntImm | Const | Nil | Unit | True | False | LoadGlobal => h,
+            SimpanBuang | StoreLocal if arg == a => return h - 1 > a,
+            SimpanBuang | StoreLocal => h - 1,
+            Pop => return h - 1 == a || { j += 1; continue },
+            Add | Sub | Mul | Div | Mod | Lt | Le | Gt | Ge | Eq | Ne | BitAnd | BitOr | BitXor | Shl | Shr => h - 2,
+            Neg | Not => h - 1,
+            Call => h.saturating_sub(arg + 1),
+            Return => return h - 1 != a,
+            ReturnNil => return true,
+            Jump => { j = arg; continue }
+            _ => return false,
+        };
+        if a >= baca { return false; }
+        j += 1;
+    }
+    false
+}
+
 /// Lanjut di blok baru kalau `benar`, selain itu ke `lambat`.
 fn lanjut_jika(b: &mut FunctionBuilder, benar: Value, lambat: Block) {
     let terus = b.create_block();
@@ -1010,7 +1043,9 @@ pub fn turunkan(
                     _ => {}
                 }
                 let ke = i64c(&mut b, t as i64);
-                b.ins().call(f_muat, &[d, ke]);
+                // Lokal yang mati sesudah ini dipindah, bukan disalin (`ambil`).
+                let mati = !matches!(s[kode[ip].arg as usize], Jenis::Salinan(_)) && mati_sesudah(f, r, ip, a);
+                b.ins().call(if mati { f_ambil } else { f_muat }, &[d, ke]);
                 continue;
             }
             // Fungsi bawaan maya: tidak ditulis ke stack VM (pembacanya mewujudkannya).

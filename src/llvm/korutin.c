@@ -467,8 +467,10 @@ void jrg_chan_close(JrgChan *c) {
     while ((t = jrg_ch_ambil(&c->pengirim, &c->pengirim_ekor)) != 0) jrg_ko_antre(t->k);
 }
 
-// 0 panjang, 1 kapasitas, 2 sudah ditutup, 3 ada nilai yang bisa diambil.
+// 0 panjang, 1 kapasitas, 2 sudah ditutup, 3 ada nilai yang bisa diambil; 4/5 = 2/0 tanpa memberi giliran (`select`).
 int64_t jrg_chan_info(const JrgChan *c, int32_t apa) {
+    if (apa == 4) return c->tutup;
+    if (apa == 5) return c->n;
     // Pertanyaan yang jawabannya "belum" memberi giliran dulu: loop yang cuma BERTANYA
     // (`while !c.is_closed() { .. }`) tidak pernah menunggu, jadi tanpa ini pengirimnya tak jalan.
     if (apa == 1) return c->kap;
