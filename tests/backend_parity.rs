@@ -175,6 +175,10 @@ fn konformans_semantik_nilai_jalan_di_dua_backend() {
 
 /// Program yang WAJIB ditolak oleh KEDUA backend, dengan alasan yang sama.
 const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
+    // #1011: kanal tertutup ditolak di SEMUA lengan sebelum mencoba, walau lengan lain siap (urutan acak tak berpengaruh).
+    ("select: lengan kedua tertutup ditolak walau lengan pertama siap",
+     "let t = make_chan(int, 1)\nt.close()\nlet d = make_chan(int, 1)\nd <- 1\nwok(\"sebelum\")\nselect {\n    case x := <-d: { wok(\"tak boleh\", x) }\n    case y := <-t: { wok(\"tak boleh juga\", y) }\n}\n",
+     "channel sudah ditutup dan kosong: tidak akan ada nilai lagi", "channel sudah ditutup dan kosong: tidak akan ada nilai lagi"),
     // Keputusan pemilik 2026-11-14: `let`/`const` LOKAL bernama varian telanjang milik berkas ditolak parser,
     // seperti `fn`/`const`/`var` tingkat atas — dulu `let A = E::A` lolos tanpa mengikat, `const` mengikat.
     ("let lokal bernama varian unit milik berkas", "enum E { A, B }\nlet A = E::A\nwok(\"ok\")\n",
