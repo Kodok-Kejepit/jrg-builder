@@ -205,7 +205,7 @@ pub fn urai(s: &str) -> Result<Urai, String> {
                 hp
             }
             k => return Err(format!("otoritas `{}` memuat {} `@` — host mana yang dimaksud ambigu; tulis `@` di \
-                                     userinfo sebagai %40", kutip(otoritas), k)),
+                                     userinfo sebagai %40", kutip(samarkan_userinfo(otoritas)), k)),
         };
         let (h, p) = if host_port.starts_with('[') {
             match host_port.find(']') {
@@ -493,6 +493,17 @@ fn u_query_build(a: &[Value]) -> Result<Value, String> {
     Ok(Value::teks(o))
 }
 
+/// URL atau otoritas untuk pesan galat: userinfo (nama dan sandi) diganti `***`, karena pesan sampai ke log
+/// (kelas CVE-2026-123871 Node.js). Batas otoritasnya `/`, `?`, `#` pertama sesudah `//`; `@` terakhir memisah.
+pub fn samarkan_userinfo(teks: &str) -> String {
+    let (awal, sisa) = match teks.find("//") { Some(i) => teks.split_at(i + 2), None => ("", teks) };
+    let ujung = sisa.find(['/', '?', '#']).unwrap_or(sisa.len());
+    match sisa[..ujung].rfind('@') {
+        Some(at) => format!("{}***{}", awal, &sisa[at..]),
+        None => teks.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tes {
     use super::*;
@@ -516,6 +527,16 @@ mod tes {
                            ("HTTPS://X/", "https://x/")] {
             assert_eq!(gabung(d, r).unwrap(), harap, "rujukan {:?}", r);
         }
+    }
+
+    #[test]
+    fn userinfo_tidak_sampai_ke_pesan() {
+        for (t, harap) in [("http://a:rahasia@h:1/x?y@z", "http://***@h:1/x?y@z"), ("a:rahasia@@h", "***@h"),
+                           ("http://h/x@y", "http://h/x@y"), ("http://u@h", "http://***@h"), ("h", "h")] {
+            assert_eq!(samarkan_userinfo(t), harap);
+        }
+        assert!(!urai("http://a:rahasia@@h/").unwrap_err().contains("rahasia"));
+        assert!(!crate::dok::klien::urai_url("http://a:rahasia@h/").unwrap_err().contains("rahasia"));
     }
 
     #[test]

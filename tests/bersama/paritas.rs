@@ -2741,4 +2741,7 @@ pub fn main() {
      "package main\nfn sapa() -> string { \"modul\" }\npub fn main() {\n  { fn a() -> int { b() + 1 }  fn b() -> int { 40 }  wok(a()) }\n  { fn sapa() -> string { \"blok\" }  wok(sapa()) }\n  for i in 0..1 { fn sapa() -> string { \"for\" } wok(sapa()) }\n  if true { fn sapa() -> string { \"if\" } wok(sapa()) }\n  while true { fn sapa() -> string { \"while\" }  wok(sapa()); break }\n  let v = if true { fn h() -> int { 9 } h() } else { 0 }\n  let m = match 2 { 2 => { fn j() -> string { \"lengan\" } j() }, _ => \"x\" }\n  wok(v, m, sapa())\n}\n"),
     ("fungsi bernama di blok polos sebagai ekor main",
      "package main\nfn sapa() -> string { \"modul\" }\npub fn main() { { fn sapa() -> string { \"blok\" }  wok(sapa()) } }\n"),
+    // Fase AMAN-41 (kelas CVE-2026-123871 Node.js): sandi di URL tidak sampai ke pesan galat.
+    ("kredensial URL disamarkan di pesan galat klien dan url::parse",
+     "pub fn main() {\n  for _, u in [\"http://andi:SANDIRAHASIA@127.0.0.1:1/x\", \"https://SANDIRAHASIA@h/\", \"http://a:SANDIRAHASIA@@h/\"] {\n    match http::get(u) { Ok(_) => wok(\"ok?\")  Err(e) => wok(str::contains(e, \"SANDIRAHASIA\"), e) }\n    match dok::http_get(u) { Ok(_) => wok(\"ok?\")  Err(e) => wok(str::contains(e, \"SANDIRAHASIA\"), e) }\n    match url::parse(u) { Ok(x) => wok(\"parse\", x.host)  Err(e) => wok(str::contains(e, \"SANDIRAHASIA\"), e) }\n  }\n}\n"),
 ];

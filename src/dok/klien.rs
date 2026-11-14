@@ -27,7 +27,8 @@ pub fn urai_url(url: &str) -> Result<Url, String> {
         lain => return Err(format!("skema URL `{}` tidak didukung; yang ada http:// dan https://", lain)),
     };
     if u.pengguna.is_some() {
-        return Err(format!("URL `{}` memuat kredensial (`nama@`) — tidak dikirim; pasang kepala `Authorization`", url));
+        return Err(format!("URL `{}` memuat kredensial (`nama@`) — tidak dikirim; pasang kepala `Authorization`",
+            crate::kutip_inti::kutip(crate::stdlib::url::samarkan_userinfo(url))));
     }
     let host = u.host.clone().unwrap_or_default();
     let port = u.port.unwrap_or(if https { 443 } else { 80 });
