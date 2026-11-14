@@ -464,6 +464,13 @@ impl VmValue {
     pub fn map<K: Into<Kunci>>(m: impl IntoIterator<Item = (K, VmValue)>) -> Self {
         VmValue::Map(Arc::new(Peta::baru(Label::Dict, m)))
     }
+    /// Nama struct milik program, diintern per proses saat kompilasi: semua prototipe tipe yang sama (lintas
+    /// fungsi dan modul) berbagi satu `Arc`, jadi label dua nilai sebentuk sama menurut `Arc::ptr_eq`.
+    pub fn intern_nama_struct(nama: &str) -> Arc<str> {
+        static TABEL: std::sync::OnceLock<Mutex<std::collections::HashMap<Box<str>, Arc<str>>>> = std::sync::OnceLock::new();
+        let mut t = TABEL.get_or_init(Default::default).lock().unwrap_or_else(|p| p.into_inner());
+        t.entry(nama.into()).or_insert_with(|| Arc::from(nama)).clone()
+    }
     /// Instance struct `nama`, termasuk handle bawaan (`Ptr`, `Future`, `Regex`, …).
     pub fn struktur<K: Into<Kunci>>(nama: &str, isi: impl IntoIterator<Item = (K, VmValue)>) -> Self {
         VmValue::Map(Arc::new(Peta::baru(Label::Struct(Arc::from(nama)), isi)))

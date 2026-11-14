@@ -102,6 +102,35 @@ impl Interpreter {
 
     pub(crate) fn exec_let(&mut self, s: &LetStmt, env: &mut Env) -> EvalResult {
         let v = self.eval_expr(&s.init, env)?;
+        self.ikat_let(s, v, env)
+    }
+
+    /// `let r = arr::pop(a)` yang `a`-nya ditimpa pernyataan berikutnya (`capture::pindah_sebelum_ditimpa`).
+    pub(crate) fn exec_let_pindah(&mut self, s: &LetStmt, a: &str, env: &mut Env) -> EvalResult {
+        match self.pop_milik(a, &s.init, env)? {
+            Some(v) => self.ikat_let(s, v, env),
+            None => self.exec_let(s, env),
+        }
+    }
+
+    /// `arr::pop(a)`/`a.pop()` atas larik milik lokal polos `a`: larik DIPINDAHKAN lalu di-pop di tempat,
+    /// bukan disalin utuh. `None` (tanpa menyentuh apa pun) kalau bentuk atau isinya bukan itu.
+    pub(crate) fn pop_milik(&mut self, a: &str, ekspr: &Expr, env: &mut Env) -> Result<Option<Value>, Signal> {
+        if crate::interpreter::capture::nama_pop(ekspr).as_deref() != Some(a) || !env.lokal_polos(a) { return Ok(None); }
+        if matches!(ekspr, Expr::Call { .. })
+            && !matches!(env.get("arr::pop"), Some(Value::NativeFn(crate::interpreter::builtin::NativeFnKind::ArrPop))) {
+            return Ok(None);
+        }
+        let Some(v) = env.ambil_lokal_polos(a) else { return Ok(None) };
+        let Value::Array(mut isi) = v else { env.set(a, v); return Ok(None) };
+        let x = match isi.pop() {
+            Some(x) => crate::interpreter::some_value(x),
+            None => crate::interpreter::none_value(),
+        };
+        Ok(Some(Value::Tuple(vec![Value::Array(isi), x].into())))
+    }
+
+    fn ikat_let(&mut self, s: &LetStmt, v: Value, env: &mut Env) -> EvalResult {
         // Dulu bagian pola yang MENGUJI (literal, rentang, varian unit) dilewati,
         // jadi `let (a, 5) = (1, 6)` diterima diam-diam.
         let pasti = match &s.pattern {
@@ -382,6 +411,7 @@ impl Interpreter {
     /// Nilai `ekspr` dengan lokal `name` DIPINDAHKAN ke dalamnya (penerima rantai method, atau
     /// argumen pertama sebuah panggilan). `None`: bentuknya bukan itu, dan tidak ada yang disentuh.
     pub(crate) fn nilai_konsumsi(&mut self, name: &str, ekspr: &Expr, env: &mut Env) -> Result<Option<Value>, Signal> {
+        if let Some(v) = self.pop_milik(name, ekspr, env)? { return Ok(Some(v)); }
         if let Expr::Call { .. } = ekspr { return self.coba_konsumsi_argumen(name, ekspr, env); }
         let mut rantai: Vec<&Expr> = Vec::new();
         let mut kini = ekspr;

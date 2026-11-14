@@ -746,6 +746,11 @@ include!("bersama/paritas_llvm.rs");
 // ───────────────────────────────────────────
 
 const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
+    // Fase AMAN-43: acuan menjawab struct ber-field tambahan; dulu kalimat pertamanya "tipe `unit`
+    // tidak punya method `y`" dan kalimat yang benar menunjuk `<lapis>`, bukan panggilan pemakai.
+    ("json::merge atas struct ditolak di situs panggil",
+     "package main\nstruct P { pub x: int, pub y: int }\npub fn main() { let q = json::merge(dict { y: 2 }, P { x: 1, y: 0 })\n wok(q.y) }",
+     "`json::merge` atas struct `P` belum bisa di backend LLVM"),
     // Fase POTONG-BERTAG (#848): tipe elemennya tidak diketahui dari tag; dulu ditolak saat kompilasi.
     ("potong: array di dalam nilai bertag",
      "package main\npub fn main() { let v = len(env::args()) > 99 $ 5 : [1, 2, 3]\n wok(v[0:2]) }",

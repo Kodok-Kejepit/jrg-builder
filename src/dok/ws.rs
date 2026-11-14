@@ -95,6 +95,18 @@ pub fn minta_upgrade(headers: &[(String, String)]) -> Option<String> {
     cari("sec-websocket-key").map(|k| k.to_string())
 }
 
+/// CSWSH (CWE-1385): peramban selalu mengirim `Origin`, dan host-nya harus host `Host` — port boleh beda,
+/// seperti cookie. Klien bukan peramban (tanpa `Origin`) diterima; `Origin: null` dan domain lain tidak.
+pub fn origin_sah(headers: &[(String, String)]) -> bool {
+    let cari = |n: &str| headers.iter().find(|(k, _)| k.eq_ignore_ascii_case(n)).map(|(_, v)| v.trim());
+    let Some(o) = cari("origin") else { return true };
+    let host = |v: &str| crate::stdlib::url::urai_kepala_host(v).ok().map(|(h, _)| h.to_ascii_lowercase());
+    match (o.split_once("://").and_then(|(_, sisa)| host(sisa)), cari("host").and_then(host)) {
+        (Some(a), Some(b)) => a == b,
+        _ => false,
+    }
+}
+
 /// Jawab jabat tangannya di atas `stream`, lalu daftarkan koneksinya.
 pub fn terima(mut stream: TcpStream, kunci: &str) -> Result<u64, String> {
     let jawab = format!(
@@ -415,5 +427,25 @@ mod tes {
         assert!(gabung_fragmen(&mut awal, &mut gabung, buka).unwrap().is_none());
         let tabrak = Frame { fin: true, jenis: Jenis::Biner, muatan: b"lo".to_vec() };
         assert_eq!(gabung_fragmen(&mut awal, &mut gabung, tabrak).unwrap_err().0, 1002);
+    }
+}
+
+#[cfg(test)]
+mod uji_origin {
+    use super::origin_sah;
+    fn k(o: Option<&str>, h: &str) -> Vec<(String, String)> {
+        let mut v = vec![("Host".to_string(), h.to_string())];
+        if let Some(o) = o { v.push(("Origin".to_string(), o.to_string())); }
+        v
+    }
+    #[test]
+    fn origin_websocket_harus_host_yang_sama() {
+        assert!(origin_sah(&k(None, "127.0.0.1:8080")));
+        assert!(origin_sah(&k(Some("http://localhost:5173"), "localhost:8080")));
+        assert!(origin_sah(&k(Some("https://JRG-lang.org"), "jrg-lang.org")));
+        assert!(origin_sah(&k(Some("http://[::1]:3000"), "[::1]:8080")));
+        for o in ["https://jahat.example", "null", "http://localhost.jahat.example", "localhost", "http://a@localhost"] {
+            assert!(!origin_sah(&k(Some(o), "localhost:8080")), "{}", o);
+        }
     }
 }

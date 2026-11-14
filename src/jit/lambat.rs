@@ -57,6 +57,25 @@ fn tumbuh(vm: &mut Vm, i: usize) {
     }
 }
 
+/// `Vec::truncate` untuk bingkai callee: skalar tanpa destruktor dilewati tanpa memanggil `drop_glue`. Panjangnya
+/// dipendekkan lebih dulu, jadi destruktor yang panik membocorkan sisanya, bukan melepasnya dua kali.
+#[inline(always)]
+fn potong(stack: &mut Vec<VmValue>, n: usize) {
+    let len = stack.len();
+    if n >= len { return; }
+    unsafe {
+        stack.set_len(n);
+        let p = stack.as_mut_ptr();
+        for k in n..len {
+            let v = &mut *p.add(k);
+            if !matches!(v, VmValue::Nil | VmValue::Unit | VmValue::Bool(_) | VmValue::Int(_) | VmValue::Rune(_)
+                | VmValue::Float(_) | VmValue::Ptr(_)) {
+                std::ptr::drop_in_place(v);
+            }
+        }
+    }
+}
+
 /// Satu `match` atas jenisnya (sama artinya dengan `skalar_kode(j.kode())`, tanpa pembandingan `Lebar` dan
 /// kode antara): dipanggil per posisi di `bangun`, `masuk`, `bawaan`.
 #[inline(always)]
@@ -125,6 +144,12 @@ pub extern "C" fn bangun(situs: *const SitusBangun, jenis: *const Jenis, t: i64,
             let Some(crate::vm::peta::IsiPeta::Rapat { nilai: isi, .. }) = crate::vm::value::Peta::isi_tunggal(m)
                 else { unreachable!("diperiksa pakai_ulang") };
             for (j, i) in (t - n..t).enumerate() {
+                // Angka atas angka sejenis (biasa: struct yang diperbarui per langkah): cuma isinya yang ditulis.
+                match (jenis[i], &mut isi[j]) {
+                    (Jenis::Pecahan, VmValue::Float(x)) => { *x = f64::from_bits(nilai[i] as u64); continue }
+                    (Jenis::Bulat, VmValue::Int(x)) => { *x = nilai[i] as i128; continue }
+                    _ => {}
+                }
                 let v = match nilai_skalar(jenis[i], nilai[i]) {
                     Some(v) => v,
                     None => std::mem::replace(sediakan(vm, basis, i), VmValue::Nil),
@@ -366,7 +391,7 @@ pub extern "C" fn keluar_ringan(st: i64, hasil: i64, titip: *const [usize; 9]) -
     };
     KONTEKS.with(|k| k.set((vm, basis)));
     // Hasilnya tepat di slot callee, juga kalau stack belum sepanjang itu (`masuk_ringan` tidak memanjangkannya).
-    vm.stack.truncate(slot);
+    potong(&mut vm.stack, slot);
     while vm.stack.len() < slot { vm.stack.push(VmValue::Nil); }
     vm.catat_hasil(&v);
     vm.stack.push(v);
@@ -994,11 +1019,14 @@ pub extern "C" fn metode_tukar(p: i64, label: *const String) -> i32 {
 
 /// `LoadLocal`/`AmbilLokal` lalu `metode_tukar`: lokal `slot` (dibaca, atau diambil kalau `ambil`) langsung
 /// ke `p + 1`. 1 = label lain: lokalnya di `p`, salinan `Dup` di `p + 1`, deopt di `GetMethod`.
-pub extern "C" fn metode_lokal(slot: i64, p: i64, label: *const String, ambil: i32) -> i32 {
+pub extern "C" fn metode_lokal(slot: i64, p: i64, label: *const Arc<str>, ambil: i32) -> i32 {
     let (vm, basis) = konteks();
     let i = basis + slot as usize;
     let v = if ambil != 0 { vm.ambil_lokal(i) } else { vm.baca_lokal(i) }.unwrap_or(VmValue::Nil);
-    if v.nama_tipe() != Some(unsafe { (*label).as_str() }) {
+    let l: &str = unsafe { &**label };
+    // Label struct dan label ini sama-sama diintern: alamatnya dulu, teksnya kalau beda (enum, label lain).
+    let sama = v.nama_tipe().is_some_and(|s| (s.as_ptr() == l.as_ptr() && s.len() == l.len()) || s == l);
+    if !sama {
         let salinan = v.clone();
         *sediakan(vm, basis, p as usize) = v;
         *sediakan(vm, basis, p as usize + 1) = salinan;

@@ -315,7 +315,7 @@ def kepala(aktif: str, naik: str) -> str:
     menu = ('<button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" '
             f'data-aksi="menu">{IKON["menu"]}</button>') if aktif in ("dok", "mtk") else ""
     return f"""<header class="kepala">
-  {menu}<a class="merek" href="{naik}index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="{naik}aset/logo.webp" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="{naik}aset/logo-gelap.webp" alt="JRG++" width="107" height="34"></a>
+  {menu}<a class="merek" href="{naik}index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="{naik}aset/logo.webp" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="{naik}aset/logo-gelap.webp" alt="JRG++" width="131" height="34"></a>
   <nav class="situs" aria-label="Situs">{tab("dok", "Dokumentasi", "web_dokumentasi/index.html")}{tab("mtk", "Matematika × JRG", "matematika_x_jrg/index.html")}{tab("profil", "Profil", "profil.html")}</nav>
   <span class="versi">v{VERSI}</span>
   <div class="kepala-kanan">
@@ -391,8 +391,8 @@ def halaman(judul, deskripsi, aktif, naik, isi, skrip=(), ekstra=""):
 
 def kaki(naik: str) -> str:
     return (f'<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="{naik}aset/logo-kaki.webp" alt="JRG++" '
-            f'width="150" height="44"><img class="gelap-saja" src="{naik}aset/logo-kaki-gelap.webp" alt="JRG++" width="150" '
-            f'height="46"><span>versi {VERSI}</span></span>'
+            f'width="155" height="40"><img class="gelap-saja" src="{naik}aset/logo-kaki-gelap.webp" alt="JRG++" width="155" '
+            f'height="40"><span>versi {VERSI}</span></span>'
             f'<span><a href="{naik}web_dokumentasi/pasang.html">Pasang</a> · '
             f'<a href="{naik}web_dokumentasi/rilis.html">Catatan rilis</a> · '
             f'<a href="{naik}profil.html">Profil</a> · '

@@ -1129,7 +1129,7 @@ impl Compiler {
             FnBody::Block(blk) => {
                 let saudara_lama = c.saudara.len();
                 c.hoist_fn_bersarang(&blk.stmts)?;
-                for s in &blk.stmts { c.compile_stmt(s)?; }
+                c.compile_stmts(&blk.stmts)?;
                 if let Some(tail) = &blk.tail {
                     c.compile_expr(tail)?;
                     c.chunk.emit(OpCode::Return);
@@ -1156,10 +1156,27 @@ impl Compiler {
 
     // ── Block helpers ─────────────────────────────────────────────────────
 
+    /// Pernyataan berurutan; `let r = arr::pop(a)` yang `a`-nya ditimpa pernyataan berikutnya memindahkan
+    /// `a` (`capture::pindah_sebelum_ditimpa`, definisi yang sama dengan interpreter).
+    pub(crate) fn compile_stmts(&mut self, stmts: &[Stmt]) -> CR<()> {
+        for (i, s) in stmts.iter().enumerate() {
+            match crate::interpreter::capture::pindah_sebelum_ditimpa(s, stmts.get(i + 1)) {
+                Some(a) if self.resolve_local(&a).is_some() => {
+                    self.konsumsi_penerima = Some(a);
+                    let hasil = self.compile_stmt(s);
+                    self.konsumsi_penerima = None;
+                    hasil?;
+                }
+                _ => self.compile_stmt(s)?,
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn compile_block_stmts(&mut self, blk: &Block) -> CR<()> {
         let saudara_lama = self.saudara.len();
         self.hoist_fn_bersarang(&blk.stmts)?;
-        for s in &blk.stmts { self.compile_stmt(s)?; }
+        self.compile_stmts(&blk.stmts)?;
         // tail expression (block value) — compile tapi langsung pop
         if let Some(tail) = &blk.tail {
             self.compile_expr(tail)?;
@@ -1308,7 +1325,7 @@ impl Compiler {
         // hoist). Tanpa baris ini deklarasinya jadi no-op SENYAP.
         let saudara_lama = self.saudara.len();
         self.hoist_fn_bersarang(&blk.stmts)?;
-        for s in &blk.stmts { self.compile_stmt(s)?; }
+        self.compile_stmts(&blk.stmts)?;
         if let Some(tail) = &blk.tail {
             self.compile_expr(tail)?;
         } else {

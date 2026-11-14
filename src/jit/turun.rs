@@ -196,7 +196,9 @@ fn metode_lokal(
     n: usize, ambil: bool,
 ) {
     let (d, p) = (b.ins().iconst(types::I64, a as i64), b.ins().iconst(types::I64, t as i64));
-    let l = b.ins().iconst(types::I64, &r.metode[n] as *const String as i64);
+    // Nama tipe diintern (sama dengan label struct dari kompilator VM): pembantunya cukup membanding alamat.
+    let label: &'static std::sync::Arc<str> = Box::leak(Box::new(crate::vm::value::VmValue::intern_nama_struct(&r.metode[n])));
+    let l = b.ins().iconst(types::I64, label as *const _ as i64);
     let am = b.ins().iconst(types::I32, ambil as i64);
     let c = b.ins().call(f, &[d, p, l, am]);
     let c = b.inst_results(c)[0];
@@ -736,7 +738,8 @@ pub fn turunkan(
     let undi = impor.undi.map(|u| m.declare_func_in_func(u, b.func));
     let (baca, tulis) = (m.declare_func_in_func(impor.baca, b.func), m.declare_func_in_func(impor.tulis, b.func));
     let wadah = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 8, 3));
-    let wadah8 = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 64, 3));
+    // Sembilan: field pertama + paling banyak delapan sesudahnya (`field_sesudahnya`).
+    let wadah8 = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 72, 3));
     // Titipan `masuk` untuk `keluar` (kedalaman, basis, slot); panggilan langsung di satu bingkai tidak bertumpuk.
     // `masuk_ringan` menitipkan enam kata lagi (fungsi, argc, jenis, nilai, t, ip).
     let titip = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 72, 3));
@@ -942,7 +945,7 @@ pub fn turunkan(
                             continue;
                         }
                         // Sudah diambil bersama bacaan sebelumnya: dipakai kalau bitnya ada, jalur biasa kalau tidak.
-                        let temu = match tunggu.iter().position(|(k, _, _)| *k == kunci) {
+                        let mut temu = match tunggu.iter().position(|(k, _, _)| *k == kunci) {
                             Some(i) => {
                                 let (_, ok, isi) = tunggu.remove(i);
                                 let (kena, biasa, lanjut) = (b.create_block(), b.create_block(), b.create_block());
@@ -959,6 +962,41 @@ pub fn turunkan(
                             }
                             None => None,
                         };
+                        // Ada field angka lain sesudahnya: field ini ikut diambil di panggilan yang sama (bit 0); gagal =
+                        // jalur `field_lokal` biasa di bawah, bit field lain tetap dipakai.
+                        if temu.is_none() && !kunci.2 && kunci.3 != 0 {
+                            let ekstra = field_sesudahnya(f, r, &blok, ip, a, kunci, &cse);
+                            if !ekstra.is_empty() {
+                                let daftar: Vec<*const super::lambat::SitusField> = std::iter::once(&kunci).chain(ekstra.iter())
+                                    .map(|kk| super::lambat::SitusField::bocor(&f.chunk.names[kk.1 as usize], false, kk.3) as *const _)
+                                    .collect();
+                                let n = daftar.len();
+                                let daftar = Box::leak(daftar.into_boxed_slice());
+                                let (pl, nv) = (i64c(&mut b, daftar.as_ptr() as i64), i64c(&mut b, n as i64));
+                                let ke = b.ins().stack_addr(k.ptr, wadah8, 0);
+                                let c = b.ins().call(f_field_banyak, &[d, pl, nv, ke]);
+                                let bit = b.inst_results(c)[0];
+                                for (j, kk) in ekstra.into_iter().enumerate() {
+                                    let (ok, isi) = (b.declare_var(types::I64), b.declare_var(types::I64));
+                                    let okv = b.ins().band_imm_u(bit, 1i64 << (j + 1));
+                                    b.def_var(ok, okv);
+                                    let v = b.ins().stack_load(k.ptr, types::I64, wadah8, ((j + 1) * 8) as i32);
+                                    b.def_var(isi, v);
+                                    tunggu.push((kk, ok, isi));
+                                }
+                                let (cepat, biasa, lanjut) = (b.create_block(), b.create_block(), b.create_block());
+                                let b0 = b.ins().band_imm_u(bit, 1);
+                                b.ins().brif(b0, cepat, &[], biasa, &[]);
+                                b.switch_to_block(cepat);
+                                let cv = b.declare_var(types::I64);
+                                let v = b.ins().stack_load(k.ptr, types::I64, wadah8, 0);
+                                b.def_var(var[t], v);
+                                b.def_var(cv, v);
+                                b.ins().jump(lanjut, &[]);
+                                b.switch_to_block(biasa);
+                                temu = Some((lanjut, cv));
+                            }
+                        }
                         let situs = super::lambat::SitusField::bocor(
                             &f.chunk.names[kode[ip + 1].arg as usize], kode[ip + 1].op == OpCode::GetFieldPrivat,
                             match r.spek[ip + 1] { Some(Jenis::Bulat) => 1, Some(_) => 5, None => 0 });

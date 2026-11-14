@@ -13,9 +13,9 @@
 <meta property="og:description" content="Server HTTP, template, cookie dan sesi, WebSocket, klien HTTP, dan SQLite.">
 <meta property="og:url" content="https://jrg-lang.org/web_dokumentasi/web.html">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=3b117d4cae">
-<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png?v=aa6a381083">
-<link rel="apple-touch-icon" href="../aset/favicon.png?v=aa6a381083">
+<link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
+<link rel="icon" type="image/png" sizes="128x128" href="../aset/favicon.png?v=82b4aee258">
+<link rel="apple-touch-icon" href="../aset/favicon.png?v=82b4aee258">
 <meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
 <style>/* Tema bersama situs JawaRustGo++: dokumentasi, Matematika x JRG, dan beranda. */
 :root {
@@ -439,7 +439,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <body data-situs="dok">
 <a class="lewati" href="#isi">Lewati ke isi</a>
 <header class="kepala">
-  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=6bcb8d3664" alt="JRG++" width="107" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=ea997f35a3" alt="JRG++" width="107" height="34"></a>
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
   <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
   <span class="versi">v0.2.0</span>
   <div class="kepala-kanan">
@@ -477,7 +477,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 halo, Ani
 $ curl &quot;localhost:8080/api/kuadrat?n=12&quot;
 {&quot;kuadrat&quot;:144,&quot;n&quot;:12}</code></pre></figure>
-<p><code>dok::serve</code> memblokir dan menangani tiap koneksi di thread-nya sendiri. Argumen ketiga mengatur alamat (bawaannya <code>0.0.0.0</code>; pakai <code>&quot;127.0.0.1&quot;</code> supaya cuma bisa diakses dari mesin sendiri).</p>
+<p><code>dok::serve</code> memblokir dan menangani tiap koneksi di thread-nya sendiri. Argumen ketiga mengatur alamat. Bawaannya <code>&quot;127.0.0.1&quot;</code>, jadi cuma bisa diakses dari mesin sendiri (atau lewat proxy seperti Caddy/nginx di mesin yang sama); tulis <code>&quot;0.0.0.0&quot;</code> untuk membukanya ke jaringan.</p>
 <div class="tabel"><table><thead><tr><th>Request (<code>req</code>)</th><th>Isi</th></tr></thead><tbody><tr><td><code>method</code>, <code>path</code></td><td><code>&quot;GET&quot;</code>, <code>&quot;/sapa/Ani&quot;</code></td></tr><tr><td><code>params</code></td><td>bagian <code>:nama</code> dari pola rute, dibaca <code>req.params.nama</code></td></tr><tr><td><code>query</code></td><td>pasangan dari <code>?a=1&amp;b=2</code>; ambil dengan <code>dok::query_get(req.query, &quot;a&quot;)</code></td></tr><tr><td><code>headers</code></td><td>ambil dengan <code>dok::header_get(req.headers, &quot;Content-Type&quot;)</code></td></tr><tr><td><code>body</code>, <code>body_bytes</code></td><td>badan sebagai teks; kalau bukan teks UTF-8, <code>body</code> bernilai <code>nil</code> dan isinya di <code>body_bytes</code></td></tr></tbody></table></div>
 <p>Handler boleh mengembalikan teks (jadi <code>200 text/plain</code>), hasil <code>dok::text</code>, <code>dok::html</code>, <code>dok::json_response</code>, <code>dok::redirect</code>, <code>dok::response(kode, isi)</code>, <code>dok::binary(byte)</code>, atau <code>Result</code> (<code>Err</code> jadi 500).</p>
 <h3 id="middleware"><a class="jangkar" href="#middleware">Middleware</a></h3>
@@ -537,7 +537,7 @@ false</code></pre></figure>
         }
     }
 })</code></pre></figure>
-<p><code>ws_recv</code> menunggu pesan berikutnya dan menjawab <code>None</code> saat koneksinya ditutup. Pesan biner datang sebagai array byte.</p>
+<p><code>ws_recv</code> menunggu pesan berikutnya dan menjawab <code>None</code> saat koneksinya ditutup. Pesan biner datang sebagai array byte. Permintaan dari peramban yang <code>Origin</code>-nya berhost lain dari <code>Host</code> dijawab 403 (port boleh beda), supaya halaman dari situs lain tidak bisa membuka WebSocket atas nama pengunjung.</p>
 <h2 id="klien-http"><a class="jangkar" href="#klien-http">Klien HTTP</a></h2>
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">match</span> <span class="k-ns">http</span>::<span class="k-fn">get</span>(<span class="k-str">&quot;https://api.github.com/repos/Kodok-Kejepit/jrg&quot;</span>) {
     <span class="k-fn">Ok</span>(r) =&gt; <span class="k-fn">wok</span>(r.status, <span class="k-ns">json</span>::<span class="k-fn">parse</span>(r.body)[<span class="k-str">&quot;stargazers_count&quot;</span>]),
@@ -572,7 +572,7 @@ budi 8.5
 <p><code>dok::tcp_listen</code>, <code>tcp_accept</code>, <code>tcp_connect</code>, <code>tcp_send</code>, <code>tcp_recv_line</code> untuk TCP, dan <code>dok::udp_bind</code>, <code>udp_send_to</code>, <code>udp_recv_from</code> untuk UDP. <code>dok::log_info</code> dan kawan-kawannya mencetak log bertingkat, dengan warna di terminal.</p>
 </article>
 <nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="pustaka.html"><small>Sebelumnya</small><strong>Pustaka bawaan</strong></a><a class="ke-kanan" href="grafis.html"><small>Berikutnya</small><strong>Kanvas, suara, numerik</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=d9313260f6" alt="JRG++" width="150" height="44"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=499b8959b8" alt="JRG++" width="150" height="46"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.2.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
 </main>
 <nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#server">Server</a></li><li><a href="#template">Template</a></li><li><a href="#cookie-sesi-dan-sandi">Cookie, sesi, dan sandi</a></li><li><a href="#websocket">WebSocket</a></li><li><a href="#klien-http">Klien HTTP</a></li><li><a href="#sqlite">SQLite</a></li><li><a href="#jaringan-tingkat-rendah">Jaringan tingkat rendah</a></li></ol></nav>
 </div>
@@ -580,7 +580,7 @@ budi 8.5
   <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=681457ac61"></script>
+<script defer src="../aset/cari.js?v=11dc2fab5e"></script>
 <script defer src="../aset/situs.js?v=e91e44ad63"></script>
 </body>
 </html>

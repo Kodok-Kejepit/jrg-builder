@@ -645,7 +645,11 @@ impl Vm {
         // polos — dan array kosong bukan error, tapi `Option::None`.
         self.def("arr::pop",  |a| match a.get(0) {
             Some(Array(v)) => {
-                let mut isi = v.lock().unwrap().clone();
+                // Larik yang dipindahkan ke sini (`a = arr::pop(a)[0]`, `b, x = b.pop()`) cuma dipegang
+                // argumen ini: isinya diambil, bukan disalin utuh — itu yang membuat pop berulang kuadrat.
+                let mut isi = if Arc::strong_count(v) == 1 && Arc::weak_count(v) == 0 {
+                    std::mem::take(&mut *v.lock().unwrap())
+                } else { v.lock().unwrap().clone() };
                 let diambil = match isi.pop() {
                     Some(x) => vm_some(x),
                     None    => vm_none(),

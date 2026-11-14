@@ -271,7 +271,7 @@ pub const DOKUMEN: &[Info] = &[
     Info { nama: "dok::router_ws", tanda_tangan: "dok::router_ws(router, path, handler) -> unit",
            ringkas: "Endpoint WebSocket. Handshake dijawab otomatis; ping dibalas pong sendiri." },
     Info { nama: "dok::serve", tanda_tangan: "dok::serve(router, port, host?) -> unit",
-           ringkas: "Jalankan server (MEMBLOKIR). `host` bawaan \"0.0.0.0\". Satu thread per koneksi." },
+           ringkas: "Jalankan server (MEMBLOKIR). `host` bawaan \"127.0.0.1\" (tulis \"0.0.0.0\" untuk membuka ke jaringan). Satu thread per koneksi." },
     Info { nama: "dok::response", tanda_tangan: "dok::response(status, body?, content_type?) -> DokResponse",
            ringkas: "Bikin response; `body` bawaannya kosong (mis. untuk 204). `content_type` bawaan \"text/plain; charset=utf-8\"." },
     Info { nama: "dok::json_response", tanda_tangan: "dok::json_response(nilai) -> DokResponse",

@@ -143,7 +143,7 @@ impl Compiler {
         let label = if type_name == "dict" && varian.is_none() {
             crate::vm::value::Label::Dict
         } else {
-            crate::vm::value::Label::Struct(std::sync::Arc::from(type_name))
+            crate::vm::value::Label::Struct(VmValue::intern_nama_struct(type_name))
         };
         let proto = self.chunk.add_constant(VmValue::Map(std::sync::Arc::new(crate::vm::value::Peta::prototipe(label, kunci))));
         self.chunk.emit_arg(OpCode::BuildStruct, proto);

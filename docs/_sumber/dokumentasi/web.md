@@ -32,8 +32,9 @@ $ curl "localhost:8080/api/kuadrat?n=12"
 {"kuadrat":144,"n":12}
 ```
 
-`dok::serve` memblokir dan menangani tiap koneksi di thread-nya sendiri. Argumen ketiga mengatur alamat (bawaannya
-`0.0.0.0`; pakai `"127.0.0.1"` supaya cuma bisa diakses dari mesin sendiri).
+`dok::serve` memblokir dan menangani tiap koneksi di thread-nya sendiri. Argumen ketiga mengatur alamat. Bawaannya
+`"127.0.0.1"`, jadi cuma bisa diakses dari mesin sendiri (atau lewat proxy seperti Caddy/nginx di mesin yang sama);
+tulis `"0.0.0.0"` untuk membukanya ke jaringan.
 
 | Request (`req`) | Isi |
 |---|---|
@@ -161,6 +162,8 @@ dok::router_ws(r, "/gema", |koneksi, req| {
 ```
 
 `ws_recv` menunggu pesan berikutnya dan menjawab `None` saat koneksinya ditutup. Pesan biner datang sebagai array byte.
+Permintaan dari peramban yang `Origin`-nya berhost lain dari `Host` dijawab 403 (port boleh beda), supaya halaman
+dari situs lain tidak bisa membuka WebSocket atas nama pengunjung.
 
 ## Klien HTTP
 

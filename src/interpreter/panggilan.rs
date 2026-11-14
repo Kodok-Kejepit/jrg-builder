@@ -29,7 +29,12 @@ impl Interpreter {
         // `fn` bernama di dalam blok di-hoist duluan, persis seperti `fn` top-level.
         self.hoist_block_fns(block, env);
         let result = (|| -> EvalResult {
-            for stmt in &block.stmts { self.exec_stmt(stmt, env)?; }
+            for (i, stmt) in block.stmts.iter().enumerate() {
+                match (stmt, crate::interpreter::capture::pindah_sebelum_ditimpa(stmt, block.stmts.get(i + 1))) {
+                    (Stmt::Let(l), Some(a)) => { self.exec_let_pindah(l, &a, env)?; }
+                    _ => { self.exec_stmt(stmt, env)?; }
+                }
+            }
             if let Some(tail) = &block.tail { self.eval_expr(tail, env) }
             else { Ok(Value::Unit) }
         })();

@@ -504,3 +504,22 @@ fn membaca_teks_tidak_ikut_panjangnya_di_vm() {
             baca, rasio, kecil * 1e3, besar * 1e3);
     }
 }
+
+/// Fase AMAN-43 (butir antrean "pop dua pernyataan kuadrat"): `pop` atas larik yang tidak dibaca lagi
+/// sebelum ditimpa memindahkannya (`capture::pindah_sebelum_ditimpa`) — dulu 56–69x untuk 8x n di --vm.
+#[test]
+fn pop_yang_ditimpa_tetap_linear_di_vm() {
+    for (nama, bentuk) in [
+        ("dua pernyataan `let r = arr::pop(a); a = r[0]`", "let r = arr::pop(a)\n a = r[0]\n s += r[1].unwrap_or(0)"),
+        ("dua pernyataan `let r = a.pop(); a = r[0]`", "let r = a.pop()\n a = r[0]\n s += r[1].unwrap_or(0)"),
+        ("bongkar `a, x = a.pop()`", "var x = Option::None\n a, x = a.pop()\n s += x.unwrap_or(0)"),
+    ] {
+        let sumber = |n: usize| format!("package main\npub fn main() {{ var a = []\n for i in 0..{n} {{ a = arr::push(a, i) }}\n var s = 0\n \
+             for i in 0..{n} {{ {bentuk} }}\n assert_eq(len(a), 0)\n wok(s) }}\n", n = n, bentuk = bentuk);
+        let kecil = vm_tercepat(&sumber(4000), 3);
+        let besar = vm_tercepat(&sumber(32000), 3);
+        let rasio = besar / kecil.max(1e-6);
+        assert!(rasio < 24.0, "{} di --vm: n=4000 {:.3}s, n=32000 {:.3}s (rasio {:.1}x, ambang 24x; linear ~8x, \
+            kuadratik ~64x)", nama, kecil, besar, rasio);
+    }
+}

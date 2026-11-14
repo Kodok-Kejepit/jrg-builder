@@ -994,6 +994,11 @@ fn handle_connection(panggil: &mut PemanggilHandler, router_id: u64, mut stream:
             let cocok = router.ws.iter()
                 .find_map(|(segs, h)| match_route(segs, &jalur).map(|p| (h.clone(), p)));
             if let Some((handler, params)) = cocok {
+                if !super::ws::origin_sah(&pr.headers) {
+                    write_response(&mut stream, 403, "text/plain; charset=utf-8",
+                        "Origin WebSocket ditolak: host-nya harus sama dengan Host", &[]);
+                    return;
+                }
                 let s2 = match stream.try_clone() { Ok(s) => s, Err(_) => return };
                 let id = match super::ws::terima(s2, &kunci) { Ok(i) => i, Err(_) => return };
                 let req = pasang_params(req_val.clone(), params);
@@ -1140,7 +1145,8 @@ pub fn serve_dgn(
         Some(Value::Int(n)) if *n >= 0 && *n <= 65535 => *n as u16,
         _ => return Err(Signal::RuntimeError(RuntimeError::new("dok::serve: port harus int 0..65535"))),
     };
-    let host = match args.get(2) { Some(Value::Str(s)) => s.clone(), _ => std::sync::Arc::new("0.0.0.0".to_string()) };
+    // Bawaan loopback (keputusan 2026-11-14, seperti Flask/Django/Rails): membuka ke jaringan ditulis `"0.0.0.0"`.
+    let host = match args.get(2) { Some(Value::Str(s)) => s.clone(), _ => std::sync::Arc::new("127.0.0.1".to_string()) };
 
     let addr = format!("{}:{}", host, port);
     let listener = match TcpListener::bind(&addr) {

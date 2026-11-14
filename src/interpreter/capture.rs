@@ -6,6 +6,35 @@ use crate::parser::{
     Block, Expr, ForStmt, FnBody, IfStmt, MatchBody, SelectCase, Stmt, TemplatePart,
 };
 
+/// `a` di `let r = arr::pop(a)` / `a.pop()` yang LANGSUNG diikuti `a = e` (`e` tidak menyebut `a`):
+/// `a` tidak dibaca lagi sebelum ditimpa, jadi dua mesin boleh memindahkannya ke `pop` alih-alih menyalin.
+pub fn pindah_sebelum_ditimpa(kini: &Stmt, berikut: Option<&Stmt>) -> Option<String> {
+    let Stmt::Let(l) = kini else { return None };
+    let crate::parser::Pattern::Ident { name: r, .. } = &l.pattern else { return None };
+    let a = nama_pop(&l.init)?;
+    if *r == a { return None; }
+    let Some(Stmt::Assign(t)) = berikut else { return None };
+    let tepat = t.targets.len() == 1 && t.values.len() == 1 && matches!(t.op, crate::parser::AssignOp::Eq)
+        && matches!(&t.targets[0], Expr::Ident(n, _) if *n == a)
+        && !names_mentioned(&t.values[0]).contains(&a);
+    tepat.then_some(a)
+}
+
+/// Lokal yang lariknya diambil `pop`: `arr::pop(a)` atau `a.pop()`.
+pub fn nama_pop(e: &Expr) -> Option<String> {
+    match e {
+        Expr::Method { obj, method, args, .. } if method == "pop" && args.is_empty() => match &**obj {
+            Expr::Ident(n, _) => Some(n.clone()),
+            _ => None,
+        },
+        Expr::Call { func, args, .. } if args.len() == 1 => match (&**func, &args[0]) {
+            (Expr::PathExpr { segments, .. }, Expr::Ident(n, _)) if segments == &["arr", "pop"] => Some(n.clone()),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 /// Semua nama yang disebut di dalam sebuah ekspresi (over-approximation —
 /// lihat catatan modul).
 pub fn names_mentioned(e: &Expr) -> HashSet<String> {
