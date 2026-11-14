@@ -11,6 +11,8 @@ use crate::vm::value::VmValue;
 use crate::vm::vm::{Vm, VmError};
 
 thread_local! {
+    /// Satu struct milik tunggal berisi skalar yang baru dilepas `buang`, untuk dipakai ulang `bangun`.
+    static CADANGAN_STRUCT: Cell<Option<Arc<crate::vm::value::Peta>>> = const { Cell::new(None) };
     /// VM dan basis bingkai terluar yang sedang dijalankan kode native di thread ini.
     static KONTEKS: Cell<(*mut Vm, usize)> = const { Cell::new((std::ptr::null_mut(), 0)) };
     /// Panggilan langsung yang sedang berjalan (`masuk`/`keluar`): kedalaman bingkai pemanggil, basisnya,
@@ -54,6 +56,42 @@ fn tumbuh(vm: &mut Vm, i: usize) {
         let p = vm.stack.as_mut_ptr();
         for k in n..=i { std::ptr::write(p.add(k), VmValue::Nil); }
         vm.stack.set_len(i + 1);
+    }
+}
+
+/// Isi struct yang dipakai ulang ditulis dari posisi `rentang` (angka native atau nilai milik VM yang dipindah).
+#[inline(always)]
+fn isi_ulang(vm: &mut Vm, basis: usize, jenis: &[Jenis], nilai: &[i64], rentang: std::ops::Range<usize>, isi: &mut [VmValue]) {
+    for (j, i) in rentang.enumerate() {
+        // Angka atas angka sejenis (biasa: struct yang diperbarui per langkah): cuma isinya yang ditulis.
+        match (jenis[i], &mut isi[j]) {
+            (Jenis::Pecahan, VmValue::Float(x)) => { *x = f64::from_bits(nilai[i] as u64); continue }
+            (Jenis::Bulat, VmValue::Int(x)) => { *x = nilai[i] as i128; continue }
+            _ => {}
+        }
+        let v = match nilai_skalar(jenis[i], nilai[i]) {
+            Some(v) => v,
+            None => std::mem::replace(sediakan(vm, basis, i), VmValue::Nil),
+        };
+        timpa(&mut isi[j], v);
+    }
+}
+
+/// Isi tanpa destruktor: cuma struct seperti ini yang boleh disimpan di `CADANGAN_STRUCT`, jadi menahannya
+/// tidak memperpanjang umur pegangan apa pun (FFI, kanal) yang bisa diamati.
+#[inline(always)]
+fn skalar(v: &VmValue) -> bool {
+    matches!(v, VmValue::Nil | VmValue::Unit | VmValue::Bool(_) | VmValue::Int(_) | VmValue::Rune(_)
+        | VmValue::Float(_) | VmValue::Ptr(_))
+}
+
+/// `*tempat = v` tanpa memanggil `drop_glue` kalau isi lamanya skalar (yang biasa di posisi stack VM).
+#[inline(always)]
+fn timpa(tempat: &mut VmValue, v: VmValue) {
+    if skalar(tempat) {
+        unsafe { std::ptr::write(tempat, v) }
+    } else {
+        *tempat = v;
     }
 }
 
@@ -134,7 +172,7 @@ pub extern "C" fn bangun(situs: *const SitusBangun, jenis: *const Jenis, t: i64,
     if let SitusBangun::Varian(nama) = situs {
         let p = nilai_skalar(jenis[t - 1], nilai[t - 1])
             .unwrap_or_else(|| std::mem::replace(sediakan(vm, basis, t - 1), VmValue::Nil));
-        *sediakan(vm, basis, t - n) = VmValue::varian_berisi(nama, p);
+        timpa(sediakan(vm, basis, t - n), VmValue::varian_berisi(nama, p));
         return;
     }
     if let SitusBangun::StrukturUlang(label, bentuk) = situs {
@@ -143,26 +181,25 @@ pub extern "C" fn bangun(situs: *const SitusBangun, jenis: *const Jenis, t: i64,
             let VmValue::Map(m) = &mut lama else { unreachable!("diperiksa pakai_ulang") };
             let Some(crate::vm::peta::IsiPeta::Rapat { nilai: isi, .. }) = crate::vm::value::Peta::isi_tunggal(m)
                 else { unreachable!("diperiksa pakai_ulang") };
-            for (j, i) in (t - n..t).enumerate() {
-                // Angka atas angka sejenis (biasa: struct yang diperbarui per langkah): cuma isinya yang ditulis.
-                match (jenis[i], &mut isi[j]) {
-                    (Jenis::Pecahan, VmValue::Float(x)) => { *x = f64::from_bits(nilai[i] as u64); continue }
-                    (Jenis::Bulat, VmValue::Int(x)) => { *x = nilai[i] as i128; continue }
-                    _ => {}
-                }
-                let v = match nilai_skalar(jenis[i], nilai[i]) {
-                    Some(v) => v,
-                    None => std::mem::replace(sediakan(vm, basis, i), VmValue::Nil),
-                };
-                // Isi lama tanpa destruktor (angka) ditimpa tanpa memanggil `drop_glue`.
-                match &mut isi[j] {
-                    tempat @ (VmValue::Int(_) | VmValue::Float(_) | VmValue::Bool(_) | VmValue::Nil | VmValue::Unit) =>
-                        unsafe { std::ptr::write(tempat, v) },
-                    tempat => *tempat = v,
+            isi_ulang(vm, basis, jenis, nilai, t - n..t, isi);
+            timpa(sediakan(vm, basis, t - n), lama);
+            return;
+        }
+    }
+    // Struct sebentuk yang baru dilepas `buang` (isinya skalar semua): dipakai ulang, tanpa alokasi.
+    if let SitusBangun::Struktur(label, bentuk) | SitusBangun::StrukturUlang(label, bentuk) = situs {
+        if let Some(mut m) = CADANGAN_STRUCT.with(|c| c.take()) {
+            let sama_label = matches!((&m.label, label), (crate::vm::value::Label::Struct(a), crate::vm::value::Label::Struct(b))
+                if Arc::ptr_eq(a, b) || a == b);
+            if let (true, Some(crate::vm::peta::IsiPeta::Rapat { bentuk: b, nilai: isi })) =
+                (sama_label, crate::vm::value::Peta::isi_tunggal(&mut m)) {
+                if Arc::ptr_eq(b, bentuk) && isi.len() == n {
+                    isi_ulang(vm, basis, jenis, nilai, t - n..t, isi);
+                    timpa(sediakan(vm, basis, t - n), VmValue::Map(m));
+                    return;
                 }
             }
-            *sediakan(vm, basis, t - n) = lama;
-            return;
+            CADANGAN_STRUCT.with(|c| c.set(Some(m)));
         }
     }
     // Rentang berukuran pasti: `collect` mengalokasi sekali tanpa cek kapasitas per elemen.
@@ -177,7 +214,7 @@ pub extern "C" fn bangun(situs: *const SitusBangun, jenis: *const Jenis, t: i64,
         SitusBangun::Larik => VmValue::array(isi),
         SitusBangun::Varian(_) => unreachable!("ditangani di atas"),
     };
-    *sediakan(vm, basis, t - n) = v;
+    timpa(sediakan(vm, basis, t - n), v);
 }
 
 /// `Typeof; Const; Eq` atas posisi `p` milik VM: nama jenisnya (`VmValue::type_name`, sama dengan opcode
@@ -380,7 +417,7 @@ pub extern "C" fn keluar_ringan(st: i64, hasil: i64, titip: *const [usize; 9]) -
                 (std::slice::from_raw_parts(jenis as *const Jenis, t), std::slice::from_raw_parts(nilai as *const i64, t))
             };
             for i in t - argc..t {
-                if let Some(v) = nilai_skalar(jenis[i], nilai[i]) { *sediakan(vm, basis, i) = v; }
+                if let Some(v) = nilai_skalar(jenis[i], nilai[i]) { timpa(sediakan(vm, basis, i), v); }
             }
             let VmValue::Function(func) = (unsafe { &*(fungsi as *const VmValue) }) else { unreachable!("dijamin turun.rs") };
             vm.dorong_bingkai(crate::vm::vm::CallFrame {
@@ -393,7 +430,8 @@ pub extern "C" fn keluar_ringan(st: i64, hasil: i64, titip: *const [usize; 9]) -
     // Hasilnya tepat di slot callee, juga kalau stack belum sepanjang itu (`masuk_ringan` tidak memanjangkannya).
     potong(&mut vm.stack, slot);
     while vm.stack.len() < slot { vm.stack.push(VmValue::Nil); }
-    vm.catat_hasil(&v);
+    // Tanpa `catat_hasil`: `ip` bingkai pemanggil basi di sini (`masuk_ringan` tidak menulisnya), jadi umpannya
+    // jatuh ke situs lain; pemanggilnya sudah terkompilasi, dan VM mencatat sendiri kalau spekulasinya gagal.
     vm.stack.push(v);
     0
 }
@@ -444,7 +482,7 @@ pub extern "C" fn bawaan(ip: i64, jenis: *const Jenis, t: i64, argc: i64, nilai:
     let f: crate::vm::value::VmNativeFn = unsafe { std::mem::transmute(f as usize) };
     if let Some(v) = bawaan_cepat(vm, basis, jenis, nilai, t, argc, f as usize) {
         vm.catat_hasil(&v);
-        *sediakan(vm, basis, t - argc - 1) = v;
+        timpa(sediakan(vm, basis, t - argc - 1), v);
         return 0;
     }
     let span = |vm: &mut Vm| {
@@ -459,7 +497,7 @@ pub extern "C" fn bawaan(ip: i64, jenis: *const Jenis, t: i64, argc: i64, nilai:
         && i.maks.is_none_or(|m| argc <= m) && i.min.is_none_or(|m| argc >= m));
     if polos {
         for i in t - argc..t {
-            if let Some(v) = nilai_skalar(jenis[i], nilai[i]) { *sediakan(vm, basis, i) = v; }
+            if let Some(v) = nilai_skalar(jenis[i], nilai[i]) { timpa(sediakan(vm, basis, i), v); }
         }
         let _ = sediakan(vm, basis, t - 1);
         let r = f(&vm.stack[basis + t - argc..basis + t]);
@@ -470,7 +508,7 @@ pub extern "C" fn bawaan(ip: i64, jenis: *const Jenis, t: i64, argc: i64, nilai:
             Ok(v) => {
                 let _ = span(vm);
                 vm.catat_hasil(&v);
-                *sediakan(vm, basis, t - argc - 1) = v;
+                timpa(sediakan(vm, basis, t - argc - 1), v);
                 0
             }
             Err(e) => {
@@ -491,7 +529,7 @@ pub extern "C" fn bawaan(ip: i64, jenis: *const Jenis, t: i64, argc: i64, nilai:
     match vm.panggil_native(f, args, sp, true) {
         Ok(v) => {
             vm.catat_hasil(&v);
-            *sediakan(vm, basis, t - argc - 1) = v;
+            timpa(sediakan(vm, basis, t - argc - 1), v);
             0
         }
         Err(e) => {
@@ -569,7 +607,7 @@ pub extern "C" fn biner(ip: i64, jenis: *const Jenis, t: i64, nilai: *const i64)
     fr.ip = ip as usize + 1;
     match vm.op_biner(ins.op, a, b, sp) {
         Ok(v) if matches!(ins.op, OpCode::Eq | OpCode::Ne | OpCode::Lt | OpCode::Le | OpCode::Gt | OpCode::Ge) => v.is_truthy() as i32,
-        Ok(v) => { *sediakan(vm, basis, t - 2) = v; 0 }
+        Ok(v) => { timpa(sediakan(vm, basis, t - 2), v); 0 }
         Err(e) => {
             GALAT.with(|g| *g.borrow_mut() = Some(e));
             2
@@ -600,7 +638,7 @@ pub extern "C" fn muat(dari: i64, ke: i64) {
         if sama_penyimpanan(a, b) { return; }
     }
     let v = vm.baca_lokal(basis + dari as usize).unwrap_or(VmValue::Nil);
-    *sediakan(vm, basis, ke as usize) = v;
+    timpa(sediakan(vm, basis, ke as usize), v);
 }
 
 /// Dua nilai berbagi penyimpanan yang sama (isinya identik); sel tangkapan tidak termasuk.
@@ -622,14 +660,14 @@ pub extern "C" fn taruh(ke: i64, k: *const VmValue) {
         if *k as usize == *ada as usize { return; }
     }
     let v = if k.is_null() { VmValue::Unit } else { unsafe { (*k).clone() } };
-    *sediakan(vm, basis, ke as usize) = v;
+    timpa(sediakan(vm, basis, ke as usize), v);
 }
 
 /// `AmbilLokal` atas lokal milik VM (`Vm::ambil_lokal`): posisi `ke` = isinya.
 pub extern "C" fn ambil(dari: i64, ke: i64) {
     let (vm, basis) = konteks();
     let v = vm.ambil_lokal(basis + dari as usize).unwrap_or(VmValue::Nil);
-    *sediakan(vm, basis, ke as usize) = v;
+    timpa(sediakan(vm, basis, ke as usize), v);
 }
 
 /// `StoreLocal` (`pindah` 0) / `SimpanBuang` (1): lokal `ke` = nilai posisi `dari`, berjenis `jenis`
@@ -651,7 +689,9 @@ pub extern "C" fn simpan(ke: i64, dari: i64, nilai: i64, jenis: i32, pindah: i32
 pub extern "C" fn pola(p: i64, situs: *const SitusPola) -> i32 {
     let (vm, basis) = konteks();
     let v = sediakan(vm, basis, p as usize);
-    match unsafe { &*situs }.cocok(v) {
+    let situs = unsafe { &*situs };
+    if situs.tolak(v) { timpa(v, VmValue::Nil); return 0; }
+    match situs.cocok(v) {
         Ok(b) => { *v = VmValue::Nil; b as i32 }
         Err(_) => 2,
     }
@@ -680,6 +720,14 @@ impl SitusPola {
             _ => 0,
         };
         Box::leak(Box::new(SitusPola { desc, nama, tembolok: Default::default() }))
+    }
+
+    /// Pola berkualifikasi atas enum yang alamat namanya lain: pasti tidak cocok (`cocok` memeriksa hal yang
+    /// sama di awalnya). Di-inline di pembantunya supaya penolakan tidak membayar panggilan `cocok`.
+    #[inline(always)]
+    fn tolak(&self, v: &VmValue) -> bool {
+        self.nama != 0 && matches!(v, VmValue::Map(m) if matches!(&m.label,
+            crate::vm::value::Label::Enum { nama, .. } if *nama as *const _ as usize != self.nama))
     }
 
     #[inline]
@@ -728,9 +776,73 @@ fn lihat_lokal<T>(slot: i64, f: impl FnOnce(&VmValue) -> T) -> Option<T> {
     })
 }
 
+/// Pola-pola satu rantai lengan `match` (`turun::rantai_pola`), dicoba berurutan oleh `pola_pilih`.
+pub struct RantaiPola { situs: Box<[&'static SitusPola]> }
+
+impl RantaiPola {
+    /// Hidup selama kode yang memakainya (kode JIT tidak pernah dibebaskan).
+    pub fn bocor(situs: Vec<&'static SitusPola>) -> &'static RantaiPola {
+        Box::leak(Box::new(RantaiPola { situs: situs.into_boxed_slice() }))
+    }
+}
+
+/// Rantai lengan atas lokal `slot`: indeks lengan pertama yang cocok, banyaknya lengan kalau tidak ada,
+/// `1000 + k` kalau pola lengan ke-`k` galat (lengan sebelumnya tidak cocok). Urutannya sama dengan
+/// `pola_lokal` per lengan; lokal yang tak terbaca = galat di lengan pertama (VM yang menjalankan).
+pub extern "C" fn pola_pilih(slot: i64, rantai: *const RantaiPola) -> i32 {
+    let rantai = unsafe { &*rantai };
+    let (vm, basis) = konteks();
+    let Some(v) = vm.stack.get(basis + slot as usize) else { return 1000 };
+    let pilih = |v: &VmValue| {
+        for (k, situs) in rantai.situs.iter().enumerate() {
+            if situs.tolak(v) { continue; }
+            match situs.cocok(v) {
+                Ok(true) => return k as i32,
+                Ok(false) => {}
+                Err(_) => return 1000 + k as i32,
+            }
+        }
+        rantai.situs.len() as i32
+    };
+    match v {
+        VmValue::Cell(c) => pilih(&c.lock().unwrap_or_else(|p| p.into_inner())),
+        v => pilih(v),
+    }
+}
+
 /// `LoadLocal` + `CekEnum` tanpa menyalin lokalnya: 0/1 = hasil; 2 = VM yang menjalankan keduanya.
 pub extern "C" fn pola_lokal(slot: i64, situs: *const SitusPola) -> i32 {
-    lihat_lokal(slot, |v| unsafe { &*situs }.cocok(v).map_or(2, |b| b as i32)).unwrap_or(2)
+    let situs = unsafe { &*situs };
+    let (vm, basis) = konteks();
+    let Some(v) = vm.stack.get(basis + slot as usize) else { return 2 };
+    if situs.tolak(v) { return 0; }
+    match v {
+        VmValue::Cell(c) => situs.cocok(&c.lock().unwrap_or_else(|p| p.into_inner())),
+        v => situs.cocok(v),
+    }.map_or(2, |b| b as i32)
+}
+
+/// `LoadLocal` + `AmbilPayload` + bukaan angka (`jenis` 1 bulat 64 bit, 5 pecahan): 0 = angkanya di `*keluar`,
+/// stack VM tidak disentuh; 1 = bukan enum berpayload (VM yang menjalankan); 2 = payload jenis lain, ditaruh di
+/// posisi `ke` seperti `payload_lokal` (spekulasi gagal sesudahnya, seperti `buka`).
+pub extern "C" fn payload_angka_lokal(slot: i64, ke: i64, jenis: i32, keluar: *mut i64) -> i32 {
+    let hasil = lihat_lokal(slot, |v| match v.bagian_enum() {
+        Some((_, _, Some(isi))) => Some(match (isi, jenis) {
+            (VmValue::Int(n), 1) => i64::try_from(*n).map_err(|_| isi.clone()),
+            (VmValue::Float(x), 5) => Ok(x.to_bits() as i64),
+            _ => Err(isi.clone()),
+        }),
+        _ => None,
+    }).flatten();
+    match hasil {
+        Some(Ok(n)) => { unsafe { *keluar = n }; 0 }
+        Some(Err(isi)) => {
+            let (vm, basis) = konteks();
+            timpa(sediakan(vm, basis, ke as usize), isi);
+            2
+        }
+        None => 1,
+    }
 }
 
 /// `LoadLocal` + `AmbilPayload`: posisi `ke` = payload lokal `slot`; 1 = VM yang menjalankan keduanya.
@@ -740,7 +852,7 @@ pub extern "C" fn payload_lokal(slot: i64, ke: i64) -> i32 {
         _ => None,
     }) else { return 1 };
     let (vm, basis) = konteks();
-    *sediakan(vm, basis, ke as usize) = isi;
+    timpa(sediakan(vm, basis, ke as usize), isi);
     0
 }
 
@@ -825,14 +937,14 @@ pub extern "C" fn field_lokal(slot: i64, situs: *const SitusField, keluar: *mut 
         Some(Err(v)) => v,
         None => {
             let obj = vm.baca_lokal(basis + slot as usize).unwrap_or(VmValue::Nil);
-            *sediakan(vm, basis, ke as usize) = obj;
+            timpa(sediakan(vm, basis, ke as usize), obj);
             if field(ke, nama, situs.privat as i32) != 0 { return 1; }
             let i = basis + ke as usize;
             if let Some(n) = angka(&vm.stack[i]) { unsafe { *keluar = n }; return 4; }
             return 0;
         }
     };
-    *sediakan(vm, basis, ke as usize) = v;
+    timpa(sediakan(vm, basis, ke as usize), v);
     0
 }
 
@@ -941,7 +1053,7 @@ pub extern "C" fn maju(slot: i64) -> i32 {
 pub extern "C" fn pindah(dari: i64, ke: i64) {
     let (vm, basis) = konteks();
     let v = std::mem::replace(sediakan(vm, basis, dari as usize), VmValue::Nil);
-    *sediakan(vm, basis, ke as usize) = v;
+    timpa(sediakan(vm, basis, ke as usize), v);
 }
 
 /// `LoadGlobal`: posisi `ke` = global `nama` (isi sel `var` modul); 1 = tidak ada (VM yang melapor).
@@ -952,7 +1064,7 @@ pub extern "C" fn muat_global(nama: *const String, ke: i64) -> i32 {
         Some(v) => v.clone(),
         None => return 1,
     };
-    *sediakan(vm, basis, ke as usize) = v;
+    timpa(sediakan(vm, basis, ke as usize), v);
     0
 }
 
@@ -961,7 +1073,7 @@ pub extern "C" fn muat_upval(idx: i64, ke: i64) -> i32 {
     let (vm, basis) = konteks();
     let Ok(sel) = vm.upval_at(idx as u32, None) else { return 1 };
     let v = sel.lock().unwrap_or_else(|p| p.into_inner()).clone();
-    *sediakan(vm, basis, ke as usize) = v;
+    timpa(sediakan(vm, basis, ke as usize), v);
     0
 }
 
@@ -1025,7 +1137,7 @@ pub extern "C" fn field(p: i64, nama: *const String, privat: i32) -> i32 {
 pub extern "C" fn salin(dari: i64, ke: i64) {
     let (vm, basis) = konteks();
     let v = sediakan(vm, basis, dari as usize).clone();
-    *sediakan(vm, basis, ke as usize) = v;
+    timpa(sediakan(vm, basis, ke as usize), v);
 }
 
 /// `Swap` atas dua posisi milik VM.
@@ -1057,11 +1169,11 @@ pub extern "C" fn metode_tukar(p: i64, label: *const String) -> i32 {
     let v = sediakan(vm, basis, p as usize);
     if v.nama_tipe() != Some(unsafe { (*label).as_str() }) {
         let salinan = v.clone();
-        *sediakan(vm, basis, p as usize + 1) = salinan;
+        timpa(sediakan(vm, basis, p as usize + 1), salinan);
         return 1;
     }
     let v = std::mem::replace(v, VmValue::Nil);
-    *sediakan(vm, basis, p as usize + 1) = v;
+    timpa(sediakan(vm, basis, p as usize + 1), v);
     if !vm.galat_metode.is_empty() { vm.galat_metode.retain(|(j, _)| *j < i); }
     0
 }
@@ -1077,12 +1189,12 @@ pub extern "C" fn metode_lokal(slot: i64, p: i64, label: *const Arc<str>, ambil:
     let sama = v.nama_tipe().is_some_and(|s| (s.as_ptr() == l.as_ptr() && s.len() == l.len()) || s == l);
     if !sama {
         let salinan = v.clone();
-        *sediakan(vm, basis, p as usize) = v;
-        *sediakan(vm, basis, p as usize + 1) = salinan;
+        timpa(sediakan(vm, basis, p as usize), v);
+        timpa(sediakan(vm, basis, p as usize + 1), salinan);
         return 1;
     }
-    *sediakan(vm, basis, p as usize) = VmValue::Nil;
-    *sediakan(vm, basis, p as usize + 1) = v;
+    timpa(sediakan(vm, basis, p as usize), VmValue::Nil);
+    timpa(sediakan(vm, basis, p as usize + 1), v);
     let j = basis + p as usize;
     if !vm.galat_metode.is_empty() { vm.galat_metode.retain(|(x, _)| *x < j); }
     0
@@ -1093,13 +1205,13 @@ pub extern "C" fn tulis_vm(p: i64, nilai: i64, jenis: i32) {
     let (vm, basis) = konteks();
     // Tepi cuma menulis posisi native (`Jenis::kode` selain 4).
     let v = skalar_kode(jenis, nilai).expect("tepi menulis angka native");
-    *sediakan(vm, basis, p as usize) = v;
+    timpa(sediakan(vm, basis, p as usize), v);
 }
 
 /// `Jenis::Lebar` di posisi `p` ke stack VM: bulat i128 dari dua belahan 64 bit.
 pub extern "C" fn tulis_lebar(p: i64, lo: i64, hi: i64) {
     let (vm, basis) = konteks();
-    *sediakan(vm, basis, p as usize) = VmValue::Int(((hi as i128) << 64) | (lo as u64 as i128));
+    timpa(sediakan(vm, basis, p as usize), VmValue::Int(((hi as i128) << 64) | (lo as u64 as i128)));
 }
 
 /// Posisi `p` (milik VM) sebagai bulat i128: `keluar[0]` belahan bawah, `keluar[1]` atas; 1 = bukan bulat.
@@ -1117,7 +1229,18 @@ pub extern "C" fn buka_lebar(p: i64, keluar: *mut i64) -> i32 {
 /// Posisi `p` dilepas (`Pop` atas nilai milik VM).
 pub extern "C" fn buang(p: i64) {
     let (vm, basis) = konteks();
-    if let Some(v) = vm.stack.get_mut(basis + p as usize) { *v = VmValue::Nil; }
+    let Some(v) = vm.stack.get_mut(basis + p as usize) else { return };
+    if skalar(v) { return unsafe { std::ptr::write(v, VmValue::Nil) }; }
+    // Struct milik tunggal berisi skalar: disimpan untuk `bangun` berikutnya, bukan dibebaskan.
+    if let VmValue::Map(m) = v {
+        if matches!(m.label, crate::vm::value::Label::Struct(_)) && matches!(crate::vm::value::Peta::isi_tunggal(m),
+            Some(crate::vm::peta::IsiPeta::Rapat { nilai, .. }) if nilai.iter().all(skalar)) {
+            let VmValue::Map(m) = std::mem::replace(v, VmValue::Nil) else { unreachable!("baru diperiksa") };
+            CADANGAN_STRUCT.with(|c| c.set(Some(m)));
+            return;
+        }
+    }
+    *v = VmValue::Nil;
 }
 
 /// Truthiness posisi `p` (`VmValue::is_truthy`); `lepas` = posisinya dibuang sesudahnya.

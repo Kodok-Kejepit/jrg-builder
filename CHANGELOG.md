@@ -17,6 +17,11 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **`let`/`const` lokal yang bernama sama dengan varian enum milik berkasnya ditolak**, dengan kalimat yang sama
   seperti di tingkat atas — nama telanjangnya selalu berarti varian.
 
+- **Bacaan berkas utuh berbatas 256 MiB** (`fs::read` dan kawan-kawannya, `file::read`, `zip::`/`tar::` dari jalur,
+  `wasm::muat`, berkas statis `dok::serve`): yang lebih besar, atau perangkat tanpa ujung seperti `/dev/zero`, jadi
+  galat berkalimat alih-alih menghabiskan memori mesin.
+- **`str::replace`, `re::replace`/`re::replace_all` dan `str::join`/`arr::join` menolak hasil di atas 256 MiB**,
+  seperti `str::repeat`: dulu teks 1 MB dengan pengganti 10 KB mematikan prosesnya.
 - **Klien HTTP (`http::`, `dok::http_request`) menolak kepala `Content-Length`, `Transfer-Encoding` dan
   `Connection` dari pemakai**, dan `Host` yang ditulis dua kali — keduanya dulu terkirim di samping milik klien
   sendiri, sehingga server dan proxy bisa membaca batas permintaan berbeda. `Host` yang ditulis sekali sekarang

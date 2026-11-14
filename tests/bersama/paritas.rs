@@ -694,6 +694,16 @@ pub fn main() {
     wok(fs::try_read(f))
     fs::delete(f)
 }"#),
+    // Fase AMAN-44: bacaan berkas utuh berbatas 256 MiB; `/dev/zero` dulu dibaca sampai memori mesin habis.
+    ("bacaan utuh berbatas: perangkat tanpa ujung jadi Err", r#"package main
+pub fn main() {
+    wok(fs::try_read("/dev/zero"))
+    wok(fs::read_base64("/dev/zero"))
+    let f = fs::temp_dir() + "/jrg_paritas_batas.txt"
+    fs::write(f, "kecil")
+    wok(fs::try_read(f), file::read(f))
+    fs::delete(f)
+}"#),
     ("literal struct yang isinya cuma basis sebar",
      "package main\nstruct A { pub x: int, pub y: int }\npub fn main() {\n let a = A { x: 1, y: 2 }\n wok(A { ...a })\n let b = A { ...a }\n wok(b.x + b.y)\n}"),
     // Fase WAJIB: default cuma untuk field yang tidak diisi, sesudah field tertulis, di tempat

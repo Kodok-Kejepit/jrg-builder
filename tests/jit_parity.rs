@@ -2342,3 +2342,218 @@ fn field_banyak_polimorf_sama_dengan_vm() {
     let j = jalankan(FIELD_BANYAK_POLIMORF, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
     assert!(j.stderr.contains("dikompilasi: jumlah, main"), "{}", j.stderr);
 }
+
+/// Cadangan struct (`buang` -> `bangun`): salinan yang disimpan di larik sebelum dilepas tetap utuh, field teks,
+/// tipe lain sebentuk, dict sebentuk, dan struct yang diubah sesudah dipakai ulang — sama dengan `--vm`.
+const CADANGAN_STRUCT: &str = r#"
+package main
+struct R { pub a: int, pub b: float }
+struct S { pub a: int, pub b: float }
+struct T { pub a: int, pub b: string }
+fn nilai(r: R) -> float { (r.a as float) + r.b }
+pub fn main() {
+    var simpan = []
+    var tot = 0.0
+    for i in 0..800 {
+        let r = R { a: i, b: 0.5 }
+        tot = tot + nilai(r)
+        if (i % 100 == 0) { simpan = simpan + [r] }
+        let s = S { a: i * 2, b: 1.5 }
+        tot = tot + (s.a as float) + s.b
+        let t = T { a: i, b: "x" + str(i % 3) }
+        if (i % 200 == 0) { wok(t.b) }
+        let d = dict { a: i, b: 2.5 }
+        tot = tot + d["b"]
+        var m = R { a: 1, b: 1.0 }
+        m.a = m.a + i
+        tot = tot + nilai(m)
+    }
+    wok(tot)
+    for k, r in simpan { wok(k, r.a, r.b) }
+}
+"#;
+
+#[test]
+fn cadangan_struct_tidak_teramati() {
+    let v = jalankan(CADANGAN_STRUCT, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout.ends_with("7 700 0.5"), "{}", v.stdout);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(CADANGAN_STRUCT, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(CADANGAN_STRUCT, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: main, nilai"), "{}", j.stderr);
+}
+
+/// Tembolok penyimpanan larik per wilayah (`TemboLarik`): tukar elemen, salinan `let b = a` lalu tulis, larik
+/// diserahkan ke fungsi, tumbuh, bulat di atas 64 bit, sel tangkapan closure, teks, dan indeks di luar batas.
+const LARIK_TEMBOLOK: &str = r#"
+package main
+fn jumlah(x) -> int {
+    var s = 0
+    for i in 0..len(x) { s = s + x[i] }
+    return s
+}
+pub fn main() {
+    var a = [5, 3, 8, 1, 9, 2, 7, 4]
+    var tot = 0
+    for r in 0..300 {
+        let i = r % 8
+        let j = (r * 3) % 8
+        if (a[i] > a[j]) { let t = a[i]; a[i] = a[j]; a[j] = t }
+        tot = tot + a[i] + a[j] + a[-1]
+        let b = a
+        a[0] = a[0] + 1
+        tot = tot + b[0] + a[0]
+        a[1] = a[1] + jumlah(a) % 3
+        if (r == 100) { a = a + [6] }
+        if (r == 200) { a[2] = 1180591620717411303424 }
+        if (r == 201) { a[2] = 3 }
+    }
+    wok(tot, a)
+    var c = [1, 2, 3]
+    let tambah = || { c[0] = c[0] + 100 }
+    var u = 0
+    for k in 0..200 {
+        u = u + c[k % 3] + c[0]
+        c[1] = c[1] + 1
+        if (k % 50 == 0) { tambah() }
+    }
+    wok(u, c)
+    var d = [1, 2, 3, 4]
+    for k in 0..100 {
+        d[k % 4] = d[(k + 1) % 4] + d[(k + 2) % 4]
+        if (k == 99) { d[0] = "teks" }
+    }
+    wok(d)
+    var e = [1, 2, 3]
+    var v = 0
+    for k in 0..10 { v = v + e[k] }
+    wok(v)
+}
+"#;
+
+#[test]
+fn larik_tembolok_sama_dengan_vm() {
+    let v = jalankan(LARIK_TEMBOLOK, &["--vm"], &[]);
+    assert!(v.stdout.starts_with("114284 [305, 115, 3, 41, 9, 4, 7, 2, 6]") && v.stderr.contains("di luar batas"), "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(LARIK_TEMBOLOK, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(LARIK_TEMBOLOK, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: jumlah, main"), "{}", j.stderr);
+}
+
+/// `payload_angka_lokal` (payload enum dibuka ke register tanpa ditulis ke stack VM): payload yang berganti
+/// jenis, bulat di atas 64 bit, `Option<float>`, varian tanpa payload, enum di sel tangkapan, payload teks.
+const PAYLOAD_ANGKA: &str = r#"
+package main
+enum K { A(int), B, C(int, int) }
+fn ambil(k: K) -> int {
+    match k {
+        K::A(x) => x + 1,
+        K::B => 0,
+        K::C(p, q) => p - q,
+    }
+}
+fn pecahan(o: Option<float>) -> float {
+    match o { Some(v) => v * 2.0, None => -1.0 }
+}
+pub fn main() {
+    var t = 0
+    for i in 0..900 {
+        let k = if (i % 3 == 0) { K::A(i) } else if (i % 3 == 1) { K::B } else { K::C(i, 1) }
+        t = t + ambil(k)
+        if (i == 600) { t = t + ambil(K::A(1180591620717411303424 % 7)) }
+    }
+    wok(t)
+    var f = 0.0
+    for i in 0..500 {
+        let o = if (i % 4 == 0) { None } else { Some((i as float) * 0.5) }
+        f = f + pecahan(o)
+    }
+    wok(f)
+    var c = K::A(5)
+    let ganti = || { c = K::C(9, 4) }
+    var u = 0
+    for i in 0..300 {
+        u = u + match c { K::A(x) => x, K::B => 0, K::C(p, q) => p * q }
+        if (i == 150) { ganti() }
+    }
+    wok(u)
+    var g = 0
+    for i in 0..400 {
+        let k = if (i == 399) { K::A("teks") } else { K::A(i) }
+        g = g + ambil(k)
+    }
+    wok(g)
+}
+"#;
+
+#[test]
+fn payload_angka_sama_dengan_vm() {
+    let v = jalankan(PAYLOAD_ANGKA, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout.ends_with("79800teks1"), "{}", v.stdout);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(PAYLOAD_ANGKA, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(PAYLOAD_ANGKA, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: ambil, main, pecahan"), "{}", j.stderr);
+}
+
+/// Rantai lengan `match` (`rantai_pola`/`pola_pilih`): lengan berpenjaga dan pola alternatif (rantai putus di
+/// titik berpendahulu dua), payload tuple diikat satu nama, dan galat jumlah sub-pola di lengan kelima sesudah
+/// empat lengan tidak cocok — jawaban dan tempat galatnya sama dengan `--vm`.
+const RANTAI_POLA: &str = r#"
+package main
+enum Op { Push(int), Add(int), Neg, Swap, Stop(int, int) }
+fn langkah(o: Op, acc: int) -> int {
+    match o {
+        Op::Push(k) if k > 50 => k * 2,
+        Op::Push(k) => k,
+        Op::Add(k) if k % 2 == 0 => acc + k,
+        Op::Add(k) => acc - k,
+        Op::Neg | Op::Swap => -acc,
+        Op::Stop(a, b) => a * b,
+    }
+}
+fn salah(o: Op) -> int {
+    match o {
+        Op::Neg => 1,
+        Op::Swap => 2,
+        Op::Push(k) => k,
+        Op::Stop(a) => 7,
+        Op::Add(x, y) => x,
+    }
+}
+pub fn main() {
+    var acc = 1
+    for i in 0..1200 {
+        let o = if (i % 5 == 0) { Op::Push(i % 100) } else if (i % 5 == 1) { Op::Add(i % 9) } else if (i % 5 == 2) { Op::Neg } else if (i % 5 == 3) { Op::Swap } else { Op::Stop(i % 7, 3) }
+        acc = (langkah(o, acc) + acc) % 100003
+    }
+    wok(acc)
+    var s = 0
+    for i in 0..600 {
+        let o = if (i % 4 == 0) { Op::Neg } else if (i % 4 == 1) { Op::Swap } else if (i % 4 == 2) { Op::Push(i) } else { Op::Stop(i, 2) }
+        s = s + salah(o)
+    }
+    wok(s)
+    s = s + salah(Op::Add(3))
+    wok(s)
+}
+"#;
+
+#[test]
+fn rantai_pola_sama_dengan_vm() {
+    let v = jalankan(RANTAI_POLA, &["--vm"], &[]);
+    assert!(v.stdout == "6\n46500" && v.stderr.contains("butuh 1 sub-pola, dapat 2"), "{} {}", v.stdout, v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(RANTAI_POLA, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(RANTAI_POLA, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: langkah, main, salah"), "{}", j.stderr);
+}

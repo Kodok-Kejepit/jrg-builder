@@ -83,7 +83,7 @@ pub fn tanda_tangan_umum(cc: CallConv, param: &[Type], hasil: Option<Type>) -> S
 pub struct ImporLambat {
     pub langkah: FuncId, pub muat: FuncId, pub buang: FuncId, pub benar: FuncId, pub buka: FuncId,
     pub taruh: FuncId, pub ambil: FuncId, pub simpan: FuncId, pub pola: FuncId, pub payload: FuncId,
-    pub pola_lokal: FuncId, pub payload_lokal: FuncId, pub buka_lokal: FuncId, pub field_lokal: FuncId, pub field_banyak: FuncId, pub metode_tukar: FuncId, pub metode_lokal: FuncId, pub karakter_lokal: FuncId, pub konteks_mentah: FuncId, pub masuk_ringan: FuncId, pub keluar_ringan: FuncId, pub karakter: FuncId, pub bangun: FuncId, pub baca_pecahan: FuncId, pub jenis_sama: FuncId, pub panjang: FuncId,
+    pub pola_lokal: FuncId, pub payload_lokal: FuncId, pub payload_angka: FuncId, pub pola_pilih: FuncId, pub buka_lokal: FuncId, pub field_lokal: FuncId, pub field_banyak: FuncId, pub metode_tukar: FuncId, pub metode_lokal: FuncId, pub karakter_lokal: FuncId, pub konteks_mentah: FuncId, pub masuk_ringan: FuncId, pub keluar_ringan: FuncId, pub karakter: FuncId, pub bangun: FuncId, pub baca_pecahan: FuncId, pub jenis_sama: FuncId, pub panjang: FuncId,
     pub iter_ada: FuncId, pub maju: FuncId, pub langkah_cabang: FuncId, pub sebar: FuncId,
     pub pindah: FuncId, pub muat_global: FuncId, pub simpan_global: FuncId, pub indeks: FuncId, pub field: FuncId,
     pub masuk: FuncId, pub keluar: FuncId, pub salin: FuncId, pub tukar: FuncId, pub cek_metode: FuncId,
@@ -297,6 +297,54 @@ fn mati_sesudah(f: &VmFunction, r: &Rencana, ip: usize, a: usize) -> bool {
     false
 }
 
+/// Rantai lengan `match` atas satu lokal: kepala tiap lengan `LoadLocal a; CekEnum d; JumpFalse x` (digabung,
+/// tanpa sasaran lompat lain di antaranya) dan lengan berikutnya di ujung `Jump` tanpa syarat dari `x`, tiap
+/// titiknya berpendahulu tunggal. Hasil: ip kepala -> (nomor rantai, urutan); daftar ip kepala per rantai.
+fn rantai_pola(f: &VmFunction, r: &Rencana) -> (std::collections::HashMap<usize, (usize, usize)>, Vec<Vec<usize>>) {
+    use OpCode::*;
+    let kode = &f.chunk.code;
+    let n = kode.len();
+    let jalan = |ip: usize| r.keadaan.get(ip).is_some_and(|k| k.is_some()) && !r.keluar[ip] && r.wujud[ip].is_empty();
+    // Pendahulu tiap ip: sasaran lompat, tujuan `Cabang`, `TipeLipat`/`TipeSama`, dan jatuhan.
+    let mut datang = vec![0u32; n + 1];
+    for ip in 0..n {
+        if !jalan(ip) { continue; }
+        let op = kode[ip].op;
+        if matches!(op, Jump | JumpFalse | JumpTrue | JumpFalseKeep | JumpTrueKeep) {
+            datang[(kode[ip].arg as usize).min(n)] += 1;
+        }
+        if let Cara::Cabang { tujuan, .. } = &r.cara[ip] { for &t in tujuan.iter() { datang[t.min(n)] += 1; } }
+        if matches!(r.cara[ip], Cara::TipeLipat(_) | Cara::TipeSama(_)) { datang[(ip + 3).min(n)] += 1; }
+        if !matches!(op, Jump | Return | ReturnNil) { datang[ip + 1] += 1; }
+    }
+    let kepala = |h: usize| -> Option<usize> {
+        (h + 2 < n && kode[h].op == LoadLocal && r.cara.get(h + 1) == Some(&Cara::Pola) && kode[h + 2].op == JumpFalse
+            && (h..h + 3).all(jalan) && !r.pemimpin[h + 1] && !r.pemimpin[h + 2]
+            && (r.cara[h] == Cara::Muat || (r.cara[h] == Cara::Salinan
+                && matches!(r.keadaan[h + 1].as_ref().and_then(|k| k.last()), Some(Jenis::Salinan(_))))))
+            .then(|| kode[h + 2].arg as usize)
+    };
+    let mut peta = std::collections::HashMap::new();
+    let mut rantai: Vec<Vec<usize>> = Vec::new();
+    for h in 0..n {
+        if peta.contains_key(&h) || kepala(h).is_none() { continue; }
+        let a = kode[h].arg;
+        let mut daftar = vec![h];
+        let mut kini = h;
+        while let Some(mut x) = kepala(kini) {
+            while x < n && kode[x].op == Jump && datang[x] == 1 && jalan(x) { x = kode[x].arg as usize; }
+            if x >= n || datang[x] != 1 || kode[x].arg != a || kepala(x).is_none() || daftar.contains(&x) { break; }
+            daftar.push(x);
+            kini = x;
+        }
+        if daftar.len() >= 2 {
+            for (k, &ip) in daftar.iter().enumerate() { peta.insert(ip, (rantai.len(), k)); }
+            rantai.push(daftar);
+        }
+    }
+    (peta, rantai)
+}
+
 /// Lanjut di blok baru kalau `benar`, selain itu ke `lambat`.
 fn lanjut_jika(b: &mut FunctionBuilder, benar: Value, lambat: Block) {
     let terus = b.create_block();
@@ -304,13 +352,80 @@ fn lanjut_jika(b: &mut FunctionBuilder, benar: Value, lambat: Block) {
     b.switch_to_block(terus);
 }
 
+/// Tembolok penyimpanan larik lokal di satu wilayah (`ok`, penunjuk data, panjang; `true` = sudah ditetapkan
+/// sebelumnya di wilayah ini). `ok` 0 dari jalur lambat situs mana pun yang menyentuhnya.
+type TemboLarik = (Variable, Variable, Variable, bool);
+
 /// Alamat elemen `a[i]` atas lokal `rel` lewat tata letak yang ditemukan (aturan `norm_indeks`); tiap pemeriksaan
 /// yang gagal lompat ke `lambat`. Cuma penyimpanan milik tunggal (hitungan kuat 1, lemah mentah 1) — yang tidak
 /// dijangkau thread lain, sama dengan `value::tunggal`.
 fn elemen_sebaris(
     b: &mut FunctionBuilder, tl: &super::tata_letak::TataLetak, vm_p: Value, basis: Value, rel: usize, i: Value,
-    lambat: Block,
+    lambat: Block, tb: Option<TemboLarik>,
 ) -> Value {
+    let lanjut_jika = |b: &mut FunctionBuilder, benar: Value| lanjut_jika(b, benar, lambat);
+    let ukuran = tl.ukuran as i64;
+    let (data, n) = match tb {
+        // Penyimpanan yang sama sudah diperiksa di wilayah ini (penulisan elemen di tempat tidak mengubahnya).
+        Some((ok, dv, nv, true)) => {
+            let (cepat, penuh, normal) = (b.create_block(), b.create_block(), b.create_block());
+            b.append_block_param(normal, types::I64);
+            b.append_block_param(normal, types::I64);
+            let okv = b.use_var(ok);
+            b.ins().brif(okv, cepat, &[], penuh, &[]);
+            b.switch_to_block(cepat);
+            let (d, n) = (b.use_var(dv), b.use_var(nv));
+            b.ins().jump(normal, &[d.into(), n.into()]);
+            b.switch_to_block(penuh);
+            let (d, n) = periksa_larik(b, tl, vm_p, basis, rel, lambat);
+            let satu = b.ins().iconst(types::I64, 1);
+            b.def_var(ok, satu);
+            b.def_var(dv, d);
+            b.def_var(nv, n);
+            b.ins().jump(normal, &[d.into(), n.into()]);
+            b.switch_to_block(normal);
+            (b.block_params(normal)[0], b.block_params(normal)[1])
+        }
+        Some((ok, dv, nv, false)) => {
+            let (d, n) = periksa_larik(b, tl, vm_p, basis, rel, lambat);
+            let satu = b.ins().iconst(types::I64, 1);
+            b.def_var(ok, satu);
+            b.def_var(dv, d);
+            b.def_var(nv, n);
+            (d, n)
+        }
+        None => periksa_larik(b, tl, vm_p, basis, rel, lambat),
+    };
+    let negatif = b.ins().icmp_imm_s(IntCC::SignedLessThan, i, 0);
+    let dari_belakang = b.ins().iadd(i, n);
+    let j = b.ins().select(negatif, dari_belakang, i);
+    let dalam = b.ins().icmp(IntCC::UnsignedLessThan, j, n);
+    lanjut_jika(b, dalam);
+    let off = b.ins().imul_imm_s(j, ukuran);
+    b.ins().iadd(data, off)
+}
+
+/// Tembolok penyimpanan lokal `a` di wilayah ini: yang sudah ada (`true`), atau tiga variabel baru.
+fn tembolok_larik(b: &mut FunctionBuilder, larik_tb: &mut Vec<(usize, Variable, Variable, Variable)>, a: usize) -> TemboLarik {
+    if let Some(&(_, ok, d, n)) = larik_tb.iter().find(|(l, ..)| *l == a) { return (ok, d, n, true); }
+    let (ok, d, n) = (b.declare_var(types::I64), b.declare_var(types::I64), b.declare_var(types::I64));
+    larik_tb.push((a, ok, d, n));
+    (ok, d, n, false)
+}
+
+/// Jalur lambat sebuah situs: penyimpanannya tidak lagi pasti untuk akses berikutnya di wilayah ini.
+fn larik_tak_pasti(b: &mut FunctionBuilder, (ok, d, n, _): TemboLarik) {
+    let nol = b.ins().iconst(types::I64, 0);
+    b.def_var(ok, nol);
+    b.def_var(d, nol);
+    b.def_var(n, nol);
+}
+
+/// Penyimpanan larik lokal `rel` (milik tunggal) lewat tata letak: penunjuk data dan panjang `Vec`-nya; tiap
+/// pemeriksaan yang gagal lompat ke `lambat`.
+fn periksa_larik(
+    b: &mut FunctionBuilder, tl: &super::tata_letak::TataLetak, vm_p: Value, basis: Value, rel: usize, lambat: Block,
+) -> (Value, Value) {
     let fl = MemFlagsData::trusted();
     let lanjut_jika = |b: &mut FunctionBuilder, benar: Value| lanjut_jika(b, benar, lambat);
     let ukuran = tl.ukuran as i64;
@@ -334,24 +449,18 @@ fn elemen_sebaris(
     let vec = (tl.arc_isi + tl.mutex_isi) as i32;
     let data = b.ins().load(types::I64, fl, inner, vec + tl.vec_ptr as i32);
     let n = b.ins().load(types::I64, fl, inner, vec + tl.vec_len as i32);
-    let negatif = b.ins().icmp_imm_s(IntCC::SignedLessThan, i, 0);
-    let dari_belakang = b.ins().iadd(i, n);
-    let j = b.ins().select(negatif, dari_belakang, i);
-    let dalam = b.ins().icmp(IntCC::UnsignedLessThan, j, n);
-    lanjut_jika(b, dalam);
-    let off = b.ins().imul_imm_s(j, ukuran);
-    b.ins().iadd(data, off)
+    (data, n)
 }
 
 /// `a[i]` sebaris (`elemen_sebaris`): bit `i64` elemennya kalau jenisnya yang dispekulasikan, selain itu `lambat`.
 #[allow(clippy::too_many_arguments)]
 fn baca_sebaris(
     b: &mut FunctionBuilder, tl: &super::tata_letak::TataLetak, vm_p: Value, basis: Value, rel: usize, i: Value,
-    pecahan: bool, lambat: Block,
+    pecahan: bool, lambat: Block, tb: Option<TemboLarik>,
 ) -> Value {
     let fl = MemFlagsData::trusted();
     let lanjut_jika = |b: &mut FunctionBuilder, benar: Value| lanjut_jika(b, benar, lambat);
-    let el = elemen_sebaris(b, tl, vm_p, basis, rel, i, lambat);
+    let el = elemen_sebaris(b, tl, vm_p, basis, rel, i, lambat, tb);
     let tag = b.ins().uload8(types::I64, fl, el, tl.tag as i32);
     if pecahan {
         let cocok = b.ins().icmp_imm_u(IntCC::Equal, tag, tl.tag_float as i64);
@@ -373,10 +482,10 @@ fn baca_sebaris(
 #[allow(clippy::too_many_arguments)]
 fn tulis_sebaris(
     b: &mut FunctionBuilder, tl: &super::tata_letak::TataLetak, vm_p: Value, basis: Value, rel: usize, i: Value,
-    v: Value, kode: i64, lambat: Block,
+    v: Value, kode: i64, lambat: Block, tb: Option<TemboLarik>,
 ) {
     let fl = MemFlagsData::trusted();
-    let el = elemen_sebaris(b, tl, vm_p, basis, rel, i, lambat);
+    let el = elemen_sebaris(b, tl, vm_p, basis, rel, i, lambat, tb);
     let tag = b.ins().uload8(types::I64, fl, el, tl.tag as i32);
     let skalar = [tl.tag_nil, tl.tag_bool, tl.tag_int, tl.tag_float]
         .map(|t| b.ins().icmp_imm_u(IntCC::Equal, tag, t as i64));
@@ -447,6 +556,29 @@ fn jaga_spek(b: &mut FunctionBuilder, k: &Keluar, var: &[Variable], cond: Value,
 /// Hasil spekulatif (`Rencana::spek`) di posisi `pos` dibuka jadi `j`; gagal = deopt di `lanjut` dengan
 /// puncak milik VM, dan spekulasinya tidak diulang.
 #[allow(clippy::too_many_arguments)]
+/// `LoadLocal` + `AmbilPayload` dengan payload berspekulasi angka: satu pembantu (`payload_angka_lokal`).
+/// 1 = bukan enum berpayload, deopt di `ip` (stack sebelum instruksinya); 2 = payload jenis lain, sudah di
+/// posisi `pos`, deopt spekulasi di `lanjut` seperti `buka` yang gagal; 0 = angkanya di `var[pos]`.
+#[allow(clippy::too_many_arguments)]
+fn payload_angka(
+    b: &mut FunctionBuilder, k: &Keluar, var: &[Variable], r: &Rencana, f: FuncRef, wadah: StackSlot, slot: Value,
+    ip: usize, lanjut: usize, pos: usize, j: Jenis, s: &[Jenis],
+) {
+    let pk = b.ins().stack_addr(k.ptr, wadah, 0);
+    let pv = b.ins().iconst(types::I64, pos as i64);
+    let jv = b.ins().iconst(types::I32, if j == Jenis::Pecahan { 5 } else { 1 });
+    let c = b.ins().call(f, &[slot, pv, jv, pk]);
+    let c = b.inst_results(c)[0];
+    let bukan = b.ins().icmp_imm_u(IntCC::Equal, c, 1);
+    jaga(b, k, var, bukan, ip, s);
+    let lain = b.ins().icmp_imm_u(IntCC::Equal, c, 2);
+    let lama = k.bendera.replace(PUNCAK_VM | GAGAL_SPEK);
+    jaga(b, k, var, lain, lanjut, r.keadaan[lanjut].as_ref().expect("penerus hasil terjangkau"));
+    k.bendera.set(lama);
+    let v = b.ins().stack_load(k.ptr, types::I64, wadah, 0);
+    b.def_var(var[pos], v);
+}
+
 fn buka_hasil(
     b: &mut FunctionBuilder, k: &Keluar, var: &[Variable], r: &Rencana, buka: FuncRef, wadah: StackSlot,
     lanjut: usize, pos: usize, j: Jenis,
@@ -747,8 +879,8 @@ pub fn turunkan(
     let [f_langkah, f_muat, f_buang, f_benar, f_buka, f_taruh, f_ambil, f_simpan, f_pola, f_payload] =
         [il.langkah, il.muat, il.buang, il.benar, il.buka, il.taruh, il.ambil, il.simpan, il.pola, il.payload]
         .map(|id| m.declare_func_in_func(id, b.func));
-    let [f_pola_lokal, f_payload_lokal, f_buka_lokal, f_iter_ada, f_maju, f_cabang, f_sebar] =
-        [il.pola_lokal, il.payload_lokal, il.buka_lokal, il.iter_ada, il.maju, il.langkah_cabang, il.sebar]
+    let [f_pola_lokal, f_payload_lokal, f_buka_lokal, f_iter_ada, f_maju, f_cabang, f_sebar, f_payload_angka, f_pola_pilih] =
+        [il.pola_lokal, il.payload_lokal, il.buka_lokal, il.iter_ada, il.maju, il.langkah_cabang, il.sebar, il.payload_angka, il.pola_pilih]
         .map(|id| m.declare_func_in_func(id, b.func));
     let [f_pindah, f_muat_global, f_simpan_global, f_indeks, f_field, f_masuk, f_keluar, f_salin, f_tukar, f_cek_metode, f_bawaan, f_biner] =
         [il.pindah, il.muat_global, il.simpan_global, il.indeks, il.field, il.masuk, il.keluar, il.salin, il.tukar, il.cek_metode, il.bawaan, il.biner]
@@ -764,6 +896,14 @@ pub fn turunkan(
     b.ins().brif(terlalu, dalam, &[], mulai, &[]);
     b.switch_to_block(mulai);
     // Jalur sebaris larik (`tata_letak`): alamat VM dan basis dibaca sekali, cuma di fungsi yang memakainya.
+    // Rantai lengan `match`: satu `pola_pilih` di lengan pertama, lengan lain membandingkan indeksnya.
+    let (rantai_peta, rantai_daftar) = rantai_pola(f, r);
+    let rantai_var: Vec<Variable> = rantai_daftar.iter().map(|_| b.declare_var(types::I64)).collect();
+    let rantai_situs: Vec<i64> = rantai_daftar.iter().map(|d| {
+        let situs: Vec<&'static super::lambat::SitusPola> = d.iter()
+            .map(|&h| super::lambat::SitusPola::bocor(&f.chunk.constants[kode[h + 1].arg as usize])).collect();
+        super::lambat::RantaiPola::bocor(situs) as *const _ as i64
+    }).collect();
     let sebaris = super::tata_letak::tata_letak().filter(|_| kode.iter().enumerate()
         .any(|(i, x)| r.keadaan[i].as_ref().is_some_and(|s| !r.keluar[i] && match x.op {
             OpCode::IndeksLokal | OpCode::TulisIndexLokal => true,
@@ -810,6 +950,8 @@ pub fn turunkan(
     let mut tunda: Vec<(Block, usize, usize)> = Vec::new();
     // Field lokal yang sudah dibaca sebagai angka di blok ini: (lokal, nama, privat, jenis) → variabelnya.
     let mut cse: Vec<((usize, u32, bool, i32), Variable)> = Vec::new();
+    // Penyimpanan larik lokal yang sudah diperiksa di wilayah ini (`TemboLarik` tanpa bendera): lokal, ok, data, panjang.
+    let mut larik_tb: Vec<(usize, Variable, Variable, Variable)> = Vec::new();
     // Bacaan yang sudah diambil `field_lokal_banyak` di blok ini: kunci → (berhasil, isi).
     let mut tunggu: Vec<((usize, u32, bool, i32), Variable, Variable)> = Vec::new();
     // `BuildStruct` di `ip` dari angka native yang langsung disimpan ke lokal: field-nya mengisi `cse`.
@@ -830,12 +972,23 @@ pub fn turunkan(
             continue;
         }
         if blok[ip].is_some() || !r.wujud[ip].is_empty() || !cse_aman(kode[ip].op, &r.cara[ip]) { cse.clear(); tunggu.clear(); }
+        // Baca/tulis elemen larik sebaris tidak mengubah penyimpanan larik mana pun; selebihnya sama dengan `cse`.
+        let elemen = matches!(kode[ip].op, OpCode::IndeksLokal | OpCode::TulisIndexLokal)
+            || (kode[ip].op == OpCode::GetIndex && r.keadaan[ip].as_ref().is_some_and(|s| s.len() >= 2
+                && matches!(s[s.len() - 2], Jenis::Salinan(_))));
+        if blok[ip].is_some() || !r.wujud[ip].is_empty() || !(elemen || cse_aman(kode[ip].op, &r.cara[ip])) { larik_tb.clear(); }
+        // Salinan lokal ke stack VM = pemegang kedua penyimpanannya: tulisan berikutnya harus memeriksa ulang.
+        if matches!(kode[ip].op, OpCode::LoadLocal | OpCode::LokalHitung | OpCode::AmbilLokal) {
+            let l = kode[ip].arg as usize;
+            larik_tb.retain(|(x, ..)| *x != l);
+        }
         if benih.as_ref().is_some_and(|(bi, _)| bi + 1 != ip || blok[ip].is_some()) { benih = None; }
         // Posisi yang ditulis instruksi ini (puncak sesudahnya dan di atasnya) bukan lagi lokal yang ditembolok.
         if let Some(Some(nx)) = r.keadaan.get(ip + 1) {
             let h = nx.len();
             cse.retain(|(k, _)| k.0 + 1 < h);
             tunggu.retain(|(k, _, _)| k.0 + 1 < h);
+            larik_tb.retain(|(l, ..)| l + 1 < h);
         }
         k.bendera.set(0);
         // Salinan maya yang tidak boleh melewati instruksi ini ditulis dulu ke stack VM (`layak::boleh_lewat_salinan`).
@@ -920,6 +1073,25 @@ pub fn turunkan(
                     continue;
                 }
                 match r.cara.get(ip + 1) {
+                    Some(Cara::Pola) if gabung && rantai_peta.contains_key(&ip) => {
+                        let (ri, kk) = rantai_peta[&ip];
+                        if kk == 0 {
+                            let rp = i64c(&mut b, rantai_situs[ri]);
+                            let c = b.ins().call(f_pola_pilih, &[d, rp]);
+                            let c = b.inst_results(c)[0];
+                            let c = b.ins().uextend(types::I64, c);
+                            b.def_var(rantai_var[ri], c);
+                        }
+                        let idx = b.use_var(rantai_var[ri]);
+                        // Galat jumlah sub-pola di lengan ini: deopt di sini, VM yang melapor (lengan sebelumnya tidak cocok).
+                        let salah = b.ins().icmp_imm_u(IntCC::Equal, idx, 1000 + kk as i64);
+                        jaga(&mut b, &k, &var, salah, ip, s);
+                        let v = b.ins().icmp_imm_u(IntCC::Equal, idx, kk as i64);
+                        let v = b.ins().uextend(types::I64, v);
+                        b.def_var(var[t], v);
+                        lewati = true;
+                        continue;
+                    }
                     Some(Cara::Pola) if gabung => {
                         let situs = super::lambat::SitusPola::bocor(&f.chunk.constants[kode[ip + 1].arg as usize]);
                         let desc = i64c(&mut b, situs as *const _ as i64);
@@ -1050,6 +1222,11 @@ pub fn turunkan(
                         continue;
                     }
                     Some(Cara::Payload) if gabung => {
+                        if let Some(j @ (Jenis::Bulat | Jenis::Pecahan)) = r.spek[ip + 1] {
+                            payload_angka(&mut b, &k, &var, r, f_payload_angka, wadah, d, ip, ip + 2, t, j, s);
+                            lewati = true;
+                            continue;
+                        }
                         let ke = i64c(&mut b, t as i64);
                         let c = b.ins().call(f_payload_lokal, &[d, ke]);
                         let c = b.inst_results(c)[0];
@@ -1137,6 +1314,25 @@ pub fn turunkan(
                 b.ins().brif(v, ya, &[], tidak, &[]);
                 isi_tepi(&mut b, &k, r, &blok, &var, &mut tunda, f_tulis_vm, f_taruh);
                 terbuka = false;
+                continue;
+            }
+            // Lengan rantai atas salinan maya (`rantai_pola`; kepalanya `LoadLocal` di `ip - 1`).
+            Cara::Pola if ip > 0 && rantai_peta.contains_key(&(ip - 1)) && matches!(s[t - 1], Jenis::Salinan(_)) => {
+                let Jenis::Salinan(l) = s[t - 1] else { unreachable!("baru diperiksa") };
+                let (ri, kk) = rantai_peta[&(ip - 1)];
+                if kk == 0 {
+                    let (lv, rp) = (i64c(&mut b, l as i64), i64c(&mut b, rantai_situs[ri]));
+                    let c = b.ins().call(f_pola_pilih, &[lv, rp]);
+                    let c = b.inst_results(c)[0];
+                    let c = b.ins().uextend(types::I64, c);
+                    b.def_var(rantai_var[ri], c);
+                }
+                let idx = b.use_var(rantai_var[ri]);
+                let salah = b.ins().icmp_imm_u(IntCC::Equal, idx, 1000 + kk as i64);
+                jaga(&mut b, &k, &var, salah, ip, s);
+                let v = b.ins().icmp_imm_u(IntCC::Equal, idx, kk as i64);
+                let v = b.ins().uextend(types::I64, v);
+                b.def_var(var[t - 1], v);
                 continue;
             }
             Cara::Pola => {
@@ -1364,7 +1560,25 @@ pub fn turunkan(
                 let lama = k.bendera.replace(PUNCAK_VM);
                 jaga(&mut b, &k, &var, basi, ip + 1, r.keadaan[ip + 1].as_ref().expect("penerus panggilan terjangkau"));
                 k.bendera.set(lama);
-                if let Some(j) = r.spek[ip] { buka_hasil(&mut b, &k, &var, r, f_buka, wadah, ip + 1, t - a - 1, j); }
+                match r.spek[ip] {
+                    // Callee kembali dengan angka native sejenis spekulasi: itulah `h` (yang `keluar` taruh di slot
+                    // sebagai `VmValue`), jadi tidak perlu dibuka lagi dari stack VM.
+                    Some(j @ (Jenis::Bulat | Jenis::Pecahan)) => {
+                        let (cepat, biasa, lanjut) = (b.create_block(), b.create_block(), b.create_block());
+                        let kode = if j == Jenis::Bulat { BERHASIL } else { BERHASIL_PECAHAN };
+                        let cocok = b.ins().icmp_imm_u(IntCC::Equal, st, kode);
+                        b.ins().brif(cocok, cepat, &[], biasa, &[]);
+                        b.switch_to_block(cepat);
+                        b.def_var(var[t - a - 1], h);
+                        b.ins().jump(lanjut, &[]);
+                        b.switch_to_block(biasa);
+                        buka_hasil(&mut b, &k, &var, r, f_buka, wadah, ip + 1, t - a - 1, j);
+                        b.ins().jump(lanjut, &[]);
+                        b.switch_to_block(lanjut);
+                    }
+                    Some(j) => buka_hasil(&mut b, &k, &var, r, f_buka, wadah, ip + 1, t - a - 1, j),
+                    None => {}
+                }
                 continue;
             }
             Cara::Bawaan => {
@@ -1493,6 +1707,11 @@ pub fn turunkan(
                 continue;
             }
             Cara::Payload => {
+                if let (Jenis::Salinan(l), Some(j @ (Jenis::Bulat | Jenis::Pecahan))) = (s[t - 1], r.spek[ip]) {
+                    let lv = i64c(&mut b, l as i64);
+                    payload_angka(&mut b, &k, &var, r, f_payload_angka, wadah, lv, ip, ip + 1, t - 1, j, s);
+                    continue;
+                }
                 let p = i64c(&mut b, t as i64 - 1);
                 let c = match s[t - 1] {
                     Jenis::Salinan(l) => { let lv = i64c(&mut b, l as i64); b.ins().call(f_payload_lokal, &[lv, p]) }
@@ -1647,9 +1866,11 @@ pub fn turunkan(
                     let (lambat, selesai) = (b.create_block(), b.create_block());
                     b.set_cold_block(lambat);
                     b.append_block_param(selesai, types::I64);
-                    let v = baca_sebaris(&mut b, tl, vm_p, basis, a, i, pecahan, lambat);
+                    let tb = tembolok_larik(&mut b, &mut larik_tb, a);
+                    let v = baca_sebaris(&mut b, tl, vm_p, basis, a, i, pecahan, lambat, Some(tb));
                     b.ins().jump(selesai, &[v.into()]);
                     b.switch_to_block(lambat);
+                    larik_tak_pasti(&mut b, tb);
                     selesai
                 });
                 let pk = b.ins().stack_addr(ptr, wadah, 0);
@@ -1673,11 +1894,15 @@ pub fn turunkan(
                 let selesai = sebaris.filter(|_| matches!(kode, 1 | 2 | 5)).map(|(tl, vm_p, basis)| {
                     let (lambat, selesai) = (b.create_block(), b.create_block());
                     b.set_cold_block(lambat);
-                    tulis_sebaris(&mut b, tl, vm_p, basis, a, i, v, kode, lambat);
+                    let tb = tembolok_larik(&mut b, &mut larik_tb, a);
+                    tulis_sebaris(&mut b, tl, vm_p, basis, a, i, v, kode, lambat, Some(tb));
                     b.ins().jump(selesai, &[]);
                     b.switch_to_block(lambat);
+                    larik_tak_pasti(&mut b, tb);
                     selesai
                 });
+                // Tanpa jalur sebaris, pembantunya bisa mengganti penyimpanan: tembolok lokal ini tidak berlaku lagi.
+                if selesai.is_none() { larik_tb.retain(|(l, ..)| *l != a); }
                 let rel = b.ins().iconst(types::I64, a as i64);
                 let jenis = b.ins().iconst(types::I32, kode);
                 let c = b.ins().call(tulis, &[rel, i, v, jenis]);

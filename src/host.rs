@@ -196,6 +196,33 @@ pub fn skrip_tanpa_penafsir(prog: &std::path::Path) -> Option<String> {
                   biasa, atau pasang `termux-exec` lalu buka sesi baru", prog.display(), baris, penafsir))
 }
 
+/// Batas satu bacaan berkas utuh — angka yang sama dengan jawaban `http::` dan bom `gzip::`. Kalimatnya
+/// sama dengan lapis LLVM (`-100002`): `/dev/zero`, FIFO tanpa ujung atau jalur dari luar dulu memakan RAM mesin.
+pub const MAKS_BACA_UTUH: u64 = 256 << 20;
+pub const PESAN_BACA_UTUH: &str = "isinya lebih dari 256 MiB, batas satu bacaan utuh \
+    (berkas raksasa atau perangkat tanpa ujung seperti /dev/zero tidak dibaca ke memori)";
+
+/// SATU pintu membaca seluruh isi berkas dari jalur pemakai (`fs::`, `file::`, `zip::`, `tar::`, `wasm::`, ...).
+pub fn baca_berkas(p: impl AsRef<std::path::Path>) -> io::Result<Vec<u8>> { baca_berbatas(p.as_ref(), MAKS_BACA_UTUH) }
+
+/// `baca_berkas` sebagai teks; byte yang bukan UTF-8 jadi `InvalidData`, seperti `read_to_string`.
+pub fn baca_teks(p: impl AsRef<std::path::Path>) -> io::Result<String> {
+    String::from_utf8(baca_berkas(p)?).map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "bukan UTF-8"))
+}
+
+fn baca_berbatas(p: &std::path::Path, batas: u64) -> io::Result<Vec<u8>> {
+    use std::io::Read;
+    let besar = || io::Error::new(io::ErrorKind::Other, PESAN_BACA_UTUH);
+    let f = std::fs::File::open(p)?;
+    let m = f.metadata()?;
+    // Berkas biasa yang sudah kebesaran ditolak sebelum dibaca; perangkat, pipa dan `/proc` dibaca sampai batas+1.
+    if m.is_file() && m.len() > batas { return Err(besar()); }
+    let mut isi = Vec::with_capacity(if m.is_file() { m.len() as usize + 1 } else { 0 });
+    f.take(batas + 1).read_to_end(&mut isi)?;
+    if isi.len() as u64 > batas { return Err(besar()); }
+    Ok(isi)
+}
+
 /// Sebab sebuah galat I/O dalam kalimat JRG — tanpa ini kalimat OS (`No such file or
 /// directory (os error 2)`) bocor ke pesan. Tiap pintu yang melaporkan `io::Error` lewat sini.
 pub fn galat_io(e: &io::Error) -> String {
@@ -350,6 +377,21 @@ pub fn tanpa_thread(apa: &str, e: &io::Error) -> Option<String> {
 
 #[cfg(test)]
 mod tes {
+    /// Perangkat tanpa ujung dan berkas di atas batas jadi `Err` berkalimat JRG, tidak menghabiskan memori.
+    #[cfg(unix)]
+    #[test]
+    fn baca_utuh_berbatas() {
+        let e = super::baca_berbatas(std::path::Path::new("/dev/zero"), 4096).unwrap_err();
+        assert_eq!(super::galat_io(&e), super::PESAN_BACA_UTUH);
+        let p = std::env::temp_dir().join(format!("jrg_baca_{}", std::process::id()));
+        std::fs::write(&p, [7u8; 5000]).unwrap();
+        assert!(super::baca_berbatas(&p, 4096).is_err());
+        assert_eq!(super::baca_berbatas(&p, 5000).unwrap().len(), 5000);
+        std::fs::write(&p, [0xff]).unwrap();
+        assert_eq!(super::galat_io(&super::baca_teks(&p).unwrap_err()), "isinya bukan teks UTF-8 yang sah");
+        let _ = std::fs::remove_file(&p);
+    }
+
     /// `baca_baris` dan pembaca tombol memakai SATU antrean: baris diambil utuh sampai
     /// `\n`, sisanya tetap menunggu pembaca berikutnya, dan yang bukan UTF-8 ditolak.
     #[cfg(not(target_arch = "wasm32"))]

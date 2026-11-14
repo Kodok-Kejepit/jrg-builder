@@ -67,6 +67,14 @@ const GAGAL_SAAT_JALAN: &[(&str, &str, &str, &str)] = &[
     ("env::set nama ber-`=`", "package main\npub fn main() { wok(\"a\")\n env::set(\"A=B\", \"1\") }", "a", "env::set: nama variabel \"A=B\" tidak sah — tidak boleh kosong, dan tidak boleh berisi `=` atau karakter NUL"),
     ("env::set nama ber-NUL", "package main\npub fn main() { wok(\"a\")\n env::set(\"A\" + str(rune(0)) + \"B\", \"1\") }", "a", "env::set: nama variabel \"A\\0B\" tidak sah"),
     ("env::set nilai ber-NUL", "package main\npub fn main() { wok(\"a\")\n env::set(\"JRG_UJI_NUL\", \"x\" + str(rune(0))) }", "a", "env::set: nilai untuk `JRG_UJI_NUL` berisi karakter NUL"),
+    // Fase AMAN-44: hasil teks dari masukan kecil berbatas 256 MiB seperti `str::repeat` — dulu proses mati
+    // (`memory allocation .. failed`, SIGABRT) di interpreter dan `--vm`.
+    ("str::replace: pola kosong dengan pengganti panjang", "package main\npub fn main() { wok(\"a\")\n let s = \"a\" * 1000000\n wok(len(str::replace(s, \"\", \"b\" * 300))) }", "a", "str::replace: hasil penggantian kegedean: 1000001 kemunculan x 300 karakter pengganti = sekitar 301000300 byte"),
+    ("str::replace: banyak kemunculan kali pengganti panjang", "package main\npub fn main() { wok(\"a\")\n let s = \"a\" * 1000000\n wok(len(s.replace(\"a\", \"b\" * 300))) }", "a", "str::replace: hasil penggantian kegedean: 1000000 kemunculan x 300 karakter pengganti = sekitar 300000000 byte"),
+    ("re::replace_all: banyak kecocokan kali pengganti panjang", "package main\npub fn main() { wok(\"a\")\n let s = \"a\" * 1000000\n wok(len(re::replace_all(\"a\", s, \"b\" * 300))) }", "a", "re::replace_all: hasil penggantian kegedean: 1000000 kemunculan x 300 karakter pengganti = sekitar 300000000 byte"),
+    ("str::join: pemisah panjang di antara banyak elemen", "package main\npub fn main() { wok(\"a\")\n let a = arr::fill(\"\", 1000000)\n wok(len(str::join(a, \"b\" * 300))) }", "a", "str::join: hasil penggabungan kegedean: 1000000 elemen dengan pemisah 300 karakter = sekitar 299999700 byte"),
+    // Fase AMAN-44: bacaan utuh berbatas 256 MiB — `/dev/zero` dulu menghabiskan RAM mesin di tiga mesin.
+    ("fs::read perangkat tanpa ujung", "package main\npub fn main() { wok(\"a\")\n wok(fs::read(\"/dev/zero\")) }", "a", "fs::read '/dev/zero': isinya lebih dari 256 MiB, batas satu bacaan utuh"),
     ("fs::read jalur ber-NUL", "package main\npub fn main() { wok(\"a\")\n wok(fs::read(\"Cargo.toml\" + str(rune(0)) + \"x\")) }", "a", "teksnya memuat karakter NUL, yang tidak bisa diserahkan ke sistem operasi"),
     // Fase BAGI-LLVM: jumlah elemen `range` dulu dihitung di 64 bit tanpa batas — `akhir - awal`
     // meluap dan `sdiv` atas MIN dan -1 menjawab panjang karangan; sekarang batas acuan.

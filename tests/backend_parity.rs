@@ -175,6 +175,11 @@ fn konformans_semantik_nilai_jalan_di_dua_backend() {
 
 /// Program yang WAJIB ditolak oleh KEDUA backend, dengan alasan yang sama.
 const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
+    // Fase AMAN-44: hasil teks dari masukan kecil berbatas 256 MiB seperti `str::repeat`; dulu SIGABRT di dua mesin.
+    ("str::replace: pola kosong dengan pengganti panjang", "let s = \"a\" * 1000000\n wok(len(str::replace(s, \"\", \"b\" * 300)))\n", "str::replace: hasil penggantian kegedean: 1000001 kemunculan x 300 karakter pengganti = sekitar 301000300 byte", "str::replace: hasil penggantian kegedean: 1000001 kemunculan x 300 karakter pengganti = sekitar 301000300 byte"),
+    ("str::replace: banyak kemunculan kali pengganti panjang", "let s = \"a\" * 1000000\n wok(len(s.replace(\"a\", \"b\" * 300)))\n", "str::replace: hasil penggantian kegedean: 1000000 kemunculan x 300 karakter pengganti = sekitar 300000000 byte", "str::replace: hasil penggantian kegedean: 1000000 kemunculan x 300 karakter pengganti = sekitar 300000000 byte"),
+    ("re::replace_all: banyak kecocokan kali pengganti panjang", "let s = \"a\" * 1000000\n wok(len(re::replace_all(\"a\", s, \"b\" * 300)))\n", "re::replace_all: hasil penggantian kegedean: 1000000 kemunculan x 300 karakter pengganti = sekitar 300000000 byte", "re::replace_all: hasil penggantian kegedean: 1000000 kemunculan x 300 karakter pengganti = sekitar 300000000 byte"),
+    ("str::join: pemisah panjang di antara banyak elemen", "let a = arr::fill(\"\", 1000000)\n wok(len(str::join(a, \"b\" * 300)))\n", "str::join: hasil penggabungan kegedean: 1000000 elemen dengan pemisah 300 karakter = sekitar 299999700 byte", "str::join: hasil penggabungan kegedean: 1000000 elemen dengan pemisah 300 karakter = sekitar 299999700 byte"),
     // #1011: kanal tertutup ditolak di SEMUA lengan sebelum mencoba, walau lengan lain siap (urutan acak tak berpengaruh).
     ("select: lengan kedua tertutup ditolak walau lengan pertama siap",
      "let t = make_chan(int, 1)\nt.close()\nlet d = make_chan(int, 1)\nd <- 1\nwok(\"sebelum\")\nselect {\n    case x := <-d: { wok(\"tak boleh\", x) }\n    case y := <-t: { wok(\"tak boleh juga\", y) }\n}\n",

@@ -847,7 +847,7 @@ fn try_serve_static(mounts: &[(String, PathBuf)], path: &str) -> Option<(i128, S
                     return Some((413, "text/plain".to_string(), b"Payload Too Large".to_vec()));
                 }
             }
-            if let Ok(bytes) = std::fs::read(full) {
+            if let Ok(bytes) = crate::host::baca_berkas(full) {
                 let ctype = guess_content_type(full);
                 return Some((200, ctype.to_string(), bytes));
             }

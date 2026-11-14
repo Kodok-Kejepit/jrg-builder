@@ -457,7 +457,7 @@ pub fn render(args: &[Value]) -> Result<Value, String> {
 pub fn render_file(args: &[Value]) -> Result<Value, String> {
     let path = teks_arg(args.get(0), "dok::render_file", "path-nya")?;
     let data = data_template(args.get(1), "dok::render_file")?;
-    let tpl = match std::fs::read_to_string(&path) {
+    let tpl = match crate::host::baca_teks(&path) {
         Ok(s) => s,
         Err(e) => return Ok(err_value(format!("dok::render_file `{}`: {}", path, crate::host::galat_io(&e)))),
     };
