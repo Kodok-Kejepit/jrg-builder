@@ -38,8 +38,8 @@ pub(crate) fn gabung(nama: &str, args: &[Value]) -> EvalResult {
     let n = bagian.len() as i128;
     let total = bagian.iter().fold(0i128, |t, b| t + b.len() as i128)
         .saturating_add((n - 1).max(0).saturating_mul(sep.len() as i128));
-    if total > crate::interpreter::value::MAKS_TEKS_HASIL {
-        return runtime_err!("{}", crate::interpreter::value::pesan_gabung_kegedean(nama, n, sep.chars().count(), total));
+    if total > crate::interpreter::MAKS_TEKS_HASIL {
+        return runtime_err!("{}", crate::interpreter::pesan_gabung_kegedean(nama, n, sep.chars().count(), total));
     }
     Ok(Value::Str(std::sync::Arc::new(bagian.join(&sep))))
 }
@@ -58,8 +58,8 @@ pub(crate) mod inti {
         if ke.len() > dari.len() {
             let n = if dari.is_empty() { s.chars().count() + 1 } else { s.matches(dari).count() } as i128;
             let total = (s.len() as i128).saturating_add(n.saturating_mul((ke.len() - dari.len()) as i128));
-            if total > crate::interpreter::value::MAKS_TEKS_HASIL {
-                return Err(crate::interpreter::value::pesan_ganti_kegedean("str::replace", n, ke.chars().count(), total));
+            if total > crate::interpreter::MAKS_TEKS_HASIL {
+                return Err(crate::interpreter::pesan_ganti_kegedean("str::replace", n, ke.chars().count(), total));
             }
         }
         Ok(s.replace(dari, ke))

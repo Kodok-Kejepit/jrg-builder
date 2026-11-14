@@ -155,9 +155,9 @@ fn regex_replace(pattern: &str, s: &str, repl: &str, all: bool) -> Result<String
     let n = cocok.len() as i128;
     let total = (s.len() as i128) - cocok.iter().map(|(a, b)| (b - a) as i128).sum::<i128>()
         + n.saturating_mul(repl.len() as i128);
-    if total > crate::interpreter::value::MAKS_TEKS_HASIL {
+    if total > crate::interpreter::MAKS_TEKS_HASIL {
         let nama = if all { "re::replace_all" } else { "re::replace" };
-        return Err(crate::interpreter::value::pesan_ganti_kegedean(nama, n, repl.chars().count(), total));
+        return Err(crate::interpreter::pesan_ganti_kegedean(nama, n, repl.chars().count(), total));
     }
     let mut out = String::with_capacity(s.len());
     let mut akhir = 0;

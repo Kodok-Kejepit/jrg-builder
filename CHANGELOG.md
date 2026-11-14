@@ -20,6 +20,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **Bacaan berkas utuh berbatas 256 MiB** (`fs::read` dan kawan-kawannya, `file::read`, `zip::`/`tar::` dari jalur,
   `wasm::muat`, berkas statis `dok::serve`): yang lebih besar, atau perangkat tanpa ujung seperti `/dev/zero`, jadi
   galat berkalimat alih-alih menghabiskan memori mesin.
+- **`dok::log_*` menulis satu baris per panggilan**: baris baru, ESC dan pengubah arah di pesan dan field ditulis
+  sebagai `\u{..}`, dan `"` di nilai field teks di-escape — teks dari luar tidak bisa lagi memalsukan baris log.
 - **`str::replace`, `re::replace`/`re::replace_all` dan `str::join`/`arr::join` menolak hasil di atas 256 MiB**,
   seperti `str::repeat`: dulu teks 1 MB dengan pengganti 10 KB mematikan prosesnya.
 - **Klien HTTP (`http::`, `dok::http_request`) menolak kepala `Content-Length`, `Transfer-Encoding` dan
