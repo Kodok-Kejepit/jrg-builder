@@ -187,6 +187,9 @@ const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
      "`Merah` sudah jadi nama varian `W::Merah` di berkas ini, sekarang sebagai `const`", "`Merah` sudah jadi nama varian `W::Merah` di berkas ini, sekarang sebagai `const`"),
     ("let dan const lokal bernama varian ber-payload, di closure dan fungsi bersarang", "package main\nenum W { Merah, Isi(int) }\nfn f() { fn g() { let Isi = 2; Isi }  g() }\npub fn main() { let h = || { const Isi = 1; Isi }\n wok(h(), f()) }\n",
      "`Isi` sudah jadi nama varian `W::Isi` di berkas ini, sekarang sebagai `let`", "`Isi` sudah jadi nama varian `W::Isi` di berkas ini, sekarang sebagai `const`"),
+    ("var dan := lokal bernama varian milik berkas (keputusan 2026-11-15, satu aturan untuk semua deklarasi lokal)",
+     "package main\nenum E { A, B(int) }\npub fn main() { var A = 5\n B := 7\n wok(A, B) }\n",
+     "`A` sudah jadi nama varian `E::A` di berkas ini, sekarang sebagai `var`", "`B` sudah jadi nama varian `E::B` di berkas ini, sekarang sebagai `:=`"),
     // `jalur = arr::push(jalur, x)` di jalur field tumbuh di tempat; yang bukan array tetap ditolak `arr::push` —
     // method `push` milik struct pemakai di tempat itu TIDAK boleh tersambar oleh jalan lambatnya.
     ("arr::push di jalur field atas struct ber-method push",

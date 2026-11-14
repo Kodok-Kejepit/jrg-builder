@@ -2304,3 +2304,41 @@ fn field_gabung_dan_label_metode_sama_dengan_vm() {
     let j = jalankan(FIELD_GABUNG, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
     assert!(j.stderr.contains("dikompilasi: E::nilai, V::total, W::total, campur, main"), "{}", j.stderr);
 }
+
+/// `SitusBanyak` (satu tembolok bentuk untuk daftar field): struct dengan field sama berurutan lain, dict, angka
+/// berganti jenis, dan struct tanpa salah satu field lewat situs yang sama — jawaban dan galatnya sama dengan `--vm`.
+const FIELD_BANYAK_POLIMORF: &str = r#"
+package main
+struct A { pub x: float, pub y: float, pub z: float }
+struct B { pub z: float, pub y: float, pub x: float }
+struct C { pub x: float, pub y: float }
+fn jumlah(p) -> float { p.x * 2.0 + p.y * 3.0 + p.z }
+pub fn main() {
+    var t = 0.0
+    for i in 0..600 {
+        let fi = i as float
+        t = t + jumlah(A { x: fi, y: 1.0, z: 2.0 })
+        if (i % 5 == 0) { t = t + jumlah(B { z: fi, y: 2.0, x: 3.0 }) }
+        if (i % 7 == 0) { t = t + jumlah(dict { x: 1.0, y: fi, z: 0.5 }) }
+        if (i == 400) { t = t + jumlah(A { x: 1, y: 2, z: 3 }) }
+    }
+    wok(t)
+    for i in 0..300 {
+        let p = if (i == 299) { C { x: 1.0, y: 2.0 } } else { A { x: 1.0, y: 2.0, z: 3.0 } }
+        t = t + jumlah(p)
+    }
+    wok(t)
+}
+"#;
+
+#[test]
+fn field_banyak_polimorf_sama_dengan_vm() {
+    let v = jalankan(FIELD_BANYAK_POLIMORF, &["--vm"], &[]);
+    assert!(v.stdout.starts_with("476521.0") && v.stderr.contains("bernama `z`"), "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(FIELD_BANYAK_POLIMORF, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(FIELD_BANYAK_POLIMORF, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: jumlah, main"), "{}", j.stderr);
+}

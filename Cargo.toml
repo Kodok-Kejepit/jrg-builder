@@ -21,7 +21,7 @@ path = "src/jrgm/main.rs"
 
 [dependencies]
 unicode-xid = "=0.2.4"
-clap        = { version = "=4.3.24", features = ["derive"] }
+clap        = { version = "=4.6.7", features = ["derive"] }
 indexmap    = "=2.0.2"
 smallvec    = "=1.15.1"
 bitflags    = "=2.4.2"

@@ -967,14 +967,12 @@ pub fn turunkan(
                         if temu.is_none() && !kunci.2 && kunci.3 != 0 {
                             let ekstra = field_sesudahnya(f, r, &blok, ip, a, kunci, &cse);
                             if !ekstra.is_empty() {
-                                let daftar: Vec<*const super::lambat::SitusField> = std::iter::once(&kunci).chain(ekstra.iter())
-                                    .map(|kk| super::lambat::SitusField::bocor(&f.chunk.names[kk.1 as usize], false, kk.3) as *const _)
-                                    .collect();
-                                let n = daftar.len();
-                                let daftar = Box::leak(daftar.into_boxed_slice());
-                                let (pl, nv) = (i64c(&mut b, daftar.as_ptr() as i64), i64c(&mut b, n as i64));
+                                let daftar = super::lambat::SitusBanyak::bocor(std::iter::once(&kunci).chain(ekstra.iter())
+                                    .map(|kk| super::lambat::SitusField::bocor(&f.chunk.names[kk.1 as usize], false, kk.3))
+                                    .collect());
+                                let pl = i64c(&mut b, daftar as *const _ as i64);
                                 let ke = b.ins().stack_addr(k.ptr, wadah8, 0);
-                                let c = b.ins().call(f_field_banyak, &[d, pl, nv, ke]);
+                                let c = b.ins().call(f_field_banyak, &[d, pl, ke]);
                                 let bit = b.inst_results(c)[0];
                                 for (j, kk) in ekstra.into_iter().enumerate() {
                                     let (ok, isi) = (b.declare_var(types::I64), b.declare_var(types::I64));
@@ -1027,13 +1025,12 @@ pub fn turunkan(
                                 // Field angka lain lokal ini yang dibaca sesudahnya di blok yang sama: sekali kunci.
                                 let ekstra = field_sesudahnya(f, r, &blok, ip, a, kunci, &cse);
                                 if !ekstra.is_empty() {
-                                    let daftar: Vec<*const super::lambat::SitusField> = ekstra.iter()
-                                        .map(|kk| super::lambat::SitusField::bocor(&f.chunk.names[kk.1 as usize], false, kk.3) as *const _)
-                                        .collect();
-                                    let daftar = Box::leak(daftar.into_boxed_slice());
-                                    let (pl, n) = (i64c(&mut b, daftar.as_ptr() as i64), i64c(&mut b, ekstra.len() as i64));
+                                    let daftar = super::lambat::SitusBanyak::bocor(ekstra.iter()
+                                        .map(|kk| super::lambat::SitusField::bocor(&f.chunk.names[kk.1 as usize], false, kk.3))
+                                        .collect());
+                                    let pl = i64c(&mut b, daftar as *const _ as i64);
                                     let ke = b.ins().stack_addr(k.ptr, wadah8, 0);
-                                    let c = b.ins().call(f_field_banyak, &[d, pl, n, ke]);
+                                    let c = b.ins().call(f_field_banyak, &[d, pl, ke]);
                                     let bit = b.inst_results(c)[0];
                                     for (j, kk) in ekstra.into_iter().enumerate() {
                                         let (ok, isi) = (b.declare_var(types::I64), b.declare_var(types::I64));

@@ -68,7 +68,7 @@ impl Pemeriksa {
 
     /// Varian yang ditulis telanjang padahal dua enum memilikinya: dulu dua mesin memilih satu
     /// diam-diam (nilai `K` enum terakhir, pola `K` dan `V { .. }` enum pertama).
-    /// `let`/`const` lokal bernama varian telanjang: `let` jadi uji pola, `const` mengikat — dua arti, ditolak.
+    /// Lokal (`let`/`const`/`var`/`:=`) bernama varian telanjang: pola dan ekspresi membaca dua hal — ditolak.
     fn tabrak_varian(&mut self, nama: &str, kw: &str, span: Span) {
         if let Some(tipe) = self.varian_berkas.get(nama) {
             self.galat.push((super::pesan_nama_varian(nama, tipe, kw), span));
@@ -313,6 +313,7 @@ impl Pemeriksa {
             }
             Stmt::Var(v) => {
                 if let Some(i) = &v.init { self.ekspr(i) }
+                self.tabrak_varian(&v.name, "var", v.span);
                 self.ikat_di(&v.name, Ikat::BisaUbah, Some(v.span));
             }
             Stmt::Const(c) => {
@@ -322,7 +323,7 @@ impl Pemeriksa {
             }
             Stmt::ShortDecl(sd) => {
                 for v in &sd.values { self.ekspr(v) }
-                for n in &sd.names { self.ikat_di(n, Ikat::BisaUbah, Some(sd.span)) }
+                for n in &sd.names { self.tabrak_varian(n, ":=", sd.span); self.ikat_di(n, Ikat::BisaUbah, Some(sd.span)) }
             }
             Stmt::Assign(a) => self.penugasan(a),
             Stmt::Expr(e) => self.ekspr(e),

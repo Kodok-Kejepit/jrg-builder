@@ -839,7 +839,7 @@ pub extern "C" fn field_lokal(slot: i64, situs: *const SitusField, keluar: *mut 
 /// Field angka lain milik lokal `slot` yang dibaca sesudahnya di blok yang sama, sekali kunci (`situs[j]`
 /// tidak privat). Bit `j` hasilnya = `keluar[j]` berisi angka berjenis `situs[j].jenis`; sisanya dibaca
 /// lewat `field_lokal` biasa di tempatnya.
-pub extern "C" fn field_lokal_banyak(slot: i64, situs: *const *const SitusField, n: i64, keluar: *mut i64) -> i64 {
+pub extern "C" fn field_lokal_banyak(slot: i64, banyak: *const SitusBanyak, keluar: *mut i64) -> i64 {
     let (vm, basis) = konteks();
     let Some(VmValue::Map(m)) = vm.stack.get_mut(basis + slot as usize) else { return 0 };
     let kunci;
@@ -847,9 +847,10 @@ pub extern "C" fn field_lokal_banyak(slot: i64, situs: *const *const SitusField,
         Some(isi) => isi,
         None => { kunci = m.lock().unwrap_or_else(|p| p.into_inner()); &kunci }
     };
+    let banyak = unsafe { &*banyak };
+    if let Some(bit) = banyak.cepat(g, keluar) { return bit; }
     let mut bit = 0i64;
-    for j in 0..n as usize {
-        let s = unsafe { &**situs.add(j) };
+    for (j, s) in banyak.situs.iter().enumerate() {
         let n = s.baca(g, unsafe { &*s.nama }).and_then(|v| match (v, s.jenis) {
             (VmValue::Int(n), 1) => i64::try_from(*n).ok(),
             (VmValue::Float(x), 5) => Some(x.to_bits() as i64),
@@ -858,6 +859,54 @@ pub extern "C" fn field_lokal_banyak(slot: i64, situs: *const *const SitusField,
         if let Some(n) = n { unsafe { *keluar.add(j) = n }; bit |= 1 << j; }
     }
     bit
+}
+
+/// Daftar field angka (bukan privat) satu lokal yang dibaca sekali kunci: satu tembolok bentuk untuk seluruh
+/// daftar (monomorfik, referensi kuat ke bentuknya), indeks tiap field diisi sebelum bentuknya dipasang.
+pub struct SitusBanyak {
+    situs: Box<[&'static SitusField]>,
+    bentuk: std::sync::atomic::AtomicPtr<crate::vm::peta::Bentuk>,
+    indeks: Box<[std::sync::atomic::AtomicUsize]>,
+}
+
+impl SitusBanyak {
+    /// Hidup selama kode yang memakainya (kode JIT tidak pernah dibebaskan).
+    pub fn bocor(situs: Vec<&'static SitusField>) -> &'static SitusBanyak {
+        let indeks = situs.iter().map(|_| std::sync::atomic::AtomicUsize::new(0)).collect();
+        Box::leak(Box::new(SitusBanyak {
+            situs: situs.into_boxed_slice(), bentuk: std::sync::atomic::AtomicPtr::new(std::ptr::null_mut()), indeks,
+        }))
+    }
+
+    /// Bentuk yang ditembolok: tiap field dibaca lewat indeksnya, bitnya kalau angkanya sejenis spekulasi.
+    /// `None` = bentuk lain (jalur per field).
+    #[inline]
+    fn cepat(&self, isi: &crate::vm::peta::IsiPeta, keluar: *mut i64) -> Option<i64> {
+        use std::sync::atomic::Ordering::{Acquire, Relaxed, Release};
+        let crate::vm::peta::IsiPeta::Rapat { bentuk, nilai } = isi else { return None };
+        let p = Arc::as_ptr(bentuk) as *mut crate::vm::peta::Bentuk;
+        if self.bentuk.load(Acquire) != p {
+            if !self.bentuk.load(Relaxed).is_null() { return None; }
+            for (s, i) in self.situs.iter().zip(self.indeks.iter()) {
+                i.store(bentuk.posisi(unsafe { &*s.nama }.as_str())?, Relaxed);
+            }
+            let kuat = Arc::into_raw(bentuk.clone()) as *mut crate::vm::peta::Bentuk;
+            if self.bentuk.compare_exchange(std::ptr::null_mut(), kuat, Release, Relaxed).is_err() {
+                unsafe { drop(Arc::from_raw(kuat)) }
+                return None;
+            }
+        }
+        let mut bit = 0i64;
+        for (j, (s, i)) in self.situs.iter().zip(self.indeks.iter()).enumerate() {
+            let n = match (nilai.get(i.load(Relaxed)), s.jenis) {
+                (Some(VmValue::Int(n)), 1) => i64::try_from(*n).ok(),
+                (Some(VmValue::Float(x)), 5) => Some(x.to_bits() as i64),
+                _ => None,
+            };
+            if let Some(n) = n { unsafe { *keluar.add(j) = n }; bit |= 1 << j; }
+        }
+        Some(bit)
+    }
 }
 
 /// `LoadLocal` yang langsung dibuka (`buka`) tanpa menyalin lokalnya ke stack VM.
