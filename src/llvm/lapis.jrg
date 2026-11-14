@@ -838,13 +838,26 @@ pub fn file_list_dir(path: string) -> Result<[]string, string> {
     return Ok(_nama_isi(r.1, r.0))
 }
 
-pub fn json_get(objek, kunci: string) { return dict::get(objek, kunci) }
+// Struct dibaca lewat field-nya seperti acuan: `dict { ...objek }`; cabang `typeof` dilipat saat kompilasi.
+pub fn json_get(objek, kunci: string) {
+    if typeof(objek) == "dict" { return dict::get(objek, kunci) }
+    return dict::get(dict { ...objek }, kunci)
+}
 
-pub fn json_has(objek, kunci: string) -> bool { return dict::has(objek, kunci) }
+pub fn json_has(objek, kunci: string) -> bool {
+    if typeof(objek) == "dict" { return dict::has(objek, kunci) }
+    return dict::has(dict { ...objek }, kunci)
+}
 
-pub fn json_keys(objek) -> []string { return dict::keys(objek) }
+pub fn json_keys(objek) -> []string {
+    if typeof(objek) == "dict" { return dict::keys(objek) }
+    return dict::keys(dict { ...objek })
+}
 
-pub fn json_values(objek) { return dict::values(objek) }
+pub fn json_values(objek) {
+    if typeof(objek) == "dict" { return dict::values(objek) }
+    return dict::values(dict { ...objek })
+}
 
 pub fn json_set(objek, kunci: string, nilai) { return dict::set(objek, kunci, nilai) }
 

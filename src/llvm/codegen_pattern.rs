@@ -195,23 +195,28 @@ impl Codegen {
         for (i, arm) in arms.iter().enumerate() {
             let next_lbl = self.fresh_label("match.next.");
             self.push_scope();
-            self.try_arm(arm, &splace, &sty, &next_lbl)?;
-            let bv = match &arm.body {
-                MatchBody::Expr(e) => self.codegen_expr(e, if need_result { Some(&result_ty) } else { None })?,
-                MatchBody::Block(b) => self.codegen_block_expr(b, if need_result { Some(&result_ty) } else { None })?,
-            };
-            if !need_result && rekam && !self.is_terminated() && !matches!(bv.ty, JrgType::Unit | JrgType::Never) {
-                self.lengan_terlihat = Some(match &self.lengan_terlihat {
-                    Some(lama) => super::codegen_any::satukan_jenis(lama, &bv.ty),
-                    None => bv.ty.clone(),
-                });
-            }
-            if !self.is_terminated() {
-                if need_result {
-                    let bv2 = self.coerce(&bv, &result_ty);
-                    self.emit(format!("store {} {}, ptr {}", result_ty.llvm_ty(), bv2.text, result_slot.clone().unwrap()));
+            // Lengan yang PASTI tidak cocok (`Some(n)` atas dict) tidak diturunkan: pengikatnya tidak pernah ada.
+            if !arm.patterns.is_empty() && arm.patterns.iter().all(|p| Self::pola_varian_mustahil(p, &sty)) {
+                self.terminate(format!("br label %{}", next_lbl));
+            } else {
+                self.try_arm(arm, &splace, &sty, &next_lbl)?;
+                let bv = match &arm.body {
+                    MatchBody::Expr(e) => self.codegen_expr(e, if need_result { Some(&result_ty) } else { None })?,
+                    MatchBody::Block(b) => self.codegen_block_expr(b, if need_result { Some(&result_ty) } else { None })?,
+                };
+                if !need_result && rekam && !self.is_terminated() && !matches!(bv.ty, JrgType::Unit | JrgType::Never) {
+                    self.lengan_terlihat = Some(match &self.lengan_terlihat {
+                        Some(lama) => super::codegen_any::satukan_jenis(lama, &bv.ty),
+                        None => bv.ty.clone(),
+                    });
                 }
-                self.terminate(format!("br label %{}", merge_lbl));
+                if !self.is_terminated() {
+                    if need_result {
+                        let bv2 = self.coerce(&bv, &result_ty);
+                        self.emit(format!("store {} {}, ptr {}", result_ty.llvm_ty(), bv2.text, result_slot.clone().unwrap()));
+                    }
+                    self.terminate(format!("br label %{}", merge_lbl));
+                }
             }
             self.pop_scope();
             self.start_block(next_lbl);
@@ -690,6 +695,16 @@ impl Codegen {
                     _ => { self.branch_or_fail("false".to_string(), on_fail); Ok(()) }
                 }
             }
+        }
+    }
+
+    /// Pola varian atas nilai yang tipenya pasti bukan enum (bukan bertag atau kotak) — acuannya tidak pernah cocok.
+    fn pola_varian_mustahil(pat: &Pattern, ty: &JrgType) -> bool {
+        match pat {
+            Pattern::Enum { .. } => !matches!(ty, JrgType::Enum(_) | JrgType::Any | JrgType::Kotak(_)),
+            Pattern::Binding { inner, .. } => Self::pola_varian_mustahil(inner, ty),
+            Pattern::Or { pats, .. } => !pats.is_empty() && pats.iter().all(|p| Self::pola_varian_mustahil(p, ty)),
+            _ => false,
         }
     }
 

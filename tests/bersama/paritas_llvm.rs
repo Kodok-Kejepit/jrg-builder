@@ -4557,4 +4557,10 @@ pub fn main() {
      "package main\nfn sapa() -> string { \"modul\" }\npub fn main() {\n  { fn a() -> int { b() + 1 }  fn b() -> int { 40 }  wok(a()) }\n  { fn sapa() -> string { \"blok\" }  wok(sapa()) }\n  for i in 0..1 { fn sapa() -> string { \"for\" } wok(sapa()) }\n  if true { fn sapa() -> string { \"if\" } wok(sapa()) }\n  while true { fn sapa() -> string { \"while\" }  wok(sapa()); break }\n  let v = if true { fn h() -> int { 9 } h() } else { 0 }\n  let m = match 2 { 2 => { fn j() -> string { \"lengan\" } j() }, _ => \"x\" }\n  wok(v, m, sapa())\n}\n"),
     ("fungsi bernama di blok polos sebagai ekor main",
      "package main\nfn sapa() -> string { \"modul\" }\npub fn main() { { fn sapa() -> string { \"blok\" }  wok(sapa()) } }\n"),
+    // Pola varian atas nilai yang pasti bukan enum tidak pernah cocok — LLVM dulu menurunkan badannya dan
+    // menolak "`n` tidak ditemukan"; `json::` baca atas struct dulu gagal di dalam `<lapis>`.
+    ("pola varian atas dict/bulat/teks/array: lengannya dilewati, juga if let, alternatif, @",
+     "fn cek(v) { if let Some(n) = v { return n } else { return 0 } }\nfn bagian(x) { match x { Some(a) | Ok(a) => a, n @ Some(_) => 1, _ => 9 } }\npub fn main() {\n  let d = {\"a\": 2}\n  wok(match d { Some(n) => n, _ => -1 })\n  let x = 5\n  wok(match x { Some(n) => n, Ok(k) => k, _ => -2 })\n  wok(match \"t\" { Some(n) => n + \"!\", _ => \"lain\" })\n  wok(match [1] { None => \"kosong\", _ => \"isi\" })\n  wok(cek(\"t\"), cek(3), bagian([1]))\n}\n"),
+    ("json::keys/values/has/get atas struct membaca field-nya",
+     "struct P { pub z: int, pub a: int, pub m: string = \"s\" }\npub fn main() {\n  let p = P { z: 1, a: 2 }\n  wok(json::keys(p), json::keys({\"b\": 1, \"a\": 2}))\n  wok(json::values(p), json::has(p, \"a\"), json::has(p, \"q\"), json::get(p, \"z\"), json::get(p, \"q\"))\n}\n"),
 ];
