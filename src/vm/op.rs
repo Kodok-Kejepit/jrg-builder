@@ -112,7 +112,8 @@ impl Vm {
     pub(crate) fn calon_pakai_ulang(&mut self, basis: usize, batas: usize, label: &Label, bentuk: &std::sync::Arc<crate::vm::peta::Bentuk>) -> Option<usize> {
         let Label::Struct(nama) = label else { return None };
         (0..batas.min(8)).find(|&p| match self.stack.get_mut(basis + p) {
-            Some(VmValue::Map(m)) => matches!(&m.label, Label::Struct(n) if n == nama)
+            // Label nilai dan situs biasanya berbagi `Arc` dari konstanta yang sama: alamatnya dulu.
+            Some(VmValue::Map(m)) => matches!(&m.label, Label::Struct(n) if std::sync::Arc::ptr_eq(n, nama) || n == nama)
                 && matches!(Peta::isi_tunggal(m), Some(IsiPeta::Rapat { bentuk: b, nilai })
                     if std::sync::Arc::ptr_eq(b, bentuk) && nilai.len() == bentuk.nama.len()),
             _ => false,

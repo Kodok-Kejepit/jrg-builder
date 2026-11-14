@@ -323,7 +323,10 @@ impl Codegen {
         let (gagal, lanjut) = (self.fresh_label("sel.tutup."), self.fresh_label("sel.buka."));
         self.terminate(format!("br i1 {}, label %{}, label %{}, !prof !0", c, gagal, lanjut));
         self.start_block(gagal);
+        // Acuan tidak menyebut lokasi untuk kalimat ini; lokasi yang tak dimiliki acuan tidak dikarang.
+        let situs_lama = std::mem::replace(&mut self.tanpa_situs, true);
         self.panik(pesan);
+        self.tanpa_situs = situs_lama;
         self.start_block(lanjut);
     }
 

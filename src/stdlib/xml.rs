@@ -133,6 +133,8 @@ impl<'a> Pengurai<'a> {
         self.i += 1; // `<`
         let nama = self.nama()?;
         let mut atribut: Vec<(String, String)> = Vec::new();
+        // Kembar diperiksa lewat himpunan: memindai `atribut` tiap kali kuadrat (160 ribu atribut 34 dtk, AMAN-42).
+        let mut terlihat: std::collections::HashSet<String> = std::collections::HashSet::new();
         loop {
             let ada_spasi = self.sisa().starts_with(|c: char| c.is_whitespace());
             self.lewati_spasi();
@@ -145,7 +147,7 @@ impl<'a> Pengurai<'a> {
             self.i += 1;
             self.lewati_spasi();
             let v = self.nilai_atribut()?;
-            if atribut.iter().any(|(k, _)| *k == a) {
+            if !terlihat.insert(a.clone()) {
                 return Err(self.galat(&format!("atribut `{}` ditulis dua kali di `<{}>`", a, nama)));
             }
             atribut.push((a, v));
@@ -312,6 +314,17 @@ fn x_escape(a: &[Value]) -> Result<Value, String> {
 
 #[cfg(test)]
 mod tes {
+    /// AMAN-42: pemeriksaan atribut kembar dulu kuadrat (160 ribu atribut 34 dtk). 4x ukuran harus < 10x waktu.
+    #[test]
+    fn atribut_banyak_tetap_linear() {
+        let waktu = |n: usize| {
+            let teks = format!("<a{}/>", (0..n).map(|i| format!(" k{}=\"v\"", i)).collect::<String>());
+            (0..3).map(|_| { let t = std::time::Instant::now(); assert!(urai(&teks).is_ok()); t.elapsed() }).min().unwrap()
+        };
+        let (kecil, besar) = (waktu(20_000), waktu(80_000));
+        assert!(besar < kecil * 10, "4x atribut makan {:?} lawan {:?} — kuadrat lagi?", besar, kecil);
+    }
+
     use super::*;
 
     fn ditolak(s: &str, kata: &str) {

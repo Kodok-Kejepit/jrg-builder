@@ -42,13 +42,19 @@ fn sediakan(vm: &mut Vm, basis: usize, p: usize) -> &mut VmValue {
     &mut vm.stack[i]
 }
 
-/// Celahnya biasanya satu-dua posisi (argumen native callee ringan yang tidak ditulis `masuk_ringan`):
-/// `push` berulang, bukan `resize` (yang menyalin `VmValue::Nil` lewat `clone` umum, ±65 instruksi).
+/// Celahnya biasanya satu-dua posisi (argumen native callee ringan yang tidak ditulis `masuk_ringan`): `Nil`
+/// ditulis langsung ke kapasitas yang dipesan, tanpa `resize` (`clone` umum) atau `push` yang memeriksa ulang.
 #[cold]
 #[inline(never)]
 fn tumbuh(vm: &mut Vm, i: usize) {
-    vm.stack.reserve(i + 1 - vm.stack.len());
-    while vm.stack.len() <= i { vm.stack.push(VmValue::Nil); }
+    let n = vm.stack.len();
+    vm.stack.reserve(i + 1 - n);
+    // Aman: `reserve` menjamin kapasitasnya, dan tiap posisi n..=i ditulis utuh sebelum panjangnya dinaikkan.
+    unsafe {
+        let p = vm.stack.as_mut_ptr();
+        for k in n..=i { std::ptr::write(p.add(k), VmValue::Nil); }
+        vm.stack.set_len(i + 1);
+    }
 }
 
 /// Satu `match` atas jenisnya (sama artinya dengan `skalar_kode(j.kode())`, tanpa pembandingan `Lebar` dan
@@ -119,10 +125,16 @@ pub extern "C" fn bangun(situs: *const SitusBangun, jenis: *const Jenis, t: i64,
             let Some(crate::vm::peta::IsiPeta::Rapat { nilai: isi, .. }) = crate::vm::value::Peta::isi_tunggal(m)
                 else { unreachable!("diperiksa pakai_ulang") };
             for (j, i) in (t - n..t).enumerate() {
-                isi[j] = match nilai_skalar(jenis[i], nilai[i]) {
+                let v = match nilai_skalar(jenis[i], nilai[i]) {
                     Some(v) => v,
                     None => std::mem::replace(sediakan(vm, basis, i), VmValue::Nil),
                 };
+                // Isi lama tanpa destruktor (angka) ditimpa tanpa memanggil `drop_glue`.
+                match &mut isi[j] {
+                    tempat @ (VmValue::Int(_) | VmValue::Float(_) | VmValue::Bool(_) | VmValue::Nil | VmValue::Unit) =>
+                        unsafe { std::ptr::write(tempat, v) },
+                    tempat => *tempat = v,
+                }
             }
             *sediakan(vm, basis, t - n) = lama;
             return;
