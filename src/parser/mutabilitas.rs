@@ -51,6 +51,8 @@ pub struct Pemeriksa {
     pub varian_unit: std::collections::HashSet<String>,
     /// Nama varian yang dimiliki lebih dari satu enum berkas ini, dengan pemiliknya.
     pub varian_ganda: HashMap<String, Vec<String>>,
+    /// Tiap varian enum berkas ini dengan enum pertama yang memilikinya (aturan tingkat atas yang sama).
+    pub varian_berkas: HashMap<String, String>,
 }
 
 impl Pemeriksa {
@@ -60,12 +62,19 @@ impl Pemeriksa {
             arity: Vec::new(), periksa_arity: false, fungsi_atas: HashMap::new(), jalur_atas: HashMap::new(), aritas_pemakai: Vec::new(),
             tipe_sendiri: std::collections::HashSet::new(),
             varian_unit: ["None".to_string()].into_iter().collect(),
-            varian_ganda: HashMap::new(),
+            varian_ganda: HashMap::new(), varian_berkas: HashMap::new(),
         }
     }
 
     /// Varian yang ditulis telanjang padahal dua enum memilikinya: dulu dua mesin memilih satu
     /// diam-diam (nilai `K` enum terakhir, pola `K` dan `V { .. }` enum pertama).
+    /// `let`/`const` lokal bernama varian telanjang: `let` jadi uji pola, `const` mengikat — dua arti, ditolak.
+    fn tabrak_varian(&mut self, nama: &str, kw: &str, span: Span) {
+        if let Some(tipe) = self.varian_berkas.get(nama) {
+            self.galat.push((super::pesan_nama_varian(nama, tipe, kw), span));
+        }
+    }
+
     fn cek_ganda(&mut self, nama: &str, span: Span) {
         if let Some(pemilik) = self.varian_ganda.get(nama) {
             self.galat.push((format!(
@@ -296,6 +305,7 @@ impl Pemeriksa {
         match s {
             Stmt::Let(l) => {
                 self.ekspr(&l.init);
+                if let Pattern::Ident { name, span, .. } = &l.pattern { self.tabrak_varian(name, "let", *span) }
                 let k = if l.is_mut { Ikat::BisaUbah } else { Ikat::Mengikat("let") };
                 self.pola_lokal = true;
                 self.ikat_pola(&l.pattern, k);
@@ -307,6 +317,7 @@ impl Pemeriksa {
             }
             Stmt::Const(c) => {
                 self.ekspr(&c.value);
+                self.tabrak_varian(&c.name, "const", c.span);
                 self.ikat_di(&c.name, Ikat::Mengikat("const"), Some(c.span));
             }
             Stmt::ShortDecl(sd) => {

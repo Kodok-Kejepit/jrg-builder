@@ -2075,3 +2075,71 @@ fn struct_dipakai_ulang_tidak_teramati() {
     let baris = j.stderr.lines().find(|l| l.contains("dikompilasi:")).unwrap_or("");
     assert!(baris.contains("P::maju") && baris.contains("gabung"), "maju/gabung tidak dikompilasi:\n{}", j.stderr);
 }
+
+/// Pola berkualifikasi (`SitusPola`): alamat nama varian yang lain = tidak cocok tanpa `cocok_enum`. Dua enum
+/// dengan varian bernama sama, pemeriksa yang bukan enum (struct, dict, bulat, `nil`), lokal di sel tangkapan
+/// closure, dan galat jumlah sub-pola — jawaban dan waktu galatnya sama dengan `--vm`.
+const POLA_SEBARIS: &str = r#"
+package main
+enum A { X(int), Y, Z(int, int) }
+enum B { X(int), Y }
+struct S { x: int }
+fn nilai_a(o: A) -> int {
+    match o {
+        A::X(k) => k,
+        A::Y => 100,
+        A::Z(p, q) => p * q,
+    }
+}
+fn nilai_b(o: B) -> int {
+    match o {
+        B::X(k) => k + 1000,
+        B::Y => 2000,
+    }
+}
+fn apa(v) -> int {
+    match v {
+        A::X(k) => k,
+        B::X(k) => k + 7,
+        A::Y => 1,
+        B::Y => 2,
+        _ => 3,
+    }
+}
+pub fn main() {
+    var tot = 0
+    for i in 0..3000 {
+        let a = if (i % 3 == 0) { A::X(i) } else if (i % 3 == 1) { A::Y } else { A::Z(i, 2) }
+        let b = if (i % 2 == 0) { B::X(i) } else { B::Y }
+        tot = tot + nilai_a(a) + nilai_b(b)
+        tot = tot + apa(a) + apa(b) + apa(S { x: i }) + apa(dict { x: i }) + apa(i) + apa(nil)
+    }
+    var c = A::Y
+    let ubah = || { c = A::X(5) }
+    var u = 0
+    for i in 0..500 {
+        u = u + match c { A::X(k) => k, A::Y => 1, A::Z(p, q) => p + q }
+        if (i == 300) { ubah() }
+    }
+    wok(tot, u)
+    var g = 0
+    for i in 0..400 {
+        let w = if (i < 399) { A::Y } else { A::X(4) }
+        g = g + match w { A::Z(p) => 9, A::Y => 1, A::X(p, q) => p }
+    }
+    wok(g)
+}
+"#;
+
+#[test]
+fn pola_berkualifikasi_sama_dengan_vm() {
+    let v = jalankan(POLA_SEBARIS, &["--vm"], &[]);
+    assert!(v.stderr.contains("butuh 1 sub-pola, dapat 2"), "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(POLA_SEBARIS, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    // Keempat fungsinya benar-benar dikompilasi (JIT yang mati diam-diam juga menjawab sama).
+    let j = jalankan(POLA_SEBARIS, &["--jit"], &[STRES, ACAK, ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: apa, main, nilai_a, nilai_b"), "{}", j.stderr);
+}

@@ -175,6 +175,14 @@ fn konformans_semantik_nilai_jalan_di_dua_backend() {
 
 /// Program yang WAJIB ditolak oleh KEDUA backend, dengan alasan yang sama.
 const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
+    // Keputusan pemilik 2026-11-14: `let`/`const` LOKAL bernama varian telanjang milik berkas ditolak parser,
+    // seperti `fn`/`const`/`var` tingkat atas — dulu `let A = E::A` lolos tanpa mengikat, `const` mengikat.
+    ("let lokal bernama varian unit milik berkas", "enum E { A, B }\nlet A = E::A\nwok(\"ok\")\n",
+     "`A` sudah jadi nama varian `E::A` di berkas ini, sekarang sebagai `let`", "`A` sudah jadi nama varian `E::A` di berkas ini, sekarang sebagai `let`"),
+    ("const lokal bernama varian unit milik berkas", "package main\nenum W { Merah, Isi(int) }\npub fn main() { const Merah = 5; wok(Merah) }\n",
+     "`Merah` sudah jadi nama varian `W::Merah` di berkas ini, sekarang sebagai `const`", "`Merah` sudah jadi nama varian `W::Merah` di berkas ini, sekarang sebagai `const`"),
+    ("let dan const lokal bernama varian ber-payload, di closure dan fungsi bersarang", "package main\nenum W { Merah, Isi(int) }\nfn f() { fn g() { let Isi = 2; Isi }  g() }\npub fn main() { let h = || { const Isi = 1; Isi }\n wok(h(), f()) }\n",
+     "`Isi` sudah jadi nama varian `W::Isi` di berkas ini, sekarang sebagai `let`", "`Isi` sudah jadi nama varian `W::Isi` di berkas ini, sekarang sebagai `const`"),
     // `jalur = arr::push(jalur, x)` di jalur field tumbuh di tempat; yang bukan array tetap ditolak `arr::push` —
     // method `push` milik struct pemakai di tempat itu TIDAK boleh tersambar oleh jalan lambatnya.
     ("arr::push di jalur field atas struct ber-method push",

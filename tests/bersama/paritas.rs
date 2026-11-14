@@ -727,8 +727,6 @@ pub fn main() {
      "wok(match 5 { 1.0..=9.0 => \"f\", _ => \"lain\" }, match 9 { 1..9 => \"i\", _ => \"lain\" }, match 1 { ..1.5 => \"bawah\", _ => \"lain\" })\n"),
     ("let: literal yang cocok mengikat sisanya",
      "let (a, 5) = (1, 5)\nlet None = Option::None\nlet [x, 2] = [1, 2]\nlet 7 = 7\nwok(a, x)\n"),
-    ("let: varian unit milik pemakai sebagai pola let",
-     "enum E { A, B }\nlet A = E::A\nwok(\"ok\")\n"),
     ("parameter dan for: pola cocok tetap jalan",
      "fn f((a, 5)) { return a }\nwok(f((9, 5)))\nfor _, (p, 1) in [(3, 1), (4, 1)] { wok(p) }\n"),
     // ── Fase TERM: lebar tampil, mode tanpa terminal, dan `exit` ─────────

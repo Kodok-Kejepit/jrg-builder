@@ -604,6 +604,7 @@ impl Parser {
                 for v in &d.variants { pemilik.entry(v.name.clone()).or_default().push(d.name.clone()); }
             }
         }
+        pm.varian_berkas = pemilik.iter().map(|(v, e)| (v.clone(), e[0].clone())).collect();
         pm.varian_ganda = pemilik.into_iter().filter(|(_, e)| e.len() > 1).collect();
         pm.berkas(&file.items);
         pm
@@ -649,13 +650,7 @@ impl Parser {
                 }
             }
             let tabrak_varian = |nama: &str, kw: &str, span: Span, temuan: &mut Vec<(String, Span)>| {
-                if let Some(tipe) = varian.get(nama) {
-                    temuan.push((format!(
-                        "`{}` sudah jadi nama varian `{}::{}` di berkas ini, sekarang sebagai `{}`\n \
-                         bantuan: nama `{}` telanjang selalu berarti variannya, jadi deklarasi ini \
-                         tidak akan pernah terjangkau — ganti salah satu namanya",
-                        nama, tipe, nama, kw, nama), span));
-                }
+                if let Some(tipe) = varian.get(nama) { temuan.push((pesan_nama_varian(nama, tipe, kw), span)); }
             };
             for item in &file.items {
                 match item {
@@ -1457,4 +1452,11 @@ pub fn lokal_tak_dibaca(file: &ParsedFile) -> Vec<(String, Span)> {
     let mut v = Parser::telusuri_lingkup(file).tak_dibaca;
     v.sort_by_key(|(_, sp)| sp.lo.0);
     v
+}
+
+/// Nama varian telanjang milik berkas dipakai lagi oleh `fn`/`const`/`var` tingkat atas atau `let`/`const` lokal.
+pub(crate) fn pesan_nama_varian(nama: &str, tipe: &str, kw: &str) -> String {
+    format!("`{}` sudah jadi nama varian `{}::{}` di berkas ini, sekarang sebagai `{}`\n \
+             bantuan: nama `{}` telanjang selalu berarti variannya, jadi deklarasi ini \
+             tidak akan pernah terjangkau — ganti salah satu namanya", nama, tipe, nama, kw, nama)
 }

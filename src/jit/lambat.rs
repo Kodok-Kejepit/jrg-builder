@@ -625,6 +625,9 @@ pub extern "C" fn pola(p: i64, situs: *const SitusPola) -> i32 {
 /// (sub-pola salah jumlah) tidak pernah ditembolok.
 pub struct SitusPola {
     desc: *const VmValue,
+    /// Pola berkualifikasi (`E::V`): alamat nama internnya. Nilai enum dengan alamat lain pasti tidak cocok —
+    /// galat jumlah sub-pola cuma mungkin kalau tipe DAN varian sama (`cocok_enum`). 0 = tanpa kualifikasi.
+    nama: usize,
     // Delapan: situs `CekEnum` melihat semua varian enum-nya, bukan cuma yang dicocokkannya.
     tembolok: [std::sync::atomic::AtomicUsize; 8],
 }
@@ -632,7 +635,14 @@ pub struct SitusPola {
 impl SitusPola {
     /// Hidup selama kode yang memakainya (kode JIT tidak pernah dibebaskan).
     pub fn bocor(desc: &VmValue) -> &'static SitusPola {
-        Box::leak(Box::new(SitusPola { desc, tembolok: Default::default() }))
+        let nama = match desc {
+            VmValue::Tuple(d) => match &d.lock().unwrap_or_else(|p| p.into_inner())[..] {
+                [VmValue::Str(t), VmValue::Str(v), ..] => crate::vm::value::NamaVarian::intern(t, v) as *const _ as usize,
+                _ => 0,
+            },
+            _ => 0,
+        };
+        Box::leak(Box::new(SitusPola { desc, nama, tembolok: Default::default() }))
     }
 
     #[inline]
@@ -647,6 +657,7 @@ impl SitusPola {
             _ => None,
         };
         if let Some(k) = kunci {
+            if self.nama != 0 && k & !2 != self.nama { return Ok(false); }
             for e in &self.tembolok {
                 let isi = e.load(Acquire);
                 if isi & !1 == k { return Ok(isi & 1 == 1); }
