@@ -781,7 +781,7 @@ impl SitusPola {
             crate::vm::value::Label::Enum { nama, .. } if *nama as *const _ as usize != self.nama))
     }
 
-    #[inline]
+    #[inline(always)]
     fn cocok(&self, v: &VmValue) -> Result<bool, String> {
         use std::sync::atomic::Ordering::{Acquire, Relaxed, Release};
         let kunci = match v {

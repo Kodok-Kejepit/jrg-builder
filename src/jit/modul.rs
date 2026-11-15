@@ -232,6 +232,9 @@ fn kunci(f: &Arc<VmFunction>, masuk: usize, kembali: u8, jenis: &[Jenis]) -> Kun
     (Arc::as_ptr(f) as usize, masuk, kembali, jenis.to_vec(), versi)
 }
 
+/// Unit ke-`i` callee bulat (berkonvensi `turun::tanda_tangan_bulat`).
+fn k_bulat(baru: &[(Kunci, Arc<VmFunction>, Arc<layak::Rencana>)], i: usize) -> bool { baru[i].0 .2 == layak::KEMBALI_BULAT }
+
 /// Titik masuk callee yang dipanggil kode native: awal fungsi, semua argumen bulat.
 fn kunci_callee(f: &Arc<VmFunction>) -> Kunci {
     kunci(f, 0, layak::KEMBALI_BULAT, &vec![Jenis::Bulat; f.arity as usize])
@@ -301,7 +304,8 @@ pub fn kompilasi(
     for (_, h, _) in &baru {
         mj.urut += 1;
         let nama = format!("jrg{}_{}", mj.urut, h.name.chars().filter(|c| c.is_ascii_alphanumeric()).collect::<String>());
-        let id = mj.m.declare_function(&nama, Linkage::Local, &sig).ok()?;
+        let tt = if k_bulat(&baru, id_baru.len()) { turun::tanda_tangan_bulat(cc, h.arity as usize) } else { sig.clone() };
+        let id = mj.m.declare_function(&nama, Linkage::Local, &tt).ok()?;
         id_baru.push(id);
     }
     let id_kunci = |k: &Kunci, mj: &ModulJit| -> FuncId {
@@ -324,7 +328,7 @@ pub fn kompilasi(
             .map(|(i, jenis)| mj.ringan.get(&kunci(&r.callee[*i], 0, layak::KEMBALI_SKALAR, jenis)).copied().unwrap_or(false))
             .collect();
         mj.ringan.insert(k.clone(), layak::ringan(h, r));
-        ctx.func.signature = sig.clone();
+        ctx.func.signature = if k.2 == layak::KEMBALI_BULAT { turun::tanda_tangan_bulat(cc, h.arity as usize) } else { sig.clone() };
         let impor = turun::Impor {
             catat: mj.catat, undi: mj.undi, baca: mj.baca, tulis: mj.tulis, fid: fid0 + i as u32, lambat: &mj.lambat, ringan: &ringan,
         };

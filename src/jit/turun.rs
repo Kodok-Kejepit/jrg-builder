@@ -40,6 +40,20 @@ pub fn tanda_tangan(m: &impl Module, cc: CallConv) -> Signature {
     sig
 }
 
+/// Callee bulat (`KEMBALI_BULAT`, cuma dipanggil kode native): `fn(a0..an: i64, kedalaman: i32) -> (i32, i64)` —
+/// argumen dan hasil di register, statusnya sama dengan `tanda_tangan`.
+pub fn tanda_tangan_bulat(cc: CallConv, n: usize) -> Signature {
+    let mut sig = Signature::new(cc);
+    for _ in 0..n { sig.params.push(AbiParam::new(types::I64)); }
+    sig.params.push(AbiParam::new(types::I32));
+    sig.returns.push(AbiParam::new(types::I32));
+    sig.returns.push(AbiParam::new(types::I64));
+    sig
+}
+
+/// Fungsi yang sedang diturunkan berkonvensi `tanda_tangan_bulat`.
+fn register(b: &FunctionBuilder) -> bool { b.func.signature.returns.len() == 2 }
+
 /// `deopt::catat(fid, ip, nilai, n)`.
 pub fn tanda_tangan_catat(m: &impl Module, cc: CallConv) -> Signature {
     let ptr = m.target_config().pointer_type();
@@ -103,7 +117,12 @@ pub struct Impor<'a> {
 /// Kembali dengan status `st` tanpa mencatat apa pun.
 fn kembali_status(b: &mut FunctionBuilder, st: i64) {
     let v = b.ins().iconst(types::I32, st);
-    b.ins().return_(&[v]);
+    pulang(b, v);
+}
+
+/// `return` dengan status `st` saja; konvensi register membawa hasil nol.
+fn pulang(b: &mut FunctionBuilder, st: Value) {
+    if register(b) { let nol = b.ins().iconst(types::I64, 0); b.ins().return_(&[st, nol]); } else { b.ins().return_(&[st]); }
 }
 
 /// `bendera`: `BUKA_SUDAH` selama sisa instruksi `Cara::Buka` sesudah bukaannya berhasil.
@@ -532,7 +551,7 @@ fn keluar_deopt(b: &mut FunctionBuilder, k: &Keluar, var: &[Variable], ip: usize
     let n = b.ins().iconst(types::I32, jenis.len() as i64);
     b.ins().call(k.catat, &[fid, ipv, pn, n]);
     let st = b.ins().iconst(types::I32, DEOPT);
-    b.ins().return_(&[st]);
+    pulang(b, st);
 }
 
 /// `cond` benar = deopt di `ip` dengan stack `jenis`; sesudahnya builder ada di blok lanjutan.
@@ -854,9 +873,13 @@ pub fn turunkan(
     let masuk = b.create_block();
     b.append_block_params_for_function_params(masuk);
     b.switch_to_block(masuk);
-    let (args, kedalaman, keluar) = {
-        let p = b.block_params(masuk);
-        (p[0], p[1], p[2])
+    // Konvensi register: argumen = parameter, tanpa penyangga dan tanpa `keluar` (tidak dipakai di sana).
+    let parameter = b.block_params(masuk).to_vec();
+    let (args, kedalaman, keluar) = if register(&b) {
+        let nol = b.ins().iconst(ptr, 0);
+        (nol, parameter[parameter.len() - 1], nol)
+    } else {
+        (parameter[0], parameter[1], parameter[2])
     };
     // Satu slot rekaman untuk semua titik deopt fungsi ini (cuma satu yang pernah dipakai per panggilan).
     let slot = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, (r.maks.max(1) * 8) as u32, 3));
@@ -939,7 +962,7 @@ pub fn turunkan(
             continue;
         }
         if !j.skalar() { continue; }
-        let v = b.ins().load(types::I64, fl, args, (i * 8) as i32);
+        let v = if register(&b) { parameter[i] } else { b.ins().load(types::I64, fl, args, (i * 8) as i32) };
         b.def_var(var[i], v);
     }
     let kedalaman1 = b.ins().iadd_imm_s(kedalaman, 1);
@@ -2059,10 +2082,9 @@ pub fn turunkan(
             }
             OpCode::Return => {
                 let v = atas(&mut b, 1);
-                b.ins().store(fl, v, keluar, 0);
                 let st = match s[t - 1] { Jenis::Bool => BERHASIL_BOOL, Jenis::Pecahan => BERHASIL_PECAHAN, _ => BERHASIL };
                 let st = b.ins().iconst(types::I32, st);
-                b.ins().return_(&[st]);
+                if register(&b) { b.ins().return_(&[st, v]); } else { b.ins().store(fl, v, keluar, 0); b.ins().return_(&[st]); }
                 terbuka = false;
             }
             // `str::char_at` atas teks lokal: `karakter_lokal` menjawab semua yang sah, −1 = galat, deopt (VM melapor).
@@ -2155,17 +2177,12 @@ pub fn turunkan(
             }
             OpCode::Call => {
                 let Jenis::Fungsi(i) = s[t - a - 1] else { unreachable!("dijamin layak.rs") };
+                // Callee bulat berkonvensi register (`tanda_tangan_bulat`).
                 let fref = m.declare_func_in_func(id_callee[i].expect("callee asli dikompilasi"), b.func);
-                let slot = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, (a.max(1) * 8) as u32, 3));
-                let hasil = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 8, 3));
-                for k in 0..a {
-                    let v = b.use_var(var[t - a + k]);
-                    b.ins().stack_store(ptr, v, slot, (k * 8) as i32);
-                }
-                let pa = b.ins().stack_addr(ptr, slot, 0);
-                let ph = b.ins().stack_addr(ptr, hasil, 0);
-                let panggil = b.ins().call(fref, &[pa, kedalaman1, ph]);
-                let st = b.inst_results(panggil)[0];
+                let mut argv: Vec<Value> = (0..a).map(|k| b.use_var(var[t - a + k])).collect();
+                argv.push(kedalaman1);
+                let panggil = b.ins().call(fref, &argv);
+                let (st, hasil) = (b.inst_results(panggil)[0], b.inst_results(panggil)[1]);
                 let terus = b.create_block();
                 let gagal = b.create_block();
                 b.set_cold_block(gagal);
@@ -2186,15 +2203,14 @@ pub fn turunkan(
                 keluar_deopt(&mut b, &k, &var, ip + 1, &s[..t - a - 1]);
                 k.bendera.set(lama);
                 b.switch_to_block(terus);
-                let v = b.ins().stack_load(ptr, types::I64, hasil, 0);
-                b.def_var(var[t - a - 1], v);
+                b.def_var(var[t - a - 1], hasil);
             }
             _ => unreachable!("dijamin layak.rs"),
         }
     }
     b.switch_to_block(dalam);
     let st = b.ins().iconst(types::I32, ULANG);
-    b.ins().return_(&[st]);
+    pulang(&mut b, st);
     b.seal_all_blocks();
     b.finalize(m.target_config());
 }

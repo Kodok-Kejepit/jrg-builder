@@ -3067,3 +3067,56 @@ fn konst_enum_sama_dengan_vm() {
     let j = jalankan(KONST_ENUM, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
     assert!(j.stderr.contains("dikompilasi: <closure>, kode, main, pilih"), "{}", j.stderr);
 }
+
+/// Callee bulat berkonvensi register (`turun::tanda_tangan_bulat`): rekursi, tiga argumen, luapan ke 128 bit di
+/// callee (deopt), rekursi melewati batas kedalaman native, dan galat `% 0` di callee yang dilaporkan VM.
+const REGISTER_BULAT: &str = r#"package main
+
+fn fib(n: int) -> int {
+    if n < 2 { return n }
+    return fib(n - 1) + fib(n - 2)
+}
+
+fn kali(a: int, b: int, c: int) -> int {
+    return a * b + c
+}
+
+fn besar(n: int) -> int {
+    if n == 0 { return 1 }
+    return besar(n - 1) * 3
+}
+
+fn dalam(n: int) -> int {
+    if n == 0 { return 0 }
+    return dalam(n - 1) + 1
+}
+
+fn bagi(a: int, b: int) -> int {
+    return a % b + kali(a, b, 1)
+}
+
+pub fn main() {
+    var t = 0
+    for i in 0..300 {
+        t = t + fib(i % 18) + kali(i, i + 1, i + 2) + besar(i % 50) % 1000003
+    }
+    wok(t, besar(45), besar(75))
+    wok(dalam(50000))
+    var u = 0
+    for i in 0..2000 { u = u + bagi(i + 7, 5 - i % 6) }
+    wok(u)
+}
+"#;
+
+#[test]
+fn register_bulat_sama_dengan_vm() {
+    let v = jalankan(REGISTER_BULAT, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout == "128268382 2954312706550833698643 608266787713357709119683992618861307\n50000", "{}", v.stdout);
+    assert!(v.stderr.contains("`12 % 0`"), "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(REGISTER_BULAT, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(REGISTER_BULAT, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: bagi, besar, dalam, fib, kali"), "{}", j.stderr);
+}
