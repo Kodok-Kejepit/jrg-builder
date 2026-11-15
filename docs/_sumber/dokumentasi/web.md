@@ -36,6 +36,10 @@ $ curl "localhost:8080/api/kuadrat?n=12"
 `"127.0.0.1"`, jadi cuma bisa diakses dari mesin sendiri (atau lewat proxy seperti Caddy/nginx di mesin yang sama);
 tulis `"0.0.0.0"` untuk membukanya ke jaringan.
 
+`dok::router_static` tidak menyajikan berkas atau folder yang namanya diawali titik (`.env`, `.git/`,
+`.htpasswd`) — dijawab 404 seperti berkas yang tidak ada, supaya rahasia yang kebetulan ikut di folder publik tidak
+bocor. Pengecualiannya `.well-known/`, yang memang publik (mis. tantangan sertifikat ACME).
+
 | Request (`req`) | Isi |
 |---|---|
 | `method`, `path` | `"GET"`, `"/sapa/Ani"` |

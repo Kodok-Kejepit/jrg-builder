@@ -267,7 +267,7 @@ pub const DOKUMEN: &[Info] = &[
     Info { nama: "dok::router_not_found", tanda_tangan: "dok::router_not_found(router, handler) -> unit",
            ringkas: "Handler untuk path yang tidak cocok route mana pun." },
     Info { nama: "dok::router_static", tanda_tangan: "dok::router_static(router, url_prefix, dir) -> unit",
-           ringkas: "Sajikan berkas dari `dir` di bawah `url_prefix`. Dicek SESUDAH middleware `sebelum`." },
+           ringkas: "Sajikan berkas dari `dir` di bawah `url_prefix` (berkas bertitik selain `.well-known` tidak). Dicek SESUDAH middleware `sebelum`." },
     Info { nama: "dok::router_ws", tanda_tangan: "dok::router_ws(router, path, handler) -> unit",
            ringkas: "Endpoint WebSocket. Handshake dijawab otomatis; ping dibalas pong sendiri." },
     Info { nama: "dok::serve", tanda_tangan: "dok::serve(router, port, host?) -> unit",
