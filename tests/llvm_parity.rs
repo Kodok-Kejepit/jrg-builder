@@ -2063,7 +2063,7 @@ pub fn main() {{
                 minta(port, &get("/a")), minta(port, &get("/a")), minta(port, &get("/u/77")),
                 minta(port, &get("/x")).split(':').next().unwrap_or("").to_string(),
                 minta(port, &get("/hilang")),
-                minta(port, "POST /gema HTTP/1.1\r\nContent-Length: 3\r\n\r\nabc"),
+                minta(port, "POST /gema HTTP/1.1\r\nHost: x\r\nContent-Length: 3\r\n\r\nabc"),
             ]);
             drop(anak);
             break;
