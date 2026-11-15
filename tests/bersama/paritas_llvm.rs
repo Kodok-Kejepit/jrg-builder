@@ -10,8 +10,8 @@ pub fn main() {
     let w = E::W { a: "w" }
     wok(E::V { b: 2, ...w })
     let p = E::V { a: 2.5, b: 3 }
-    wok(E::V { a: 1.5, ...p }, E::W { ...p })
-    match E::V { b: 7, ...x } {
+    wok(E::V { a: 1.5, ...p })
+    match (E::V { b: 7, ...x }) {
         E::V { a, b } => wok("cocok", a, b),
         E::W { a } => wok("lain", a),
     }
