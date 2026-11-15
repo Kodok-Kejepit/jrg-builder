@@ -26,6 +26,11 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **`str::replace`, `re::replace`/`re::replace_all` dan `str::join`/`arr::join` menolak hasil di atas 256 MiB**,
   seperti `str::repeat`: dulu teks 1 MB dengan pengganti 10 KB mematikan prosesnya.
 
+### Baru
+
+- **`jrgc --periksa` (dan `jrgm lint`) melaporkan method dan field yang tidak ada** atas `let x = T { .. }`, dengan
+  kalimat yang sama seperti saat baris itu dijalankan.
+
 ### Diperbaiki
 
 - **Respons `dok::serve` membawa `X-Content-Type-Options: nosniff`** (kecuali aplikasi memasangnya sendiri).
