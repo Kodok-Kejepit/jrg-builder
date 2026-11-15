@@ -369,7 +369,7 @@ fn pilih() {
     let c = make_chan(int, 3)
     let k = make_chan(int, 1)
     c <- 1
-    // Satu lengan siap per putaran: interpreter memilih acak di antara yang siap, VM yang pertama.
+    // Satu lengan siap per putaran: interpreter dan VM memilih acak di antara yang siap.
     k <- 0
     var n = 0
     for i in 0..3 {
@@ -2556,4 +2556,56 @@ fn rantai_pola_sama_dengan_vm() {
     }
     let j = jalankan(RANTAI_POLA, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
     assert!(j.stderr.contains("dikompilasi: langkah, main, salah"), "{}", j.stderr);
+}
+
+/// `arr::pop` yang memindah isi larik milik tunggal (sesi antrean, #1015) lewat jalur JIT: salinan yang masih
+/// dibaca, lokal mati yang dipindah (`ambil`), tembolok penyimpanan larik, callee, dan pop berulang.
+const POP_PINDAH: &str = r#"
+package main
+fn buang_akhir(x) -> int {
+    let r = arr::pop(x)
+    return len(r[0])
+}
+fn jumlah(x) -> int {
+    var s = 0
+    for i in 0..len(x) { s = s + x[i] }
+    return s
+}
+pub fn main() {
+    var tot = 0
+    for i in 0..400 {
+        var a = [i, i + 1, i + 2, i + 3]
+        let b = a
+        tot = tot + a[0] + a[3]
+        let r = a.pop()
+        a = r[0]
+        tot = tot + len(a) + len(b) + b[3] + jumlah(a) + jumlah(b)
+        var c = [1, 2, 3]
+        tot = tot + buang_akhir(c) + len(c) + c[2]
+        var d = [7, 8, 9]
+        let e = arr::pop(d)
+        tot = tot + len(d) + d[2] + len(e[0])
+    }
+    wok(tot)
+    var q = [1, 2, 3, 4, 5, 6, 7, 8]
+    var k = 0
+    while (len(q) > 0) {
+        k = k + q[len(q) - 1] * len(q)
+        let r = q.pop()
+        q = r[0]
+    }
+    wok(k, q)
+}
+"#;
+
+#[test]
+fn pop_pindah_tidak_teramati() {
+    let v = jalankan(POP_PINDAH, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout == "815600\n204 []", "{}", v.stdout);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(POP_PINDAH, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(POP_PINDAH, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: buang_akhir, jumlah, main"), "{}", j.stderr);
 }

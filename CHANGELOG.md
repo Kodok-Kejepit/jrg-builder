@@ -12,6 +12,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   proxy di mesin yang sama tetap jalan; untuk membukanya ke jaringan tulis `dok::serve(r, port, "0.0.0.0")`.
 - **WebSocket dari peramban ditolak 403 kalau host `Origin`-nya lain dari `Host`** (port boleh beda), supaya halaman
   dari situs lain tidak bisa membuka koneksi atas nama pengunjung. Klien tanpa `Origin` tetap diterima.
+- **`json::parse` dan `dok::json_decode` menolak kunci kembar di satu objek** (juga yang kembar lewat escape,
+  `"adm\u0069n"` lawan `"admin"`). Dulu yang terakhir menang diam-diam, padahal pengurai lain memilih yang pertama.
 - **`select` dengan beberapa lengan yang siap sekaligus memilih secara acak** di semua mesin (dulu `--vm` dan
   `--emit-llvm` selalu memilih yang pertama).
 - **`let`/`const` lokal yang bernama sama dengan varian enum milik berkasnya ditolak**, dengan kalimat yang sama

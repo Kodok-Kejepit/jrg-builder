@@ -67,6 +67,9 @@ const GAGAL_SAAT_JALAN: &[(&str, &str, &str, &str)] = &[
     ("env::set nama ber-`=`", "package main\npub fn main() { wok(\"a\")\n env::set(\"A=B\", \"1\") }", "a", "env::set: nama variabel \"A=B\" tidak sah — tidak boleh kosong, dan tidak boleh berisi `=` atau karakter NUL"),
     ("env::set nama ber-NUL", "package main\npub fn main() { wok(\"a\")\n env::set(\"A\" + str(rune(0)) + \"B\", \"1\") }", "a", "env::set: nama variabel \"A\\0B\" tidak sah"),
     ("env::set nilai ber-NUL", "package main\npub fn main() { wok(\"a\")\n env::set(\"JRG_UJI_NUL\", \"x\" + str(rune(0))) }", "a", "env::set: nilai untuk `JRG_UJI_NUL` berisi karakter NUL"),
+    // Fase AMAN-44 (#1021): kunci JSON kembar ditolak di tiga mesin, satu pengurai (`json_inti`).
+    ("json::parse: kunci kembar", "package main\npub fn main() { wok(\"a\")\n wok(json::parse(\"{\\\"a\\\": 1, \\\"a\\\": 2}\")) }", "a", "json::parse: kunci `a` muncul dua kali di satu objek — pengurai lain bisa memilih yang pertama"),
+    ("json::parse: kunci kembar lewat escape", "package main\npub fn main() { wok(\"a\")\n wok(json::parse(\"{\\\"admin\\\": false, \\\"adm\\\\u0069n\\\": true}\")) }", "a", "json::parse: kunci `admin` muncul dua kali di satu objek"),
     // Fase AMAN-44: hasil teks dari masukan kecil berbatas 256 MiB seperti `str::repeat` — dulu proses mati
     // (`memory allocation .. failed`, SIGABRT) di interpreter dan `--vm`.
     ("str::replace: pola kosong dengan pengganti panjang", "package main\npub fn main() { wok(\"a\")\n let s = \"a\" * 1000000\n wok(len(str::replace(s, \"\", \"b\" * 300))) }", "a", "str::replace: hasil penggantian kegedean: 1000001 kemunculan x 300 karakter pengganti = sekitar 301000300 byte"),

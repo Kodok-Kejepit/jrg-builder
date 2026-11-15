@@ -175,6 +175,9 @@ fn konformans_semantik_nilai_jalan_di_dua_backend() {
 
 /// Program yang WAJIB ditolak oleh KEDUA backend, dengan alasan yang sama.
 const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
+    // Fase AMAN-44 (#1021): kunci JSON kembar ditolak — dulu yang terakhir menang diam-diam.
+    ("json::parse: kunci kembar", "wok(json::parse(\"{\\\"a\\\": 1, \\\"a\\\": 2}\"))\n", "json::parse: kunci `a` muncul dua kali di satu objek — pengurai lain bisa memilih yang pertama", "json::parse: kunci `a` muncul dua kali di satu objek — pengurai lain bisa memilih yang pertama"),
+    ("json::parse: kunci kembar lewat escape", "wok(json::parse(\"{\\\"admin\\\": false, \\\"adm\\\\u0069n\\\": true}\"))\n", "json::parse: kunci `admin` muncul dua kali di satu objek", "json::parse: kunci `admin` muncul dua kali di satu objek"),
     // Fase AMAN-44: hasil teks dari masukan kecil berbatas 256 MiB seperti `str::repeat`; dulu SIGABRT di dua mesin.
     ("str::replace: pola kosong dengan pengganti panjang", "let s = \"a\" * 1000000\n wok(len(str::replace(s, \"\", \"b\" * 300)))\n", "str::replace: hasil penggantian kegedean: 1000001 kemunculan x 300 karakter pengganti = sekitar 301000300 byte", "str::replace: hasil penggantian kegedean: 1000001 kemunculan x 300 karakter pengganti = sekitar 301000300 byte"),
     ("str::replace: banyak kemunculan kali pengganti panjang", "let s = \"a\" * 1000000\n wok(len(s.replace(\"a\", \"b\" * 300)))\n", "str::replace: hasil penggantian kegedean: 1000000 kemunculan x 300 karakter pengganti = sekitar 300000000 byte", "str::replace: hasil penggantian kegedean: 1000000 kemunculan x 300 karakter pengganti = sekitar 300000000 byte"),
