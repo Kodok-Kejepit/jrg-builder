@@ -175,6 +175,9 @@ fn konformans_semantik_nilai_jalan_di_dua_backend() {
 
 /// Program yang WAJIB ditolak oleh KEDUA backend, dengan alasan yang sama.
 const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
+    // Fase AMAN-51 (#1040): pegangan pustaka berwujud struct tidak jadi `{"id":1}` di JSON — ditolak seperti `Mutex`.
+    ("json::stringify atas Ptr di larik", "let p = ptr::new(1)\n wok(json::stringify([p]))\n", "`Ptr` tidak punya padanan di JSON, jadi ia tidak bisa disandikan", "`Ptr` tidak punya padanan di JSON, jadi ia tidak bisa disandikan"),
+    ("dok::json_encode atas Future", "let f = Future::new(|| 1)\n wok(dok::json_encode([f]))\n", "`Future` tidak punya padanan di JSON, jadi ia tidak bisa disandikan", "`Future` tidak punya padanan di JSON, jadi ia tidak bisa disandikan"),
     // Fase AMAN-44 (#1021): kunci JSON kembar ditolak — dulu yang terakhir menang diam-diam.
     ("json::parse: kunci kembar", "wok(json::parse(\"{\\\"a\\\": 1, \\\"a\\\": 2}\"))\n", "json::parse: kunci `a` muncul dua kali di satu objek — pengurai lain bisa memilih yang pertama", "json::parse: kunci `a` muncul dua kali di satu objek — pengurai lain bisa memilih yang pertama"),
     ("json::parse: kunci kembar lewat escape", "wok(json::parse(\"{\\\"admin\\\": false, \\\"adm\\\\u0069n\\\": true}\"))\n", "json::parse: kunci `admin` muncul dua kali di satu objek", "json::parse: kunci `admin` muncul dua kali di satu objek"),

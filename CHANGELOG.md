@@ -9,6 +9,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 ### Memutus
 
 - **`dok::serve` menjawab 400 untuk permintaan HTTP/1.1 tanpa kepala `Host`** (RFC 9112); HTTP/1.0 tetap boleh.
+- **`json::stringify`, `json::pretty` dan `dok::json_encode` menolak pegangan pustaka** (`Ptr`, `Future`, `DokDb`, …),
+  seperti `Mutex` — dulu tertulis `{"id":1}`.
 - **`dok::serve` melepas klien yang tidak membaca jawabannya**: tenggat tulis 30 detik ditambah 1 detik per 16 KiB.
 
 ### Baru
