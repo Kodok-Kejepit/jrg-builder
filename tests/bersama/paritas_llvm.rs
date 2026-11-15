@@ -1,6 +1,18 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const PARITAS_LLVM: &[(&str, &str)] = &[
+    // Fase ISI-SISIP: `arr::insert` dengan nilai berjenis lain membuat larik campur bertag, seperti `push`.
+    ("arr::insert berjenis lain jadi larik campur", r#"package main
+pub fn main() {
+    let f = |x| x
+    wok(arr::insert([f], 0, 1), arr::insert([1, 2], 1, "a"), arr::insert([1, 2], -1, 9), arr::insert(["x"], 1, true))
+    let a = arr::insert([1, 2], 0, "z")
+    wok(len(a), typeof(a[0]), a[1] + 1)
+    wok(arr::insert([], 0, 5), arr::insert([1, 3], 1, 2), arr::insert(["a"], 0, "b"))
+    var xs = [1]
+    xs = arr::insert(xs, 1, 2)
+    wok(xs)
+}"#),
     // Fase LAPIS-SITUS: `==` lintas golongan `false` (juga fungsi lawan bilangan), `index_of`/`contains` dengan jarum
     // bertipe lain, `unique` atas satu fungsi — dulu ditolak LLVM saat kompilasi, sebagian di `<lapis>:baris`.
     ("banding lintas tipe, index_of/contains berjarum lain, unique satu fungsi", r#"package main

@@ -36,6 +36,9 @@ pub enum Jenis {
     /// Kode karakter (`u32` di variabel `i64`); cuma lahir dari intrinsik `str::char_at`, tidak pernah
     /// jenis titik masuk (rune milik VM tetap `Nilai`).
     Rune,
+    /// Konstanta ke-`i` berupa varian enum tanpa payload (`var op = E::A`): tidak ditulis ke stack VM selama
+    /// cuma melewati instruksi `boleh_lewat_konst`; selain itu diwujudkan (`Rencana::wujud`, tepi, deopt).
+    Konst(u32),
 }
 
 pub const BUNGKUS_TAMBAH: u8 = 0;
@@ -53,11 +56,13 @@ impl Jenis {
 
     /// Nilainya tetap dan diketahui saat kompilasi (callee, fungsi bawaan): tidak ada di stack VM, jadi
     /// pembantu yang membaca stack VM tidak boleh menerimanya mentah.
-    pub fn tetap(self) -> bool { matches!(self, Jenis::Fungsi(_) | Jenis::Bawaan(_) | Jenis::Bungkus(..) | Jenis::Salinan(_)) }
+    pub fn tetap(self) -> bool {
+        matches!(self, Jenis::Fungsi(_) | Jenis::Bawaan(_) | Jenis::Bungkus(..) | Jenis::Salinan(_) | Jenis::Konst(_))
+    }
 
     /// Indeks konstanta fungsi bawaan maya.
     pub fn konstanta(self) -> Option<u32> {
-        match self { Jenis::Bawaan(i) | Jenis::Bungkus(_, i) => Some(i), _ => None }
+        match self { Jenis::Bawaan(i) | Jenis::Bungkus(_, i) | Jenis::Konst(i) => Some(i), _ => None }
     }
 
     /// `math::wrap_*` (hasil `Lebar`).
@@ -76,7 +81,7 @@ impl Jenis {
             Jenis::Lebar => 6,
             Jenis::Rune => 7,
             Jenis::Satuan => 8,
-            Jenis::Nilai | Jenis::Bawaan(_) | Jenis::Bungkus(..) | Jenis::Fungsi(_) | Jenis::Salinan(_) => 4,
+            Jenis::Nilai | Jenis::Bawaan(_) | Jenis::Bungkus(..) | Jenis::Fungsi(_) | Jenis::Salinan(_) | Jenis::Konst(_) => 4,
         }
     }
 
@@ -259,8 +264,9 @@ pub struct Rencana {
     /// Hasil instruksi yang dispekulasikan angka menurut umpan profilnya (`spek_hasil`): sesudah
     /// pembantunya, puncak dibuka berjaga; gagal = deopt di instruksi berikutnya (`PUNCAK_VM`).
     pub spek: Vec<Option<Jenis>>,
-    /// Salinan lokal maya yang diwujudkan sebelum instruksi `ip` (posisi, lokal): `lambat::muat`.
-    pub wujud: Vec<Vec<(usize, u32)>>,
+    /// Posisi maya yang diwujudkan sebelum instruksi `ip`: `Salinan(l)` lewat `lambat::muat`, `Konst(i)` lewat
+    /// `lambat::taruh` dari konstantanya.
+    pub wujud: Vec<Vec<(usize, Jenis)>>,
 }
 
 impl Rencana {
@@ -531,7 +537,33 @@ fn langkah(
     r.wujud[ip].clear();
     if s.iter().any(|j| matches!(j, Jenis::Salinan(_))) && !boleh_lewat_salinan(f, ip, &s) {
         for (p, j) in s.iter_mut().enumerate() {
-            if let Jenis::Salinan(l) = *j { r.wujud[ip].push((p, l)); *j = Jenis::Nilai; }
+            if let Jenis::Salinan(_) = *j { r.wujud[ip].push((p, *j)); *j = Jenis::Nilai; }
+        }
+    }
+    if s.iter().any(|j| matches!(j, Jenis::Konst(_))) && !boleh_lewat_konst(f, ip, &s) {
+        for (p, j) in s.iter_mut().enumerate() {
+            if let Jenis::Konst(_) = *j { r.wujud[ip].push((p, *j)); *j = Jenis::Nilai; }
+        }
+    }
+    // Konstanta maya dimuat dari lokal atau disimpan ke lokal yang bukan milik VM: cuma jenisnya yang berpindah.
+    {
+        let ins = f.chunk.code[ip];
+        let (a, t) = (ins.arg as usize, s.len());
+        match ins.op {
+            OpCode::LoadLocal if matches!(s.get(a), Some(Jenis::Konst(_))) => {
+                s.push(s[a]);
+                r.cara[ip] = Cara::Salinan;
+                return Some(vec![(ip + 1, s)]);
+            }
+            OpCode::StoreLocal | OpCode::SimpanBuang if t >= 1 && a + 1 < t && matches!(s[t - 1], Jenis::Konst(_))
+                && !s[a].di_vm() && !matches!(s[a], Jenis::Salinan(_))
+                && !s.iter().any(|j| matches!(j, Jenis::Salinan(l) if *l as usize == a)) => {
+                s[a] = s[t - 1];
+                if ins.op == OpCode::SimpanBuang { s.pop(); }
+                r.cara[ip] = Cara::Salinan;
+                return Some(vec![(ip + 1, s)]);
+            }
+            _ => {}
         }
     }
     if let Some((b, s2)) = tipe_lipat(f, ip, &s) {
@@ -625,6 +657,33 @@ fn boleh_lewat_salinan(f: &VmFunction, ip: usize, s: &[Jenis]) -> bool {
         OpCode::Call => (f.chunk.code[ip].arg == 2 && t >= 3 && s[t - 3].bungkus(BUNGKUS_CHAR_AT)
             && matches!(s[t - 2], Jenis::Salinan(_)) && s[t - 1] == Jenis::Bulat)
             || (f.chunk.code[ip].arg == 1 && t >= 2 && bawaan_len(f, s[t - 2]) && salinan(&s[t - 1])),
+        _ => false,
+    }
+}
+
+/// Instruksi yang konstanta maya (`Jenis::Konst`) boleh hidup melewatinya: tidak membacanya sebagai operand dan
+/// tidak membaca lokal lewat stack VM (selain yang dibaca `LoadLocal`/`StoreLocal` di atas, yang memindah jenisnya).
+fn boleh_lewat_konst(f: &VmFunction, ip: usize, s: &[Jenis]) -> bool {
+    let t = s.len();
+    let konst = |j: &Jenis| matches!(j, Jenis::Konst(_));
+    let bebas = |k: usize| k <= t && !s[t - k..].iter().any(konst);
+    let ins = f.chunk.code[ip];
+    let a = ins.arg as usize;
+    match ins.op {
+        OpCode::LoadLocal | OpCode::LokalHitung | OpCode::IntImm | OpCode::Const | OpCode::Jump | OpCode::Pop
+        | OpCode::Nil | OpCode::True | OpCode::False | OpCode::Unit => true,
+        OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div | OpCode::Mod | OpCode::Lt | OpCode::Le | OpCode::Gt
+        | OpCode::Ge | OpCode::Eq | OpCode::Ne | OpCode::BitAnd | OpCode::BitOr | OpCode::BitXor | OpCode::AndNot
+        | OpCode::Shl | OpCode::Shr => bebas(2),
+        OpCode::Neg | OpCode::Not | OpCode::BitNot | OpCode::KeBool | OpCode::JumpFalse | OpCode::JumpTrue
+        | OpCode::JumpFalseKeep | OpCode::JumpTrueKeep | OpCode::BuildEnum => bebas(1),
+        OpCode::BuildTuple | OpCode::BuildArray => bebas(a),
+        // Penulisan ke lokal maya menimpanya (isinya di stack VM basi, dilepas biasa); ke lokal VM dari maya: diwujudkan.
+        OpCode::StoreLocal | OpCode::SimpanBuang => a < t && (bebas(1) && (!konst(&s[a]) || s[t - 1].di_vm())
+            || konst(&s[t - 1]) && !s[a].di_vm()),
+        OpCode::IterAda => s.get(a..a + 3).is_some_and(|w| !w.iter().any(konst)),
+        OpCode::IterMaju => s.get(a).is_some_and(|j| !konst(j)),
+        OpCode::IterVar => s.get(a / 2..a / 2 + 3).is_some_and(|w| !w.iter().any(konst)),
         _ => false,
     }
 }
@@ -923,10 +982,13 @@ fn langkah_lambat(
         OpCode::Const | OpCode::Unit => {
             let j = match (ins.op, f.chunk.constants.get(a)?) {
                 (OpCode::Const, VmValue::NativeFn(g)) => bungkus(*g).map_or(Bawaan(a as u32), |k| Bungkus(k, a as u32)),
+                (OpCode::Const, v) if v.bagian_enum().is_some_and(|(_, _, p)| p.is_none()) => Konst(a as u32),
                 _ => Nilai,
             };
             s.push(j);
-            return Some((Cara::Konstanta, vec![(lanjut, s)]));
+            // Konstanta maya tidak ditulis ke stack VM sampai ada yang membutuhkannya.
+            let cara = if matches!(j, Konst(_)) { Cara::Salinan } else { Cara::Konstanta };
+            return Some((cara, vec![(lanjut, s)]));
         }
         OpCode::AmbilLokal if s.get(a)?.di_vm() => {
             s[a] = Nilai;

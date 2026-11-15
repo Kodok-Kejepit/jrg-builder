@@ -2998,3 +2998,72 @@ fn ubah_lebar_sama_dengan_vm() {
     let j = jalankan(UBAH_LEBAR, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
     assert!(j.stderr.contains("dikompilasi: lebar, main, putar"), "{}", j.stderr);
 }
+
+/// Varian enum tanpa payload sebagai konstanta maya (`Jenis::Konst`): disimpan ke lokal, dibandingkan, jadi
+/// argumen, dikembalikan, masuk struct dan larik, ditangkap closure, berganti di cabang dan loop.
+const KONST_ENUM: &str = r#"package main
+
+enum W {
+    Merah,
+    Hijau,
+    Biru,
+    Isi(int),
+}
+
+struct K {
+    pub w: W,
+    pub n: int,
+}
+
+fn kode(w: W) -> int {
+    match w {
+        W::Merah => 1,
+        W::Hijau => 2,
+        W::Biru => 3,
+        W::Isi(k) => k,
+    }
+}
+
+fn pilih(i: int) -> W {
+    if i % 3 == 0 { return W::Merah }
+    var w = W::Hijau
+    if i % 5 == 0 { w = W::Biru }
+    if i % 7 == 0 { w = W::Isi(i) }
+    return w
+}
+
+pub fn main() {
+    var tot = 0
+    var c = W::Merah
+    let f = || kode(c)
+    var daftar = []
+    for i in 0..6000 {
+        var w = W::Biru
+        var u = W::Merah
+        if i % 2 == 0 { w = W::Hijau } else if i % 3 == 0 { w = W::Isi(i % 50) }
+        if w == W::Hijau { tot = tot + 1 }
+        if u != w { tot = tot + 2 }
+        let v = w
+        tot = tot + kode(v) + kode(pilih(i)) + kode(u)
+        let k = K { w: W::Biru, n: i }
+        tot = tot + kode(k.w)
+        if i % 1000 == 0 { daftar = daftar + [W::Merah, w]; c = W::Biru }
+        tot = (tot + f()) % 1000000007
+        u = w
+        tot = tot + kode(u)
+    }
+    wok(tot, len(daftar), daftar[3], c)
+}
+"#;
+
+#[test]
+fn konst_enum_sama_dengan_vm() {
+    let v = jalankan(KONST_ENUM, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout == "1858258 12 W::Hijau W::Biru", "{}", v.stdout);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(KONST_ENUM, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(KONST_ENUM, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: <closure>, kode, main, pilih"), "{}", j.stderr);
+}

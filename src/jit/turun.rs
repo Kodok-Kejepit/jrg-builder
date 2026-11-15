@@ -642,7 +642,7 @@ fn isi_tepi(
                     let kv = b.ins().iconst(types::I64, &r.callee_nilai[*c] as *const _ as i64);
                     b.ins().call(taruh, &[p, kv]);
                 }
-                Jenis::Bawaan(_) | Jenis::Bungkus(..) => {
+                Jenis::Bawaan(_) | Jenis::Bungkus(..) | Jenis::Konst(_) => {
                     let kv = b.ins().iconst(types::I64, k.alamat_konstanta(*a).expect("maya"));
                     b.ins().call(taruh, &[p, kv]);
                 }
@@ -995,9 +995,12 @@ pub fn turunkan(
         }
         k.bendera.set(0);
         // Salinan maya yang tidak boleh melewati instruksi ini ditulis dulu ke stack VM (`layak::boleh_lewat_salinan`).
-        for &(p, l) in &r.wujud[ip] {
-            let (d, ke) = (b.ins().iconst(types::I64, l as i64), b.ins().iconst(types::I64, p as i64));
-            b.ins().call(f_muat, &[d, ke]);
+        for &(p, j) in &r.wujud[ip] {
+            let ke = b.ins().iconst(types::I64, p as i64);
+            match j {
+                Jenis::Salinan(l) => { let d = b.ins().iconst(types::I64, l as i64); b.ins().call(f_muat, &[d, ke]); }
+                _ => { let kv = b.ins().iconst(types::I64, k.alamat_konstanta(j).expect("maya")); b.ins().call(f_taruh, &[ke, kv]); }
+            }
         }
         // Sesudah bukaan gabungan, posisinya belum ada di stack VM: deopt acak cuma di instruksi pertamanya.
         if let (Some(u), false) = (undi, dibuka) {

@@ -35,6 +35,7 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   HMAC-SHA256 jauh lebih cepat (SHA-NI bila ada). Hash lama tetap bisa diperiksa.
 - **AES (`crypto::seal`, `crypto::aes_*`) tidak lagi membocorkan kunci lewat waktu**: AES-NI di x86_64, dan hitungan
   waktu-tetap tanpa tabel di platform lain. `crypto::random_int` tanpa bias modulo.
+- **`--emit-llvm`: `arr::insert` dengan nilai berjenis lain membuat larik campur** seperti interpreter (dulu ditolak).
 - **`--emit-llvm`: `==` atas dua fungsi gagal saat jalan seperti interpreter** (`arr::unique([f])` menjawab
   `[<closure>]`), `f == 1`, `arr::index_of(["a"], 1)` dan `arr::contains(["a"], 1)` menjawab `false`/`None`, dan galat
   saat kompilasi dari dalam pustaka bawaan menunjuk baris program, bukan `<lapis>:baris`.

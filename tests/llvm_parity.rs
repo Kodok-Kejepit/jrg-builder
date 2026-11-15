@@ -879,6 +879,9 @@ pub fn main() {
 
 /// `(nama, program, kata-kunci-interpreter, kata-kunci-llvm)`
 const DITOLAK_INTERP_DAN_LLVM: &[(&str, &str, &str, &str)] = &[
+    // Fase ISI-SISIP: penerima `arr::insert` yang bukan larik — satu kalimat (acuan saat jalan, LLVM saat kompilasi).
+    ("arr::insert atas bukan larik", "package main\npub fn main() { wok(arr::insert(5, 0, 1)) }",
+     "arr::insert: argumen ke-1 harus array, dapat `int`", "arr::insert: argumen ke-1 harus array, dapat `int`"),
     // Fase SEBAR-CLOSURE: nama parameter asing di argumen bernama — acuan gagal saat jalan, LLVM saat kompilasi,
     // satu kalimat (dulu berawalan nama turunan `terap_bernama`).
     ("argumen bernama asing ke closure", "package main\npub fn main() { let f = |a, b| a + b\n wok(f(a: 1, c: 2)) }",

@@ -334,7 +334,11 @@ pub fn kompilasi(
         if k.2 == layak::KEMBALI_BULAT && ctx.func.dfg.num_insts() <= SISIP_MAKS {
             mj.badan.insert(diri, ctx.func.clone());
         }
+        // `JRG_JIT_LOG=clif`: IR tiap fungsi sesudah disisipi, lalu kode mesinnya.
+        let clif = std::env::var("JRG_JIT_LOG").is_ok_and(|v| v == "clif");
+        if clif { eprintln!("[jit] clif {}:\n{}", h.name, ctx.func.display()); ctx.set_disasm(true); }
         utuh = mj.m.define_function(id_baru[i], &mut ctx).is_ok();
+        if clif { if let Some(v) = ctx.compiled_code().and_then(|c| c.vcode.as_ref()) { eprintln!("[jit] mesin {}:\n{}", h.name, v); } }
         mj.m.clear_context(&mut ctx);
         if !utuh { break; }
     }
