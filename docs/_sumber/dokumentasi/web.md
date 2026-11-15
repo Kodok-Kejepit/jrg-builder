@@ -123,6 +123,9 @@ true false
 
 - Sesi **ditandatangani**, tidak dienkripsi: isinya bisa dibaca siapa pun, tapi tidak bisa diubah tanpa kuncinya.
   Simpan kuncinya di variabel lingkungan, bukan di kode.
+- Sesi membawa **cap waktu** yang ikut ditandatangani: `dok::session_decode` menolak sesi yang lebih tua dari
+  14 hari, atau dari argumen ketiga dalam detik (`dok::session_decode(cookie, KUNCI, 3600)` = satu jam). Cookie
+  curian tidak berlaku selamanya.
 - `password_hash` memakai PBKDF2-HMAC-SHA256 dengan garam acak per sandi.
 - `dok::cookie_set(resp, nama, nilai, opsi)` memasang cookie dengan `HttpOnly` dan `SameSite=Lax` secara bawaan;
   `dok::cookie_get(req, nama)` membacanya.

@@ -22,6 +22,10 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **Bacaan berkas utuh berbatas 256 MiB** (`fs::read` dan kawan-kawannya, `file::read`, `zip::`/`tar::` dari jalur,
   `wasm::muat`, berkas statis `dok::serve`): yang lebih besar, atau perangkat tanpa ujung seperti `/dev/zero`, jadi
   galat berkalimat alih-alih menghabiskan memori mesin.
+- **Sesi `dok::session_*` punya masa berlaku**: cap waktunya ikut ditandatangani, dan `dok::session_decode` menolak
+  sesi yang lebih tua dari 14 hari (atau dari argumen ketiga, dalam detik). Cookie sesi lama perlu masuk ulang sekali.
+- **`dok::password_hash` bawaannya 600 000 putaran** (dulu 210 000, angka OWASP untuk SHA-512, bukan SHA-256), dan
+  HMAC-SHA256 jauh lebih cepat (SHA-NI bila ada). Hash lama tetap bisa diperiksa.
 - **AES (`crypto::seal`, `crypto::aes_*`) tidak lagi membocorkan kunci lewat waktu**: AES-NI di x86_64, dan hitungan
   waktu-tetap tanpa tabel di platform lain. `crypto::random_int` tanpa bias modulo.
 - **Kanvas mode `web` cuma melayani halamannya sendiri**: `Host` lain (DNS rebinding) dan permintaan dari situs lain

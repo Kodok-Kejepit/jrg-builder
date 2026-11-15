@@ -2,7 +2,6 @@
 // Base64/Hex, random aman (OS RNG), dan AES-256-CBC. Semuanya ditulis
 
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::OnceLock;
 
 use crate::interpreter::{err_value, ok_value, Value};
 
@@ -112,38 +111,140 @@ const SHA256_K: [u32; 64] = [
     0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2,
 ];
 
-pub fn sha256(input: &[u8]) -> [u8; 32] {
-    let mut h: [u32; 8] = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
-    let mut msg = input.to_vec();
-    let ml = (input.len() as u64) * 8;
+const SHA256_IV: [u32; 8] = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+
+/// Satu blok kompresi SHA-256 — SATU definisi untuk `sha256` dan HMAC yang disiapkan (`HmacSha256`). Instruksi
+/// SHA-NI kalau prosesornya punya (±3,5x), selain itu putaran skalar yang dibuka; hasil keduanya dites sama.
+fn sha256_kompres(h: &mut [u32; 8], chunk: &[u8]) {
+    #[cfg(target_arch = "x86_64")]
+    if shani::ada() { return shani::kompres(h, chunk); }
+    sha256_kompres_lunak(h, chunk)
+}
+
+fn sha256_kompres_lunak(h: &mut [u32; 8], chunk: &[u8]) {
+    let mut w = [0u32; 16];
+    for i in 0..16 { w[i] = u32::from_be_bytes([chunk[i*4], chunk[i*4+1], chunk[i*4+2], chunk[i*4+3]]); }
+    let mut s = *h;
+    // Satu putaran; peran a..h bergeser lewat indeks, bukan lewat delapan salinan. Jadwal pesan 16 kata berputar.
+    macro_rules! r {
+        ($i:expr, $a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $hh:expr) => {{
+            if $i >= 16 {
+                let (w15, w2) = (w[($i + 1) & 15], w[($i + 14) & 15]);
+                let s0 = w15.rotate_right(7) ^ w15.rotate_right(18) ^ (w15 >> 3);
+                let s1 = w2.rotate_right(17) ^ w2.rotate_right(19) ^ (w2 >> 10);
+                w[$i & 15] = w[$i & 15].wrapping_add(s0).wrapping_add(w[($i + 9) & 15]).wrapping_add(s1);
+            }
+            let e = s[$e];
+            let t1 = s[$hh].wrapping_add(e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25))
+                .wrapping_add((e & s[$f]) ^ (!e & s[$g])).wrapping_add(SHA256_K[$i]).wrapping_add(w[$i & 15]);
+            let a = s[$a];
+            let t2 = (a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22))
+                .wrapping_add((a & s[$b]) ^ (a & s[$c]) ^ (s[$b] & s[$c]));
+            s[$d] = s[$d].wrapping_add(t1);
+            s[$hh] = t1.wrapping_add(t2);
+        }};
+    }
+    macro_rules! delapan { ($i:expr) => {
+        r!($i, 0,1,2,3,4,5,6,7); r!($i+1, 7,0,1,2,3,4,5,6); r!($i+2, 6,7,0,1,2,3,4,5); r!($i+3, 5,6,7,0,1,2,3,4);
+        r!($i+4, 4,5,6,7,0,1,2,3); r!($i+5, 3,4,5,6,7,0,1,2); r!($i+6, 2,3,4,5,6,7,0,1); r!($i+7, 1,2,3,4,5,6,7,0);
+    } }
+    delapan!(0); delapan!(8); delapan!(16); delapan!(24); delapan!(32); delapan!(40); delapan!(48); delapan!(56);
+    for i in 0..8 { h[i] = h[i].wrapping_add(s[i]); }
+}
+
+#[cfg(target_arch = "x86_64")]
+mod shani {
+    use std::arch::x86_64::*;
+    pub fn ada() -> bool {
+        std::arch::is_x86_feature_detected!("sha") && std::arch::is_x86_feature_detected!("sse4.1")
+            && std::arch::is_x86_feature_detected!("ssse3")
+    }
+    pub fn kompres(h: &mut [u32; 8], blok: &[u8]) { assert!(blok.len() >= 64); unsafe { kompres_ni(h, blok) } }
+    #[target_feature(enable = "sha,sse2,ssse3,sse4.1")]
+    unsafe fn kompres_ni(h: &mut [u32; 8], blok: &[u8]) {
+        let k = &super::SHA256_K;
+        let mask = _mm_set_epi64x(0x0C0D_0E0F_0809_0A0Bu64 as i64, 0x0405_0607_0001_0203u64 as i64);
+        let p = h.as_ptr() as *const __m128i;
+        let (dcba, efgh) = unsafe { (_mm_loadu_si128(p), _mm_loadu_si128(p.add(1))) };
+        let cdab = _mm_shuffle_epi32(dcba, 0xB1);
+        let efgh = _mm_shuffle_epi32(efgh, 0x1B);
+        let mut abef = _mm_alignr_epi8(cdab, efgh, 8);
+        let mut cdgh = _mm_blend_epi16(efgh, cdab, 0xF0);
+        let (abef0, cdgh0) = (abef, cdgh);
+        let d = blok.as_ptr() as *const __m128i;
+        let mut w = [_mm_setzero_si128(); 5];
+        for (i, x) in w.iter_mut().take(4).enumerate() { *x = _mm_shuffle_epi8(unsafe { _mm_loadu_si128(d.add(i)) }, mask); }
+        for i in 0..16 {
+            if i >= 4 {
+                let j = i - 4;
+                let t1 = _mm_sha256msg1_epu32(w[j % 5], w[(j + 1) % 5]);
+                let t2 = _mm_alignr_epi8(w[(j + 3) % 5], w[(j + 2) % 5], 4);
+                w[(j + 4) % 5] = _mm_sha256msg2_epu32(_mm_add_epi32(t1, t2), w[(j + 3) % 5]);
+            }
+            let kv = _mm_set_epi32(k[4*i+3] as i32, k[4*i+2] as i32, k[4*i+1] as i32, k[4*i] as i32);
+            let t1 = _mm_add_epi32(w[i % 5], kv);
+            cdgh = _mm_sha256rnds2_epu32(cdgh, abef, t1);
+            abef = _mm_sha256rnds2_epu32(abef, cdgh, _mm_shuffle_epi32(t1, 0x0E));
+        }
+        abef = _mm_add_epi32(abef, abef0);
+        cdgh = _mm_add_epi32(cdgh, cdgh0);
+        let feba = _mm_shuffle_epi32(abef, 0x1B);
+        let dchg = _mm_shuffle_epi32(cdgh, 0xB1);
+        let q = h.as_mut_ptr() as *mut __m128i;
+        unsafe {
+            _mm_storeu_si128(q, _mm_blend_epi16(feba, dchg, 0xF0));
+            _mm_storeu_si128(q.add(1), _mm_alignr_epi8(dchg, feba, 8));
+        }
+    }
+}
+
+/// Sisa pesan sesudah `sebelum` byte yang sudah dikompres: isi, `0x80`, nol, panjang total dalam bit.
+fn sha256_tutup(mut h: [u32; 8], sisa: &[u8], sebelum: u64) -> [u8; 32] {
+    let mut msg = sisa.to_vec();
+    let ml = (sebelum + sisa.len() as u64) * 8;
     msg.push(0x80);
     while msg.len() % 64 != 56 { msg.push(0); }
     msg.extend_from_slice(&ml.to_be_bytes());
-
-    for chunk in msg.chunks(64) {
-        let mut w = [0u32; 64];
-        for i in 0..16 { w[i] = u32::from_be_bytes([chunk[i*4], chunk[i*4+1], chunk[i*4+2], chunk[i*4+3]]); }
-        for i in 16..64 {
-            let s0 = w[i-15].rotate_right(7) ^ w[i-15].rotate_right(18) ^ (w[i-15] >> 3);
-            let s1 = w[i-2].rotate_right(17) ^ w[i-2].rotate_right(19) ^ (w[i-2] >> 10);
-            w[i] = w[i-16].wrapping_add(s0).wrapping_add(w[i-7]).wrapping_add(s1);
-        }
-        let (mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut hh) = (h[0],h[1],h[2],h[3],h[4],h[5],h[6],h[7]);
-        for i in 0..64 {
-            let s1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
-            let ch = (e & f) ^ ((!e) & g);
-            let temp1 = hh.wrapping_add(s1).wrapping_add(ch).wrapping_add(SHA256_K[i]).wrapping_add(w[i]);
-            let s0 = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
-            let maj = (a & b) ^ (a & c) ^ (b & c);
-            let temp2 = s0.wrapping_add(maj);
-            hh = g; g = f; f = e; e = d.wrapping_add(temp1); d = c; c = b; b = a; a = temp1.wrapping_add(temp2);
-        }
-        h[0]=h[0].wrapping_add(a); h[1]=h[1].wrapping_add(b); h[2]=h[2].wrapping_add(c); h[3]=h[3].wrapping_add(d);
-        h[4]=h[4].wrapping_add(e); h[5]=h[5].wrapping_add(f); h[6]=h[6].wrapping_add(g); h[7]=h[7].wrapping_add(hh);
-    }
+    for chunk in msg.chunks(64) { sha256_kompres(&mut h, chunk); }
     let mut out = [0u8; 32];
     for i in 0..8 { out[i*4..i*4+4].copy_from_slice(&h[i].to_be_bytes()); }
     out
+}
+
+pub fn sha256(input: &[u8]) -> [u8; 32] { sha256_tutup(SHA256_IV, input, 0) }
+
+/// HMAC-SHA256 dengan kunci yang sudah disiapkan: state sesudah blok ipad/opad dihitung SEKALI, jadi tiap tanda
+/// tangan cuma mengompres pesannya — PBKDF2 dulu membayar empat kompresi dan alokasi per putaran.
+pub struct HmacSha256 { dalam: [u32; 8], luar: [u32; 8] }
+
+impl HmacSha256 {
+    pub fn baru(key: &[u8]) -> HmacSha256 {
+        let mut k = [0u8; 64];
+        if key.len() > 64 { k[..32].copy_from_slice(&sha256(key)); } else { k[..key.len()].copy_from_slice(key); }
+        let (mut dalam, mut luar) = (SHA256_IV, SHA256_IV);
+        sha256_kompres(&mut dalam, &k.map(|b| b ^ 0x36));
+        sha256_kompres(&mut luar, &k.map(|b| b ^ 0x5c));
+        HmacSha256 { dalam, luar }
+    }
+    pub fn tanda(&self, msg: &[u8]) -> [u8; 32] {
+        let dalam = sha256_tutup(self.dalam, msg, 64);
+        sha256_tutup(self.luar, &dalam, 64)
+    }
+    /// `tanda` atas tepat 32 byte (putaran PBKDF2) dengan dua blok tetap, tanpa alokasi.
+    pub fn tanda32(&self, m: &[u8; 32]) -> [u8; 32] {
+        let mut blok = [0u8; 64];
+        blok[32] = 0x80;
+        blok[62] = 0x03; // panjang total 64 + 32 byte = 768 bit
+        let jadi = |mut h: [u32; 8], isi: &[u8], blok: &mut [u8; 64]| {
+            blok[..32].copy_from_slice(isi);
+            sha256_kompres(&mut h, blok);
+            let mut o = [0u8; 32];
+            for i in 0..8 { o[i*4..i*4+4].copy_from_slice(&h[i].to_be_bytes()); }
+            o
+        };
+        let dalam = jadi(self.dalam, m, &mut blok);
+        jadi(self.luar, &dalam, &mut blok)
+    }
 }
 
 const SHA512_K: [u64; 80] = [
@@ -208,18 +309,7 @@ pub fn sha512(input: &[u8]) -> [u8; 64] {
     out
 }
 
-pub fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] {
-    const BLOCK: usize = 64;
-    let mut key_block = if key.len() > BLOCK { sha256(key).to_vec() } else { key.to_vec() };
-    key_block.resize(BLOCK, 0);
-    let mut ipad = vec![0x36u8; BLOCK];
-    let mut opad = vec![0x5cu8; BLOCK];
-    for i in 0..BLOCK { ipad[i] ^= key_block[i]; opad[i] ^= key_block[i]; }
-    let mut inner = ipad; inner.extend_from_slice(msg);
-    let inner_hash = sha256(&inner);
-    let mut outer = opad; outer.extend_from_slice(&inner_hash);
-    sha256(&outer)
-}
+pub fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] { HmacSha256::baru(key).tanda(msg) }
 
 pub use crate::kompres::crc32;
 
@@ -528,7 +618,7 @@ pub fn f_random_int(args: &[Value]) -> Result<Value, String> {
 // rahasia — cache-nya membocorkan kunci lewat waktu (Bernstein 2005). Perangkat keras dulu, sisanya hitungan.
 #[cfg(test)]
 fn sbox() -> &'static [u8; 256] {
-    static SBOX: OnceLock<[u8; 256]> = OnceLock::new();
+    static SBOX: std::sync::OnceLock<[u8; 256]> = std::sync::OnceLock::new();
     SBOX.get_or_init(|| [
         0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,
         0xca,0x82,0xc9,0x7d,0xfa,0x59,0x47,0xf0,0xad,0xd4,0xa2,0xaf,0x9c,0xa4,0x72,0xc0,
@@ -551,7 +641,7 @@ fn sbox() -> &'static [u8; 256] {
 
 #[cfg(test)]
 fn inv_sbox() -> &'static [u8; 256] {
-    static INV: OnceLock<[u8; 256]> = OnceLock::new();
+    static INV: std::sync::OnceLock<[u8; 256]> = std::sync::OnceLock::new();
     INV.get_or_init(|| {
         let s = sbox();
         let mut inv = [0u8; 256];
@@ -1044,5 +1134,33 @@ mod uji_aes {
                 assert_eq!(l.buka(&b), h.buka(&b));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod uji_hmac {
+    use super::*;
+    /// RFC 4231 kasus 1 dan 6 (kunci lebih panjang dari blok), dan `tanda32` sama dengan `tanda` umum.
+    #[test]
+    fn hmac_rfc4231_dan_jalur_pbkdf2_sama() {
+        assert_eq!(hex_encode(&hmac_sha256(&[0x0b; 20], b"Hi There")),
+                   "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7");
+        assert_eq!(hex_encode(&hmac_sha256(&[0xaa; 131], b"Test Using Larger Than Block-Size Key - Hash Key First")),
+                   "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54");
+        assert_eq!(hex_encode(&sha256(b"abc")), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+        // SHA-NI (kalau ada) sama dengan jalur skalar atas blok dan state acak.
+        let mut x = 88172645463325252u64;
+        for _ in 0..500 {
+            let mut acak = || { x ^= x << 13; x ^= x >> 7; x ^= x << 17; x };
+            let h0: [u32; 8] = core::array::from_fn(|_| acak() as u32);
+            let b: [u8; 64] = core::array::from_fn(|_| acak() as u8);
+            let (mut p, mut q) = (h0, h0);
+            sha256_kompres(&mut p, &b);
+            sha256_kompres_lunak(&mut q, &b);
+            assert_eq!(p, q);
+        }
+        let mac = HmacSha256::baru(b"kunci");
+        let mut u = [7u8; 32];
+        for _ in 0..50 { assert_eq!(mac.tanda32(&u), mac.tanda(&u)); u = mac.tanda(&u); }
     }
 }
