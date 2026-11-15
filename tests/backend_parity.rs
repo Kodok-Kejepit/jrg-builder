@@ -3166,11 +3166,14 @@ pub fn main() {
                 && interp[7].contains("rusak=false"),
             "verifikasi sandi salah:\n{}", interp[7]);
 
+        // Cookie sesi membawa cap waktu (Fase AMAN-47), jadi dua mesin yang jalan di detik berbeda menandatangani
+        // muatan berbeda: nilainya diganti penanda, bentuk dan atribut `Set-Cookie` tetap dibandingkan utuh.
+        let rata = |r: &str| match r.find("sesi=") {
+            Some(i) => { let j = r[i..].find(';').map(|k| i + k).unwrap_or(r.len()); format!("{}sesi=<sesi>{}", &r[..i], &r[j..]) }
+            None => r.to_string(),
+        };
         for (i, (a, b)) in interp.iter().zip(vm.iter()).enumerate() {
-            // Cookie sesi memuat tanda tangan yang sama (kuncinya tetap), tapi
-            // `Set-Cookie` di respons `/pasang` identik juga — tidak ada
-            // sumber acak di dalamnya.
-            assert_eq!(a, b, "respons ke-{} berbeda antar backend", i);
+            assert_eq!(rata(a), rata(b), "respons ke-{} berbeda antar backend", i);
         }
     }
 }

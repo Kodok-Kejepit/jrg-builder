@@ -22,6 +22,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **Bacaan berkas utuh berbatas 256 MiB** (`fs::read` dan kawan-kawannya, `file::read`, `zip::`/`tar::` dari jalur,
   `wasm::muat`, berkas statis `dok::serve`): yang lebih besar, atau perangkat tanpa ujung seperti `/dev/zero`, jadi
   galat berkalimat alih-alih menghabiskan memori mesin.
+- **`jrgm build` tidak memasang paket Python lagi** — cuma melaporkan modul yang belum ada; `jrgm run` tetap
+  memasangnya. Memeriksa modul tidak lagi menjalankan `__init__.py` milik proyek.
 - **Respons `dok::serve` membawa `X-Content-Type-Options: nosniff`** (kecuali aplikasi memasangnya sendiri).
 - **Runner `py::`/`js::`/`php::` pindah ke `~/.cache/jrgc/runner`**, dan berkas kerja `--emit-llvm`, `jrgm exec`
   dan `--apk` di folder sementara baru bermode 0700 — dulu nama tebakan di `/tmp` bisa disiapkan pemakai lain.
