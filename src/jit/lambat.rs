@@ -98,7 +98,7 @@ fn timpa(tempat: &mut VmValue, v: VmValue) {
 /// `Vec::truncate` untuk bingkai callee: skalar tanpa destruktor dilewati tanpa memanggil `drop_glue`. Panjangnya
 /// dipendekkan lebih dulu, jadi destruktor yang panik membocorkan sisanya, bukan melepasnya dua kali.
 #[inline(always)]
-fn potong(stack: &mut Vec<VmValue>, n: usize) {
+pub(super) fn potong(stack: &mut Vec<VmValue>, n: usize) {
     let len = stack.len();
     if n >= len { return; }
     unsafe {

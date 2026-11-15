@@ -175,6 +175,9 @@ fn konformans_semantik_nilai_jalan_di_dua_backend() {
 
 /// Program yang WAJIB ditolak oleh KEDUA backend, dengan alasan yang sama.
 const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
+    // Fase AMAN-52 (#1041): broadcast dan `matmul` berbatas seperti pembangun — dua masukan 800 KB dulu minta 80 GB.
+    ("wokwok broadcast kegedean", "wok(wokwok::mul(wokwok::ones([100000, 1]), wokwok::ones([1, 100000])))\n", "wokwok `*`: minta 10000000000 elemen (~76293 MiB) — batasnya 33554432 elemen (256 MiB)", "wokwok `*`: minta 10000000000 elemen (~76293 MiB) — batasnya 33554432 elemen (256 MiB)"),
+    ("wokwok::matmul kegedean", "wok(wokwok::matmul(wokwok::ones([100000, 1]), wokwok::ones([1, 100000])))\n", "wokwok::matmul: minta 10000000000 elemen (~76293 MiB) — batasnya 33554432 elemen (256 MiB)", "wokwok::matmul: minta 10000000000 elemen (~76293 MiB) — batasnya 33554432 elemen (256 MiB)"),
     // Fase AMAN-51 (#1040): pegangan pustaka berwujud struct tidak jadi `{"id":1}` di JSON — ditolak seperti `Mutex`.
     ("json::stringify atas Ptr di larik", "let p = ptr::new(1)\n wok(json::stringify([p]))\n", "`Ptr` tidak punya padanan di JSON, jadi ia tidak bisa disandikan", "`Ptr` tidak punya padanan di JSON, jadi ia tidak bisa disandikan"),
     ("dok::json_encode atas Future", "let f = Future::new(|| 1)\n wok(dok::json_encode([f]))\n", "`Future` tidak punya padanan di JSON, jadi ia tidak bisa disandikan", "`Future` tidak punya padanan di JSON, jadi ia tidak bisa disandikan"),

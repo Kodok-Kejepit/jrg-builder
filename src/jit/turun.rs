@@ -683,6 +683,16 @@ fn isi_tepi(
     }
 }
 
+/// Nilai `iconst` yang mendefinisikan `v` (di blok yang sama), kalau memang konstanta.
+fn konstanta_iconst(b: &FunctionBuilder, v: Value) -> Option<i64> {
+    use cranelift_codegen::ir::{InstructionData, Opcode, ValueDef};
+    let ValueDef::Result(i, _) = b.func.dfg.value_def(v) else { return None };
+    match b.func.dfg.insts[i] {
+        InstructionData::UnaryImm { opcode: Opcode::Iconst, imm } => Some(imm.bits()),
+        _ => None,
+    }
+}
+
 /// Operasi atas `Jenis::Lebar`; `false` = bukan bentuk `Lebar` (lowering biasa yang menanganinya).
 #[allow(clippy::too_many_arguments)]
 fn turun_lebar(
@@ -767,6 +777,20 @@ fn turun_lebar(
         // Geseran 0-127 atas 128 bit (bit yang keluar dibuang, seperti `checked_shl` VM); selain itu VM melapor.
         OpCode::Shl | OpCode::Shr if t >= 2 && s[t - 2] == Lebar && s[t - 1] == Bulat => {
             let (x, y) = (b.use_var(v128[t - 2]), b.use_var(var[t - 1]));
+            // Jumlah geser konstan 1-63: dua geser 64 bit, bukan geser 128 bit generik (yang tidak dilipat Cranelift).
+            if let Some(kk @ 1..=63) = konstanta_iconst(b, y) {
+                let (lo, hi) = b.ins().isplit(x);
+                let (nlo, nhi) = if op == OpCode::Shl {
+                    let (a1, a2) = (b.ins().ishl_imm_u(hi, kk), b.ins().ushr_imm_u(lo, 64 - kk));
+                    (b.ins().ishl_imm_u(lo, kk), b.ins().bor(a1, a2))
+                } else {
+                    let (a1, a2) = (b.ins().ushr_imm_u(lo, kk), b.ins().ishl_imm_u(hi, 64 - kk));
+                    (b.ins().bor(a1, a2), b.ins().sshr_imm_u(hi, kk))
+                };
+                let h = b.ins().iconcat(nlo, nhi);
+                b.def_var(v128[t - 2], h);
+                return true;
+            }
             let salah = b.ins().icmp_imm_u(IntCC::UnsignedGreaterThan, y, 127);
             jaga(b, k, var, salah, ip, s);
             let h = if op == OpCode::Shl { b.ins().ishl(x, y) } else { b.ins().sshr(x, y) };
