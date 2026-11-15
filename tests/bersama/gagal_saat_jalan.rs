@@ -67,6 +67,16 @@ const GAGAL_SAAT_JALAN: &[(&str, &str, &str, &str)] = &[
     ("env::set nama ber-`=`", "package main\npub fn main() { wok(\"a\")\n env::set(\"A=B\", \"1\") }", "a", "env::set: nama variabel \"A=B\" tidak sah — tidak boleh kosong, dan tidak boleh berisi `=` atau karakter NUL"),
     ("env::set nama ber-NUL", "package main\npub fn main() { wok(\"a\")\n env::set(\"A\" + str(rune(0)) + \"B\", \"1\") }", "a", "env::set: nama variabel \"A\\0B\" tidak sah"),
     ("env::set nilai ber-NUL", "package main\npub fn main() { wok(\"a\")\n env::set(\"JRG_UJI_NUL\", \"x\" + str(rune(0))) }", "a", "env::set: nilai untuk `JRG_UJI_NUL` berisi karakter NUL"),
+    // Fase SEBAR-CLOSURE: spread berpanjang tetap yang jumlahnya salah gagal SAAT JALAN dengan kalimat acuan, ke closure
+    // ber-`let` maupun fungsi bernama — dulu LLVM menolaknya saat kompilasi ("butuh 2 argumen, diberi 1").
+    ("spread kurang ke closure", "package main\npub fn main() { let f = |a, b| a + b\n wok(\"a\")\n let v = [1]\n wok(f(...v)) }", "a",
+     "fungsi `<closure>`: parameter `b` (posisi 2) wajib diisi — tidak dapat argumen dan tidak punya nilai default"),
+    ("spread kelebihan ke closure", "package main\npub fn main() { let f = |a, b| a + b\n wok(\"a\")\n var v = []\n for i in 0..3 { v = arr::push(v, i) }\n wok(f(...v)) }", "a",
+     "fungsi `<closure>` kebanyakan argumen — dia cuma menerima 2, tapi dikasih 3."),
+    ("spread berpanjang tetap kurang ke fungsi bernama", "package main\nfn f(a, b) { return a + b }\npub fn main() { wok(\"a\")\n let v = [1]\n wok(f(...v)) }", "a",
+     "fungsi `f`: parameter `b` (posisi 2) wajib diisi — tidak dapat argumen dan tidak punya nilai default"),
+    ("spread berpanjang tetap kelebihan ke fungsi bernama", "package main\nfn f(a, b) { return a + b }\npub fn main() { wok(\"a\")\n wok(f(...[1, 2, 3])) }", "a",
+     "fungsi `f` kebanyakan argumen — dia cuma menerima 2, tapi dikasih 3."),
     // Fase AMAN-44 (#1021): kunci JSON kembar ditolak di tiga mesin, satu pengurai (`json_inti`).
     ("json::parse: kunci kembar", "package main\npub fn main() { wok(\"a\")\n wok(json::parse(\"{\\\"a\\\": 1, \\\"a\\\": 2}\")) }", "a", "json::parse: kunci `a` muncul dua kali di satu objek — pengurai lain bisa memilih yang pertama"),
     ("json::parse: kunci kembar lewat escape", "package main\npub fn main() { wok(\"a\")\n wok(json::parse(\"{\\\"admin\\\": false, \\\"adm\\\\u0069n\\\": true}\")) }", "a", "json::parse: kunci `admin` muncul dua kali di satu objek"),

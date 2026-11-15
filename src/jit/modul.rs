@@ -110,6 +110,9 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
             jb.symbol("jrg_jit_baca_pecahan", lambat::baca_pecahan as *const u8);
             jb.symbol("jrg_jit_jenis_sama", lambat::jenis_sama as *const u8);
             jb.symbol("jrg_jit_panjang", lambat::panjang as *const u8);
+            jb.symbol("jrg_jit_panjang_lokal", lambat::panjang_lokal as *const u8);
+            jb.symbol("jrg_jit_payload_jenis_sama", lambat::payload_jenis_sama as *const u8);
+            jb.symbol("jrg_jit_payload_panjang", lambat::payload_panjang as *const u8);
             jb.symbol("jrg_jit_buka_lokal", lambat::buka_lokal as *const u8);
             jb.symbol("jrg_jit_iter_ada", lambat::iter_ada as *const u8);
             jb.symbol("jrg_jit_maju", lambat::maju as *const u8);
@@ -170,6 +173,9 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
                 baca_pecahan: impor("jrg_jit_baca_pecahan", &[I64, I64, p], Some(I32))?,
                 jenis_sama: impor("jrg_jit_jenis_sama", &[I64, I64], Some(I32))?,
                 panjang: impor("jrg_jit_panjang", &[I64, p], Some(I32))?,
+                panjang_lokal: impor("jrg_jit_panjang_lokal", &[I64, p], Some(I32))?,
+                payload_jenis_sama: impor("jrg_jit_payload_jenis_sama", &[I64, I64], Some(I32))?,
+                payload_panjang: impor("jrg_jit_payload_panjang", &[I64, p], Some(I32))?,
                 buka_lokal: impor("jrg_jit_buka_lokal", &[I64, I32, p], Some(I32))?,
                 iter_ada: impor("jrg_jit_iter_ada", &[I64], Some(I32))?,
                 maju: impor("jrg_jit_maju", &[I64], Some(I32))?,

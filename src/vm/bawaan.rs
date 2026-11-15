@@ -292,7 +292,7 @@ impl Vm {
 
         // Builtins
         self.def("len", |a| match a.get(0) {
-            Some(Str(s))   => Ok(Int(s.chars().count() as i128)),
+            Some(Str(s))   => Ok(Int(crate::vm::value::jumlah_karakter(s) as i128)),
             Some(Array(v)) => Ok(Int(v.lock().unwrap().len() as i128)),
             Some(Tuple(t)) => Ok(Int(crate::vm::value::isi_tuple(t).len() as i128)),
             Some(Channel(c)) => Ok(Int(c.len() as i128)),
@@ -610,7 +610,7 @@ impl Vm {
         // ──────────
 
         // Ketiganya lewat `teks_vm`; dulu menjawab bentuk tanda tangannya.
-        self.def("str::len", |a| Ok(Int(teks_vm(a.get(0), "str::len")?.chars().count() as i128)));
+        self.def("str::len", |a| Ok(Int(crate::vm::value::jumlah_karakter(&teks_vm(a.get(0), "str::len")?) as i128)));
         self.def("str::to_uppercase",
             |a| Ok(Str(Arc::new(teks_vm(a.get(0), "str::to_uppercase")?.to_uppercase()))));
         self.def("str::to_lowercase",

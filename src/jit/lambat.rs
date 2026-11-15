@@ -237,6 +237,18 @@ pub extern "C" fn panjang(p: i64, keluar: *mut i64) -> i32 {
     }
 }
 
+/// `len(x)` atas lokal `slot` (sel tangkapan: isinya) lewat `Vm::vm_len`, tanpa menyalinnya ke stack VM:
+/// panjangnya di `*keluar`; 1 = galat, VM yang melaporkannya.
+pub extern "C" fn panjang_lokal(slot: i64, keluar: *mut i64) -> i32 {
+    let (vm, basis) = konteks();
+    let n = match vm.stack.get(basis + slot as usize) {
+        Some(VmValue::Cell(c)) => vm.vm_len(&c.lock().unwrap_or_else(|p| p.into_inner()), None),
+        Some(v) => vm.vm_len(v, None),
+        None => return 1,
+    };
+    match n { Ok(n) => { unsafe { *keluar = n as i64 }; 0 } Err(_) => 1 }
+}
+
 /// `str::char_at(teks, i)` atas posisi `p` milik VM: kode karakternya; −1 = jalur bawaan umum (indeks negatif
 /// atau di luar batas, bukan teks — yang juga melapor galatnya). Prefiks ASCII lewat indeks byte.
 pub extern "C" fn karakter(p: i64, i: i64) -> i64 {
@@ -250,14 +262,28 @@ pub extern "C" fn karakter(p: i64, i: i64) -> i64 {
 
 /// `karakter` atas teks di lokal `slot` (salinan maya, `Jenis::Salinan`), dibaca di tempat.
 pub extern "C" fn karakter_lokal(slot: i64, i: i64) -> i64 {
-    if i < 0 { return -1; }
-    lihat_lokal(slot, |v| {
-        let VmValue::Str(s) = v else { return -1 };
+    let (vm, basis) = konteks();
+    if let (true, Some(VmValue::Str(s))) = (i >= 0, vm.stack.get(basis + slot as usize)) {
         let (b, i) = (s.as_bytes(), i as usize);
-        if i < b.len() && b[..=i].is_ascii() { return b[i] as i64; }
-        s.chars().nth(i).map_or(-1, |c| c as i64)
+        if i < b.len() && crate::vm::value::prefiks_ascii(b, i + 1) { return b[i] as i64; }
+    }
+    karakter_lambat(slot, i)
+}
+
+/// Sisa `karakter_lokal`: sel tangkapan, teks bukan ASCII sebelum `i`, indeks negatif (dari belakang,
+/// `normal_indeks`). −1 cuma untuk galat (di luar batas, bukan teks), yang dilaporkan VM.
+#[cold]
+#[inline(never)]
+fn karakter_lambat(slot: i64, i: i64) -> i64 {
+    lihat_lokal(slot, |v| match v {
+        VmValue::Str(s) => {
+            let k = if i >= 0 { Some(i as usize) } else { crate::interpreter::normal_indeks(i as i128, s.chars().count(), false) };
+            k.and_then(|k| s.chars().nth(k)).map_or(-1, |c| c as i64)
+        }
+        _ => -1,
     }).unwrap_or(-1)
 }
+
 
 /// VM menjalankan instruksi `ip` bingkai terluar. Stack VM dipotong ke `t` posisi dan `tumpah` posisi
 /// teratas diisi dari `nilai` (posisi `Nilai` sudah di sana). `Some(sesudah)`: tinggi yang diharapkan,
@@ -859,6 +885,33 @@ pub extern "C" fn payload_angka_lokal(slot: i64, ke: i64, jenis: i32, keluar: *m
     }
 }
 
+/// `AmbilPayload; Typeof; Const; Eq` atas lokal `slot`: 1 kalau nama jenis payload-nya (`VmValue::type_name`)
+/// sama dengan teks konstanta `nama`, 0 kalau tidak; 2 = bukan enum berpayload (VM yang menjalankannya).
+pub extern "C" fn payload_jenis_sama(slot: i64, nama: *const VmValue) -> i32 {
+    let VmValue::Str(n) = (unsafe { &*nama }) else { return 2 };
+    lihat_lokal(slot, |v| match v.bagian_enum() {
+        Some((_, _, Some(isi))) => (isi.type_name() == n.as_str()) as i32,
+        _ => 2,
+    }).unwrap_or(2)
+}
+
+/// `AmbilPayload; Len` atas lokal `slot` (`Vm::vm_len` atas payload-nya): panjangnya di `*keluar`; 1 = bukan
+/// enum berpayload atau tak berpanjang (VM yang menjalankannya dan melapor).
+pub extern "C" fn payload_panjang(slot: i64, keluar: *mut i64) -> i32 {
+    let (vm, basis) = konteks();
+    let vm: &Vm = vm;
+    let ukur = |v: &VmValue| match v.bagian_enum() {
+        Some((_, _, Some(isi))) => vm.vm_len(isi, None).ok(),
+        _ => None,
+    };
+    let n = match vm.stack.get(basis + slot as usize) {
+        Some(VmValue::Cell(c)) => ukur(&c.lock().unwrap_or_else(|p| p.into_inner())),
+        Some(v) => ukur(v),
+        None => None,
+    };
+    match n { Some(n) => { unsafe { *keluar = n as i64 }; 0 } None => 1 }
+}
+
 /// `LoadLocal` + `AmbilPayload`: posisi `ke` = payload lokal `slot`; 1 = VM yang menjalankan keduanya.
 pub extern "C" fn payload_lokal(slot: i64, ke: i64) -> i32 {
     let Some(Some(isi)) = lihat_lokal(slot, |v| match v.bagian_enum() {
@@ -1303,13 +1356,13 @@ pub(crate) fn dengan_konteks<T>(vm: *mut Vm, basis: usize, f: impl FnOnce() -> T
 }
 
 /// Slot lokal `rel` bingkai terluar sebagai larik (bukan sel tangkapan): `f` atas isinya.
-fn atas_larik<T>(rel: i64, f: impl FnOnce(&mut VmValue) -> Option<T>) -> Option<T> {
+fn atas_larik<T>(rel: i64, tuple: bool, f: impl FnOnce(&mut VmValue) -> Option<T>) -> Option<T> {
     let (vm, basis) = KONTEKS.with(|k| k.get());
     if vm.is_null() { return None; }
     // Kode native berjalan di dalam `panggil::jalankan`, yang tidak menyentuh VM sampai kode itu kembali.
     let vm = unsafe { &mut *vm };
     let tempat = vm.stack.get_mut(basis.checked_add(usize::try_from(rel).ok()?)?)?;
-    if !matches!(tempat, VmValue::Array(_)) { return None; }
+    if !(matches!(tempat, VmValue::Array(_)) || tuple && matches!(tempat, VmValue::Tuple(_))) { return None; }
     f(tempat)
 }
 
@@ -1348,10 +1401,11 @@ pub extern "C" fn baca_pecahan(rel: i64, i: i64, keluar: *mut i64) -> i32 {
 
 #[inline(always)]
 fn baca_dengan(rel: i64, keluar: *mut i64, bulat: impl Fn(&[VmValue]) -> Option<i64>) -> i32 {
-    let v = atas_larik(rel, |t| {
+    // Tuple dibaca dengan aturan indeks yang sama (`GetIndex` atas salinan maya).
+    let v = atas_larik(rel, true, |t| {
         // Milik tunggal: tanpa kunci (aturan `IndeksLokal` VM).
         if let Some(g) = crate::vm::larik_milik_tunggal(t) { return bulat(g); }
-        let VmValue::Array(a) = t else { return None };
+        let (VmValue::Array(a) | VmValue::Tuple(a)) = t else { return None };
         let g = a.lock().unwrap_or_else(|p| p.into_inner());
         bulat(&g)
     });
@@ -1364,7 +1418,7 @@ fn baca_dengan(rel: i64, keluar: *mut i64, bulat: impl Fn(&[VmValue]) -> Option<
 /// `TulisIndexLokal`: elemen ke-`i` = nilai berjenis `jenis` (1 bulat, 2 bool, 5 pecahan); 0 = tertulis.
 pub extern "C" fn tulis(rel: i64, i: i64, nilai: i64, jenis: i32) -> i32 {
     let Some(v) = skalar_kode(jenis, nilai) else { return 1 };
-    let ok = atas_larik(rel, |t| {
+    let ok = atas_larik(rel, false, |t| {
         if let Some(g) = crate::vm::larik_milik_tunggal(t) {
             let k = norm_indeks(i, g.len())?;
             g[k] = v;

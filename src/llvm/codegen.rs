@@ -191,6 +191,9 @@ pub struct Codegen {
     /// diturunkan — supaya closure di sisi kanannya tahu ia akan dipanggil
     /// dengan nama apa.
     pub nama_diikat: Option<String>,
+    /// Parameter closure literal yang diikat `let` (bukan `var`, yang bisa ditugasi closure lain), menurut penunjuk
+    /// alloca lokalnya — `f(...v)`/`f(a: 1)` atas lokal itu disusun saat kompilasi seperti fungsi bernama.
+    pub param_closure: HashMap<String, Vec<crate::parser::FnParam>>,
     /// Lihat `get_place`: langkah antara jalur tulis tidak boleh menumbuhkan dict.
     pub tulis_antara: bool,
     /// Rantai tipe argumen untuk closure yang dikembalikan dari badan yang
@@ -365,6 +368,7 @@ impl Codegen {
             tipe_argumen: HashMap::new(),
             paruh_result: HashMap::new(),
             nama_diikat: None,
+            param_closure: HashMap::new(),
             tulis_antara: false,
             rantai_hasil: Vec::new(),
             catatan_koersi: None,

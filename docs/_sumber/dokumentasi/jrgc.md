@@ -7,6 +7,7 @@ ringkas: Menjalankan, memeriksa, menguji, dan mengompilasi berkas .jrg.
 ```sh
 jrgc program.jrg              # interpreter
 jrgc program.jrg --vm         # VM bytecode
+jrgc program.jrg --jit        # VM plus kode mesin untuk bagian yang panas
 jrgc program.jrg --emit-llvm  # native, lewat clang
 jrgc program.jrg -- a b c     # argumen untuk programnya, dibaca lewat env::args()
 jrgc program.jrg --watch      # jalankan ulang tiap berkasnya berubah
@@ -66,7 +67,7 @@ jrgc program.jrg --apk app.apk                     # APK Android dari satu berka
 | `--strip`, `--no-gc-sections` | ukuran biner |
 
 Backend native belum menerima seluruh bahasa; yang belum ada ditolak dengan alasannya. Lihat
-[Tiga mesin](mesin.html).
+[Empat mesin](mesin.html).
 
 ## Pesan galat
 

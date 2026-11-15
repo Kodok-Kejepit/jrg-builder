@@ -8,31 +8,15 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Memutus
 
-- **`dok::serve` mendengar di `127.0.0.1` kalau alamatnya tidak ditulis** (dulu `0.0.0.0`). Server di belakang
-  proxy di mesin yang sama tetap jalan; untuk membukanya ke jaringan tulis `dok::serve(r, port, "0.0.0.0")`.
-- **WebSocket dari peramban ditolak 403 kalau host `Origin`-nya lain dari `Host`** (port boleh beda), supaya halaman
-  dari situs lain tidak bisa membuka koneksi atas nama pengunjung. Klien tanpa `Origin` tetap diterima.
 - **`json::parse` dan `dok::json_decode` menolak kunci kembar di satu objek** (juga yang kembar lewat escape,
   `"adm\u0069n"` lawan `"admin"`). Dulu yang terakhir menang diam-diam, padahal pengurai lain memilih yang pertama.
-- **`select` dengan beberapa lengan yang siap sekaligus memilih secara acak** di semua mesin (dulu `--vm` dan
-  `--emit-llvm` selalu memilih yang pertama).
-- **`let`/`const` lokal yang bernama sama dengan varian enum milik berkasnya ditolak**, dengan kalimat yang sama
-  seperti di tingkat atas — nama telanjangnya selalu berarti varian.
-
 - **Bacaan berkas utuh berbatas 256 MiB** (`fs::read` dan kawan-kawannya, `file::read`, `zip::`/`tar::` dari jalur,
   `wasm::muat`, berkas statis `dok::serve`): yang lebih besar, atau perangkat tanpa ujung seperti `/dev/zero`, jadi
   galat berkalimat alih-alih menghabiskan memori mesin.
 - **`jrgm build` tidak memasang paket Python lagi** — cuma melaporkan modul yang belum ada; `jrgm run` tetap
   memasangnya. Memeriksa modul tidak lagi menjalankan `__init__.py` milik proyek.
-- **Respons `dok::serve` membawa `X-Content-Type-Options: nosniff`** (kecuali aplikasi memasangnya sendiri).
-- **Runner `py::`/`js::`/`php::` pindah ke `~/.cache/jrgc/runner`**, dan berkas kerja `--emit-llvm`, `jrgm exec`
-  dan `--apk` di folder sementara baru bermode 0700 — dulu nama tebakan di `/tmp` bisa disiapkan pemakai lain.
 - **Sesi `dok::session_*` punya masa berlaku**: cap waktunya ikut ditandatangani, dan `dok::session_decode` menolak
   sesi yang lebih tua dari 14 hari (atau dari argumen ketiga, dalam detik). Cookie sesi lama perlu masuk ulang sekali.
-- **`dok::password_hash` bawaannya 600 000 putaran** (dulu 210 000, angka OWASP untuk SHA-512, bukan SHA-256), dan
-  HMAC-SHA256 jauh lebih cepat (SHA-NI bila ada). Hash lama tetap bisa diperiksa.
-- **AES (`crypto::seal`, `crypto::aes_*`) tidak lagi membocorkan kunci lewat waktu**: AES-NI di x86_64, dan hitungan
-  waktu-tetap tanpa tabel di platform lain. `crypto::random_int` tanpa bias modulo.
 - **Kanvas mode `web` cuma melayani halamannya sendiri**: `Host` lain (DNS rebinding) dan permintaan dari situs lain
   ditolak 403, jadi halaman web lain tidak bisa membaca layar program atau mengirim tombol ke sana.
 - **`dok::router_static` tidak menyajikan berkas atau folder bertitik** (`.env`, `.git/`, `.htpasswd`) — dijawab
@@ -41,6 +25,32 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   sebagai `\u{..}`, dan `"` di nilai field teks di-escape — teks dari luar tidak bisa lagi memalsukan baris log.
 - **`str::replace`, `re::replace`/`re::replace_all` dan `str::join`/`arr::join` menolak hasil di atas 256 MiB**,
   seperti `str::repeat`: dulu teks 1 MB dengan pengganti 10 KB mematikan prosesnya.
+
+### Diperbaiki
+
+- **Respons `dok::serve` membawa `X-Content-Type-Options: nosniff`** (kecuali aplikasi memasangnya sendiri).
+- **Runner `py::`/`js::`/`php::` pindah ke `~/.cache/jrgc/runner`**, dan berkas kerja `--emit-llvm`, `jrgm exec`
+  dan `--apk` di folder sementara baru bermode 0700 — dulu nama tebakan di `/tmp` bisa disiapkan pemakai lain.
+- **`dok::password_hash` bawaannya 600 000 putaran** (dulu 210 000, angka OWASP untuk SHA-512, bukan SHA-256), dan
+  HMAC-SHA256 jauh lebih cepat (SHA-NI bila ada). Hash lama tetap bisa diperiksa.
+- **AES (`crypto::seal`, `crypto::aes_*`) tidak lagi membocorkan kunci lewat waktu**: AES-NI di x86_64, dan hitungan
+  waktu-tetap tanpa tabel di platform lain. `crypto::random_int` tanpa bias modulo.
+- **`--emit-llvm`: `f(...v)` dan `f(a: 1)` ke closure yang diikat `let` jalan**, seperti interpreter dan `--vm`
+  (dulu ditolak saat kompilasi). Spread berjumlah salah gagal saat jalan dengan kalimat yang sama dengan interpreter.
+
+## [0.3.0] — 2026-11-15
+
+### Memutus
+
+- **`dok::serve` mendengar di `127.0.0.1` kalau alamatnya tidak ditulis** (dulu `0.0.0.0`). Server di belakang
+  proxy di mesin yang sama tetap jalan; untuk membukanya ke jaringan tulis `dok::serve(r, port, "0.0.0.0")`.
+- **WebSocket dari peramban ditolak 403 kalau host `Origin`-nya lain dari `Host`** (port boleh beda), supaya halaman
+  dari situs lain tidak bisa membuka koneksi atas nama pengunjung. Klien tanpa `Origin` tetap diterima.
+- **`select` dengan beberapa lengan yang siap sekaligus memilih secara acak** di semua mesin (dulu `--vm` dan
+  `--emit-llvm` selalu memilih yang pertama).
+- **`let`/`const` lokal yang bernama sama dengan varian enum milik berkasnya ditolak**, dengan kalimat yang sama
+  seperti di tingkat atas — nama telanjangnya selalu berarti varian.
+
 - **Klien HTTP (`http::`, `dok::http_request`) menolak kepala `Content-Length`, `Transfer-Encoding` dan
   `Connection` dari pemakai**, dan `Host` yang ditulis dua kali — keduanya dulu terkirim di samping milik klien
   sendiri, sehingga server dan proxy bisa membaca batas permintaan berbeda. `Host` yang ditulis sekali sekarang
@@ -203,6 +213,10 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Kinerja
 
+- **`--jit` sekarang juga mengompilasi kode yang memegang struct, enum, larik dan teks**, bukan cuma bilangan
+  bulat: field dibaca lewat tembolok bentuk, `match` atas enum diputuskan sekali per rantai lengan, fungsi kecil
+  dipanggil tanpa bingkai VM, dan `len`/`str::char_at` atas teks lokal tanpa salinan. `string_ops` penuh
+  `--vm` 9,3 s, `--jit` 0,70 s.
 - **`let r = arr::pop(a)` lalu `a = r[0]`, dan `a, x = a.pop()`, sekarang linear** di interpreter dan `--vm`
   (dulu menyalin seluruh larik tiap langkah: 16 000 pop 2,2 s → 38 ms).
 - `xml::parse` linear dalam jumlah atribut (160 ribu atribut 34 s → 0,24 s).

@@ -1,6 +1,22 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const PARITAS_LLVM: &[(&str, &str)] = &[
+    // Fase SEBAR-CLOSURE: spread dan argumen bernama ke closure literal yang diikat `let` — dulu ditolak LLVM.
+    ("spread dan argumen bernama ke closure ber-let", r#"package main
+pub fn main() {
+    let f = |a, b| a * 10 + b
+    let v = [1, 2]
+    wok(f(...v), f(b: 2, a: 10), f(5, b: 3), f(...[7, 8]))
+    let h = |x: int, y: int| -> int { x - y }
+    wok(h(y: 1, x: 10))
+    let f2 = |s| s + "!"
+    wok(f2(...["ya"]), f2(s: "nama"))
+    if true {
+        let f = |a| a * 100
+        wok(f(...[3]))
+    }
+    wok(f(...[4, 5]))
+}"#),
     // Fase BAWAAN-HOF (#868): builtin langsung sebagai callback HOF dan di `terap` dulu ditolak LLVM.
     ("builtin sebagai callback: map, filter, sort_by_key, each(wok), terap", r#"package main
 fn f() {

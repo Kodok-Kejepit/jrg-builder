@@ -1,17 +1,17 @@
 ---
-judul: Tiga mesin
-ringkas: Interpreter, VM bytecode, dan backend LLVM, serta cara ketiganya dijaga tetap sama.
+judul: Empat mesin
+ringkas: Interpreter, VM bytecode, JIT, dan backend LLVM, serta cara keempatnya dijaga tetap sama.
 ---
-Ketiga mesin memakai bagian depan yang sama (pemindai dan pengurai), jadi sintaks dan pesan galat sintaksnya
+Keempat mesin memakai bagian depan yang sama (pemindai dan pengurai), jadi sintaks dan pesan galat sintaksnya
 identik. Bedanya ada di cara program dijalankan.
 
-| | Interpreter | VM | LLVM native |
-|---|---|---|---|
-| perintah | `jrgc f.jrg` | `jrgc f.jrg --vm` | `jrgc f.jrg --emit-llvm` |
-| cara kerja | menjalankan pohon sintaks langsung | menerjemahkan ke bytecode lalu menjalankannya | menerjemahkan ke LLVM IR, dikompilasi `clang` jadi kode mesin |
-| bahasa | seluruhnya | seluruhnya | semua berkas konformans, belum seluruh pustaka |
-| goroutine | thread sistem | thread sistem | korutin di satu thread |
-| cocok untuk | coba-coba, skrip | program yang perlu lebih cepat | program jadi, biner mandiri, APK kanvas |
+| | Interpreter | VM | JIT | LLVM native |
+|---|---|---|---|---|
+| perintah | `jrgc f.jrg` | `jrgc f.jrg --vm` | `jrgc f.jrg --jit` | `jrgc f.jrg --emit-llvm` |
+| cara kerja | menjalankan pohon sintaks langsung | menerjemahkan ke bytecode lalu menjalankannya | VM yang mengompilasi bagian panas jadi kode mesin saat jalan | menerjemahkan ke LLVM IR, dikompilasi `clang` jadi kode mesin |
+| bahasa | seluruhnya | seluruhnya | seluruhnya | semua berkas konformans, belum seluruh pustaka |
+| goroutine | thread sistem | thread sistem | thread sistem | korutin di satu thread |
+| cocok untuk | coba-coba, skrip | program yang perlu lebih cepat | perulangan berat tanpa langkah kompilasi | program jadi, biner mandiri, APK kanvas |
 
 ## Satu program, satu arti
 
@@ -41,6 +41,16 @@ sistem operasi sungguhan.
 
 Program diterjemahkan dulu jadi instruksi bytecode yang ringkas, lalu dijalankan. Untuk perulangan dan pemanggilan
 fungsi yang berat, VM jauh lebih cepat daripada interpreter. Galatnya menunjuk baris dan kolom yang sama persis.
+
+## JIT
+
+`--jit` menjalankan program di VM sambil mencatat bagian mana yang sering jalan. Fungsi dan perulangan yang panas
+dikompilasi jadi kode mesin di tengah jalan, termasuk yang memegang struct, enum, larik, dan teks. Kalau kode mesin
+menemui kasus di luar tebakannya (luapan 64 bit, jenis yang berganti), ia menyerahkan sisanya ke VM tepat di
+instruksi itu, jadi jawabannya dan pesan galatnya sama persis dengan `--vm`.
+
+`JRG_JIT_LOG=ringkas` melaporkan fungsi yang dikompilasi, yang ditolak beserta alasannya, dan berapa kali kode mesin
+menyerahkan ke VM.
 
 ## LLVM native
 

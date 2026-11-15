@@ -1,36 +1,40 @@
 ---
-judul: Catatan rilis 0.2.0
+judul: Catatan rilis 0.3.0
 menu: Catatan rilis
-ringkas: Rilis kedua JawaRustGo++.
+ringkas: Rilis ketiga JawaRustGo++.
 ---
-0.2.0 adalah rilis kedua JRG. Rincian tiap perubahan sejak 0.1.0 ada di
-[CHANGELOG.md](https://github.com/Kodok-Kejepit/jrg/blob/main/CHANGELOG.md); ringkasannya di bawah.
+0.3.0 adalah rilis ketiga JRG. Ia membawa mesin eksekusi keempat, `--jit`, dua puluh tiga modul `std/` baru, dan
+pengetatan di pustaka web, arsip, dan pengurai. Ada beberapa perubahan yang bisa membuat program lama berperilaku
+lain; daftarnya di bawah.
 
-## Yang ada di rilis ini
+## Yang baru
 
-**Bahasa**
-- Struct dengan pewarisan, enum dengan data, trait dengan method bawaan, generik, operator buatan sendiri, dan
-  `to_string` untuk tampilan.
-- Pola lengkap: tuple, array, struct, enum, rentang, `@`, penjaga `if`, `let … else`, dan `??`.
-- Fungsi dengan nilai bawaan, argumen bernama, pengumpul, sebar, closure, dan `move`.
-- Goroutine, channel, `select`, Future, Task, Atomic, dan Mutex.
-- Modul dengan ruang nama per berkas, dan `std/` yang tertanam.
+- **`jrgc program.jrg --jit`**: bagian program yang sering jalan dikompilasi jadi kode mesin saat program berjalan,
+  sisanya tetap di VM. Hasilnya sama persis dengan `--vm`, termasuk galat dan lokasinya. Bilangan bulat, struct,
+  enum, larik dan teks semuanya ikut. Contoh: kernel teks `string_ops` turun dari 9,3 detik di `--vm` ke 0,7 detik.
+- **Dua puluh tiga modul `std/` baru**, ditulis dalam JRG: `cli`, `tanggal`, `glob`, `diff`, `shlex`, `uuid`, `ini`,
+  `dotenv`, `log`, `graf`, `base32`, `ip`, `mirip`, `lru`, `os`, `templat`, `bungkus`, `cron`, `sandi`, `markdown`,
+  `batas`, `hitung`, `izin`.
+- **Pustaka baru**: `zip::`, `tar::`, `gzip::`, `xml::`, `toml::`, `url::`, `semver::`, `jwt::`, token CSRF
+  (`dok::csrf_token`), `dok::form`/`dok::multipart`, `fs::safe_join`, `crypto::compare_digest`, `env::os`/`env::arch`.
+- **`http::hanya_publik(true)`** menolak alamat internal (loopback, jaringan privat, metadata awan) di klien HTTP,
+  diperiksa dari alamat yang benar-benar disambungi.
+- `main -> int` jadi kode keluar program di semua mesin, dan rekursi tidak lagi dibatasi 10 000 tingkat.
 
-**Mesin**
-- Interpreter, VM bytecode, dan backend LLVM, dijaga dengan 851 tes dan tabel paritas antar-mesin.
-- Backend LLVM setara C untuk kerja angka dan pemanggilan fungsi.
+## Bisa memutus program lama
 
-**Pustaka**
-- {BUILTIN} fungsi bawaan, 14 modul `std/`, dan mesin game 2D 12 modul.
-- Server web dengan router, middleware, cookie, sesi, template, dan WebSocket; klien HTTP/HTTPS; SQLite.
-- Kanvas dengan ekspor dan impor PNG, suara, dan array numerik `wokwok::`.
-- FFI ke C, C++, Rust, Go, Python, JavaScript, PHP, Lua, Java, Kotlin, .NET, dan WebAssembly.
+- `dok::serve` tanpa alamat sekarang mendengar di `127.0.0.1` (dulu `0.0.0.0`).
+- WebSocket dari halaman situs lain (`Origin` beda host) dijawab 403.
+- `select` dengan beberapa lengan yang siap memilih acak di semua mesin.
+- Base64 cuma menerima satu ejaan untuk satu isi; `=` di tengah dan bit sisa bukan nol jadi `Err`.
+- `dok::serve` lebih ketat membaca permintaan: jalur ganda ejaan, baris dan kepala cacat dijawab 400.
+- `dok::db_exec`/`dok::db_query` menjalankan tepat satu pernyataan, dan jumlah parameter harus sama dengan `?`.
+- `dok::render` menolak nilai di tempat yang tidak bisa diloloskan (di dalam `<script>`, atribut `on*`, dan lain-lain).
+- `jrgm.toml`/`jrgm.lock` dibaca sebagai TOML 1.0 ketat, dan versi dependensi harus SemVer persis.
+- `http::unduh` tidak lagi mengikuti pengalihan dari `https://` ke `http://`.
 
-**Perkakas**
-- `jrgc`: REPL, editor terminal, server bahasa, pemeriksa, profiler, dan kompilasi native.
-- `jrgm`: proyek, tes, format, lint, dependensi lewat git, penerbitan, dan pembungkus APK/AAB Android.
-- Pesan galat berbahasa Indonesia dengan enam pilihan nada.
-- JRG IDE untuk peramban dan Android.
+Rincian tiap perubahan, termasuk empat puluh perbaikan, ada di
+[CHANGELOG.md](https://github.com/Kodok-Kejepit/jrg/blob/main/CHANGELOG.md).
 
 ## Memasang
 

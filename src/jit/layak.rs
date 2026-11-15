@@ -119,6 +119,9 @@ pub enum Cara {
     TipeSama(usize),
     /// `Len` atas nilai milik VM (`lambat::panjang`): bulat native; gagal = deopt, VM yang melapor.
     Panjang,
+    /// `len(x)` atas salinan maya lokal ini (`lambat::panjang_lokal`): bulat native; gagal = deopt di
+    /// panggilannya, VM yang melapor.
+    PanjangLokal(u32),
     /// `LoadLocal` yang hasilnya `Jenis::Salinan`: tidak ada yang ditulis.
     Salinan,
     /// `BuildStruct`/`BuildArray`/`BuildTuple` atas `n` posisi teratas (`lambat::bangun`): angka native
@@ -176,6 +179,24 @@ pub enum Cara {
     KembaliNilai,
     /// `ReturnNil` (masuk dari VM).
     KembaliUnit,
+    /// `AmbilPayload; Typeof; Const "<nama>"; Eq` atas salinan maya lokal ini (`lambat::payload_jenis_sama`):
+    /// bool asli, lanjut di `ip + 4`; bukan enum berpayload = deopt.
+    PayloadSama(u32, usize),
+    /// `AmbilPayload; Len` atas salinan maya lokal ini (`lambat::payload_panjang`): bulat asli, lanjut di
+    /// `ip + 2`; gagal = deopt.
+    PayloadPanjang(u32),
+}
+
+impl Cara {
+    /// Banyaknya instruksi yang dijalankan cara ini sekaligus (yang dilewati tidak punya keadaan).
+    pub fn lebar(&self) -> usize {
+        match self {
+            Cara::TipeLipat(_) | Cara::TipeSama(_) => 3,
+            Cara::PayloadSama(..) => 4,
+            Cara::PayloadPanjang(_) => 2,
+            _ => 1,
+        }
+    }
 }
 
 pub const KEMBALI_TIDAK: u8 = 0;
@@ -278,7 +299,7 @@ fn spek_hasil(f: &VmFunction, ip: usize) -> Option<Jenis> {
 
 /// Callee `Cara::Langsung` yang bisa jalan tanpa bingkai VM didorong dulu (`lambat::masuk_ringan`): pembantu
 /// basis-relatif atau native saja, kegagalannya deopt (`keluar_ringan` mewujudkan bingkainya). Yang membaca
-/// bingkai teratas (langkah VM, bawaan, operator VM, panggilan, upvalue, field privat, `char_at`) tidak.
+/// bingkai teratas (langkah VM, bawaan, operator VM, panggilan, upvalue, field privat, `char_at` atas nilai VM) tidak.
 pub fn ringan(f: &VmFunction, r: &Rencana) -> bool {
     if r.ada_defer || r.masuk != 0 { return false; }
     let kode = &f.chunk.code;
@@ -290,12 +311,14 @@ pub fn ringan(f: &VmFunction, r: &Rencana) -> bool {
                 let a = kode[ip].arg as usize;
                 a < s.len() && match s[s.len() - a - 1] {
                     Jenis::Fungsi(_) => true,
-                    Jenis::Bungkus(k, _) => k != BUNGKUS_CHAR_AT,
+                    // `char_at` atas teks lokal cuma `karakter_lokal` dan deopt; atas nilai VM lewat `bawaan`.
+                    Jenis::Bungkus(k, _) => k != BUNGKUS_CHAR_AT || matches!(s[s.len() - 2], Jenis::Salinan(_)),
                     _ => false,
                 }
             }
             Cara::Field => kode[ip].op == OpCode::GetField,
-            Cara::Asli | Cara::Buka(_) | Cara::TipeLipat(_) | Cara::TipeSama(_) | Cara::Panjang | Cara::Salinan
+            Cara::Asli | Cara::Buka(_) | Cara::TipeLipat(_) | Cara::TipeSama(_) | Cara::Panjang | Cara::PanjangLokal(_)
+            | Cara::PayloadSama(..) | Cara::PayloadPanjang(_) | Cara::Salinan
             | Cara::Bangun(_) | Cara::Geser | Cara::Indeks | Cara::Salin | Cara::Tukar | Cara::Muat
             | Cara::Konstanta | Cara::Ambil | Cara::Simpan | Cara::Pola | Cara::Payload | Cara::Benar
             | Cara::Buang | Cara::KembaliNilai | Cara::KembaliUnit => true,
@@ -445,7 +468,7 @@ fn analisis_sekali(
     // operand); kode yang kebanyakan langkah lebih lambat dari VM sendiri.
     let jalan = |ip: usize| r.keadaan[ip].is_some() && !r.keluar[ip];
     let asli = (0..n).filter(|&ip| jalan(ip) && matches!(r.cara[ip], Cara::Asli | Cara::Buka(_) | Cara::TipeLipat(_)
-        | Cara::TipeSama(_) | Cara::Panjang)).count();
+        | Cara::TipeSama(_) | Cara::Panjang | Cara::PanjangLokal(_) | Cara::PayloadSama(..) | Cara::PayloadPanjang(_))).count();
     // Pintu masuk bingkai callee (`Call` ke fungsi VM) dibayar VM juga; yang ditambah cuma langkahnya.
     let langkah_vm = (0..n).filter(|&ip| jalan(ip) && matches!(r.cara[ip], Cara::Langkah { .. } | Cara::Cabang { .. })).count();
     // Mode stres memaksa jalur native sebanyak mungkin, untung atau tidak.
@@ -484,7 +507,7 @@ fn analisis_sekali(
         if let (true, Cara::Cabang { tujuan, .. }) = (jalan(ip), &r.cara[ip]) {
             for t in *tujuan { r.pemimpin[t] = true; }
         }
-        if let (true, Cara::TipeLipat(_) | Cara::TipeSama(_)) = (jalan(ip), &r.cara[ip]) { r.pemimpin[ip + 3] = true; }
+        if jalan(ip) && r.cara[ip].lebar() > 1 { r.pemimpin[ip + r.cara[ip].lebar()] = true; }
     }
     // `JumpFalse` dkk. bercabang ke instruksi sesudahnya juga.
     for ip in 0..n.saturating_sub(1) {
@@ -516,6 +539,11 @@ fn langkah(
         return Some(vec![(ip + 3, s2)]);
     }
     if r.kembali != KEMBALI_BULAT {
+        if let Some((cara, s2)) = payload_gabung(f, ip, &s) {
+            let lanjut = ip + cara.lebar();
+            r.cara[ip] = cara;
+            return Some(vec![(lanjut, s2)]);
+        }
         if let Some(s2) = tipe_sama(f, ip, &s) {
             r.cara[ip] = Cara::TipeSama(f.chunk.code[ip + 1].arg as usize);
             return Some(vec![(ip + 3, s2)]);
@@ -529,6 +557,27 @@ fn langkah(
     let (cara, p) = langkah_lambat(f, cari, r, ip, s)?;
     r.cara[ip] = cara;
     Some(p)
+}
+
+/// Pemeriksaan pola varian berfield banyak atas salinan maya: `AmbilPayload` yang langsung diperiksa jenisnya
+/// (`Typeof; Const; Eq`) atau panjangnya (`Len`), tanpa payload disalin ke stack VM. Yang dilewati bukan
+/// sasaran lompat.
+fn payload_gabung(f: &VmFunction, ip: usize, s: &[Jenis]) -> Option<(Cara, Vec<Jenis>)> {
+    let kode = &f.chunk.code;
+    let Jenis::Salinan(l) = *s.last()? else { return None };
+    if kode[ip].op != OpCode::AmbilPayload { return None; }
+    let sasaran = |k: usize| kode.iter().any(|i| matches!(i.op, OpCode::Jump | OpCode::JumpFalse | OpCode::JumpTrue
+        | OpCode::JumpFalseKeep | OpCode::JumpTrueKeep) && (ip + 1..=ip + k).contains(&(i.arg as usize)));
+    let mut s2 = s.to_vec();
+    if kode.get(ip + 1)?.op == OpCode::Len && !sasaran(1) {
+        *s2.last_mut()? = Jenis::Bulat;
+        return Some((Cara::PayloadPanjang(l), s2));
+    }
+    let (ty, c, eq) = (kode.get(ip + 1)?, kode.get(ip + 2)?, kode.get(ip + 3)?);
+    if ty.op != OpCode::Typeof || c.op != OpCode::Const || eq.op != OpCode::Eq || sasaran(3)
+        || !matches!(f.chunk.constants.get(c.arg as usize)?, VmValue::Str(_)) { return None; }
+    *s2.last_mut()? = Jenis::Bool;
+    Some((Cara::PayloadSama(l, c.arg as usize), s2))
 }
 
 /// Pemeriksaan jenis pola atas nilai milik VM (payload, field): satu pembantu, bukan tiga langkah VM.
@@ -573,10 +622,28 @@ fn boleh_lewat_salinan(f: &VmFunction, ip: usize, s: &[Jenis]) -> bool {
         OpCode::GetIndex => t >= 2 && matches!(s[t - 2], Jenis::Salinan(_)) && s[t - 1] == Jenis::Bulat
             && !f.chunk.kode_jit.spek_gagal_di(ip),
         // `str::char_at(teks, i)` atas teks lokal (`lambat::karakter_lokal`).
-        OpCode::Call => f.chunk.code[ip].arg == 2 && t >= 3 && s[t - 3].bungkus(BUNGKUS_CHAR_AT)
-            && matches!(s[t - 2], Jenis::Salinan(_)) && s[t - 1] == Jenis::Bulat,
+        OpCode::Call => (f.chunk.code[ip].arg == 2 && t >= 3 && s[t - 3].bungkus(BUNGKUS_CHAR_AT)
+            && matches!(s[t - 2], Jenis::Salinan(_)) && s[t - 1] == Jenis::Bulat)
+            || (f.chunk.code[ip].arg == 1 && t >= 2 && bawaan_len(f, s[t - 2]) && salinan(&s[t - 1])),
         _ => false,
     }
+}
+
+/// Fungsi bawaan maya `len`.
+fn bawaan_len(f: &VmFunction, j: Jenis) -> bool {
+    let Jenis::Bawaan(i) = j else { return false };
+    matches!(f.chunk.constants.get(i as usize), Some(VmValue::NativeFn(g))
+        if crate::vm::info_native::info(*g).is_some_and(|n| n.kanonik == "len"))
+}
+
+/// `LoadLocal` di `ip` tepat di atas callee `len` (`atas`) dan tepat sebelum `Call 1` yang bukan sasaran lompat:
+/// panjangnya dibaca dari lokal asalnya (`Cara::PanjangLokal`).
+fn salinan_ke_len(f: &VmFunction, ip: usize, atas: Option<&Jenis>) -> bool {
+    let kode = &f.chunk.code;
+    atas.is_some_and(|j| bawaan_len(f, *j))
+        && kode.get(ip + 1).is_some_and(|i| i.op == OpCode::Call && i.arg == 1)
+        && !kode.iter().any(|i| matches!(i.op, OpCode::Jump | OpCode::JumpFalse | OpCode::JumpTrue
+            | OpCode::JumpFalseKeep | OpCode::JumpTrueKeep) && i.arg as usize == ip + 1)
 }
 
 /// `LoadLocal` di `ip` yang hasilnya (posisi `p`) langsung dibaca lagi sebagai lokal — pemeriksa `match`:
@@ -684,7 +751,8 @@ fn langkah_lambat(
     let puncak = s.last().copied().unwrap_or(Kosong);
     match ins.op {
         OpCode::LoadLocal if s.get(a)?.di_vm()
-            && (salinan_ke_indeks(f, ip, s.last().is_some_and(|j| j.bungkus(BUNGKUS_CHAR_AT))) || salinan_sementara(f, ip, t)) => {
+            && (salinan_ke_indeks(f, ip, s.last().is_some_and(|j| j.bungkus(BUNGKUS_CHAR_AT))) || salinan_sementara(f, ip, t)
+                || salinan_ke_len(f, ip, s.last())) => {
             s.push(Salinan(a as u32));
             return Some((Cara::Salinan, vec![(lanjut, s)]));
         }
@@ -883,6 +951,14 @@ fn langkah_lambat(
         s.truncate(t - 2);
         s.push(if banding { Bool } else { Nilai });
         return Some((Cara::Biner, vec![(lanjut, s)]));
+    }
+    // `len(lokal)`: dibaca dari lokal asalnya, tanpa menyalinnya ke stack VM.
+    if ins.op == OpCode::Call && a == 1 && t >= 2 && bawaan_len(f, s[t - 2]) {
+        if let Salinan(l) = s[t - 1] {
+            s.truncate(t - 2);
+            s.push(Bulat);
+            return Some((Cara::PanjangLokal(l), vec![(lanjut, s)]));
+        }
     }
     // Fungsi bawaan: tidak pernah mendorong bingkai, dipanggil langsung oleh pembantu.
     if ins.op == OpCode::Call && a < t && matches!(s[t - a - 1], Bawaan(_) | Bungkus(..)) && !s[t - a..].iter().any(|j| j.tetap()) {

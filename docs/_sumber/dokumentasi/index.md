@@ -1,10 +1,10 @@
 ---
 judul: JawaRustGo++
 menu: Pengantar
-ringkas: Bahasa pemrograman dengan pesan galat berbahasa Indonesia, tiga mesin eksekusi, dan pustaka yang cukup untuk membuat aplikasi sungguhan.
+ringkas: Bahasa pemrograman dengan pesan galat berbahasa Indonesia, empat mesin eksekusi, dan pustaka yang cukup untuk membuat aplikasi sungguhan.
 ---
 JawaRustGo++, disingkat JRG, adalah bahasa pemrograman yang ditulis dengan Rust. Bentuk kodenya mirip Rust dan Go,
-diketik dinamis, dan semua pesannya berbahasa Indonesia. Dokumentasi ini untuk versi **0.2.0**.
+diketik dinamis, dan semua pesannya berbahasa Indonesia. Dokumentasi ini untuk versi **0.3.0**.
 
 ```jrg halo.jrg
 pub fn main() {
@@ -21,8 +21,8 @@ sugeng rawuh, Nusantara!
 
 ## Yang ada di dalamnya
 
-- **Tiga mesin.** Interpreter (bawaan), VM bytecode (`--vm`), dan kompilasi native lewat LLVM (`--emit-llvm`). Program
-  yang sama memberi keluaran yang sama di ketiganya.
+- **Empat mesin.** Interpreter (bawaan), VM bytecode (`--vm`), JIT yang mengompilasi bagian panas saat jalan (`--jit`),
+  dan kompilasi native lewat LLVM (`--emit-llvm`). Program yang sama memberi keluaran yang sama di keempatnya.
 - **Nilai tidak pernah berbagi.** Menyalin, mengoper, dan mengembalikan nilai selalu menghasilkan salinan, jadi tidak
   ada pengumpul sampah dan tidak ada perubahan dari jauh yang mengejutkan.
 - **Galat yang bisa dibaca.** Tiap galat menyebut berkas, baris, kolom, potongan kodenya, dan biasanya jalan keluarnya.

@@ -2,7 +2,7 @@
 # Crate terpisah supaya build native tidak ikut membangun cdylib wasm.
 [package]
 name = "jrg_web"
-version     = "0.2.0"
+version     = "0.3.0"
 edition = "2021"
 publish = false
 

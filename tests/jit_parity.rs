@@ -2609,3 +2609,286 @@ fn pop_pindah_tidak_teramati() {
     let j = jalankan(POP_PINDAH, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
     assert!(j.stderr.contains("dikompilasi: buang_akhir, jumlah, main"), "{}", j.stderr);
 }
+
+/// `len(lokal)` dibaca dari lokal asalnya (`Cara::PanjangLokal`) dan `char_at` atas teks lokal: teks ASCII,
+/// non-ASCII di awal dan di ujung, kosong, larik, tuple, dict, sel tangkapan, lokal berganti jenis, dan galat
+/// `len(5)` yang dilaporkan VM di tempat yang sama.
+const LEN_LOKAL: &str = r#"package main
+
+fn hitung(s) -> int {
+    var n = 0
+    for i in 0..len(s) {
+        n = n + 1
+    }
+    return n + len(s)
+}
+
+fn kar(s: str) -> int {
+    var acc = 0
+    for i in 0..len(s) {
+        acc = acc * 31 + (str::char_at(s, i) as int)
+        acc = acc % 1000003
+    }
+    return acc
+}
+
+pub fn main() {
+    var tot = 0
+    let teks = ["abc", "", "héllo wörld", "日本語テキスト", "abcdefghijklmnopqrstuvwxyz0123456789", "aé", "1234567é"]
+    for r in 0..3000 {
+        let s = teks[r % 7]
+        tot = tot + hitung(s) + kar(s)
+        tot = tot + hitung([1, 2, r]) + hitung((1, 2)) + hitung(dict { a: 1, b: r })
+    }
+    wok(tot)
+    var c = "tangkap"
+    let f = || len(c)
+    for r in 0..2000 {
+        if r == 1000 { c = "tangkapé!" }
+        tot = tot + f() + len(c)
+    }
+    wok(tot)
+    var x = "awal"
+    for r in 0..3000 {
+        if r == 2500 { x = [1, 2, 3, 4] }
+        tot = tot + len(x)
+    }
+    wok(tot)
+    var y = "ok"
+    for r in 0..3000 {
+        if r == 2900 { y = 5 }
+        tot = tot + len(y)
+    }
+    wok(tot)
+}
+"#;
+
+#[test]
+fn len_lokal_sama_dengan_vm() {
+    let v = jalankan(LEN_LOKAL, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout == "762344621\n762376621\n762388621", "{}", v.stdout);
+    assert!(v.stderr.contains("tidak bisa ukur `int`"), "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(LEN_LOKAL, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(LEN_LOKAL, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: <closure>, hitung, kar, main"), "{}", j.stderr);
+}
+
+/// `char_at` atas teks lokal di callee ringan (`karakter_lokal`, galat = deopt): indeks negatif, non-ASCII,
+/// sel tangkapan, dan galat di luar batas yang jejaknya menyebut pemanggil seperti VM.
+const CHAR_AT_RINGAN: &str = r#"package main
+
+fn jumlah(s: str, d: int) -> int {
+    var acc = 0
+    for i in 0..len(s) {
+        acc = acc * 7 + (str::char_at(s, i) as int) + (str::char_at(s, -1 - (i % len(s))) as int) * d
+        acc = acc % 1000003
+    }
+    return acc
+}
+
+fn ambil(s: str, i: int) -> int {
+    return str::char_at(s, i) as int
+}
+
+pub fn main() {
+    var tot = 0
+    let teks = ["abc", "héllo wörld", "日本語テキスト", "abcdefghijklmnopqrstuvwxyz0123456789", "aé", "1234567é", "x"]
+    for r in 0..4000 {
+        let s = teks[r % 7]
+        tot = (tot + jumlah(s, r % 3) + ambil(s, r % len(s)) + ambil(s, -1)) % 1000000007
+    }
+    wok(tot)
+    var c = "sél"
+    let f = |i| str::char_at(c, i)
+    for r in 0..2000 {
+        tot = tot + (f(r % 3) as int) + (f(-(r % 3) - 1) as int)
+    }
+    wok(tot)
+    for r in 0..3000 {
+        let s = teks[r % 7]
+        tot = tot + ambil(s, r % 40)
+    }
+    wok(tot)
+}
+"#;
+
+#[test]
+fn char_at_ringan_sama_dengan_vm() {
+    let v = jalankan(CHAR_AT_RINGAN, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout == "388542044\n389150125", "{}", v.stdout);
+    assert!(v.stderr.contains("index 4 di luar batas") && v.stderr.contains("`ambil` dipanggil"), "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(CHAR_AT_RINGAN, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(CHAR_AT_RINGAN, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("ambil, jumlah, main"), "{}", j.stderr);
+}
+
+/// `len` teks lewat `vm::value::jumlah_karakter` (teks pendek ASCII lewat `prefiks_ascii`): karakter non-ASCII di
+/// tiap posisi teks 0 sampai 40 byte, lewat `len`, `s.len()`, `str::len` dan `char_at`, sama dengan interpreter.
+const JUMLAH_KARAKTER: &str = r#"package main
+
+fn cek(s: str) -> int {
+    var h = len(s) * 1000 + s.len()
+    for i in 0..len(s) {
+        h = (h * 31 + (str::char_at(s, i) as int)) % 1000003
+    }
+    return h
+}
+
+pub fn main() {
+    var tot = 0
+    for n in 0..41 {
+        var dasar = ""
+        for k in 0..n { dasar = dasar + "a" }
+        tot = (tot + cek(dasar)) % 1000000007
+        for p in 0..n {
+            var s = ""
+            for k in 0..n { s = s + (k == p $ "é" : "b") }
+            tot = (tot * 7 + cek(s) + str::len(s)) % 1000000007
+        }
+    }
+    wok(tot)
+}
+"#;
+
+#[test]
+fn jumlah_karakter_sama_dengan_interpreter() {
+    let i = jalankan(JUMLAH_KARAKTER, &[], &[]);
+    assert!(i.sukses && i.stdout == "908523536", "{}", i.stdout);
+    for (arg, env) in [("--vm", &[][..]), ("--jit", &[STRES][..]), ("--jit", &[STRES, ACAK][..]), ("--jit", &[][..])] {
+        let j = jalankan(JUMLAH_KARAKTER, &[arg], env);
+        assert_eq!((i.sukses, &i.stdout), (j.sukses, &j.stdout), "{arg} {env:?}");
+    }
+}
+
+/// Elemen tuple lewat jalur larik (`lambat::baca`): payload varian berfield banyak, indeks negatif, tuple di
+/// sel tangkapan, elemen bukan bulat (spekulasi gagal), dan galat di luar batas seperti VM.
+const TUPLE_INDEKS: &str = r#"package main
+
+enum E {
+    Dua(int, int),
+    Tiga(int, float, int),
+    Campur(int, string),
+}
+
+fn nilai(e: E, k: int) -> int {
+    match e {
+        E::Dua(a, b) => a * 3 + b + k,
+        E::Tiga(a, x, c) => a + (x as int) + c,
+        E::Campur(a, s) => a + len(s),
+    }
+}
+
+fn pilih(t, i: int) -> int {
+    return t[i] + t[-1]
+}
+
+pub fn main() {
+    var tot = 0
+    for r in 0..5000 {
+        let e = r % 3 == 0 $ E::Dua(r, r % 7) : (r % 3 == 1 $ E::Tiga(r, 2.5, 4) : E::Campur(r, "abc"))
+        tot = (tot + nilai(e, r)) % 1000000007
+        let t = (r, r * 2, r % 5)
+        tot = tot + pilih(t, r % 3) + pilih(t, -(r % 3) - 1)
+    }
+    wok(tot)
+    var c = (1, 2, 3)
+    let f = |i| c[i]
+    for r in 0..2000 {
+        if r == 1000 { c = (4, 5, 6) }
+        tot = tot + f(r % 3) + c[r % 3]
+    }
+    wok(tot)
+    var m = (1, "x", 3)
+    for r in 0..3000 {
+        if r == 1500 { m = (1, 2, 3) }
+        tot = tot + pilih(m, 2) + (r % 2 == 0 $ 1 : 0)
+    }
+    wok(tot)
+    for r in 0..3000 {
+        let t = (r, r)
+        tot = tot + pilih(t, r % 4)
+    }
+    wok(tot)
+}
+"#;
+
+#[test]
+fn tuple_indeks_sama_dengan_vm() {
+    let v = jalankan(TUPLE_INDEKS, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout == "50041662\n50055660\n50075160", "{}", v.stdout);
+    assert!(v.stderr.contains("tuple ini isinya 2 elemen"), "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(TUPLE_INDEKS, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(TUPLE_INDEKS, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("main, nilai, pilih"), "{}", j.stderr);
+}
+
+/// Pemeriksaan jenis dan panjang payload langsung dari lokal (`Cara::PayloadSama`/`PayloadPanjang`): varian
+/// berfield satu sampai tiga, payload tuple, teks, varian tanpa payload, `Option` atas tuple, enum di sel tangkapan.
+const PAYLOAD_GABUNG: &str = r#"package main
+
+enum B {
+    Satu(int),
+    Dua(int, int),
+    Tiga(int, int, int),
+    Tup((int, int)),
+    Teks(string, int),
+    Kosong,
+}
+
+fn nilai(b: B) -> int {
+    match b {
+        B::Satu(a) => a,
+        B::Dua(a, c) => a * 2 + c,
+        B::Tiga(a, c, d) => a + c * 3 + d,
+        B::Tup(t) => t[0] - t[1],
+        B::Teks(s, k) => len(s) * k,
+        B::Kosong => 7,
+    }
+}
+
+fn opsi(o) -> int {
+    match o {
+        Some(x) => typeof(x) == "tuple" $ x[0] + x[1] : x,
+        None => -1,
+    }
+}
+
+pub fn main() {
+    var tot = 0
+    for r in 0..6000 {
+        let k = r % 6
+        let b = k == 0 $ B::Satu(r) : (k == 1 $ B::Dua(r, 3) : (k == 2 $ B::Tiga(r, 1, 2) : (k == 3 $ B::Tup((r, 5)) : (k == 4 $ B::Teks("abé", r) : B::Kosong))))
+        tot = (tot + nilai(b)) % 1000000007
+        tot = tot + opsi(r % 3 == 0 $ Some((r, 1)) : (r % 3 == 1 $ Some(r) : None))
+    }
+    wok(tot)
+    var c = B::Dua(1, 2)
+    let f = || nilai(c)
+    for r in 0..2000 {
+        if r == 1000 { c = B::Tiga(1, 2, 3) }
+        tot = tot + f()
+    }
+    wok(tot)
+}
+"#;
+
+#[test]
+fn payload_gabung_sama_dengan_vm() {
+    let v = jalankan(PAYLOAD_GABUNG, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout == "36001000\n36015000", "{}", v.stdout);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(PAYLOAD_GABUNG, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(PAYLOAD_GABUNG, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: <closure>, main, nilai, opsi"), "{}", j.stderr);
+}

@@ -1077,3 +1077,24 @@ impl From<f64>    for VmValue { fn from(v: f64)    -> Self { VmValue::Float(v) }
 impl From<usize>  for VmValue { fn from(v: usize)  -> Self { VmValue::Int(v as i128) } }
 impl From<String> for VmValue { fn from(v: String) -> Self { VmValue::str(v) } }
 impl From<&str>   for VmValue { fn from(v: &str)   -> Self { VmValue::str(v) } }
+
+/// `b[..n]` ASCII (`0 < n <= b.len()`), delapan byte sekali baca; ekornya jendela delapan byte yang berakhir
+/// di `n` (bertumpang dengan yang sudah diperiksa), atau awal teks bertopeng kalau `n < 8`.
+#[inline(always)]
+pub fn prefiks_ascii(b: &[u8], n: usize) -> bool {
+    const M: u64 = 0x8080_8080_8080_8080;
+    let kata = |k: usize| u64::from_le_bytes(b[k..k + 8].try_into().unwrap());
+    if b.len() < 8 { return b[..n].iter().all(|&c| c < 0x80); }
+    if n < 8 { return kata(0) & (M >> (8 * (8 - n))) == 0; }
+    let mut k = 0;
+    while k + 8 < n { if kata(k) & M != 0 { return false; } k += 8; }
+    kata(n - 8) & M == 0
+}
+
+/// Banyaknya karakter `s` (`len` teks). Teks pendek ASCII lewat `prefiks_ascii`: `chars().count()` di bawah
+/// 32 byte menghitung per byte; yang panjang sudah per kata.
+#[inline]
+pub fn jumlah_karakter(s: &str) -> usize {
+    let b = s.as_bytes();
+    if b.len() < 32 && (b.is_empty() || prefiks_ascii(b, b.len())) { b.len() } else { s.chars().count() }
+}

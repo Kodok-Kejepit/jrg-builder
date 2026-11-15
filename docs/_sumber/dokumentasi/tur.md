@@ -85,11 +85,12 @@ Program yang sama bisa dijalankan dengan tiga cara:
 ```sh
 jrgc suhu.jrg                 # interpreter
 jrgc suhu.jrg --vm            # VM bytecode, lebih cepat
+jrgc suhu.jrg --jit           # VM plus kode mesin untuk bagian yang panas
 jrgc suhu.jrg --emit-llvm     # kompilasi native lewat clang, lalu dijalankan
 jrgc suhu.jrg --emit-llvm -o suhu --no-run   # cuma kompilasi, hasilnya ./suhu
 ```
 
-Bedanya dijelaskan di [Tiga mesin](mesin.html). Untuk sehari-hari, interpreter sudah cukup.
+Bedanya dijelaskan di [Empat mesin](mesin.html). Untuk sehari-hari, interpreter sudah cukup.
 
 ## Mencoba di REPL
 

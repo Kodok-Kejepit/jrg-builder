@@ -221,7 +221,7 @@ impl Vm {
                         .ok_or_else(|| VmError::at(self.pesan_method_hilang("array", "arr", name), sp)),
             }
             VmValue::Str(s) => match name {
-                "len"  => Ok(VmValue::Int(s.chars().count() as i128)),
+                "len"  => Ok(VmValue::Int(crate::vm::value::jumlah_karakter(s) as i128)),
                 "is_empty" => Ok(VmValue::Bool(s.is_empty())),
                 // Ejaan kedua yang ada di acuan sebagai method dan tidak punya
                 // bentuk `str::` sama sekali.
@@ -558,7 +558,7 @@ fn pesan_map_hilang(label: &Label, g: &crate::vm::value::IsiPeta, k: &str) -> St
         use crate::interpreter::galat_index as g;
         let panjang = match obj {
             VmValue::Array(a) => a.lock().unwrap_or_else(|p| p.into_inner()).len(),
-            VmValue::Str(s) => s.chars().count(),
+            VmValue::Str(s) => crate::vm::value::jumlah_karakter(s),
             VmValue::Tuple(t) => t.lock().unwrap_or_else(|p| p.into_inner()).len(),
             other => return Err(VmError::at(g::bukan_bisa_dipotong(&other.type_name_penuh()), sp)),
         };
@@ -583,7 +583,7 @@ fn pesan_map_hilang(label: &Label, g: &crate::vm::value::IsiPeta, k: &str) -> St
 
     pub(crate) fn vm_len(&self, val: &VmValue, sp: Option<crate::lexer::Span>) -> VmResult<usize> {
         match val {
-            VmValue::Str(s)     => Ok(s.chars().count()),
+            VmValue::Str(s)     => Ok(crate::vm::value::jumlah_karakter(s)),
             VmValue::Array(a)   => Ok(a.lock().unwrap().len()),
             VmValue::Tuple(t)   => Ok(t.lock().unwrap_or_else(|p| p.into_inner()).len()),
             VmValue::Map(m)     => Ok(m.lock().unwrap().len()),

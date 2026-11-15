@@ -23,7 +23,7 @@ AKAR = Path(__file__).resolve().parent.parent
 SUMBER = AKAR / "docs" / "_sumber"
 DOCS = AKAR / "docs"
 
-VERSI = "0.2.0"
+VERSI = "0.3.0"
 REPO = "https://github.com/Kodok-Kejepit/jrg"
 SITUS = "https://jrg-lang.org"
 
