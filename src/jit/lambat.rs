@@ -637,7 +637,11 @@ pub extern "C" fn muat(dari: i64, ke: i64) {
     if let (Some(a), Some(b)) = (vm.stack.get(basis + dari as usize), vm.stack.get(basis + ke as usize)) {
         if sama_penyimpanan(a, b) { return; }
     }
-    let v = vm.baca_lokal(basis + dari as usize).unwrap_or(VmValue::Nil);
+    let v = match vm.stack.get(basis + dari as usize) {
+        Some(VmValue::Cell(c)) => c.lock().unwrap_or_else(|p| p.into_inner()).clone(),
+        Some(v) => v.clone(),
+        None => VmValue::Nil,
+    };
     timpa(sediakan(vm, basis, ke as usize), v);
 }
 
@@ -666,7 +670,12 @@ pub extern "C" fn taruh(ke: i64, k: *const VmValue) {
 /// `AmbilLokal` atas lokal milik VM (`Vm::ambil_lokal`): posisi `ke` = isinya.
 pub extern "C" fn ambil(dari: i64, ke: i64) {
     let (vm, basis) = konteks();
-    let v = vm.ambil_lokal(basis + dari as usize).unwrap_or(VmValue::Nil);
+    // `Vm::ambil_lokal` di tempat (tanpa `Option` dan `nil` cadangan): sel cuma dibaca isinya.
+    let v = match vm.stack.get_mut(basis + dari as usize) {
+        Some(VmValue::Cell(c)) => c.lock().unwrap_or_else(|p| p.into_inner()).clone(),
+        Some(tempat) => std::mem::replace(tempat, VmValue::Nil),
+        None => VmValue::Nil,
+    };
     timpa(sediakan(vm, basis, ke as usize), v);
 }
 
@@ -681,7 +690,12 @@ pub extern "C" fn simpan(ke: i64, dari: i64, nilai: i64, jenis: i32, pindah: i32
             if pindah != 0 { std::mem::replace(t, VmValue::Nil) } else { t.clone() }
         }
     };
-    vm.simpan_lokal(basis + ke as usize, v);
+    // `Vm::simpan_lokal` di tempat: binding yang sudah jadi sel ditulis menembus selnya, selain itu `timpa`.
+    match vm.stack.get_mut(basis + ke as usize) {
+        Some(VmValue::Cell(c)) => *c.lock().unwrap_or_else(|p| p.into_inner()) = v,
+        Some(tempat) => timpa(tempat, v),
+        None => {}
+    }
 }
 
 /// `CekEnum` atas posisi `p` milik VM dengan pola `desc` (konstanta chunk): 0/1 = hasilnya, posisinya
@@ -1183,10 +1197,23 @@ pub extern "C" fn metode_tukar(p: i64, label: *const String) -> i32 {
 pub extern "C" fn metode_lokal(slot: i64, p: i64, label: *const Arc<str>, ambil: i32) -> i32 {
     let (vm, basis) = konteks();
     let i = basis + slot as usize;
-    let v = if ambil != 0 { vm.ambil_lokal(i) } else { vm.baca_lokal(i) }.unwrap_or(VmValue::Nil);
     let l: &str = unsafe { &**label };
     // Label struct dan label ini sama-sama diintern: alamatnya dulu, teksnya kalau beda (enum, label lain).
-    let sama = v.nama_tipe().is_some_and(|s| (s.as_ptr() == l.as_ptr() && s.len() == l.len()) || s == l);
+    let cocok = |v: &VmValue| v.nama_tipe().is_some_and(|s| (s.as_ptr() == l.as_ptr() && s.len() == l.len()) || s == l);
+    // Jalur panas: lokal biasa (bukan sel) yang labelnya cocok diperiksa di tempat lalu dipindah/disalin sekali,
+    // tanpa `Option` dan `nil` cadangan di antaranya.
+    if let Some(tempat) = vm.stack.get_mut(i) {
+        if !matches!(tempat, VmValue::Cell(_)) && cocok(tempat) {
+            let v = if ambil != 0 { std::mem::replace(tempat, VmValue::Nil) } else { tempat.clone() };
+            timpa(sediakan(vm, basis, p as usize), VmValue::Nil);
+            timpa(sediakan(vm, basis, p as usize + 1), v);
+            let j = basis + p as usize;
+            if !vm.galat_metode.is_empty() { vm.galat_metode.retain(|(x, _)| *x < j); }
+            return 0;
+        }
+    }
+    let v = if ambil != 0 { vm.ambil_lokal(i) } else { vm.baca_lokal(i) }.unwrap_or(VmValue::Nil);
+    let sama = cocok(&v);
     if !sama {
         let salinan = v.clone();
         timpa(sediakan(vm, basis, p as usize), v);
