@@ -67,6 +67,11 @@ const GAGAL_SAAT_JALAN: &[(&str, &str, &str, &str)] = &[
     ("env::set nama ber-`=`", "package main\npub fn main() { wok(\"a\")\n env::set(\"A=B\", \"1\") }", "a", "env::set: nama variabel \"A=B\" tidak sah — tidak boleh kosong, dan tidak boleh berisi `=` atau karakter NUL"),
     ("env::set nama ber-NUL", "package main\npub fn main() { wok(\"a\")\n env::set(\"A\" + str(rune(0)) + \"B\", \"1\") }", "a", "env::set: nama variabel \"A\\0B\" tidak sah"),
     ("env::set nilai ber-NUL", "package main\npub fn main() { wok(\"a\")\n env::set(\"JRG_UJI_NUL\", \"x\" + str(rune(0))) }", "a", "env::set: nilai untuk `JRG_UJI_NUL` berisi karakter NUL"),
+    // Fase LAPIS-SITUS: dua fungsi dibandingkan gagal SAAT JALAN, nama tiap sisi dari nilainya (`closure`/`function`).
+    ("unique atas dua closure", "package main\npub fn main() { wok(\"a\")\n let f = |x| x\n let g = |x| x + 1\n wok(arr::unique([f, g])) }", "a",
+     "tidak bisa membandingkan `closure` dengan `closure` — sebuah fungsi tidak punya isi untuk dibanding"),
+    ("== atas dua fungsi bernama", "package main\nfn f(x: int) -> int { return x }\npub fn main() { wok(\"a\")\n let a: fn(int) -> int = f\n let b: fn(int) -> int = f\n wok(a == b) }", "a",
+     "tidak bisa membandingkan `function` dengan `function` — sebuah fungsi tidak punya isi untuk dibanding"),
     // Fase SEBAR-CLOSURE: spread berpanjang tetap yang jumlahnya salah gagal SAAT JALAN dengan kalimat acuan, ke closure
     // ber-`let` maupun fungsi bernama — dulu LLVM menolaknya saat kompilasi ("butuh 2 argumen, diberi 1").
     ("spread kurang ke closure", "package main\npub fn main() { let f = |a, b| a + b\n wok(\"a\")\n let v = [1]\n wok(f(...v)) }", "a",

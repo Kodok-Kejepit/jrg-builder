@@ -2892,3 +2892,109 @@ fn payload_gabung_sama_dengan_vm() {
     let j = jalankan(PAYLOAD_GABUNG, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
     assert!(j.stderr.contains("dikompilasi: <closure>, main, nilai, opsi"), "{}", j.stderr);
 }
+
+/// Hasil angka callee ringan dipakai dari register (`keluar_ringan_angka`): bulat, pecahan, hasil yang kadang
+/// berganti jenis (jalur `keluar_ringan` biasa), dan luapan 64 bit di callee (deopt).
+const RINGAN_ANGKA: &str = r#"package main
+
+struct P {
+    pub x: float,
+    pub y: float,
+    pub z: float,
+}
+
+fn f(a: int, b: int) -> int {
+    return a * 3 + b
+}
+
+fn g(p: P, k: float) -> float {
+    return p.x * k + p.y - p.z
+}
+
+fn campur(a: int) {
+    if a % 97 == 0 { return 0.5 }
+    if a % 89 == 0 { return "t" }
+    return a + 1
+}
+
+fn besar(a: int) -> int {
+    return a * 4611686018427387
+}
+
+pub fn main() {
+    var tot = 0
+    var ft = 0.0
+    let p = P { x: 1.5, y: 2.25, z: 0.125 }
+    for i in 0..20000 {
+        tot = (tot + f(i, 7)) % 1000000007
+        ft = ft + g(p, i as float * 0.001)
+        let c = campur(i)
+        if typeof(c) == "int" { tot = tot + c } else { wok("lain", i, c) }
+        tot = (tot + besar(i % 3000) % 1000) % 1000000007
+    }
+    wok(tot, ft)
+}
+"#;
+
+#[test]
+fn ringan_angka_sama_dengan_vm() {
+    let v = jalankan(RINGAN_ANGKA, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout.ends_with("805824533 342484.99999999994"), "{}", v.stdout);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(RINGAN_ANGKA, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(RINGAN_ANGKA, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: besar, campur, f, g, main"), "{}", j.stderr);
+}
+
+/// `int`/`uint` atas bulat 128 bit di register: hasil yang muat 64 bit (spekulasi), nilai di luar 64 bit (tetap
+/// `Lebar`), dan `uint` atas bilangan negatif yang dilaporkan VM di tempat yang sama.
+const UBAH_LEBAR: &str = r#"package main
+
+fn putar(n: int) -> int {
+    var seed: uint = 88172645463325252
+    var tot: int = 0
+    for i in 0..n {
+        seed = math::wrap_add(math::wrap_mul(seed, 6364136223846793005), 1442695040888963407)
+        let a = (seed >> 1) as int
+        let b = int(seed)
+        let c = (seed >> 60) as uint
+        tot = (tot + a % 1000 + b % 777 + (c as int)) % 1000000007
+    }
+    return tot
+}
+
+fn lebar(n: int) -> int {
+    var x = 170141183460469231731687303715884105
+    var tot = 0
+    for i in 0..n {
+        x = x + i
+        let y = int(x) % 1000
+        tot = tot + y + (uint(i) as int)
+    }
+    return tot
+}
+
+pub fn main() {
+    wok(putar(5000), lebar(3000))
+    var z = 5
+    for i in 0..3000 {
+        z = z - 1
+        if i > 2990 { wok(uint(z)) }
+    }
+}
+"#;
+
+#[test]
+fn ubah_lebar_sama_dengan_vm() {
+    let v = jalankan(UBAH_LEBAR, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout == "4484277 5991000", "{}", v.stdout);
+    assert!(v.stderr.contains("tidak muat di `uint`"), "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(UBAH_LEBAR, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(UBAH_LEBAR, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: lebar, main, putar"), "{}", j.stderr);
+}

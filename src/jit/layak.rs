@@ -1291,6 +1291,13 @@ fn langkah_asli(
             s.truncate(s.len() - 3);
             s.push(Rune);
         }
+        // `int`/`uint` atas bulat 128 bit: nilainya tetap (`uint` menolak negatif); bulat 64 bit kalau umpannya
+        // begitu (jaga spekulasi), selain itu tetap `Lebar`.
+        OpCode::Call if a == 1 && lebar && s.len() >= 2 && s[s.len() - 2].bungkus(BUNGKUS_KE_BULAT) && s[s.len() - 1] == Lebar => {
+            let sempit = spek_hasil(f, ip) == Some(Bulat) && !f.chunk.kode_jit.spek_gagal_di(ip);
+            s.truncate(s.len() - 2);
+            s.push(if sempit { Bulat } else { Lebar });
+        }
         // `int(rune)` / `rune as uint`: kodenya, tanpa panggilan.
         OpCode::Call if a == 1 && s.len() >= 2 && s[s.len() - 2].bungkus(BUNGKUS_KE_BULAT) && matches!(s[s.len() - 1], Rune | Bulat) => {
             s.truncate(s.len() - 2);

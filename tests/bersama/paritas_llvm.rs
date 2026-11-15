@@ -1,6 +1,15 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const PARITAS_LLVM: &[(&str, &str)] = &[
+    // Fase LAPIS-SITUS: `==` lintas golongan `false` (juga fungsi lawan bilangan), `index_of`/`contains` dengan jarum
+    // bertipe lain, `unique` atas satu fungsi — dulu ditolak LLVM saat kompilasi, sebagian di `<lapis>:baris`.
+    ("banding lintas tipe, index_of/contains berjarum lain, unique satu fungsi", r#"package main
+pub fn main() {
+    wok(1.0 == 1, 2 == 2.0, arr::index_of([1.0, 2.0], 2), arr::contains([1.0], 1), arr::index_of(["a"], 1), arr::contains(["a"], 1))
+    let f = |x| x
+    wok(f == 1, 1 != f, arr::index_of([f], 1), arr::unique([f]))
+    wok(arr::index_of([3, 4], 4), arr::contains(["a", "b"], "b"), arr::index_of(["x"], "y"))
+}"#),
     // Fase SEBAR-CLOSURE: spread dan argumen bernama ke closure literal yang diikat `let` — dulu ditolak LLVM.
     ("spread dan argumen bernama ke closure ber-let", r#"package main
 pub fn main() {

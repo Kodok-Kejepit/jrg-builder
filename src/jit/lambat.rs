@@ -422,6 +422,17 @@ pub extern "C" fn masuk_ringan(
     0
 }
 
+/// `keluar_ringan` di situs yang memakai hasil berstatus `kode` (bulat/pecahan) dari register: hasil itu tidak
+/// ditaruh di slot (posisinya berjenis native di pemanggil); status lain lewat `keluar_ringan`.
+pub extern "C" fn keluar_ringan_angka(st: i64, hasil: i64, titip: *const [usize; 9], kode: i64) -> i32 {
+    if st != kode { return keluar_ringan(st, hasil, titip); }
+    let (vm, _) = konteks();
+    let [_, basis, slot, ..] = unsafe { *titip };
+    KONTEKS.with(|k| k.set((vm, basis)));
+    potong(&mut vm.stack, slot);
+    0
+}
+
 /// `keluar` untuk `masuk_ringan`. Hasil biasa: tanpa bingkai yang perlu dilepas. Deopt, belum mulai, atau
 /// galat: bingkai callee diwujudkan dulu persis seperti `masuk`, lalu jalur `keluar` biasa.
 pub extern "C" fn keluar_ringan(st: i64, hasil: i64, titip: *const [usize; 9]) -> i32 {
@@ -1046,14 +1057,17 @@ pub struct SitusBanyak {
     situs: Box<[&'static SitusField]>,
     bentuk: std::sync::atomic::AtomicPtr<crate::vm::peta::Bentuk>,
     indeks: Box<[std::sync::atomic::AtomicUsize]>,
+    /// Semua situsnya berspekulasi pecahan: loop baca tanpa melihat jenis per field.
+    pecahan: bool,
 }
 
 impl SitusBanyak {
     /// Hidup selama kode yang memakainya (kode JIT tidak pernah dibebaskan).
     pub fn bocor(situs: Vec<&'static SitusField>) -> &'static SitusBanyak {
         let indeks = situs.iter().map(|_| std::sync::atomic::AtomicUsize::new(0)).collect();
+        let pecahan = situs.iter().all(|s| s.jenis == 5);
         Box::leak(Box::new(SitusBanyak {
-            situs: situs.into_boxed_slice(), bentuk: std::sync::atomic::AtomicPtr::new(std::ptr::null_mut()), indeks,
+            situs: situs.into_boxed_slice(), bentuk: std::sync::atomic::AtomicPtr::new(std::ptr::null_mut()), indeks, pecahan,
         }))
     }
 
@@ -1076,6 +1090,15 @@ impl SitusBanyak {
             }
         }
         let mut bit = 0i64;
+        if self.pecahan {
+            for (j, i) in self.indeks.iter().enumerate() {
+                if let Some(VmValue::Float(x)) = nilai.get(i.load(Relaxed)) {
+                    unsafe { *keluar.add(j) = x.to_bits() as i64 };
+                    bit |= 1 << j;
+                }
+            }
+            return Some(bit);
+        }
         for (j, (s, i)) in self.situs.iter().zip(self.indeks.iter()).enumerate() {
             let n = match (nilai.get(i.load(Relaxed)), s.jenis) {
                 (Some(VmValue::Int(n)), 1) => i64::try_from(*n).ok(),

@@ -113,6 +113,7 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
             jb.symbol("jrg_jit_panjang_lokal", lambat::panjang_lokal as *const u8);
             jb.symbol("jrg_jit_payload_jenis_sama", lambat::payload_jenis_sama as *const u8);
             jb.symbol("jrg_jit_payload_panjang", lambat::payload_panjang as *const u8);
+            jb.symbol("jrg_jit_keluar_ringan_angka", lambat::keluar_ringan_angka as *const u8);
             jb.symbol("jrg_jit_buka_lokal", lambat::buka_lokal as *const u8);
             jb.symbol("jrg_jit_iter_ada", lambat::iter_ada as *const u8);
             jb.symbol("jrg_jit_maju", lambat::maju as *const u8);
@@ -176,6 +177,7 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
                 panjang_lokal: impor("jrg_jit_panjang_lokal", &[I64, p], Some(I32))?,
                 payload_jenis_sama: impor("jrg_jit_payload_jenis_sama", &[I64, I64], Some(I32))?,
                 payload_panjang: impor("jrg_jit_payload_panjang", &[I64, p], Some(I32))?,
+                keluar_ringan_angka: impor("jrg_jit_keluar_ringan_angka", &[I64, I64, p, I64], Some(I32))?,
                 buka_lokal: impor("jrg_jit_buka_lokal", &[I64, I32, p], Some(I32))?,
                 iter_ada: impor("jrg_jit_iter_ada", &[I64], Some(I32))?,
                 maju: impor("jrg_jit_maju", &[I64], Some(I32))?,

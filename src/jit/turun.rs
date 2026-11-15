@@ -84,7 +84,7 @@ pub struct ImporLambat {
     pub langkah: FuncId, pub muat: FuncId, pub buang: FuncId, pub benar: FuncId, pub buka: FuncId,
     pub taruh: FuncId, pub ambil: FuncId, pub simpan: FuncId, pub pola: FuncId, pub payload: FuncId,
     pub pola_lokal: FuncId, pub payload_lokal: FuncId, pub payload_angka: FuncId, pub pola_pilih: FuncId, pub buka_lokal: FuncId, pub field_lokal: FuncId, pub field_banyak: FuncId, pub metode_tukar: FuncId, pub metode_lokal: FuncId, pub karakter_lokal: FuncId, pub konteks_mentah: FuncId, pub masuk_ringan: FuncId, pub keluar_ringan: FuncId, pub karakter: FuncId, pub bangun: FuncId, pub baca_pecahan: FuncId, pub jenis_sama: FuncId, pub panjang: FuncId, pub panjang_lokal: FuncId,
-    pub payload_jenis_sama: FuncId, pub payload_panjang: FuncId,
+    pub payload_jenis_sama: FuncId, pub payload_panjang: FuncId, pub keluar_ringan_angka: FuncId,
     pub iter_ada: FuncId, pub maju: FuncId, pub langkah_cabang: FuncId, pub sebar: FuncId,
     pub pindah: FuncId, pub muat_global: FuncId, pub simpan_global: FuncId, pub indeks: FuncId, pub field: FuncId,
     pub masuk: FuncId, pub keluar: FuncId, pub salin: FuncId, pub tukar: FuncId, pub cek_metode: FuncId,
@@ -889,8 +889,8 @@ pub fn turunkan(
     let [f_muat_upval, f_simpan_upval, f_tulis_vm, f_field_lokal, f_karakter, f_bangun, f_baca_pecahan, f_jenis_sama, f_panjang, f_field_banyak, f_metode_tukar, f_metode_lokal, f_karakter_lokal, f_masuk_ringan, f_keluar_ringan] =
         [il.muat_upval, il.simpan_upval, il.tulis_vm, il.field_lokal, il.karakter, il.bangun, il.baca_pecahan, il.jenis_sama, il.panjang, il.field_banyak, il.metode_tukar, il.metode_lokal, il.karakter_lokal, il.masuk_ringan, il.keluar_ringan]
         .map(|id| m.declare_func_in_func(id, b.func));
-    let [f_panjang_lokal, f_payload_jenis_sama, f_payload_panjang] =
-        [il.panjang_lokal, il.payload_jenis_sama, il.payload_panjang].map(|id| m.declare_func_in_func(id, b.func));
+    let [f_panjang_lokal, f_payload_jenis_sama, f_payload_panjang, f_keluar_ringan_angka] =
+        [il.panjang_lokal, il.payload_jenis_sama, il.payload_panjang, il.keluar_ringan_angka].map(|id| m.declare_func_in_func(id, b.func));
     let dalam = b.create_block();
     b.set_cold_block(dalam);
     // Kedalaman native dijaga di pintu masuk; parameter dimuat dari penyangga argumen.
@@ -1550,12 +1550,18 @@ pub fn turunkan(
                     _ => (t - a - 1, 0),
                 };
                 tumpahkan(&mut b, &k, &var, s, dari..t, slot, ptr, f_taruh, &r.callee_nilai);
+                let ringan = fungsi != 0 && impor.ringan.get(*n).copied().unwrap_or(false);
+                // Hasil angka sejenis spekulasi dipakai dari register: `keluar_ringan_angka` tidak menaruhnya.
+                let angka = match (ringan, r.spek[ip]) {
+                    (true, Some(Jenis::Bulat)) => Some(BERHASIL),
+                    (true, Some(Jenis::Pecahan)) => Some(BERHASIL_PECAHAN),
+                    _ => None,
+                };
                 let args = [
                     i64c(&mut b, ip as i64), i64c(&mut b, s.as_ptr() as i64), i64c(&mut b, t as i64),
                     i64c(&mut b, a as i64), b.ins().stack_addr(ptr, slot, 0), i64c(&mut b, fungsi),
                     b.ins().stack_addr(ptr, titip, 0),
                 ];
-                let ringan = fungsi != 0 && impor.ringan.get(*n).copied().unwrap_or(false);
                 let c = b.ins().call(if ringan { f_masuk_ringan } else { f_masuk }, &args);
                 let m0 = b.inst_results(c)[0];
                 let (gagal, cek, asli, akhir) = (b.create_block(), b.create_block(), b.create_block(), b.create_block());
@@ -1585,7 +1591,10 @@ pub fn turunkan(
                 let st = b.ins().sextend(types::I64, st);
                 let h = b.ins().stack_load(ptr, types::I64, wadah, 0);
                 let tp = b.ins().stack_addr(ptr, titip, 0);
-                let c = b.ins().call(if ringan { f_keluar_ringan } else { f_keluar }, &[st, h, tp]);
+                let c = match angka {
+                    Some(kode) => { let kv = i64c(&mut b, kode); b.ins().call(f_keluar_ringan_angka, &[st, h, tp, kv]) }
+                    None => b.ins().call(if ringan { f_keluar_ringan } else { f_keluar }, &[st, h, tp]),
+                };
                 let r0 = b.inst_results(c)[0];
                 let (gagal2, terus) = (b.create_block(), b.create_block());
                 b.set_cold_block(gagal2);
@@ -2108,6 +2117,24 @@ pub fn turunkan(
                 b.switch_to_block(gabung);
                 let h = b.block_params(gabung)[0];
                 b.def_var(var[t - 3], h);
+            }
+            OpCode::Call if a == 1 && s[t - 2].bungkus(super::layak::BUNGKUS_KE_BULAT) && s[t - 1] == Jenis::Lebar => {
+                let x = b.use_var(k.v128[t - 1]);
+                if nama_bawaan(f, s[t - 2]) == Some("uint") {
+                    let nol = b.ins().iconst(types::I64, 0);
+                    let nol = b.ins().sextend(types::I128, nol);
+                    let neg = b.ins().icmp(IntCC::SignedLessThan, x, nol);
+                    jaga(&mut b, &k, &var, neg, ip, s);
+                }
+                if r.keadaan[ip + 1].as_ref().and_then(|j| j.get(t - 2).copied()) == Some(Jenis::Bulat) {
+                    let lo = b.ins().ireduce(types::I64, x);
+                    let balik = b.ins().sextend(types::I128, lo);
+                    let lepas = b.ins().icmp(IntCC::NotEqual, balik, x);
+                    jaga_spek(&mut b, &k, &var, lepas, ip, s);
+                    b.def_var(var[t - 2], lo);
+                } else {
+                    b.def_var(k.v128[t - 2], x);
+                }
             }
             OpCode::Call if a == 1 && s[t - 2].bungkus(super::layak::BUNGKUS_KE_BULAT) => {
                 let v = b.use_var(var[t - 1]);

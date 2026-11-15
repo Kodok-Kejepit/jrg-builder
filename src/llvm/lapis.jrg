@@ -11,7 +11,8 @@ pub fn arr_count_if<T, B>(a: []T, f: fn(T) -> B) -> int {
 
 pub fn arr_count<T, B>(a: []T, f: fn(T) -> B) -> int { return arr_count_if(a, f) }
 
-pub fn arr_index_of<T>(a: []T, nilai: T) -> Option<int> {
+// Jarum boleh bertipe lain dari elemennya: `==` lintas golongan `false` (`None`), bulat lawan pecahan menurut nilai.
+pub fn arr_index_of<T, U>(a: []T, nilai: U) -> Option<int> {
     for i, x in a { if x == nilai { return Some(i) } }
     return None
 }
