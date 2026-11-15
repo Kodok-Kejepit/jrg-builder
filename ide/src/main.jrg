@@ -803,6 +803,12 @@ fn asal_sah(req, port) {
         }
         None => { return false }
     }
+    // GET dari `<img>`/tautan situs lain datang tanpa Origin (`/api/jejak?penjaga=` dulu bisa mematikan pelayan):
+    // peramban dan WebView menandainya `Sec-Fetch-Site`, jadi yang bukan dari halaman ini sendiri ditolak.
+    match dok::header_get(req.headers, "sec-fetch-site") {
+        Some(s) => { if s != "same-origin" && s != "none" { return false } }
+        None => {}
+    }
     match dok::header_get(req.headers, "origin") {
         Some(o) => { return o == "http://127.0.0.1:" + str(port) || o == "http://localhost:" + str(port) }
         None => { return true }

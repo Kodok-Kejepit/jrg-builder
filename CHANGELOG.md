@@ -22,6 +22,10 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **Bacaan berkas utuh berbatas 256 MiB** (`fs::read` dan kawan-kawannya, `file::read`, `zip::`/`tar::` dari jalur,
   `wasm::muat`, berkas statis `dok::serve`): yang lebih besar, atau perangkat tanpa ujung seperti `/dev/zero`, jadi
   galat berkalimat alih-alih menghabiskan memori mesin.
+- **Kanvas mode `web` cuma melayani halamannya sendiri**: `Host` lain (DNS rebinding) dan permintaan dari situs lain
+  ditolak 403, jadi halaman web lain tidak bisa membaca layar program atau mengirim tombol ke sana.
+- **`dok::router_static` tidak menyajikan berkas atau folder bertitik** (`.env`, `.git/`, `.htpasswd`) — dijawab
+  seperti tidak ada; `.well-known/` tetap disajikan.
 - **`dok::log_*` menulis satu baris per panggilan**: baris baru, ESC dan pengubah arah di pesan dan field ditulis
   sebagai `\u{..}`, dan `"` di nilai field teks di-escape — teks dari luar tidak bisa lagi memalsukan baris log.
 - **`str::replace`, `re::replace`/`re::replace_all` dan `str::join`/`arr::join` menolak hasil di atas 256 MiB**,

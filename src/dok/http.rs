@@ -829,7 +829,8 @@ fn guess_content_type(path: &Path) -> &'static str {
 /// Berkas dan folder bertitik (`.env`, `.git/`, `.htpasswd`) tidak disajikan — dijawab seperti tidak ada, bawaan
 /// `serve-static` Express (CWE-538). `.well-known` (RFC 8615, tantangan ACME) memang publik.
 pub(crate) fn segmen_tersembunyi(rel: &str) -> bool {
-    rel.split('/').any(|g| g.starts_with('.') && g != ".well-known")
+    // `.`/`..` bukan berkas bertitik: traversal tetap dijawab 403 oleh `gabung_aman`, bukan disamarkan jadi 404.
+    rel.split('/').any(|g| g.starts_with('.') && !matches!(g, "." | ".." | ".well-known"))
 }
 
 /// Coba layani file statis. `None` kalau tidak ada mount yang cocok atau
@@ -1201,7 +1202,7 @@ mod tes_permintaan {
         for r in [".env", ".git/config", "sub/.htpasswd", "a/.ssh/id_rsa", ".well-known/../.env"] {
             assert!(super::segmen_tersembunyi(r), "{}", r);
         }
-        for r in ["a.txt", "sub/x.min.js", ".well-known/acme-challenge/tok", "index.html"] {
+        for r in ["a.txt", "sub/x.min.js", ".well-known/acme-challenge/tok", "index.html", "../luar/x", "./a"] {
             assert!(!super::segmen_tersembunyi(r), "{}", r);
         }
     }
