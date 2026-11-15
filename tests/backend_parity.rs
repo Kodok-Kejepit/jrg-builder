@@ -2886,6 +2886,9 @@ pub fn main() {
                 let mut buf = Vec::new();
                 s.read_to_end(&mut buf).unwrap();
                 let awal = buf.windows(4).position(|w| w == b"\r\n\r\n").map(|i| i + 4).unwrap_or(0);
+                // Fase AMAN-48: tiap respons melarang peramban menebak jenis isinya.
+                assert!(String::from_utf8_lossy(&buf[..awal]).contains("X-Content-Type-Options: nosniff\r\n"),
+                        "vm={}: tanpa nosniff: {}", vm, String::from_utf8_lossy(&buf[..awal]));
                 buf[awal..].to_vec()
             };
             let (biner, teks) = (mentah("/s/b.bin"), mentah("/s/t.txt"));

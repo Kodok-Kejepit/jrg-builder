@@ -22,6 +22,9 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **Bacaan berkas utuh berbatas 256 MiB** (`fs::read` dan kawan-kawannya, `file::read`, `zip::`/`tar::` dari jalur,
   `wasm::muat`, berkas statis `dok::serve`): yang lebih besar, atau perangkat tanpa ujung seperti `/dev/zero`, jadi
   galat berkalimat alih-alih menghabiskan memori mesin.
+- **Respons `dok::serve` membawa `X-Content-Type-Options: nosniff`** (kecuali aplikasi memasangnya sendiri).
+- **Runner `py::`/`js::`/`php::` pindah ke `~/.cache/jrgc/runner`**, dan berkas kerja `--emit-llvm`, `jrgm exec`
+  dan `--apk` di folder sementara baru bermode 0700 — dulu nama tebakan di `/tmp` bisa disiapkan pemakai lain.
 - **Sesi `dok::session_*` punya masa berlaku**: cap waktunya ikut ditandatangani, dan `dok::session_decode` menolak
   sesi yang lebih tua dari 14 hari (atau dari argumen ketiga, dalam detik). Cookie sesi lama perlu masuk ulang sekali.
 - **`dok::password_hash` bawaannya 600 000 putaran** (dulu 210 000, angka OWASP untuk SHA-512, bukan SHA-256), dan

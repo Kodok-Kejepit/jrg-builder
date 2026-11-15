@@ -223,6 +223,44 @@ fn baca_berbatas(p: &std::path::Path, batas: u64) -> io::Result<Vec<u8>> {
     Ok(isi)
 }
 
+/// Folder sementara BARU milik proses ini: nama acak, mode 0700, dan gagal kalau sudah ada — tidak pernah memakai
+/// folder atau berkas bernama tebakan yang bisa disiapkan pemakai lain di `/tmp` lalu diganti isinya sebelum
+/// dijalankan atau dikompilasi (CWE-377/379). Pemanggilnya yang menghapus.
+pub fn dir_sementara(awalan: &str) -> io::Result<std::path::PathBuf> {
+    use std::hash::{BuildHasher, Hasher};
+    static URUT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    for _ in 0..32 {
+        let mut h = std::collections::hash_map::RandomState::new().build_hasher();
+        h.write_u128(sejak_epoch().unwrap_or_default().as_nanos());
+        h.write_u64(URUT.fetch_add(1, std::sync::atomic::Ordering::Relaxed));
+        let p = std::env::temp_dir().join(format!("{}-{}-{:016x}", awalan, std::process::id(), h.finish()));
+        let mut b = std::fs::DirBuilder::new();
+        #[cfg(unix)]
+        { use std::os::unix::fs::DirBuilderExt; b.mode(0o700); }
+        match b.create(&p) {
+            Ok(()) => return Ok(p),
+            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(e) => return Err(e),
+        }
+    }
+    Err(io::Error::new(io::ErrorKind::AlreadyExists, "folder sementara: tiga puluh dua nama acak sudah terpakai"))
+}
+
+/// Folder pribadi pemakai untuk berkas yang dipakai ulang antar-proses (`$XDG_CACHE_HOME/jrgc/<nama>` atau
+/// `~/.cache/jrgc/<nama>`, 0700); tanpa folder rumah, `dir_sementara`.
+pub fn dir_pribadi(nama: &str) -> io::Result<std::path::PathBuf> {
+    let akar = std::env::var_os("XDG_CACHE_HOME").filter(|v| !v.is_empty()).map(std::path::PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").filter(|v| !v.is_empty()).map(|h| std::path::PathBuf::from(h).join(".cache")));
+    let Some(akar) = akar else { return dir_sementara(&format!("jrgc-{}", nama)) };
+    let d = akar.join("jrgc").join(nama);
+    let mut b = std::fs::DirBuilder::new();
+    b.recursive(true);
+    #[cfg(unix)]
+    { use std::os::unix::fs::DirBuilderExt; b.mode(0o700); }
+    b.create(&d)?;
+    Ok(d)
+}
+
 /// Sebab sebuah galat I/O dalam kalimat JRG — tanpa ini kalimat OS (`No such file or
 /// directory (os error 2)`) bocor ke pesan. Tiap pintu yang melaporkan `io::Error` lewat sini.
 pub fn galat_io(e: &io::Error) -> String {
@@ -377,6 +415,18 @@ pub fn tanpa_thread(apa: &str, e: &io::Error) -> Option<String> {
 
 #[cfg(test)]
 mod tes {
+    /// `dir_sementara` membuat folder baru tiap kali, mode 0700, dan tidak pernah memakai yang sudah ada.
+    #[cfg(unix)]
+    #[test]
+    fn folder_sementara_baru_dan_pribadi() {
+        use std::os::unix::fs::PermissionsExt;
+        let (a, b) = (super::dir_sementara("jrg-uji").unwrap(), super::dir_sementara("jrg-uji").unwrap());
+        assert_ne!(a, b);
+        assert_eq!(std::fs::metadata(&a).unwrap().permissions().mode() & 0o777, 0o700);
+        assert!(std::fs::DirBuilder::new().create(&a).is_err(), "nama yang sama harus sudah terpakai");
+        let _ = (std::fs::remove_dir(&a), std::fs::remove_dir(&b));
+    }
+
     /// Perangkat tanpa ujung dan berkas di atas batas jadi `Err` berkalimat JRG, tidak menghabiskan memori.
     #[cfg(unix)]
     #[test]

@@ -47,6 +47,7 @@ bocor. Pengecualiannya `.well-known/`, yang memang publik (mis. tantangan sertif
 | `query` | pasangan dari `?a=1&b=2`; ambil dengan `dok::query_get(req.query, "a")` |
 | `headers` | ambil dengan `dok::header_get(req.headers, "Content-Type")` |
 | `body`, `body_bytes` | badan sebagai teks; kalau bukan teks UTF-8, `body` bernilai `nil` dan isinya di `body_bytes` |
+| `remote_addr` | alamat soket peminta, `"127.0.0.1:51234"` — kepala `X-Forwarded-For` ditulis klien sendiri, jadi untuk pembatas laju atau log pakai ini, kecuali di belakang proxy milikmu |
 
 Handler boleh mengembalikan teks (jadi `200 text/plain`), hasil `dok::text`, `dok::html`, `dok::json_response`,
 `dok::redirect`, `dok::response(kode, isi)`, `dok::binary(byte)`, atau `Result` (`Err` jadi 500).

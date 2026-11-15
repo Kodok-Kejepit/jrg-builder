@@ -798,6 +798,11 @@ fn write_response_bytes(stream: &mut TcpStream, status: i128, content_type: &str
         status, status_reason(status), content_type, body.len()
     );
     for (k, v) in extra_headers { out.push_str(&format!("{}: {}\r\n", k, v)); }
+    // Peramban tidak menebak jenis isi: unggahan `.txt`/tanpa ekstensi berisi HTML tidak jadi halaman (stored XSS),
+    // bawaan Django dan helmet. Aplikasi yang memasang kepalanya sendiri tidak ditimpa.
+    if !extra_headers.iter().any(|(k, _)| k.eq_ignore_ascii_case("x-content-type-options")) {
+        out.push_str("X-Content-Type-Options: nosniff\r\n");
+    }
     out.push_str("\r\n");
     let mut semua = out.into_bytes();
     semua.extend_from_slice(body);
