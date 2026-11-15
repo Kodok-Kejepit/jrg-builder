@@ -3177,3 +3177,85 @@ fn ringan_simpan_sama_dengan_vm() {
     let j = jalankan(RINGAN_SIMPAN, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
     assert!(j.stderr.contains("P::maju, besar, ganti, main"), "{}", j.stderr);
 }
+
+/// `str(n)` atas bulat native (`Cara::TeksBulat`) dan situs bawaan yang polosnya diputuskan saat kompilasi
+/// (`lambat::bawaan_polos`): bulat negatif dan `i64::MIN`, bawaan teks dan larik, dan galat bawaan seperti VM.
+const BAWAAN_SITUS: &str = r#"package main
+
+fn label(n: int) -> string {
+    return "n" + str(n) + ":" + str(n % 7 - 3)
+}
+
+pub fn main() {
+    var h = 0
+    var s = ""
+    for i in 0..4000 {
+        let k = i * 7919 - 20000
+        s = label(k)
+        h = (h * 31 + len(s) + len(str::upper(s)) + len(str::replace(s, "-", "_"))) % 1000003
+        if i % 999 == 0 { wok(s, str(-9223372036854775807 - 1), str(i), str::reverse(s)) }
+        h = h + len(str::repeat("ab", i % 3)) + len(arr::join(["a", s], "-"))
+    }
+    wok(h)
+    for i in 0..3000 {
+        if i == 2999 { wok(str::repeat("x", -1)) }
+        h = h + len(str::trim("  a  "))
+    }
+}
+"#;
+
+#[test]
+fn bawaan_situs_sama_dengan_vm() {
+    let v = jalankan(BAWAAN_SITUS, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout.ends_with("16069"), "{}", v.stdout);
+    assert!(v.stderr.contains("sebanyak -1 kali"), "{}", v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(BAWAAN_SITUS, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(BAWAAN_SITUS, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("dikompilasi: label, main"), "{}", j.stderr);
+}
+
+/// `+` atas dua teks milik VM (`lambat::tambah_nilai`): sambungan berantai, teks yang tumbuh di tempat dan yang
+/// dipegang dua nama, lalu yang lewat `biner` — teks + bulat, teks + struct ber-`to_string`, operator `add`.
+const TAMBAH_TEKS: &str = r#"package main
+
+struct V {
+    pub x: int,
+}
+
+impl V {
+    fn to_string(self) -> string { return "V" + str(self.x) }
+    fn add(self, o: V) -> V { return V { x: self.x + o.x } }
+}
+
+pub fn main() {
+    var s = ""
+    var h = 0
+    let v = V { x: 3 }
+    var w = V { x: 0 }
+    for i in 0..3000 {
+        let a = "k" + str(i % 13)
+        let b = a + "-" + a
+        let salin = s
+        s = s + b
+        if i % 500 == 0 { s = "" }
+        let c = "v=" + v
+        let d = "n:" + (i % 5)
+        w = w + v
+        h = (h * 31 + len(b) + len(c) + len(d) + len(salin)) % 1000003
+    }
+    wok(h, len(s), w.x, "akhir" + w)
+}
+"#;
+
+#[test]
+fn tambah_teks_sama_dengan_vm() {
+    let v = jalankan(TAMBAH_TEKS, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout == "393208 2723 9000 akhirV9000", "{}", v.stdout);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(TAMBAH_TEKS, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+}
