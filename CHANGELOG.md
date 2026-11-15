@@ -6,6 +6,18 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ## [Belum dirilis]
 
+### Baru
+
+- **`jrgc --periksa` (dan `jrgm lint`) melaporkan method dan field yang tidak ada** atas `let x = T { .. }`, dengan
+  kalimat yang sama seperti saat baris itu dijalankan.
+
+### Diperbaiki
+
+- **`--emit-llvm`: sebar `...x` di literal varian enum generik jalan** kalau basisnya varian enum yang sama.
+- **`--emit-llvm`: `arr::insert` dengan nilai berjenis lain membuat larik campur** seperti interpreter (dulu ditolak).
+
+## [0.4.0] — 2026-11-15
+
 ### Memutus
 
 - **`json::parse` dan `dok::json_decode` menolak kunci kembar di satu objek** (juga yang kembar lewat escape,
@@ -26,10 +38,13 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **`str::replace`, `re::replace`/`re::replace_all` dan `str::join`/`arr::join` menolak hasil di atas 256 MiB**,
   seperti `str::repeat`: dulu teks 1 MB dengan pengganti 10 KB mematikan prosesnya.
 
-### Baru
+### Kinerja
 
-- **`jrgc --periksa` (dan `jrgm lint`) melaporkan method dan field yang tidak ada** atas `let x = T { .. }`, dengan
-  kalimat yang sama seperti saat baris itu dijalankan.
+- **`--jit` lebih cepat di kode yang memegang enum, struct, larik, dan panggilan fungsi kecil** (jam penuh lawan
+  0.3.0): `match_dispatch` 9,9 → 7,0 s, `call_recursion` 1,01 → 0,87 s, `array_sort` 2,5 → 2,2 s,
+  `struct_particles` 13,6 → 13,1 s. Lengan `match` atas varian berfield banyak, konstanta varian tanpa payload,
+  konversi `int`/`uint` atas bilangan di atas 64 bit, dan fungsi bulat kecil yang dipanggil kode mesin tidak lagi
+  lewat jalur umum.
 
 ### Diperbaiki
 
@@ -40,7 +55,6 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   HMAC-SHA256 jauh lebih cepat (SHA-NI bila ada). Hash lama tetap bisa diperiksa.
 - **AES (`crypto::seal`, `crypto::aes_*`) tidak lagi membocorkan kunci lewat waktu**: AES-NI di x86_64, dan hitungan
   waktu-tetap tanpa tabel di platform lain. `crypto::random_int` tanpa bias modulo.
-- **`--emit-llvm`: `arr::insert` dengan nilai berjenis lain membuat larik campur** seperti interpreter (dulu ditolak).
 - **`--emit-llvm`: `==` atas dua fungsi gagal saat jalan seperti interpreter** (`arr::unique([f])` menjawab
   `[<closure>]`), `f == 1`, `arr::index_of(["a"], 1)` dan `arr::contains(["a"], 1)` menjawab `false`/`None`, dan galat
   saat kompilasi dari dalam pustaka bawaan menunjuk baris program, bukan `<lapis>:baris`.

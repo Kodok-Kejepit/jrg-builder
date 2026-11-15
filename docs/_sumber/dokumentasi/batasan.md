@@ -1,6 +1,6 @@
 ---
 judul: Yang belum jadi
-ringkas: Kekurangan JRG 0.3.0 yang sudah diketahui.
+ringkas: Kekurangan JRG 0.4.0 yang sudah diketahui.
 ---
 ## Bahasa
 

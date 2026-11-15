@@ -1,6 +1,21 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const PARITAS_LLVM: &[(&str, &str)] = &[
+    // Fase SEBAR-GENERIK: sebar di literal varian enum generik dari basis instans enum yang sama — dulu ditolak LLVM.
+    ("sebar varian enum generik dari varian sama dan lain", r#"package main
+enum E<T> { V { a: T, b: int }, W { a: T } }
+pub fn main() {
+    let x = E::V { a: "s", b: 1 }
+    wok(E::V { b: 9, ...x })
+    let w = E::W { a: "w" }
+    wok(E::V { b: 2, ...w })
+    let p = E::V { a: 2.5, b: 3 }
+    wok(E::V { a: 1.5, ...p }, E::W { ...p })
+    match E::V { b: 7, ...x } {
+        E::V { a, b } => wok("cocok", a, b),
+        E::W { a } => wok("lain", a),
+    }
+}"#),
     // Fase ISI-SISIP: `arr::insert` dengan nilai berjenis lain membuat larik campur bertag, seperti `push`.
     ("arr::insert berjenis lain jadi larik campur", r#"package main
 pub fn main() {

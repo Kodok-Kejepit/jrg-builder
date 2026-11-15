@@ -4,7 +4,7 @@ menu: Pengantar
 ringkas: Bahasa pemrograman dengan pesan galat berbahasa Indonesia, empat mesin eksekusi, dan pustaka yang cukup untuk membuat aplikasi sungguhan.
 ---
 JawaRustGo++, disingkat JRG, adalah bahasa pemrograman yang ditulis dengan Rust. Bentuk kodenya mirip Rust dan Go,
-diketik dinamis, dan semua pesannya berbahasa Indonesia. Dokumentasi ini untuk versi **0.3.0**.
+diketik dinamis, dan semua pesannya berbahasa Indonesia. Dokumentasi ini untuk versi **0.4.0**.
 
 ```jrg halo.jrg
 pub fn main() {

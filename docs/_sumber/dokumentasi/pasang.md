@@ -17,7 +17,7 @@ yang cocok, memeriksa checksum-nya, lalu menaruh `jrgc` dan `jrgm` di `~/.local/
 curl -fsSL https://raw.githubusercontent.com/Kodok-Kejepit/jrg/main/rilis/pasang.sh | sh
 
 # versi tertentu, atau folder lain
-sh pasang.sh --versi 0.3.0 --ke /usr/local/bin
+sh pasang.sh --versi 0.4.0 --ke /usr/local/bin
 ```
 
 Pastikan `~/.local/bin` ada di `PATH`, lalu periksa:

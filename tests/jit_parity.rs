@@ -3120,3 +3120,60 @@ fn register_bulat_sama_dengan_vm() {
     let j = jalankan(REGISTER_BULAT, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
     assert!(j.stderr.contains("dikompilasi: bagi, besar, dalam, fib, kali"), "{}", j.stderr);
 }
+
+/// `x = f(..)` lewat callee ringan berhasil milik VM (`keluar_ringan_simpan`): struct yang dipakai ulang, lokal yang
+/// jadi sel tangkapan, hasil yang kadang teks atau bulat (jalur `keluar_ringan` biasa), dan luapan di callee.
+const RINGAN_SIMPAN: &str = r#"package main
+
+struct P {
+    pub x: float,
+    pub y: float,
+}
+
+impl P {
+    fn maju(self, d: float) -> P {
+        return P { x: self.x + d, y: self.y * 0.5 + d }
+    }
+}
+
+fn ganti(p: P, i: int) {
+    if i % 333 == 0 { return "teks" }
+    if i % 250 == 0 { return i }
+    return P { x: p.y, y: p.x }
+}
+
+fn besar(n: int) {
+    return n * 4611686018427387
+}
+
+pub fn main() {
+    var p = P { x: 1.0, y: 2.0 }
+    var q = P { x: 0.5, y: 0.25 }
+    var lain = P { x: 0.0, y: 0.0 }
+    let f = || q.x + q.y
+    var tot = 0.0
+    var b = 0
+    for i in 0..5000 {
+        p = p.maju(0.001)
+        q = q.maju(0.002)
+        tot = tot + f()
+        lain = ganti(p, i)
+        if typeof(lain) == "string" || typeof(lain) == "int" { wok(i, lain); lain = p }
+        b = besar(i % 5000)
+        tot = tot + lain.x
+    }
+    wok(p.x, p.y, q.x, tot, b)
+}
+"#;
+
+#[test]
+fn ringan_simpan_sama_dengan_vm() {
+    let v = jalankan(RINGAN_SIMPAN, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout.ends_with("27658.66999999996 23053818406118507613"), "{}", v.stdout);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(RINGAN_SIMPAN, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let j = jalankan(RINGAN_SIMPAN, &["--jit"], &[STRES, ("JRG_JIT_STRES", "1"), ("JRG_JIT_LOG", "ringkas")]);
+    assert!(j.stderr.contains("P::maju, besar, ganti, main"), "{}", j.stderr);
+}
