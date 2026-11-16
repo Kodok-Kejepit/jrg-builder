@@ -256,6 +256,6 @@ pub fn main() {{
     std::fs::write(root.join("tests").join("dasar.jrg"), contoh_uji)
         .map_err(|e| format!("tidak bisa tulis contoh test: {}", crate::host::galat_io(&e)))?;
 
-    eprintln!("Created `{}` ({}) package", name, kind);
+    crate::ecetak_t!("Created `{}` ({}) package", name, kind);
     Ok(())
 }

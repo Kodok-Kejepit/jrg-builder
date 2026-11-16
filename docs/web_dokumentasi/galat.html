@@ -512,7 +512,7 @@ Result::Err(division by zero)</code></pre></figure>
 <p><code>main</code> may return a <code>Result</code>. An <code>Err</code> that leaves <code>main</code> is reported as an error and the program stops with exit code 1.</p>
 <figure class="kode" data-jalan><figcaption><span>main-fails.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
     <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;config file not found&quot;</span>)
-}</code></pre><pre class="keluaran"><code>error: program berhenti karena `Result::Err` merambat keluar dari `main`: config file not found — tangani dengan `match` di dalam `main`, atau pakai `.unwrap_or(...)`, kalau kegagalan ini memang boleh terjadi</code></pre></figure>
+}</code></pre><pre class="keluaran"><code>error: the program stopped because `Result::Err` propagated out of `main`: config file not found — handle it with `match` inside `main`, or use `.unwrap_or(...)`, if this failure is allowed to happen</code></pre></figure>
 <h2 id="stopping-a-program"><a class="jangkar" href="#stopping-a-program">Stopping a program</a></h2>
 <p><code>panik(message)</code> stops the program with an error. Use it for states that should be impossible; for ordinary failure, return a <code>Result</code>.</p>
 <figure class="kode" data-jalan><figcaption><span>panic.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">valid_age</span>(n) {
@@ -530,13 +530,13 @@ error: age cannot be negative
 3 |         panik(&quot;age cannot be negative&quot;)
   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = jejak: `valid_age` dipanggil di panic.jrg:9:5</code></pre></figure>
-<p>The <code>jejak:</code> (trace) line shows where the function was called from. <code>exit(code)</code> ends the program with an exit code 0–255 and no message.</p>
+  = trace: `valid_age` called at panic.jrg:9:5</code></pre></figure>
+<p>The <code>trace:</code> line shows where the function was called from. <code>exit(code)</code> ends the program with an exit code 0–255 and no message.</p>
 <h2 id="checking-assumptions"><a class="jangkar" href="#checking-assumptions">Checking assumptions</a></h2>
 <p><code>assert(condition)</code> and <code>assert_eq(a, b)</code> stop the program when an assumption is false. Inside a test (see the <a href="tur.html#writing-tests">Quick tour</a>), a failing assert marks that test as failed.</p>
 <figure class="kode" data-jalan><figcaption><span>assert.jrg</span></figcaption><pre><code><span class="k-fn">assert</span>(<span class="k-ang">1</span> + <span class="k-ang">1</span> == <span class="k-ang">2</span>)
 <span class="k-fn">assert_eq</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>], [<span class="k-ang">1</span>, <span class="k-ang">2</span>])
-<span class="k-fn">assert_eq</span>(<span class="k-ang">2</span> + <span class="k-ang">2</span>, <span class="k-str">&quot;4&quot;</span>)</code></pre><pre class="keluaran"><code>error: assert_eq gagal — kiri `4` (int), kanan `4` (string)
+<span class="k-fn">assert_eq</span>(<span class="k-ang">2</span> + <span class="k-ang">2</span>, <span class="k-str">&quot;4&quot;</span>)</code></pre><pre class="keluaran"><code>error: assert_eq failed — left `4` (int), right `4` (string)
  --&gt; assert.jrg:3:1
   |
 3 | assert_eq(2 + 2, &quot;4&quot;)
@@ -553,7 +553,7 @@ error: age cannot be negative
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=15c39b4883"></script>
+<script defer src="../aset/cari.js?v=cee15a2dd3"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

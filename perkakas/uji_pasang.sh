@@ -1,5 +1,8 @@
 #!/bin/sh
 # Menguji `rilis/pasang.sh` terhadap rilis PALSU di berkas lokal.
+
+# Keluaran dibandingkan dengan teks Indonesia (pesan bawaan Inggris sejak DWIBAHASA).
+export JRG_BAHASA="${JRG_BAHASA:-id}"
 set -eu
 akar=$(cd "$(dirname "$0")/.." && pwd)
 kerja=$(mktemp -d)

@@ -22,21 +22,26 @@ PAGAR = re.compile(r"^```jrg(?P<cup>-cuplikan)?[ \t]*(?P<nama>[^\s]*)(?:[ \t]+lo
 ENV = {k: v for k, v in os.environ.items() if k not in ("JRG_SOPAN", "JRG_NADA", "JRG_ULANGAN", "DISPLAY", "WAYLAND_DISPLAY")}
 
 
-def jalankan(kode, nama, vm):
+def bahasa_dari(p):
+    """Halaman di bawah `_sumber/en` menampilkan pesan Inggris, sisanya Indonesia."""
+    return "en" if (SUMBER / "en") in Path(p).parents or Path(p).parent == SUMBER / "en" else "id"
+
+
+def jalankan(kode, nama, vm, bahasa):
     with tempfile.TemporaryDirectory() as d:
         (Path(d) / nama).write_text(kode, encoding="utf-8")
         cmd = [JRGC, nama, "--sopan"] + (["--vm"] if vm else [])
         try:
-            r = subprocess.run(cmd, cwd=d, env=ENV, capture_output=True, text=True, timeout=30,
+            r = subprocess.run(cmd, cwd=d, env={**ENV, "JRG_BAHASA": bahasa}, capture_output=True, text=True, timeout=30,
                                stdin=subprocess.DEVNULL)
         except subprocess.TimeoutExpired:
             return None, "(batas waktu)"
         return r.returncode, (r.stdout + r.stderr).rstrip("\n")
 
 
-def periksa(kode, nama, harapan, asal):
-    rc, dapat = jalankan(kode, nama, False)
-    rc_vm, dapat_vm = jalankan(kode, nama, True)
+def periksa(kode, nama, harapan, asal, bahasa):
+    rc, dapat = jalankan(kode, nama, False, bahasa)
+    rc_vm, dapat_vm = jalankan(kode, nama, True, bahasa)
     masalah = []
     if harapan is None and rc != 0:
         masalah.append(f"gagal (rc={rc}) padahal tidak ada blok keluaran:\n{dapat[-800:]}")
@@ -65,7 +70,7 @@ def main():
             jumlah += 1
             nama = m.group("nama") or "contoh.jrg"
             baris = teks[:m.start()].count("\n") + 1
-            dapat, n = periksa(m.group("kode"), nama, m.group("keluar"), f"{p.relative_to(AKAR)}:{baris}")
+            dapat, n = periksa(m.group("kode"), nama, m.group("keluar"), f"{p.relative_to(AKAR)}:{baris}", bahasa_dari(p))
             gagal += n
             if PERBARUI and m.group("keluar") is not None and dapat != m.group("keluar").rstrip("\n"):
                 a, b = m.start("keluar") + geser, m.end("keluar") + geser
@@ -85,7 +90,7 @@ def main():
                     continue
                 jumlah += 1
                 nama = b.get("filename") or "contoh.jrg"
-                dapat, n = periksa(b["code"], nama, b.get("output"), f"{pj.relative_to(SUMBER)} {bab['id']}/{nama}")
+                dapat, n = periksa(b["code"], nama, b.get("output"), f"{pj.relative_to(SUMBER)} {bab['id']}/{nama}", bahasa_dari(pj))
                 gagal += n
                 if PERBARUI and b.get("output") is not None and dapat != b["output"].rstrip("\n"):
                     b["output"] = dapat

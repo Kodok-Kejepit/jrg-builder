@@ -482,36 +482,36 @@ entry       = &quot;src/main.jrg&quot;
 helper = { path = &quot;../helper&quot; }</code></pre></figure>
 <p><code>jrgm new name --kind lib</code> makes a library, <code>--kind web</code> a web application, and <code>--android</code> adds an <code>[android]</code> section. Projects in other languages work too: <code>jrgm new tool --bahasa python</code> (also <code>javascript</code>, <code>c</code>, <code>cpp</code>, <code>rust</code>, <code>go</code>, <code>java</code>, <code>php</code>, <code>lua</code>, <code>ruby</code>, <code>sh</code>); <code>run</code>, <code>build</code>, <code>test</code>, and <code>fmt</code> then use that language's tools.</p>
 <h2 id="commands"><a class="jangkar" href="#commands">Commands</a></h2>
-<div class="tabel"><table><thead><tr><th>Command</th><th>What it is for</th></tr></thead><tbody><tr><td><code>jrgm run [--vm | --jit] [--watch]</code></td><td>run the project; <code>--jit</code> through the VM that compiles the hot parts, <code>--watch</code> reruns on every change</td></tr><tr><td><code>jrgm test [--filter word] [--vm | --jit]</code></td><td>run the tests in <code>tests/*.jrg</code></td></tr><tr><td><code>jrgm build</code></td><td>check every file of the project and its dependencies</td></tr><tr><td><code>jrgm check</code></td><td>check the entry point only</td></tr><tr><td><code>jrgm fmt [--check]</code></td><td>tidy spacing and indentation in every file</td></tr><tr><td><code>jrgm lint [--ketat]</code></td><td>errors plus warnings</td></tr><tr><td><code>jrgm exec file</code></td><td>run one file without a project (<code>.jrg</code>, <code>.c</code>, <code>.py</code>, <code>.rs</code>, <code>.go</code>, …)</td></tr><tr><td><code>jrgm clean</code></td><td>delete build output</td></tr><tr><td><code>jrgm lsp</code></td><td>a language server for editors</td></tr><tr><td><code>jrgm apk</code>, <code>jrgm kunci</code>, <code>jrgm siapkan android</code></td><td>Android apps, see <a href="android.html">Android apps</a></td></tr></tbody></table></div>
+<div class="tabel"><table><thead><tr><th>Command</th><th>What it is for</th></tr></thead><tbody><tr><td><code>jrgm run [--vm | --jit] [--watch]</code></td><td>run the project; <code>--jit</code> through the VM that compiles the hot parts, <code>--watch</code> reruns on every change</td></tr><tr><td><code>jrgm test [--filter word] [--vm | --jit]</code></td><td>run the tests in <code>tests/*.jrg</code></td></tr><tr><td><code>jrgm build</code></td><td>check every file of the project and its dependencies</td></tr><tr><td><code>jrgm check</code></td><td>check the entry point only</td></tr><tr><td><code>jrgm fmt [--check]</code></td><td>tidy spacing and indentation in every file</td></tr><tr><td><code>jrgm lint [--ketat]</code></td><td>errors plus warnings</td></tr><tr><td><code>jrgm exec file</code></td><td>run one file without a project (<code>.jrg</code>, <code>.c</code>, <code>.py</code>, <code>.rs</code>, <code>.go</code>, …)</td></tr><tr><td><code>jrgm clean</code></td><td>delete build output</td></tr><tr><td><code>jrgm lsp</code></td><td>a language server for editors</td></tr><tr><td><code>jrgm apk</code>, <code>jrgm kunci</code>, <code>jrgm siapkan android</code></td><td>Android apps, see <a href="android.html">Android apps</a></td></tr><tr><td><code>jrgm language [en | id]</code></td><td>the language of JRG's messages, for every later run (see <a href="diagnostik.html">Diagnostics</a>)</td></tr></tbody></table></div>
 <h2 id="tests"><a class="jangkar" href="#tests">Tests</a></h2>
 <p>A function named <code>test_…</code> or <code>uji_…</code> in <code>tests/*.jrg</code> is a test. Each file runs in its own process with a time limit, so one stuck test does not hold up the others.</p>
 <figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgm test
-[jrgm] 1 test di 1 berkas
+[jrgm] 1 test in 1 file
 
 == tests/dasar.jrg (1 test)
   ok    test_contoh
---- 1 test: 1 lulus, 0 gagal ---
+--- 1 test: 1 passed, 0 failed ---
 
-[jrgm] semua 1 test lulus</code></pre></figure>
+[jrgm] all 1 test passed</code></pre></figure>
 <h2 id="lint"><a class="jangkar" href="#lint">Lint</a></h2>
 <figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgm lint
-peringatan: `import &quot;std/set&quot;` tidak dipakai — tidak ada `set::` di berkas ini
+warning: `import &quot;std/set&quot;` is unused — there is no `set::` in this file
  --&gt; src/main.jrg:2:1
   |
 2 | import &quot;std/set&quot;
   | ^^^^^^^^^^^^^^^^
   |
-  = bantuan: hapus baris import-nya
+  = help: remove the import line
 
-peringatan: `x` diberi nilai tapi tidak pernah dibaca
+warning: `x` is given a value but never read
  --&gt; src/main.jrg:7:9
   |
 7 |     let x = 5
   |         ^
   |
-  = bantuan: hapus, atau beri awalan `_` (`_x`) kalau memang sengaja
+  = help: remove it, or prefix it with `_` (`_x`) if it is intentional
 
-[jrgm] lint: 2 berkas, 0 galat, 2 peringatan</code></pre></figure>
+[jrgm] lint: 2 files, 0 errors, 2 warnings</code></pre></figure>
 <p>The warnings: unused imports, functions never called, variables never read, integer literals in a float slot, and files that are not tidy. <code>--ketat</code> (strict) makes warnings fail the command.</p>
 <h2 id="dependencies"><a class="jangkar" href="#dependencies">Dependencies</a></h2>
 <p>A dependency can be a local folder or a git repository. Git serves as the registry: a version is a <code>v&lt;version&gt;</code> tag, and the commit used is locked in <code>jrgm.lock</code>.</p>
@@ -540,7 +540,7 @@ jrgm publish            <span class="k-kom"> # make a v&lt;version&gt; tag from 
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=15c39b4883"></script>
+<script defer src="../aset/cari.js?v=cee15a2dd3"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

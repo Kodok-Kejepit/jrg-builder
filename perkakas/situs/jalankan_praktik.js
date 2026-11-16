@@ -14,7 +14,7 @@ for (const sumber of JSON.parse(fs.readFileSync(daftar, 'utf8'))) {
   // dipanggil langsung, jadi semua pesannya sudah terkumpul saat ia kembali.
   globalThis.self = { postMessage: (m) => pesan.push(m) };
   new Function('return ' + J.pekerja.toString())()();
-  self.onmessage({ data: { modul, sumber } });
+  self.onmessage({ data: { modul, sumber, bahasa: process.env.JRG_BAHASA || 'id' } });
   let keluaran = '', galat = '', akhir = null;
   for (const m of pesan) {
     if (m.jenis === 'keluaran') {

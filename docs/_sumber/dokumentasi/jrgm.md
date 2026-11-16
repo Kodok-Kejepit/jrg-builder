@@ -50,6 +50,7 @@ bantu = { path = "../bantu" }
 | `jrgm clean` | hapus hasil bangun |
 | `jrgm lsp` | server bahasa untuk editor |
 | `jrgm apk`, `jrgm kunci`, `jrgm siapkan android` | aplikasi Android, lihat [Aplikasi Android](android.html) |
+| `jrgm language [en \| id]` | bahasa pesan JRG untuk semua jalan berikutnya (lihat [Diagnostik](diagnostik.html)) |
 
 ## Tes
 

@@ -46,6 +46,8 @@ pub(crate) struct IfExprValue {
 pub struct CodegenOptions {
     pub fast_math: bool,
     pub full_buffered_stdout: bool,
+    /// Sasaran berpenunjuk 32 bit (`--emit-wasm`, wasm32): ukuran tipe yang isinya penunjuk mengikutinya.
+    pub ptr32: bool,
 }
 
 /// Keadaan `defer` satu fungsi.
@@ -358,7 +360,7 @@ impl Codegen {
     pub fn new_with_options(tables: GlobalTables, options: CodegenOptions) -> Self {
         Codegen {
             tables,
-            types: TypeTable::new(),
+            types: TypeTable { lebar_ptr: if options.ptr32 { 4 } else { 8 }, ..TypeTable::new() },
             options,
             option_args: HashMap::new(),
             result_args: HashMap::new(),

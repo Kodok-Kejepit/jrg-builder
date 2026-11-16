@@ -21,9 +21,9 @@ impl Severity {
     fn label(self) -> &'static str {
         match self {
             Severity::Error => "error",
-            Severity::Warning => "peringatan",
-            Severity::Note => "catatan",
-            Severity::Help => "bantuan",
+            Severity::Warning => crate::terjemah::pilih("peringatan", "warning"),
+            Severity::Note => crate::terjemah::pilih("catatan", "note"),
+            Severity::Help => crate::terjemah::pilih("bantuan", "help"),
         }
     }
 }
@@ -255,6 +255,7 @@ pub fn nada() -> Nada {
 // Sisanya dipecah ke empat berkas; `pub use` menjaga jalur `diag::X`
 // tetap persis seperti sebelum dipecah.
 mod nada;
+mod nada_en;
 mod render;
 mod kode;
 pub use kode::codes;

@@ -58,7 +58,7 @@
           } else if (d.jenis === 'selesai') selesai(d);
         };
         w.onerror = function (e) { e.preventDefault(); selesai({ kode: 1, sebab: 'pekerja: ' + e.message }); };
-        w.postMessage({ modul: modul, sumber: sumber });
+        w.postMessage({ modul: modul, sumber: sumber, bahasa: document.documentElement.lang === 'id' ? 'id' : 'en' });
       });
     });
   }

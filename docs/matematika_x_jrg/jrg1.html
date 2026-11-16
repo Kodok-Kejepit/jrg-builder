@@ -496,7 +496,7 @@ Difference: 10</code></pre></figure>
 <p>JRG does not stay quiet when your program is wrong. It names the line, points at the column, and gives a suggestion. Try a deliberate mistake (error messages are in Indonesian for now; the line, the column, and the <code>^</code> say where):</p>
 <figure class="kode" data-jalan><figcaption><span>wrong.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
     <span class="k-fn">wok</span>(<span class="k-str">&quot;forgot the closing bracket&quot;</span>
-}</code></pre><pre class="keluaran"><code>error[E0103]: harusnya ada `)` di sini, yang ketemu malah `}`
+}</code></pre><pre class="keluaran"><code>error[E0103]: expected `)` here, found `}`
  --&gt; wrong.jrg:3:1
   |
 3 | }
@@ -517,7 +517,7 @@ Difference: 10</code></pre></figure>
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=15c39b4883"></script>
+<script defer src="../aset/cari.js?v=cee15a2dd3"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 <script defer src="../aset/kelas-data.js?v=c386df7ff6"></script>
 <script defer src="../aset/kelas.js?v=cfe2ec492f"></script>

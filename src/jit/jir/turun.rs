@@ -19,7 +19,8 @@ struct Pembantu {
     keluar_ringan_nilai: FuncRef, panjang: FuncRef, panjang_lokal: FuncRef,
     /// `Inst::Pembantu`, menurut `Pb`.
     pb: Vec<(Pb, FuncRef)>,
-    tulis_lebar: FuncRef, buka_lebar: FuncRef, sebar: FuncRef,
+    tulis_lebar: FuncRef, buka_lebar: FuncRef, sebar: FuncRef, pola_pilih: FuncRef,
+    ubah_baca: FuncRef, ubah_siap: FuncRef, ubah_tulis_lokal: FuncRef,
 }
 
 struct Penurun<'a, 'b> {
@@ -53,6 +54,8 @@ struct Penurun<'a, 'b> {
     /// Penyimpanan larik lokal yang sudah diperiksa di wilayah ini (`turun::tembolok_larik`): dibuang di awal blok
     /// dan sesudah instruksi apa pun yang bisa menyentuh stack atau penyimpanan VM.
     larik_tb: Vec<(usize, Variable, Variable, Variable)>,
+    /// Slot indeks lengan tiap rantai `match` (`Inst::Rantai`).
+    rantai_slot: std::collections::HashMap<usize, StackSlot>,
     /// Bulat konstanta yang sudah diturunkan (geseran tetap 128 bit).
     konst: std::collections::HashMap<u32, i64>,
 }
@@ -100,9 +103,11 @@ pub fn turunkan(
             (Pb::PayloadLokal, il.payload_lokal), (Pb::MuatGlobal, il.muat_global), (Pb::SimpanGlobal, il.simpan_global),
             (Pb::Indeks, il.indeks), (Pb::Baca, impor.baca), (Pb::BacaPecahan, il.baca_pecahan), (Pb::Tulis, impor.tulis),
             (Pb::JenisSama, il.jenis_sama), (Pb::PayloadJenisSama, il.payload_jenis_sama), (Pb::PayloadPanjang, il.payload_panjang),
-            (Pb::Karakter, il.karakter), (Pb::KarakterLokal, il.karakter_lokal)].into_iter().map(|(p, id)| (p, m.declare_func_in_func(id, b.func))).collect(),
+            (Pb::Karakter, il.karakter), (Pb::KarakterLokal, il.karakter_lokal), (Pb::PayloadAngkaLokal, il.payload_angka), (Pb::FieldLokal, il.field_lokal)].into_iter().map(|(p, id)| (p, m.declare_func_in_func(id, b.func))).collect(),
         tulis_lebar: m.declare_func_in_func(il.tulis_lebar, b.func), buka_lebar: m.declare_func_in_func(il.buka_lebar, b.func),
-        sebar: m.declare_func_in_func(il.sebar, b.func),
+        sebar: m.declare_func_in_func(il.sebar, b.func), pola_pilih: m.declare_func_in_func(il.pola_pilih, b.func),
+        ubah_baca: m.declare_func_in_func(il.ubah_baca, b.func), ubah_siap: m.declare_func_in_func(il.ubah_siap, b.func),
+        ubah_tulis_lokal: m.declare_func_in_func(il.ubah_tulis_lokal, b.func),
     };
     let wadah = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 8, 3));
     let titip = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 72, 3));
@@ -113,7 +118,7 @@ pub fn turunkan(
     let mut p = Penurun {
         b, j, nilai: vec![None; j.tipe.len()], slot, catat, undi, fid: impor.fid as i64, ptr, keluar, register, callee, kedalaman1,
         lb, wadah, titip, langsung, ringan, wadah16, konst: Default::default(), sebaris: None,
-        larik_tb: Vec::new(),
+        larik_tb: Vec::new(), rantai_slot: Default::default(),
     };
     // Kedalaman native dijaga di pintu masuk; parameter dimuat dari register atau penyangga argumen.
     let dalam = p.b.create_block();
@@ -435,6 +440,65 @@ impl Penurun<'_, '_> {
                 self.tetapkan(*hasil, lo);
             }
             Inst::TulisLebar { pos, nilai } => self.tulis_lebar(*pos, *nilai),
+            Inst::Rumus { rumus, lokal, args, tulis, hasil, jaga } => {
+                let jf = self.j;
+                let rm = &jf.rumus[*rumus];
+                let situs = crate::jit::lambat::SitusUbah::bocor(rm) as *const _ as i64;
+                let lebar = (rm.baca.len().max(rm.tulis.len()).max(1) * 8) as u32;
+                let wb = self.b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, lebar, 3));
+                let (lv, sv, pk) = (self.i64c(*lokal as i64), self.i64c(situs), self.b.ins().stack_addr(self.ptr, wb, 0));
+                let arg: Vec<Value> = args.iter().zip(&rm.sumber).map(|(a, s)| match (a, s) {
+                    (Some(n), _) => self.v(*n),
+                    (None, crate::jit::layak::Sumber::Konst(x)) => self.b.ins().f64const(*x),
+                    (None, _) => unreachable!("argumen lokal tanpa nilai"),
+                }).collect();
+                let tl = crate::jit::tata_letak::tata_letak().filter(|_| *tulis);
+                // Pembaruan atas struct milik tunggal (`ubah_siap`): pecahan ditulis langsung ke isi field-nya.
+                let isi = if tl.is_some() {
+                    let c = self.b.ins().call(self.lb.ubah_siap, &[lv, sv, pk]);
+                    let isi = self.b.inst_results(c)[0];
+                    let gagal = self.b.ins().icmp_imm_u(IntCC::Equal, isi, 0);
+                    self.jaga(gagal, jaga);
+                    Some(isi)
+                } else {
+                    let c = self.b.ins().call(self.lb.ubah_baca, &[lv, sv, pk]);
+                    let st = self.b.inst_results(c)[0];
+                    self.jaga(st, jaga);
+                    None
+                };
+                let h = crate::jit::turun::rumus_hitung(&mut self.b, rm, wb, self.ptr, |_, j| arg[j - 1]);
+                match (tl, isi) {
+                    (Some(tl), Some(isi)) => for (j, &(q, _)) in rm.tulis.iter().enumerate() {
+                        let x = self.b.ins().stack_load(self.ptr, types::I64, wb, (j * 8) as i32);
+                        self.b.ins().store(MemFlagsData::trusted(), x, isi, (q * tl.ukuran + tl.isi_float) as i32);
+                    },
+                    _ if *tulis => { let pk = self.b.ins().stack_addr(self.ptr, wb, 0); self.b.ins().call(self.lb.ubah_tulis_lokal, &[lv, sv, pk]); }
+                    _ => {}
+                }
+                if let Some(hn) = hasil {
+                    let v = h.expect("rumus nilai");
+                    let v = self.b.ins().bitcast(types::F64, MemFlagsData::new(), v);
+                    self.tetapkan(*hn, v);
+                }
+            }
+            Inst::Rantai { hasil, rantai, urutan, lokal, situs, jaga } => {
+                let slot = *self.rantai_slot.entry(*rantai)
+                    .or_insert_with(|| self.b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 8, 3)));
+                // Lengan berikutnya cuma dicapai dari kegagalan lengan sebelumnya (`rantai_pola`): slotnya sudah terisi.
+                if *urutan == 0 {
+                    let (l, sp) = (self.i64c(*lokal as i64), self.i64c(*situs));
+                    let pilih = self.b.ins().call(self.lb.pola_pilih, &[l, sp]);
+                    let c = self.b.inst_results(pilih)[0];
+                    let c = self.b.ins().uextend(types::I64, c);
+                    self.b.ins().stack_store(self.ptr, c, slot, 0);
+                }
+                let idx = self.b.ins().stack_load(self.ptr, types::I64, slot, 0);
+                let salah = self.b.ins().icmp_imm_u(IntCC::Equal, idx, 1000 + *urutan as i64);
+                self.jaga(salah, jaga);
+                let v = self.b.ins().icmp_imm_u(IntCC::Equal, idx, *urutan as i64);
+                let v = self.b.ins().uextend(types::I64, v);
+                self.tetapkan(*hasil, v);
+            }
             Inst::Sebar { pos, pulang, jaga } => {
                 let p = self.i64c(*pos as i64);
                 let c = self.b.ins().call(self.lb.sebar, &[p]);

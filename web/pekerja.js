@@ -3,7 +3,7 @@
 // dirinya; `perkakas/praktik.py periksa` menjalankan salinan terbitnya lewat node.
 function pekerjaJrg() {
   self.onmessage = function (ev) {
-    const modul = ev.data.modul, sumber = ev.data.sumber;
+    const modul = ev.data.modul, sumber = ev.data.sumber, bahasa = ev.data.bahasa;
     const dekoder = new TextDecoder();
     let mem = null;
     function Keluar(kode) { this.kode = kode; }
@@ -21,6 +21,7 @@ function pekerjaJrg() {
     try {
       const inst = new WebAssembly.Instance(modul, impor);
       mem = inst.exports.memory;
+      if (inst.exports.jrg_bahasa) inst.exports.jrg_bahasa(bahasa === 'id' ? 1 : 2);
       const byte = new TextEncoder().encode(sumber);
       const p = inst.exports.jrg_alokasi(byte.length);
       new Uint8Array(mem.buffer, p, byte.length).set(byte);

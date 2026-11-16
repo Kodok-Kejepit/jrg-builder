@@ -209,7 +209,7 @@ pub(crate) fn cmd_update(nama: Option<&str>) -> Result<(), String> {
                 Some(l) if *l == baru => tetap += 1,
                 _ => {
                     maju += 1;
-                    println!("  {} {} -> {}", d.nama, lama.as_deref().map_or("(baru)", |l| &l[..12.min(l.len())]), &baru[..12.min(baru.len())]);
+                    crate::cetak_t!("  {} {} -> {}", d.nama, lama.as_deref().map_or("(baru)", |l| &l[..12.min(l.len())]), &baru[..12.min(baru.len())]);
                 }
             }
             tumpukan.push(dir_dep);
@@ -220,9 +220,9 @@ pub(crate) fn cmd_update(nama: Option<&str>) -> Result<(), String> {
     }
     kunci.simpan()?;
     if maju + tetap == 0 {
-        println!("tidak ada dependensi git; dependensi path selalu terbaca versi terakhirnya");
+        crate::cetak_t!("tidak ada dependensi git; dependensi path selalu terbaca versi terakhirnya");
     } else {
-        println!("{} dimajukan, {} sudah terbaru", maju, tetap);
+        crate::cetak_t!("{} dimajukan, {} sudah terbaru", maju, tetap);
     }
     Ok(())
 }
@@ -264,8 +264,8 @@ pub(crate) fn cmd_publish(dry_run: bool) -> Result<(), String> {
     if akar.join("tests").is_dir() { super::perintah::cmd_test(None, false, false, 120)?; }
     let commit = git(&["rev-parse", "HEAD"], Some(&akar))?;
     if dry_run {
-        println!("akan menandai commit {} sebagai `{}` dan mendorongnya ke {}", &commit[..12], tag, tujuan);
-        println!("(--dry-run: tidak ada yang ditulis)");
+        crate::cetak_t!("akan menandai commit {} sebagai `{}` dan mendorongnya ke {}", &commit[..12], tag, tujuan);
+        crate::cetak_t!("(--dry-run: tidak ada yang ditulis)");
         return Ok(());
     }
     git(&["tag", "-a", &tag, "-m", &format!("{} {}", m.name, m.version)], Some(&akar))?;
@@ -273,7 +273,7 @@ pub(crate) fn cmd_publish(dry_run: bool) -> Result<(), String> {
         let _ = git(&["tag", "-d", &tag], Some(&akar));
         return Err(format!("jrgm publish: {}\n  catatan: tag lokal `{}` dibuang lagi, jadi publish bisa diulang", e, tag));
     }
-    println!("{} {} diterbitkan ({} di {})", m.name, m.version, tag, tujuan);
-    println!("pemakai: jrgm add {} --git {} --version {}", m.name, tujuan, m.version);
+    crate::cetak_t!("{} {} diterbitkan ({} di {})", m.name, m.version, tag, tujuan);
+    crate::cetak_t!("pemakai: jrgm add {} --git {} --version {}", m.name, tujuan, m.version);
     Ok(())
 }

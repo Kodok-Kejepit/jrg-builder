@@ -1,0 +1,4 @@
+# Seluruh rangkaian uji membaca pesan JRG dalam bahasa Indonesia (bahasa sumbernya). Pesan Inggris diuji
+# tersendiri dengan JRG_BAHASA=en (tests/terjemah.rs). Variabel yang sudah ada di lingkungan tidak ditimpa.
+[env]
+JRG_BAHASA = "id"

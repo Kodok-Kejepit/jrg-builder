@@ -481,15 +481,15 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <figure class="kode" data-jalan><figcaption><span>let-refused.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
     <span class="k-kunci">let</span> score = <span class="k-ang">0</span>
     score = <span class="k-ang">10</span>
-}</code></pre><pre class="keluaran"><code>error[E0103]: `score` dideklarasikan dengan `let`, jadi ia tidak bisa ditugasi ulang.
+}</code></pre><pre class="keluaran"><code>error[E0103]: `score` was declared with `let`, so it cannot be reassigned.
  --&gt; let-refused.jrg:3:5
   |
 3 |     score = 10
   |     ^^^^^
   |
-  = bantuan: pakai `var` atau `let mut` kalau nilainya memang harus berubah
-  = catatan: `let` dan `const` mengikat nilainya; `var` dan `:=` tidak</code></pre></figure>
-<aside class="catatan catatan-warn"><p class="catatan-judul">A common mistake</p><div>Writing <code>let</code> and then wanting to change the value. Change it to <code>var</code> &mdash; the error message says so directly (its <code>bantuan:</code> line, “help”).</div></aside>
+  = help: use `var` or `let mut` if the value really has to change
+  = note: `let` and `const` bind their value; `var` and `:=` do not</code></pre></figure>
+<aside class="catatan catatan-warn"><p class="catatan-judul">A common mistake</p><div>Writing <code>let</code> and then wanting to change the value. Change it to <code>var</code> &mdash; the error message says so directly (its <code>help:</code> line).</div></aside>
 <h2 id="int-and-float-are-two-different-things"><code>int</code> and <code>float</code> are two different things</h2>
 <p>The numbers <code>7</code> and <code>7.0</code> look like the same value, but JRG treats them differently. The first is a <strong>whole number</strong> (<code>int</code>), the second a <strong>number with a decimal point</strong> (<code>float</code>).</p>
 <figure class="kode" data-jalan><figcaption><span>types.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
@@ -525,14 +525,14 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <figure class="kode" data-jalan><figcaption><span>annotation-wrong.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
     <span class="k-kunci">let</span> x: <span class="k-tipe">Ghost</span> = <span class="k-ang">5</span>
     <span class="k-fn">wok</span>(x)
-}</code></pre><pre class="keluaran"><code>error[E0103]: tipe `Ghost` tidak ada
+}</code></pre><pre class="keluaran"><code>error[E0103]: the type `Ghost` does not exist
  --&gt; annotation-wrong.jrg:2:12
   |
 2 |     let x: Ghost = 5
   |            ^^^^^
   |
-  = bantuan: deklarasikan `struct Ghost`/`enum Ghost`, atau pakai tipe yang ada
-  = catatan: JRG TIDAK menegakkan anotasi tipe — `let x: int = &quot;teks&quot;` diterima — jadi yang diperiksa di sini cuma ADA-tidaknya namanya, bukan cocok-tidaknya nilainya</code></pre></figure>
+  = help: declare `struct Ghost`/`enum Ghost`, or use a type that exists
+  = note: JRG does NOT enforce type annotations — `let x: int = &quot;text&quot;` is accepted — so what is checked here is only whether the name EXISTS, not whether the value fits</code></pre></figure>
 <aside class="catatan catatan-info"><p class="catatan-judul">So what are annotations for?</p><div>For the next reader &mdash; including you three months from now. They state <em>what you meant</em>. JRG only guards the spelling of the type name, and that is a mistake that really happens.</div></aside>
 <div class="kuis" data-kuis="qj2_1"><p class="kuis-label">Quiz 1</p><p class="kuis-tanya">What is <code>9 / 2</code> in JRG?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>4.5</button><button type="button" data-benar="1"><span>B</span>4</button><button type="button" data-benar="0"><span>C</span>5</button></div><p class="kuis-umpan benar" hidden>Exactly. Both are <code>int</code>, so the result is an <code>int</code> and the remainder is thrown away.</p><p class="kuis-umpan salah" hidden>Remember: <code>int / int</code> stays <code>int</code>. The remainder is thrown away, not rounded.</p></div>
 <div class="kuis" data-kuis="qj2_2"><p class="kuis-label">Quiz 2</p><p class="kuis-tanya">Which one gives <code>4.5</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>9 / 2</code></button><button type="button" data-benar="1"><span>B</span><code>9.0 / 2</code></button><button type="button" data-benar="0"><span>C</span><code>(9 / 2) as float</code></button></div><p class="kuis-umpan benar" hidden>Right. One float side is enough to make the result a float.</p><p class="kuis-umpan salah" hidden>The third option divides first (giving 4), then converts &mdash; so <code>4.0</code>.</p></div>
@@ -549,7 +549,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=15c39b4883"></script>
+<script defer src="../aset/cari.js?v=cee15a2dd3"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 <script defer src="../aset/kelas-data.js?v=c386df7ff6"></script>
 <script defer src="../aset/kelas.js?v=cfe2ec492f"></script>

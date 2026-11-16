@@ -2,6 +2,9 @@
 # Penyapu sanitizer runtime C backend LLVM: `sh perkakas/sapu_sanitasi.sh ubsan|asan [--suite]`.
 # Tiap program `--emit-llvm` dikompilasi lewat pembungkus `JRGC_CLANG` ber-`-fsanitize`; korpusnya diadu dengan
 # interpreter, dan laporan sanitizer apa pun (`runtime error:`, `AddressSanitizer`) adalah kegagalan.
+
+# Keluaran dibandingkan dengan teks Indonesia (pesan bawaan Inggris sejak DWIBAHASA).
+export JRG_BAHASA="${JRG_BAHASA:-id}"
 set -u
 mode=${1:-}
 case $mode in

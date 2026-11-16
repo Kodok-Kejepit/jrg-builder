@@ -21,6 +21,21 @@ error: variabel `jumlas` belum dikenal — maksudnya `jumlah`? kalau bukan, cek 
 5. **`bantuan:`** berisi jalan keluar, dan **`catatan:`** konteks tambahan, kalau ada.
 6. **`jejak:`** untuk galat saat jalan: dari mana fungsi yang gagal itu dipanggil.
 
+## Bahasa
+
+Pesan tampil dalam bahasa Inggris secara bawaan, dan dalam bahasa Indonesia kalau dipilih:
+
+```sh
+jrgm language id             # semua jalan berikutnya, di mesin ini
+jrgm language                # tampilkan bahasa yang berlaku
+jrgc f.jrg --bahasa id       # jalan ini saja
+JRG_BAHASA=id jrgc f.jrg
+```
+
+Yang berganti cuma pesannya: nama yang kamu tulis, nilai, dan semua yang dicetak programmu tetap apa adanya. Teks
+bantuan (`--help`), laporan uji, dan `jrgm` ikut pilihan yang sama. Pesan yang dicetak biner `--emit-llvm` saat jalan
+masih berbahasa Indonesia.
+
 Pesan menyebut **tipe** nilai, bukan isinya. Salah memakai array berisi tiga angka atau tiga ribu angka menghasilkan
 pesan yang sama pendeknya.
 

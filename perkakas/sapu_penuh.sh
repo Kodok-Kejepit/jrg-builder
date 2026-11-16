@@ -1,5 +1,8 @@
 #!/bin/sh
 # Sapuan lengkap SESUDAH suite: konformans, contoh, modul std, dan pemasang.
+
+# Keluaran dibandingkan dengan teks Indonesia (pesan bawaan Inggris sejak DWIBAHASA).
+export JRG_BAHASA="${JRG_BAHASA:-id}"
 set -u
 akar=$(cd "$(dirname "$0")/.." && pwd)
 cd "$akar"

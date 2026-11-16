@@ -7,8 +7,8 @@ ringkas: The shape of JRG's error messages, their tone, and how to use them from
 Below, `totl` was typed where `total` was meant:
 
 ```teks
-kepentok di baris 3 waktu jalan. keterangannya di bawah.
-error: variabel `totl` belum dikenal — maksudnya `total`? kalau bukan, cek lagi penulisannya atau jangan-jangan lupa `let totl = ...` dulu
+it hit a wall on line 3 while running. the explanation is below.
+error: the variable `totl` is not known — did you mean `total`? if not, check the spelling, or maybe you forgot `let totl = ...` first
  --> calc.jrg:3:9
   |
 3 |     wok(totl)
@@ -20,10 +20,23 @@ error: variabel `totl` belum dikenal — maksudnya `total`? kalau bukan, cek lag
 2. **What is wrong**, with the name you wrote and, when there is one, a spelling suggestion.
 3. **Where**: file, line, and column.
 4. **A code excerpt** with `^` under the part at fault.
-5. **`bantuan:`** (help) gives the way out, and **`catatan:`** (note) extra context, when there is any.
-6. **`jejak:`** (trace) for run-time errors: where the failing function was called from.
+5. **`help:`** gives the way out, and **`note:`** extra context, when there is any.
+6. **`trace:`** for run-time errors: where the failing function was called from.
 
-Messages are in Indonesian today. English messages are on the way, chosen once with `jrgm language en`.
+## Language
+
+Messages are in English by default, and in Indonesian if you prefer:
+
+```sh
+jrgm language id             # every later run, on this machine
+jrgm language                # show the language in effect
+jrgc f.jrg --bahasa en       # this run only
+JRG_BAHASA=id jrgc f.jrg
+```
+
+Only the messages change: names you wrote, values, and everything your program prints stay exactly as they are.
+Help text (`--help`), test reports, and `jrgm` follow the same choice. Messages printed at run time by a binary built
+with `--emit-llvm` are still in Indonesian.
 
 A message names a value's **type**, not its contents. Misusing an array of three numbers or of three thousand gives
 an equally short message.

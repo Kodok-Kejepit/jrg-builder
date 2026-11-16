@@ -1089,6 +1089,7 @@ mod tests {
             CodegenOptions {
                 fast_math: true,
                 full_buffered_stdout: true,
+                ptr32: false,
             },
         )
         .unwrap();

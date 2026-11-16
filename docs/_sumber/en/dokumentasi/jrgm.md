@@ -51,6 +51,7 @@ tools.
 | `jrgm clean` | delete build output |
 | `jrgm lsp` | a language server for editors |
 | `jrgm apk`, `jrgm kunci`, `jrgm siapkan android` | Android apps, see [Android apps](android.html) |
+| `jrgm language [en \| id]` | the language of JRG's messages, for every later run (see [Diagnostics](diagnostik.html)) |
 
 ## Tests
 
@@ -59,36 +60,36 @@ limit, so one stuck test does not hold up the others.
 
 ```sh
 $ jrgm test
-[jrgm] 1 test di 1 berkas
+[jrgm] 1 test in 1 file
 
 == tests/dasar.jrg (1 test)
   ok    test_contoh
---- 1 test: 1 lulus, 0 gagal ---
+--- 1 test: 1 passed, 0 failed ---
 
-[jrgm] semua 1 test lulus
+[jrgm] all 1 test passed
 ```
 
 ## Lint
 
 ```sh
 $ jrgm lint
-peringatan: `import "std/set"` tidak dipakai — tidak ada `set::` di berkas ini
+warning: `import "std/set"` is unused — there is no `set::` in this file
  --> src/main.jrg:2:1
   |
 2 | import "std/set"
   | ^^^^^^^^^^^^^^^^
   |
-  = bantuan: hapus baris import-nya
+  = help: remove the import line
 
-peringatan: `x` diberi nilai tapi tidak pernah dibaca
+warning: `x` is given a value but never read
  --> src/main.jrg:7:9
   |
 7 |     let x = 5
   |         ^
   |
-  = bantuan: hapus, atau beri awalan `_` (`_x`) kalau memang sengaja
+  = help: remove it, or prefix it with `_` (`_x`) if it is intentional
 
-[jrgm] lint: 2 berkas, 0 galat, 2 peringatan
+[jrgm] lint: 2 files, 0 errors, 2 warnings
 ```
 
 The warnings: unused imports, functions never called, variables never read, integer literals in a float slot, and

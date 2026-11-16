@@ -2,6 +2,9 @@
 # Jendela sungguhan (mode `"tab"`) diuji di Xvfb: pikselnya dibaca
 # `import` — alat yang bukan milik proyek ini — lalu dihitung, di dua mesin.
 # Dulu fitur ini tidak pernah terkompilasi (258 galat, DIAGNOSTICS.md #419).
+
+# Keluaran dibandingkan dengan teks Indonesia (pesan bawaan Inggris sejak DWIBAHASA).
+export JRG_BAHASA="${JRG_BAHASA:-id}"
 set -u
 cd "$(dirname "$0")/.."
 if ! command -v xvfb-run >/dev/null || ! command -v import >/dev/null || ! command -v python3 >/dev/null; then

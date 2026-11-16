@@ -2,6 +2,9 @@
 # `jrgc --apk`: korutin Android (penukar stack x86_64 diuji di mesin ini), susunan APK,
 # perataan 16 KB, tanda tangan; kalau ada HP/emulator di adb, juga keluaran dan pikselnya.
 # Rancangannya: dokumentasi/src/llvm/apk.md
+
+# Keluaran dibandingkan dengan teks Indonesia (pesan bawaan Inggris sejak DWIBAHASA).
+export JRG_BAHASA="${JRG_BAHASA:-id}"
 set -u
 cd "$(dirname "$0")/.."
 J=$PWD/target/release/jrgc

@@ -351,7 +351,7 @@
      "type": "code",
      "filename": "wrong.jrg",
      "code": "pub fn main() {\n    wok(\"forgot the closing bracket\"\n}",
-     "output": "error[E0103]: harusnya ada `)` di sini, yang ketemu malah `}`\n --> wrong.jrg:3:1\n  |\n3 | }\n  | ^\n  |"
+     "output": "error[E0103]: expected `)` here, found `}`\n --> wrong.jrg:3:1\n  |\n3 | }\n  | ^\n  |"
     },
     {
      "type": "keypoint",
@@ -479,13 +479,13 @@
      "type": "code",
      "filename": "let-refused.jrg",
      "code": "pub fn main() {\n    let score = 0\n    score = 10\n}",
-     "output": "error[E0103]: `score` dideklarasikan dengan `let`, jadi ia tidak bisa ditugasi ulang.\n --> let-refused.jrg:3:5\n  |\n3 |     score = 10\n  |     ^^^^^\n  |\n  = bantuan: pakai `var` atau `let mut` kalau nilainya memang harus berubah\n  = catatan: `let` dan `const` mengikat nilainya; `var` dan `:=` tidak"
+     "output": "error[E0103]: `score` was declared with `let`, so it cannot be reassigned.\n --> let-refused.jrg:3:5\n  |\n3 |     score = 10\n  |     ^^^^^\n  |\n  = help: use `var` or `let mut` if the value really has to change\n  = note: `let` and `const` bind their value; `var` and `:=` do not"
     },
     {
      "type": "keypoint",
      "subtype": "warn",
      "title": "A common mistake",
-     "html": "Writing <code>let</code> and then wanting to change the value. Change it to <code>var</code> &mdash; the error message says so directly (its <code>bantuan:</code> line, “help”)."
+     "html": "Writing <code>let</code> and then wanting to change the value. Change it to <code>var</code> &mdash; the error message says so directly (its <code>help:</code> line)."
     },
     {
      "type": "heading",
@@ -544,7 +544,7 @@
      "type": "code",
      "filename": "annotation-wrong.jrg",
      "code": "pub fn main() {\n    let x: Ghost = 5\n    wok(x)\n}",
-     "output": "error[E0103]: tipe `Ghost` tidak ada\n --> annotation-wrong.jrg:2:12\n  |\n2 |     let x: Ghost = 5\n  |            ^^^^^\n  |\n  = bantuan: deklarasikan `struct Ghost`/`enum Ghost`, atau pakai tipe yang ada\n  = catatan: JRG TIDAK menegakkan anotasi tipe — `let x: int = \"teks\"` diterima — jadi yang diperiksa di sini cuma ADA-tidaknya namanya, bukan cocok-tidaknya nilainya"
+     "output": "error[E0103]: the type `Ghost` does not exist\n --> annotation-wrong.jrg:2:12\n  |\n2 |     let x: Ghost = 5\n  |            ^^^^^\n  |\n  = help: declare `struct Ghost`/`enum Ghost`, or use a type that exists\n  = note: JRG does NOT enforce type annotations — `let x: int = \"text\"` is accepted — so what is checked here is only whether the name EXISTS, not whether the value fits"
     },
     {
      "type": "keypoint",
@@ -1574,7 +1574,7 @@
      "type": "code",
      "filename": "out-of-range.jrg",
      "code": "pub fn main() {\n    let a = [10, 20]\n    wok(a[5])\n}",
-     "output": "error: index [5] di luar batas — array ini isinya 2 elemen (index valid: 0..1, atau -1..-2 kalau mau hitung dari belakang)\n --> out-of-range.jrg:3:9\n  |\n3 |     wok(a[5])\n  |         ^^^^\n  |"
+     "output": "error: index [5] is out of bounds — this array holds 2 elements (valid indices: 0..1, or -1..-2 counting from the end)\n --> out-of-range.jrg:3:9\n  |\n3 |     wok(a[5])\n  |         ^^^^\n  |"
     },
     {
      "type": "keypoint",
@@ -1829,7 +1829,7 @@
      "type": "code",
      "filename": "private.jrg",
      "code": "struct Wallet {\n    balance: int          // no pub -> closed\n}\n\npub fn main() {\n    let w = Wallet { balance: 50000 }\n    wok(w.balance)\n}",
-     "output": "error: field `balance` di `Wallet` bersifat private — cuma bisa diakses dari dalam method tipe itu sendiri atau turunannya. Tambahkan `pub` di depan field itu di deklarasi struct kalau memang harus publik.\n --> private.jrg:7:9\n  |\n7 |     wok(w.balance)\n  |         ^^^^^^^^^\n  |"
+     "output": "error: the field `balance` of `Wallet` is private — it can only be reached from inside that type's own methods or its descendants'. Add `pub` in front of the field in the struct declaration if it really has to be public.\n --> private.jrg:7:9\n  |\n7 |     wok(w.balance)\n  |         ^^^^^^^^^\n  |"
     },
     {
      "type": "keypoint",
@@ -2603,8 +2603,8 @@
        "A piece of your code, with a pointer right underneath"
       ],
       [
-       "<code>bantuan:</code>",
-       "A suggested fix (“help”), when JRG has one"
+       "<code>help:</code>",
+       "A suggested fix, when JRG has one"
       ]
      ]
     },
@@ -2617,7 +2617,7 @@
      "type": "code",
      "filename": "typo.jrg",
      "code": "pub fn main() {\n    let total = 10\n    wok(totl)\n}",
-     "output": "error: variabel `totl` belum dikenal — maksudnya `total`? kalau bukan, cek lagi penulisannya atau jangan-jangan lupa `let totl = ...` dulu\n --> typo.jrg:3:9\n  |\n3 |     wok(totl)\n  |         ^^^^\n  |"
+     "output": "error: the variable `totl` is not known — did you mean `total`? if not, check the spelling, or maybe you forgot `let totl = ...` first\n --> typo.jrg:3:9\n  |\n3 |     wok(totl)\n  |         ^^^^\n  |"
     },
     {
      "type": "keypoint",
@@ -2634,7 +2634,7 @@
      "type": "code",
      "filename": "bracket.jrg",
      "code": "pub fn main() {\n    wok(\"hello\"\n}",
-     "output": "error[E0103]: harusnya ada `)` di sini, yang ketemu malah `}`\n --> bracket.jrg:3:1\n  |\n3 | }\n  | ^\n  |"
+     "output": "error[E0103]: expected `)` here, found `}`\n --> bracket.jrg:3:1\n  |\n3 | }\n  | ^\n  |"
     },
     {
      "type": "keypoint",
@@ -2651,7 +2651,7 @@
      "type": "code",
      "filename": "oob.jrg",
      "code": "pub fn main() {\n    let a = [10, 20, 30]\n    wok(a[7])\n}",
-     "output": "error: index [7] di luar batas — array ini isinya 3 elemen (index valid: 0..2, atau -1..-3 kalau mau hitung dari belakang)\n --> oob.jrg:3:9\n  |\n3 |     wok(a[7])\n  |         ^^^^\n  |"
+     "output": "error: index [7] is out of bounds — this array holds 3 elements (valid indices: 0..2, or -1..-3 counting from the end)\n --> oob.jrg:3:9\n  |\n3 |     wok(a[7])\n  |         ^^^^\n  |"
     },
     {
      "type": "paragraph",
@@ -2666,11 +2666,11 @@
      "type": "code",
      "filename": "let-error.jrg",
      "code": "pub fn main() {\n    let limit = 100\n    limit = 200\n}",
-     "output": "error[E0103]: `limit` dideklarasikan dengan `let`, jadi ia tidak bisa ditugasi ulang.\n --> let-error.jrg:3:5\n  |\n3 |     limit = 200\n  |     ^^^^^\n  |\n  = bantuan: pakai `var` atau `let mut` kalau nilainya memang harus berubah\n  = catatan: `let` dan `const` mengikat nilainya; `var` dan `:=` tidak"
+     "output": "error[E0103]: `limit` was declared with `let`, so it cannot be reassigned.\n --> let-error.jrg:3:5\n  |\n3 |     limit = 200\n  |     ^^^^^\n  |\n  = help: use `var` or `let mut` if the value really has to change\n  = note: `let` and `const` bind their value; `var` and `:=` do not"
     },
     {
      "type": "paragraph",
-     "html": "“<code>limit</code> was declared with <code>let</code>, so it cannot be reassigned”, and the <code>bantuan:</code> line says to use <code>var</code> or <code>let mut</code> if the value really has to change."
+     "html": "“<code>limit</code> was declared with <code>let</code>, so it cannot be reassigned”, and the <code>help:</code> line says to use <code>var</code> or <code>let mut</code> if the value really has to change."
     },
     {
      "type": "heading",
@@ -2681,7 +2681,7 @@
      "type": "code",
      "filename": "type-error.jrg",
      "code": "pub fn main() {\n    wok(5 % \"two\")\n}",
-     "output": "error: tidak bisa `%` antara `int` dan `string`\n --> type-error.jrg:2:9\n  |\n2 |     wok(5 % \"two\")\n  |         ^^^^^^^^^\n  |"
+     "output": "error: cannot `%` between `int` and `string`\n --> type-error.jrg:2:9\n  |\n2 |     wok(5 % \"two\")\n  |         ^^^^^^^^^\n  |"
     },
     {
      "type": "keypoint",
@@ -2702,13 +2702,13 @@
      "type": "code",
      "filename": "chain.jrg",
      "code": "fn divide(a: int, b: int) -> int {\n    return a / b\n}\n\nfn average(total: int, count: int) -> int {\n    return divide(total, count)\n}\n\npub fn main() {\n    wok(average(100, 0))\n}",
-     "output": "error: `100 / 0` — nggak bisa bagi dengan nol, hasilnya nggak pernah terdefinisi. Cek lagi angka pembaginya sebelum dipakai bagi\n --> chain.jrg:2:12\n  |\n2 |     return a / b\n  |            ^^^^^\n  |\n  = jejak: `divide` dipanggil di chain.jrg:6:12\n           `average` dipanggil di chain.jrg:10:9"
+     "output": "error: `100 / 0` — cannot divide by zero, the result is never defined. Check the divisor before dividing\n --> chain.jrg:2:12\n  |\n2 |     return a / b\n  |            ^^^^^\n  |\n  = trace: `divide` called at chain.jrg:6:12\n           `average` called at chain.jrg:10:9"
     },
     {
      "type": "keypoint",
      "subtype": "tip",
      "title": "Read the chain from the bottom up",
-     "html": "The <code>jejak:</code> (trace) lines say who called whom. The bottom line is where you started, the top is where the error happened. What often needs fixing is the one at the bottom &mdash; that is where the wrong value came from."
+     "html": "The <code>trace:</code> lines say who called whom. The bottom line is where you started, the top is where the error happened. What often needs fixing is the one at the bottom &mdash; that is where the wrong value came from."
     },
     {
      "type": "heading",
@@ -2724,7 +2724,7 @@
       },
       {
        "kind": "step",
-       "html": "<span>1. Read</span> the whole message, including the <code>bantuan:</code> line"
+       "html": "<span>1. Read</span> the whole message, including the <code>help:</code> line"
       },
       {
        "kind": "step",

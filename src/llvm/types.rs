@@ -366,11 +366,13 @@ pub struct TypeTable {
     /// Emission order for `%Name = type {...}` declarations — later entries may
     /// reference earlier ones (opaque `ptr` means this almost never actually …
     pub emit_order: Vec<String>,
+    /// Lebar penunjuk sasaran dalam byte: 8, atau 4 di wasm32 (`CodegenOptions::ptr32`).
+    pub lebar_ptr: u64,
 }
 
 impl TypeTable {
     pub fn new() -> Self {
-        TypeTable { structs: HashMap::new(), enums: HashMap::new(), emit_order: Vec::new() }
+        TypeTable { structs: HashMap::new(), enums: HashMap::new(), emit_order: Vec::new(), lebar_ptr: 8 }
     }
 
     pub fn register_struct(&mut self, layout: StructLayout) {
@@ -519,8 +521,9 @@ impl TypeTable {
                     None => 4,
                 }
             }
-            JrgType::Fn(..) => 16,
-            JrgType::Chan(_) | JrgType::Masa(..) | JrgType::Sinkron(_) | JrgType::Kotak(_) => 8,
+            // `{ ptr, ptr }` dan penunjuk telanjang: ikut lebar penunjuk sasaran.
+            JrgType::Fn(..) => 2 * self.lebar_ptr,
+            JrgType::Chan(_) | JrgType::Masa(..) | JrgType::Sinkron(_) | JrgType::Kotak(_) => self.lebar_ptr,
             JrgType::Never => 0,
         }
     }
@@ -550,8 +553,8 @@ impl TypeTable {
                 Some(e) => e.payload_align.max(4),
                 None => 4,
             },
-            JrgType::Fn(..) => 8,
-            JrgType::Chan(_) | JrgType::Masa(..) | JrgType::Sinkron(_) | JrgType::Kotak(_) => 8,
+            JrgType::Fn(..) => self.lebar_ptr,
+            JrgType::Chan(_) | JrgType::Masa(..) | JrgType::Sinkron(_) | JrgType::Kotak(_) => self.lebar_ptr,
             JrgType::Never => 1,
         }
     }

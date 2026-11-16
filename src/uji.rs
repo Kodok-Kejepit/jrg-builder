@@ -33,7 +33,7 @@ impl IndeksBaris {
 
 /// Satu baris hasil untuk satu test.
 pub fn baris_hasil(nama: &str, hasil: &Result<(), String>, baris: Option<usize>) -> String {
-    match hasil {
+    crate::terjemah::t(&match hasil {
         Ok(()) => format!("  ok    {}", nama),
         Err(p) => {
             let sebab = p.lines().find(|l| !l.trim().is_empty()).unwrap_or("").trim();
@@ -42,17 +42,17 @@ pub fn baris_hasil(nama: &str, hasil: &Result<(), String>, baris: Option<usize>)
                 None    => format!("  GAGAL {} — {}", nama, sebab),
             }
         }
-    }
+    })
 }
 
 /// Rangkuman satu berkas. Dikembalikan sebagai teks, bukan dicetak, supaya
 /// pemanggilnya yang menentukan ke mana ia pergi.
 pub fn rangkuman(lulus: usize, gagal: usize) -> String {
-    format!("--- {} test: {} lulus, {} gagal ---", lulus + gagal, lulus, gagal)
+    crate::terjemah::t(&format!("--- {} test: {} lulus, {} gagal ---", lulus + gagal, lulus, gagal))
 }
 
 /// Kalimat yang dipakai kalau sebuah berkas dijalankan dengan `--uji` tapi
 /// tidak berisi satu pun fungsi test.
 pub fn tidak_ada_uji() -> String {
-    "tidak ada fungsi test di berkas ini — namanya harus diawali `test_` atau `uji_`".to_string()
+    crate::terjemah::t("tidak ada fungsi test di berkas ini — namanya harus diawali `test_` atau `uji_`")
 }

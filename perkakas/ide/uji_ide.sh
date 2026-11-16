@@ -2,6 +2,9 @@
 # JRG IDE (`ide/`) di chromium headless: pelayannya jalan di jrgc, halamannya menjalankan
 # `halo.jrg` dan `masukan.jrg` (stdin awal dan di tengah jalan), Hentikan bekerja, font-nya utuh,
 # proyek multi-berkas jalan, paket bahasa terpasang, konsol hidup, dan tidak ada galat JavaScript.
+
+# Keluaran dibandingkan dengan teks Indonesia (pesan bawaan Inggris sejak DWIBAHASA).
+export JRG_BAHASA="${JRG_BAHASA:-id}"
 set -u
 cd "$(dirname "$0")/../.."
 J=$PWD/target/release/jrgc

@@ -13,6 +13,12 @@ pub extern "C" fn jrg_alokasi(n: usize) -> *mut u8 {
     Box::into_raw(vec![0u8; n].into_boxed_slice()) as *mut u8
 }
 
+/// Bahasa pesan untuk jalan berikutnya: 1 Indonesia, 2 Inggris (pekerja memanggilnya dari `lang` halaman).
+#[no_mangle]
+pub extern "C" fn jrg_bahasa(kode: u32) {
+    jrgc::terjemah::set(if kode == 1 { jrgc::terjemah::Bahasa::Id } else { jrgc::terjemah::Bahasa::En });
+}
+
 /// Jalankan sumber di `p` (`n` byte UTF-8) sebagai `praktik.jrg`, lewat
 /// pipeline yang sama dengan `jrgc berkas.jrg`. 0 berhasil, 1 gagal.
 #[no_mangle]

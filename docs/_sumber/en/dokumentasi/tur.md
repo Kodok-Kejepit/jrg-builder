@@ -148,7 +148,7 @@ let prices = [12000, 8500, 4000]
 wok(prices[3])
 ```
 ```keluaran
-error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2, atau -1..-3 kalau mau hitung dari belakang)
+error: index [3] is out of bounds — this array holds 3 elements (valid indices: 0..2, or -1..-3 counting from the end)
  --> prices.jrg:2:5
   |
 2 | wok(prices[3])

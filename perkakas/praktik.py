@@ -134,7 +134,7 @@ DI_PERAMBAN = [
     ('pub fn main() {\n    wok("Halo, dunia JRG!")\n}', lambda h: h["kode"] == 0 and h["teks"] == "Halo, dunia JRG!\n"),
     ('pub fn main() {\n    wok(int("abc"))\n}',
      lambda h: h["kode"] == 1 and "--> praktik.jrg:2:9" in h["teks"] and "^^^" in h["teks"]),
-    ('pub fn main() {\n    spawn { wok(1) }\n}', lambda h: "butuh thread" in h["teks"] and "praktik.jrg:2:5" in h["teks"]),
+    ('pub fn main() {\n    spawn { wok(1) }\n}', lambda h: ("butuh thread" in h["teks"] or "needs threads" in h["teks"]) and "praktik.jrg:2:5" in h["teks"]),
     ('fn f(n) { return n == 0 $ 0 : 1 + f(n - 1) }\npub fn main() { wok(f(5000)) }', lambda h: h["sebab"] == "rekursi"),
 ]
 
@@ -181,6 +181,7 @@ def periksa_peramban(salah):
 
 def jalankan_asli(sumber):
     env = {k: v for k, v in os.environ.items() if k not in ("JRG_SOPAN", "JRG_NADA", "JRG_ULANGAN", "DISPLAY", "WAYLAND_DISPLAY")}
+    env.setdefault("JRG_BAHASA", "id")
     with tempfile.TemporaryDirectory() as d:
         (Path(d) / "praktik.jrg").write_text(sumber, encoding="utf-8")
         try:

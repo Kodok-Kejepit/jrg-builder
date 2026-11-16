@@ -321,7 +321,7 @@ pub(super) fn mati_sesudah(f: &VmFunction, r: &Rencana, ip: usize, a: usize) -> 
 /// Rantai lengan `match` atas satu lokal: kepala tiap lengan `LoadLocal a; CekEnum d; JumpFalse x` (digabung,
 /// tanpa sasaran lompat lain di antaranya) dan lengan berikutnya di ujung `Jump` tanpa syarat dari `x`, tiap
 /// titiknya berpendahulu tunggal. Hasil: ip kepala -> (nomor rantai, urutan); daftar ip kepala per rantai.
-fn rantai_pola(f: &VmFunction, r: &Rencana) -> (std::collections::HashMap<usize, (usize, usize)>, Vec<Vec<usize>>) {
+pub(super) fn rantai_pola(f: &VmFunction, r: &Rencana) -> (std::collections::HashMap<usize, (usize, usize)>, Vec<Vec<usize>>) {
     use OpCode::*;
     let kode = &f.chunk.code;
     let n = kode.len();
@@ -891,7 +891,7 @@ fn rumus_baca(
 
 /// Simpul rumus yang dipakai dihitung sekali, berurutan (operandnya selalu simpul sebelumnya); nilai field
 /// yang berubah ke penyangga `wb` (bit pecahan), argumen ke-`j` dari `arg`; hasil rumus nilai sebagai bit pecahan.
-fn rumus_hitung(
+pub(super) fn rumus_hitung(
     b: &mut FunctionBuilder, rm: &super::layak::Rumus, wb: StackSlot, ptr: Type,
     arg: impl Fn(&mut FunctionBuilder, usize) -> Value,
 ) -> Option<Value> {

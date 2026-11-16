@@ -463,15 +463,21 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p class="ringkas">The shape of JRG's error messages, their tone, and how to use them from an editor or CI.</p>
 <h2 id="the-shape-of-a-message"><a class="jangkar" href="#the-shape-of-a-message">The shape of a message</a></h2>
 <p>Below, <code>totl</code> was typed where <code>total</code> was meant:</p>
-<figure class="kode"><figcaption><span>teks</span></figcaption><pre><code>kepentok di baris 3 waktu jalan. keterangannya di bawah.
-error: variabel `totl` belum dikenal — maksudnya `total`? kalau bukan, cek lagi penulisannya atau jangan-jangan lupa `let totl = ...` dulu
+<figure class="kode"><figcaption><span>teks</span></figcaption><pre><code>it hit a wall on line 3 while running. the explanation is below.
+error: the variable `totl` is not known — did you mean `total`? if not, check the spelling, or maybe you forgot `let totl = ...` first
  --&gt; calc.jrg:3:9
   |
 3 |     wok(totl)
   |         ^^^^
   |</code></pre></figure>
-<ol><li><strong>A greeting</strong>, one line at the top. The wording varies; <code>--sopan</code> drops it.</li><li><strong>What is wrong</strong>, with the name you wrote and, when there is one, a spelling suggestion.</li><li><strong>Where</strong>: file, line, and column.</li><li><strong>A code excerpt</strong> with <code>^</code> under the part at fault.</li><li><strong><code>bantuan:</code></strong> (help) gives the way out, and <strong><code>catatan:</code></strong> (note) extra context, when there is any.</li><li><strong><code>jejak:</code></strong> (trace) for run-time errors: where the failing function was called from.</li></ol>
-<p>Messages are in Indonesian today. English messages are on the way, chosen once with <code>jrgm language en</code>.</p>
+<ol><li><strong>A greeting</strong>, one line at the top. The wording varies; <code>--sopan</code> drops it.</li><li><strong>What is wrong</strong>, with the name you wrote and, when there is one, a spelling suggestion.</li><li><strong>Where</strong>: file, line, and column.</li><li><strong>A code excerpt</strong> with <code>^</code> under the part at fault.</li><li><strong><code>help:</code></strong> gives the way out, and <strong><code>note:</code></strong> extra context, when there is any.</li><li><strong><code>trace:</code></strong> for run-time errors: where the failing function was called from.</li></ol>
+<h2 id="language"><a class="jangkar" href="#language">Language</a></h2>
+<p>Messages are in English by default, and in Indonesian if you prefer:</p>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgm language id            <span class="k-kom"> # every later run, on this machine</span>
+jrgm language               <span class="k-kom"> # show the language in effect</span>
+jrgc f.jrg --bahasa en      <span class="k-kom"> # this run only</span>
+JRG_BAHASA=id jrgc f.jrg</code></pre></figure>
+<p>Only the messages change: names you wrote, values, and everything your program prints stay exactly as they are. Help text (<code>--help</code>), test reports, and <code>jrgm</code> follow the same choice. Messages printed at run time by a binary built with <code>--emit-llvm</code> are still in Indonesian.</p>
 <p>A message names a value's <strong>type</strong>, not its contents. Misusing an array of three numbers or of three thousand gives an equally short message.</p>
 <h2 id="tone"><a class="jangkar" href="#tone">Tone</a></h2>
 <p>The first time an error appears it is always delivered seriously. When the same error comes back, the greeting changes according to the chosen tone, and at the seventh repetition a help line is added, because the same message seven times means the explanation has not landed yet.</p>
@@ -488,13 +494,13 @@ jrgc f.jrg --sopan          <span class="k-kom"> # no greeting at all</span></co
 <nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="memori.html"><small>Previous</small><strong>Memory model</strong></a><a class="ke-kanan" href="benchmark.html"><small>Next</small><strong>Benchmark</strong></a></nav>
 <footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
 </main>
-<nav class="di-halaman" aria-label="On this page"><p>On this page</p><ol><li><a href="#the-shape-of-a-message">The shape of a message</a></li><li><a href="#tone">Tone</a></li><li><a href="#for-editors-and-ci">For editors and CI</a></li><li><a href="#no-silent-wrong-results">No silent wrong results</a></li></ol></nav>
+<nav class="di-halaman" aria-label="On this page"><p>On this page</p><ol><li><a href="#the-shape-of-a-message">The shape of a message</a></li><li><a href="#language">Language</a></li><li><a href="#tone">Tone</a></li><li><a href="#for-editors-and-ci">For editors and CI</a></li><li><a href="#no-silent-wrong-results">No silent wrong results</a></li></ol></nav>
 </div>
 <div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=15c39b4883"></script>
+<script defer src="../aset/cari.js?v=cee15a2dd3"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>
