@@ -3488,3 +3488,42 @@ fn ubah_sama_dengan_vm() {
     assert!(r.stderr.matches("UbahLokal").count() >= 5 && r.stderr.contains(" Ubah(") && r.stderr.contains("RumusLokal"),
         "{}", r.stderr);
 }
+
+/// Situs `Call` yang belum dijalankan VM (loop sesudah titik OSR) meminjam jenis hasil situs lain ke callee yang
+/// sama (langkah 83): `hash` tetap bilangan native di loop kedua; pinjaman yang salah (hasil di luar 64 bit) deopt.
+const PINJAM_SPEK: &str = r#"fn fnv(h: uint, s: str) -> uint {
+    var acc: uint = h
+    for i in 0..len(s) {
+        acc = math::wrap_mul(acc ^ (str::char_at(s, i) as uint), 1099511628211)
+    }
+    return acc
+}
+
+fn kali(x, k) { return x * k }
+
+fn main() {
+    var hash: uint = 1469598103934665603
+    for r in 0..3000 { hash = fnv(hash, "abcdefgh") }
+    for r in 0..3000 { hash = fnv(hash, "héllo ☃ 𝔘") }
+    wok(hash)
+    // Situs kedua meminjam jenis hasil bulat dari situs pertama, lalu hasilnya di luar 64 bit.
+    var a = 0
+    for r in 0..3000 { a = a + kali(r, 3) }
+    var b = 0
+    for r in 0..3000 { b = b + kali(r, 9223372036854775807) }
+    wok(a, b)
+}
+"#;
+
+#[test]
+fn pinjam_spek_sama_dengan_vm() {
+    let v = jalankan(PINJAM_SPEK, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout.lines().count() == 2, "{}{}", v.stdout, v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(PINJAM_SPEK, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    // Tanpa pinjaman, `fnv` dari loop kedua dikompilasi dengan `h` milik VM.
+    let r = jalankan(PINJAM_SPEK, &["--jit"], &[("JRG_JIT_LOG", "rencana")]);
+    assert!(r.stderr.contains("rencana fnv") && !r.stderr.contains("LoadLocal 0 Muat [Nilai, Nilai]"), "{}", r.stderr);
+}

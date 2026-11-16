@@ -279,6 +279,8 @@ pub struct Rencana {
     /// Posisi maya yang diwujudkan sebelum instruksi `ip`: `Salinan(l)` lewat `lambat::muat`, `Konst(i)` lewat
     /// `lambat::taruh` dari konstantanya.
     pub wujud: Vec<Vec<(usize, Jenis)>>,
+    /// Jenis hasil yang dispekulasikan per callee `Cara::Langsung` (dipinjam situs yang belum berumpan).
+    pub spek_callee: Vec<(usize, Jenis)>,
     /// Rumus method pembaruan tiap `Cara::Ubah`.
     pub ubah: Vec<Rumus>,
 }
@@ -477,6 +479,11 @@ impl Rencana {
 
 /// Jenis hasil instruksi `ip` yang selalu sama menurut umpan VM (`Vm::catat_hasil`), kecuali spekulasinya
 /// pernah gagal di sana.
+/// Situs `ip` belum pernah mencatat hasil (VM belum menjalankannya sejak profilnya ada).
+fn belum_jalan(f: &VmFunction, ip: usize) -> bool {
+    f.chunk.profil.as_ref().and_then(|p| p.umpan.get(ip)).is_some_and(|u| u.load(std::sync::atomic::Ordering::Relaxed) == 0)
+}
+
 fn spek_hasil(f: &VmFunction, ip: usize) -> Option<Jenis> {
     use super::profil::bit;
     // Bulat yang pernah terlihat (atau terbukti lewat deopt) di luar 64 bit dispekulasikan `Lebar`.
@@ -587,6 +594,7 @@ fn analisis_sekali(
         ada_defer: kode.iter().any(|i| i.op == OpCode::DeferPush),
         langsung: Vec::new(),
         ubah: Vec::new(),
+        spek_callee: Vec::new(),
         argc_call: kode.iter().map(|i| (i.op == OpCode::Call).then_some(i.arg as usize)).collect(),
         larang_bulat: larang_bulat.to_vec(),
         larang: larang.to_vec(),
@@ -1265,7 +1273,11 @@ fn langkah_lambat(
                     None => { r.langsung.push((i, jenis)); r.langsung.len() - 1 }
                 };
                 s.truncate(t - a - 1);
-                r.spek[ip] = spek_hasil(f, ip);
+                // Situs yang belum pernah dijalankan VM (loop sesudah titik OSR) meminjam jenis hasil situs lain
+                // yang memanggil fungsi yang sama; gagal = deopt seperti spekulasi biasa, lalu tidak dipinjam lagi.
+                r.spek[ip] = spek_hasil(f, ip).or_else(|| (!f.chunk.kode_jit.spek_gagal_di(ip) && belum_jalan(f, ip))
+                    .then(|| r.spek_callee.iter().find(|(c, _)| *c == i).map(|(_, j)| *j)).flatten());
+                if let (Some(j), false) = (r.spek[ip], r.spek_callee.iter().any(|(c, _)| *c == i)) { r.spek_callee.push((i, j)); }
                 s.push(r.spek[ip].unwrap_or(Nilai));
                 return Some((Cara::Langsung(k), vec![(lanjut, s)]));
             }

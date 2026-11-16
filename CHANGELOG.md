@@ -27,9 +27,14 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   atas field-nya tidak lagi memanggil method dan membangun struct baru — field dibaca, dihitung di register, lalu
   ditulis ke struct yang sama; method yang cuma mengembalikan rumus pecahan atas field-nya (`rec.score()`) juga
   dihitung di tempat. `struct_particles` 12,9 → 3,3 s, `mixed_report` 2,2 → 1,4 s.
+- **`--jit` tidak lagi jatuh ke nilai VM di loop sesudah titik masuknya**: panggilan di loop yang belum pernah dijalankan
+  saat fungsi pemanggilnya dikompilasi meminjam jenis hasil panggilan lain ke fungsi yang sama. `string_scan`
+  0,44 → 0,32 s.
 
 ### Diperbaiki
 
+- **Berkas statis `dok::serve` dialirkan dari disk**, tidak lagi dimuat utuh per permintaan. Dengan middleware
+  `sesudah` berkasnya tetap dimuat, di bawah anggaran 256 MiB (lewat: 503).
 - **`jrgm siapkan android` melewati entri katalog yang nama berkas atau foldernya bukan nama polos** (`..`, `/`).
 
 ## [0.5.0] — 2026-11-16
