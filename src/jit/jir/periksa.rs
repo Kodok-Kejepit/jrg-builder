@@ -66,6 +66,31 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
                 }
                 Inst::JagaJika { kondisi, jaga: j } => { pakai(*kondisi, &ada)?; tipe(*kondisi, Tipe::I)?; jaga(j, &ada)?; }
                 Inst::Undi { hasil } => { definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
+                Inst::Muat { .. } | Inst::Buang { .. } | Inst::Taruh { .. } => {}
+                Inst::Simpan { nilai, .. } => if let Some(v) = nilai { pakai(*v, &ada)?; },
+                Inst::Benar { hasil, .. } => { definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
+                Inst::Langkah { isi, .. } => for (_, v) in isi { pakai(*v, &ada)?; },
+                Inst::Buka { hasil, jaga: j, .. } => { jaga(j, &ada)?; definisi(*hasil, &mut ada)?; }
+                Inst::Bawaan { isi, .. } => for (_, v) in isi { pakai(*v, &ada)?; },
+                Inst::BinerVm { hasil, isi, .. } => {
+                    for (_, v) in isi { pakai(*v, &ada)?; }
+                    if let Some(h) = hasil { definisi(*h, &mut ada)?; tipe(*h, Tipe::I)?; }
+                }
+                Inst::MuatUpval { jaga: j, .. } => jaga(j, &ada)?,
+                Inst::TeksBulat { n, .. } => { pakai(*n, &ada)?; tipe(*n, Tipe::I)?; }
+                Inst::Pindah { .. } => {}
+                Inst::Bangun { isi, .. } => for (_, v) in isi { pakai(*v, &ada)?; },
+                Inst::Salin { .. } | Inst::Tukar { .. } => {}
+                Inst::CekMetode { jaga: j, .. } | Inst::Maju { jaga: j, .. } => jaga(j, &ada)?,
+                Inst::Panjang { hasil, jaga: j, .. } => { jaga(j, &ada)?; definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
+                Inst::Langsung { isi, args, basi, hasil, .. } => {
+                    for (_, v) in isi.iter().chain(args) { pakai(*v, &ada)?; }
+                    for v in basi.isi.iter().flatten() { pakai(*v, &ada)?; }
+                    if let Some((h, _, j)) = hasil { jaga(j, &ada)?; definisi(*h, &mut ada)?; }
+                }
+                Inst::IterAda { hasil, jaga: j, .. } => { jaga(j, &ada)?; definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
+                Inst::TulisVm { nilai, .. } => if let Some(v) = nilai { pakai(*v, &ada)?; },
+                Inst::SimpanUpval { nilai, jaga: j, .. } => { if let Some(v) = nilai { pakai(*v, &ada)?; } jaga(j, &ada)?; }
                 Inst::Panggil { hasil, args, di, sesudah, .. } => {
                     for a in args { pakai(*a, &ada)?; tipe(*a, Tipe::I)?; }
                     for v in di.isi.iter().chain(&sesudah.isi).flatten() { pakai(*v, &ada)?; }
@@ -95,6 +120,11 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
                 lompat(*tidak, tidak_args, &ada)?;
             }
             Some(Akhir::Kembali { nilai, .. }) => pakai(*nilai, &ada)?,
+            Some(Akhir::KembaliNilai { .. } | Akhir::KembaliUnit) => {}
+            Some(Akhir::CabangVm { isi, tujuan, .. }) => {
+                for (_, v) in isi { pakai(*v, &ada)?; }
+                for (ke, args, _) in tujuan { lompat(*ke, args, &ada)?; }
+            }
             Some(Akhir::Keluar { keadaan }) => for v in keadaan.isi.iter().flatten() { pakai(*v, &ada)?; },
             None => return Err(format!("b{bi} tanpa akhir")),
         }

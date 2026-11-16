@@ -1,6 +1,35 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const PARITAS_LLVM: &[(&str, &str)] = &[
+    // `match` bulat berlengan literal/rentang diturunkan jadi satu `switch` LLVM: nilai kembar milik lengan pertama,
+    // rentang tertutup dan terbuka, alternatif, lengan yang tak pernah tercapai, literal negatif (jalur lama).
+    ("match bulat lewat switch", r#"package main
+fn k(v: int) -> int {
+    match v {
+        0 => 5,
+        1 | 2 | 3 => 7,
+        2 => 99,
+        4..=8 => 11,
+        9..12 => 12,
+        12 | 300 => 30,
+        _ => 13,
+    }
+}
+fn neg(v: int) -> int {
+    match v { -1 => 1, 0 => 2, 5 => 3, _ => 4 }
+}
+fn penuh(v: int) -> string {
+    match v { 0 => "nol", 1..=2 => "kecil" }
+}
+pub fn main() {
+    var keluar = []
+    for i in -2..15 { keluar = arr::push(keluar, k(i)) }
+    wok(keluar)
+    wok(k(300), k(299), k(9223372036854775807))
+    wok(neg(-1), neg(0), neg(5), neg(6))
+    wok(penuh(0), penuh(2))
+}
+"#),
     // Fase SEBAR-GENERIK: sebar di literal varian enum generik dari basis instans enum yang sama — dulu ditolak LLVM.
     ("sebar varian enum generik dari varian sama dan lain", r#"package main
 enum E<T> { V { a: T, b: int }, W { a: T } }

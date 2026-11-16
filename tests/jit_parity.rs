@@ -3651,3 +3651,207 @@ fn jir_panggil_sama_dengan_vm() {
     let r = jalankan(JIR_PANGGIL, &["--jit"], &[JIR, ("JRG_JIT_LOG", "jir")]);
     assert!(r.stderr.contains("[jit] jir fib:\nb0") && r.stderr.contains("= panggil #"), "fib tidak lewat JIR:\n{}", r.stderr);
 }
+
+/// JIR-1c (langkah 87): nilai milik VM di JIR — bukaan berjaga yang gagal saat jenisnya berganti, pembantu `lambat`
+/// (`muat`, `simpan`, `buang`, `benar`, `taruh`), langkah VM, hasil milik VM.
+const JIR_NILAI: &str = r#"fn sapa(nama, n: int) {
+    var s = ""
+    var i = 0
+    while i < n {
+        if nama == "" { s = s + "?" } else { s = s + nama }
+        i = i + 1
+    }
+    return s
+}
+fn tambah(a, b) { return a + b }
+fn main() {
+    wok(sapa("ab", 3), sapa("", 2))
+    var t = 0
+    for i in 0..500 { t = tambah(t, i) }
+    wok(t)
+    // Jenis nilai VM berganti: bukaan spekulasi gagal, lalu VM.
+    wok(tambah(1.5, 2), tambah("x", "y"))
+    // Galat yang lahir di langkah VM: teks + bulat.
+    wok(tambah("z", 1))
+}
+"#;
+
+#[test]
+fn jir_nilai_sama_dengan_vm() {
+    let v = jalankan(JIR_NILAI, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout.lines().count() == 4, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..]] {
+        let j = jalankan(JIR_NILAI, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let r = jalankan(JIR_NILAI, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir")]);
+    assert!(r.stderr.contains("= buka "), "bukaan nilai VM tidak lewat JIR:\n{}", r.stderr);
+}
+
+/// JIR-1d (langkah 88): fungsi bawaan dan hasil berspekulasinya (`PUNCAK_VM`), operator atas nilai VM, tangkapan closure
+/// yang dibaca dan ditulis, cabang yang diputuskan VM, `str(n)`.
+const JIR_BAWAAN: &str = r#"fn teks(n: int) {
+    var s = ""
+    for i in 0..n { s = s + str(i % 10) + str::upper("a") }
+    return len(s)
+}
+fn bandingkan(a, b) { return a < b }
+fn main() {
+    wok(teks(30))
+    var k = 3
+    let tambah = |x| { k = k + x  return k * 2 }
+    var t = 0
+    for i in 0..400 { t = t + tambah(i % 5) }
+    wok(t, k)
+    var n = 0
+    for i in 0..300 { if bandingkan(str(i), "15") { n = n + 1 } }
+    wok(n)
+    // Hasil bawaan yang dispekulasikan bulat lalu berganti jenis: deopt di instruksi sesudahnya.
+    var u = 0
+    for i in 0..300 { u = u + math::abs(i - 150) }
+    wok(u, math::abs(-2.5))
+    wok(bandingkan([1], "x"))
+}
+"#;
+
+#[test]
+fn jir_bawaan_sama_dengan_vm() {
+    let v = jalankan(JIR_BAWAAN, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout.lines().count() == 4, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..]] {
+        let j = jalankan(JIR_BAWAAN, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let r = jalankan(JIR_BAWAAN, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir")]);
+    assert!(r.stderr.contains("muat tangkapan") && r.stderr.contains("biner-vm"), "tidak lewat JIR:\n{}", r.stderr);
+}
+
+/// JIR-1e (langkah 89): tepi ke titik temu yang dilebarkan jadi milik VM (blok stub `tulis-vm`, keadaan tepi dipakai
+/// sebelum titik temu) dan literal struct, larik, tuple, varian (`Inst::Bangun`).
+const JIR_TEPI: &str = r#"struct T { pub a: int, pub b: string }
+enum E { A(int), B }
+fn campur(n: int) {
+    var x = 0
+    for i in 0..n {
+        // Di titik temu `x` kadang teks: posisinya dilebarkan jadi milik VM di tepi.
+        if i % 7 == 0 { x = "t" } else { x = i }
+    }
+    return x
+}
+fn susun(n: int) {
+    var t = T { a: 0, b: "" }
+    var xs = []
+    for i in 0..n {
+        t = T { a: i, b: str(i) }
+        xs = [i, i * 2]
+        let p = (i, "p")
+        let e = if i % 2 == 0 { E::A(i) } else { E::B }
+    }
+    return [t.a, len(xs), 0]
+}
+fn main() {
+    wok(campur(50), campur(8))
+    wok(susun(40))
+}
+"#;
+
+#[test]
+fn jir_tepi_sama_dengan_vm() {
+    let v = jalankan(JIR_TEPI, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout.lines().count() == 2, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..]] {
+        let j = jalankan(JIR_TEPI, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let r = jalankan(JIR_TEPI, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir")]);
+    assert!(r.stderr.contains("tulis-vm"), "tepi pelebar tidak lewat JIR:\n{}", r.stderr);
+}
+
+/// JIR-1f (langkah 90): salinan lokal maya, `Muat` atas lokal yang isinya salinan (membaca lokal ASALNYA — sempat
+/// menjawab `nil` dan lengan `match` yang salah tanpa suara sebelum dibetulkan), `Salin`, `Tukar`, `Metode`,
+/// iterator milik VM.
+const JIR_SALINAN: [&str; 2] = [r#"package main
+struct P { pub a: int }
+impl P {
+  fn ubah(self) {
+    var g = self
+    g.a = 9
+    return g
+  }
+  fn salin(self) {
+    let x = self
+    x
+  }
+}
+pub fn main() {
+  wok(P { a: 1 }.ubah(), P { a: 2 }.salin())
+  for _, i in [1, 2, 3] {
+    if i == 2 {
+      continue
+    }
+    wok(i)
+  }
+}"#, r#"fn k(v) { match v { 2 => 7, _ => 13 } }
+fn f(v) { match v { 2.0 => 7, _ => 13 } }
+fn s(v) { match v { "a" => 1, "x" => 2, _ => 3 } }
+fn n(v) { match v { -5 => 1, 0 => 2, _ => 3 } }
+fn c(v) { match v { 'a' => 1, 97 => 2, _ => 3 } }
+fn b(v) { match v { true => 1, 1 => 2, _ => 3 } }
+wok(k(2.0), k(2), f(2), f(2.0), f(2.5))
+wok(s("a"), s("x"), s(1))
+wok(n(-5), n(-5.0), n(0.0), n(nil))
+wok(c('a'), c(97), c(97.0))
+wok(b(true), b(1), b(1.0), b(false))
+let x = 2.0
+wok(match x { 1 | 2 | 3 => "dua", 4..=8 => "rentang", _ => "lain" })
+"#];
+
+#[test]
+fn jir_salinan_sama_dengan_vm() {
+    for src in JIR_SALINAN {
+        let v = jalankan(src, &["--vm"], &[]);
+        assert!(v.sukses, "{}{}", v.stdout, v.stderr);
+        for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..]] {
+            let j = jalankan(src, &["--jit"], env);
+            assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+        }
+        let r = jalankan(src, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "ringkas")]);
+        assert!(r.stderr.contains("[jit] jir: "), "JIR tidak dipakai:\n{}", r.stderr);
+    }
+}
+
+/// JIR-1g (langkah 91): panggilan langsung (`Cara::Langsung`: argumen nilai VM, callee ringan, hasil angka dari register
+/// atau dibuka berjaga, deopt di dalam callee) dan `len` atas nilai VM dan lokal.
+const JIR_LANGSUNG: &str = r#"fn panjang(s, k: int) -> int { return len(s) + k }
+fn sambung(a, b) { return a + "-" + b }
+fn skala(x, f: float) -> float { return x * f }
+fn kerja(n: int) {
+    var t = 0
+    var s = ""
+    var f = 0.0
+    for i in 0..n {
+        t = t + panjang("abc", i)
+        if i % 50 == 0 { s = sambung(s, str(i)) }
+        f = f + skala(i, 0.5)
+    }
+    return [t, len(s), f]
+}
+fn main() {
+    wok(kerja(400))
+    // Argumen berganti jenis: callee deopt, hasilnya bukan bulat lagi.
+    wok(skala(2.5, 2.0), panjang([1, 2], 3))
+    wok(panjang(5, 1))
+}
+"#;
+
+#[test]
+fn jir_langsung_sama_dengan_vm() {
+    let v = jalankan(JIR_LANGSUNG, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout.lines().count() == 2, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..]] {
+        let j = jalankan(JIR_LANGSUNG, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let r = jalankan(JIR_LANGSUNG, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir")]);
+    assert!(r.stderr.contains("langsung #") && r.stderr.contains("= panjang"), "tidak lewat JIR:\n{}", r.stderr);
+}

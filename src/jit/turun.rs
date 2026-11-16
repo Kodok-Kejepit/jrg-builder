@@ -288,7 +288,7 @@ fn cse_aman(op: OpCode, cara: &Cara) -> bool {
 /// Lokal `a` mati sesudah `LoadLocal a` di `ip`: di jalur lurus berikutnya (lompat tanpa syarat diikuti) ia
 /// ditimpa, di-`Pop` atau fungsinya kembali sebelum dibaca. Cuma opcode yang efek stack-nya pasti; lainnya,
 /// cabang bersyarat, atau salinan maya atas `a` = dianggap hidup. Sel tangkapan aman: `ambil` menyalin isinya.
-fn mati_sesudah(f: &VmFunction, r: &Rencana, ip: usize, a: usize) -> bool {
+pub(super) fn mati_sesudah(f: &VmFunction, r: &Rencana, ip: usize, a: usize) -> bool {
     use OpCode::*;
     let kode = &f.chunk.code;
     let mut j = ip + 1;

@@ -353,7 +353,7 @@ pub fn kompilasi(
         }
         match jir {
             Some(Ok(fj)) => {
-                super::jir::turun::turunkan(&mut mj.m, &mut ctx.func, &mut mj.fctx, &fj, &impor, &callee);
+                super::jir::turun::turunkan(&mut mj.m, &mut ctx.func, &mut mj.fctx, &fj, &impor, &callee, &langsung);
                 super::jir::UNIT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             }
             _ => turun::turunkan(&mut mj.m, &mut ctx.func, &mut mj.fctx, h, r, &callee, &langsung, &impor),

@@ -20,6 +20,11 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **Klien `http::` menolak jawaban yang terpotong** (badan lebih pendek dari `Content-Length`) dan `Content-Length`
   yang tidak sah atau berbeda-beda; byte sesudah badan dibuang. HTTPS menuntut paling sedikit TLS 1.2.
 
+### Kinerja
+
+- **`--emit-llvm`: `match` atas bilangan bulat berlengan literal dan rentang jadi satu lompatan bertabel**, bukan
+  perbandingan berurutan — `match_dispatch` 710 → 580 ms, setara C.
+
 ### Diperbaiki
 
 - **Berkas statis `dok::serve` dialirkan dari disk**, tidak lagi dimuat utuh per permintaan. Dengan middleware

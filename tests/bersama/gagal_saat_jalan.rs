@@ -1,6 +1,10 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const GAGAL_SAAT_JALAN: &[(&str, &str, &str, &str)] = &[
+    // `match` bulat lewat `switch` tanpa `_`: nilai di luar semua lengan gagal dengan kalimat acuan.
+    ("match bulat lewat switch tanpa lengan cocok",
+     "package main\nfn f(v: int) -> string { match v { 0 => \"nol\", 1..=2 => \"kecil\" } }\npub fn main() {\n wok(f(1))\n wok(f(7))\n}",
+     "kecil", "tidak ada"),
     // #1011: kanal tertutup ditolak di semua lengan `select` sebelum mencoba, juga di LLVM.
     ("select: lengan kedua tertutup ditolak walau lengan pertama siap",
      "let t = make_chan(int, 1)\nt.close()\nlet d = make_chan(int, 1)\nd <- 1\nwok(\"sebelum\")\nselect {\n    case x := <-d: { wok(\"tak boleh\", x) }\n    case y := <-t: { wok(\"tak boleh juga\", y) }\n}\n",
