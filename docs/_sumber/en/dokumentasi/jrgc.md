@@ -29,8 +29,8 @@ single line runs.
 ## Tests and profiling
 
 ```sh
-jrgc hitung.jrg --uji                   # run every fn test_*/uji_*
-jrgc hitung.jrg --uji --uji-filter tambah
+jrgc calc.jrg --uji                     # run every fn test_*/uji_*
+jrgc calc.jrg --uji --uji-filter add
 jrgc program.jrg --profile              # time per function after the program ends
 jrgc program.jrg --profile-json p.json  # the JSON version
 ```
@@ -80,7 +80,7 @@ A fifth engine is being built: it compiles a JRG program to a WebAssembly module
 ```sh
 jrgc program.jrg --nada hangat    # sopan, galak, judes, hangat, cool, lawak
 jrgc program.jrg --sopan          # no greeting line, good for CI
-JRG_GALAT_KE=galat.txt jrgc program.jrg   # also write each error to a file: file, line, column, message
+JRG_GALAT_KE=errors.txt jrgc program.jrg  # also write each error to a file: file, line, column, message
 ```
 
 The details are in [Diagnostics](diagnostik.html).

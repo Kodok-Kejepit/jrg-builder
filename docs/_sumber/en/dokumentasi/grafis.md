@@ -8,17 +8,17 @@ ringkas: Drawing and saving PNGs, making sound, and computing with numeric array
 `Canvas::new(width, height)` makes a drawing surface. Colours are written `0xRRGGBB`, and the point (0, 0) is at the
 top left.
 
-```jrg kanvas.jrg lokal
+```jrg canvas.jrg lokal
 let c = Canvas::new(200, 120)
 c.clear(0xF4EFE4)
 c.fill_round_rect(10, 10, 180, 100, 14, 0xA94F28)
 c.fill_circle(60, 60, 28, 0xFFFFFF)
 c.draw_text(110, 52, "JRG", 0xFFFFFF)
-c.save_png("kartu.png")
+c.save_png("card.png")
 
-let lagi = Canvas::load_png("kartu.png")
-wok(lagi.width(), lagi.height(), lagi.get_pixel(60, 60))
-fs::delete("kartu.png")
+let again = Canvas::load_png("card.png")
+wok(again.width(), again.height(), again.get_pixel(60, 60))
+fs::delete("card.png")
 ```
 ```keluaran
 200 120 Warna {a: 255, b: 255, g: 255, r: 255}
@@ -53,13 +53,13 @@ frame in seconds. For games, the [game engine](game.html) is more comfortable.
 `suara::` makes sound as an array of samples (mono, 44,100 Hz), saves it as WAV, and plays it through PulseAudio or
 PipeWire.
 
-```jrg suara.jrg lokal
+```jrg sound.jrg lokal
 let do_ = suara::nada(261.6, 300)
 let mi = suara::nada(329.6, 300)
-let lagu = suara::sambung(suara::sambung(do_, suara::sunyi(100)), mi)
-suara::simpan_wav(lagu, "lagu.wav")
-wok(suara::durasi_ms(lagu), "ms")
-fs::delete("lagu.wav")
+let tune = suara::sambung(suara::sambung(do_, suara::sunyi(100)), mi)
+suara::simpan_wav(tune, "tune.wav")
+wok(suara::durasi_ms(tune), "ms")
+fs::delete("tune.wav")
 ```
 ```keluaran
 700.0 ms
@@ -97,7 +97,7 @@ For data in ordinary arrays, `dok::` has statistics (`stat_percentile`, `stat_li
 `stat_normal_cdf`), vectors (`vec_dot`, `vec_cross`, `vec_normalize`), matrices (`mat_mul`, `mat_inverse`, `mat_det`),
 and number theory (`num_is_prime`, `num_prime_factors`, `num_mod_pow`).
 
-```jrg statistik.jrg
+```jrg stats.jrg
 wok(dok::stat_percentile([1, 2, 3, 4, 5], 50))
 wok(dok::stat_linreg([1, 2, 3], [2, 4, 6]))
 wok(dok::num_prime_factors(360))

@@ -70,7 +70,7 @@ Worth knowing:
 
 A fifth engine is being built: it compiles a JRG program into a WebAssembly module, so the same program runs in a
 browser or under Node without an interpreter shipped alongside it. It goes through the same LLVM IR as the native
-backend, aimed at the `wasm32` target, so it inherits that backend's meaning, optimisations, and test tables: every
+backend, aimed at the `wasm32` (WASI) target, so it inherits that backend's meaning, optimisations, and test tables: every
 program in the interpreter = LLVM table becomes a parity check for WebAssembly too. It is not part of a release yet.
 
 This is different from the [Practice](../index.html) engine on this site, which runs the JRG *interpreter* compiled to

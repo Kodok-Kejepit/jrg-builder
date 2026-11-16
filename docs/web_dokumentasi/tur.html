@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -463,29 +463,29 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p class="ringkas">Your first ten minutes with JRG, from one line to a program with tests.</p>
 <h2 id="one-line"><a class="jangkar" href="#one-line">One line</a></h2>
 <p>The shortest <code>.jrg</code> file holds just the statement:</p>
-<figure class="kode" data-jalan><figcaption><span>halo.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-str">&quot;halo&quot;</span>)</code></pre><pre class="keluaran"><code>halo</code></pre></figure>
-<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc halo.jrg</code></pre></figure>
+<figure class="kode" data-jalan><figcaption><span>hello.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-str">&quot;hello&quot;</span>)</code></pre><pre class="keluaran"><code>hello</code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc hello.jrg</code></pre></figure>
 <p>A file without <code>package</code> is a <em>script</em>: top-level lines run from top to bottom. Functions, structs, and other types can be declared anywhere in the file.</p>
-<figure class="kode" data-jalan><figcaption><span>sapa.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-fn">sapa</span>(<span class="k-str">&quot;Ani&quot;</span>))
+<figure class="kode" data-jalan><figcaption><span>greet.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-fn">greet</span>(<span class="k-str">&quot;Ani&quot;</span>))
 
-<span class="k-kunci">fn</span> <span class="k-fn">sapa</span>(nama) {
-    <span class="k-kunci">return</span> <span class="k-str">&quot;halo, &quot;</span> + nama
+<span class="k-kunci">fn</span> <span class="k-fn">greet</span>(name) {
+    <span class="k-kunci">return</span> <span class="k-str">&quot;hello, &quot;</span> + name
 }
 
-<span class="k-kunci">let</span> angka = [<span class="k-ang">5</span>, <span class="k-ang">3</span>, <span class="k-ang">8</span>, <span class="k-ang">1</span>]
-<span class="k-fn">wok</span>(<span class="k-str">&quot;terurut:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">sort</span>(angka))</code></pre><pre class="keluaran"><code>halo, Ani
-terurut: [1, 3, 5, 8]</code></pre></figure>
+<span class="k-kunci">let</span> numbers = [<span class="k-ang">5</span>, <span class="k-ang">3</span>, <span class="k-ang">8</span>, <span class="k-ang">1</span>]
+<span class="k-fn">wok</span>(<span class="k-str">&quot;sorted:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">sort</span>(numbers))</code></pre><pre class="keluaran"><code>hello, Ani
+sorted: [1, 3, 5, 8]</code></pre></figure>
 <h2 id="a-program-with-main"><a class="jangkar" href="#a-program-with-main">A program with main</a></h2>
 <p>For bigger programs, write <code>package</code> and a <code>pub fn main()</code>. That is where the program starts.</p>
-<figure class="kode" data-jalan><figcaption><span>suhu.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> main
+<figure class="kode" data-jalan><figcaption><span>temperature.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> main
 
-<span class="k-kunci">fn</span> <span class="k-fn">ke_fahrenheit</span>(c: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
+<span class="k-kunci">fn</span> <span class="k-fn">to_fahrenheit</span>(c: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
     <span class="k-kunci">return</span> c * <span class="k-ang">9.0</span> / <span class="k-ang">5.0</span> + <span class="k-ang">32.0</span>
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
     <span class="k-kunci">for</span> _, c <span class="k-kunci">in</span> [<span class="k-ang">0.0</span>, <span class="k-ang">25.0</span>, <span class="k-ang">100.0</span>] {
-        <span class="k-fn">wok</span>(c, <span class="k-str">&quot;°C =&quot;</span>, <span class="k-fn">ke_fahrenheit</span>(c), <span class="k-str">&quot;°F&quot;</span>)
+        <span class="k-fn">wok</span>(c, <span class="k-str">&quot;°C =&quot;</span>, <span class="k-fn">to_fahrenheit</span>(c), <span class="k-str">&quot;°F&quot;</span>)
     }
 }</code></pre><pre class="keluaran"><code>0.0 °C = 32.0 °F
 25.0 °C = 77.0 °F
@@ -493,20 +493,20 @@ terurut: [1, 3, 5, 8]</code></pre></figure>
 <p><code>wok</code> takes any number of arguments and separates them with spaces. Its siblings: <code>wok_</code> (no newline), <code>eprint</code> (to stderr), and <code>str::format</code> for building text.</p>
 <h2 id="reading-input-and-arguments"><a class="jangkar" href="#reading-input-and-arguments">Reading input and arguments</a></h2>
 <p><code>tok()</code> reads one line from the keyboard. <code>env::args()</code> holds the script name, then the arguments written after <code>--</code>.</p>
-<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">let</span> nama = <span class="k-fn">tok</span>()
-<span class="k-fn">wok</span>(<span class="k-str">&quot;halo,&quot;</span>, nama)
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">let</span> name = <span class="k-fn">tok</span>()
+<span class="k-fn">wok</span>(<span class="k-str">&quot;hello,&quot;</span>, name)
 <span class="k-fn">wok</span>(<span class="k-ns">env</span>::<span class="k-fn">args</span>())</code></pre></figure>
-<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc tanya.jrg -- satu dua
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc ask.jrg -- one two
 Ani
-halo, Ani
-[tanya.jrg, satu, dua]</code></pre></figure>
+hello, Ani
+[ask.jrg, one, two]</code></pre></figure>
 <h2 id="the-other-engines"><a class="jangkar" href="#the-other-engines">The other engines</a></h2>
 <p>The same program can run in several ways:</p>
-<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc suhu.jrg                <span class="k-kom"> # interpreter</span>
-jrgc suhu.jrg --vm           <span class="k-kom"> # bytecode VM, faster</span>
-jrgc suhu.jrg --jit          <span class="k-kom"> # VM plus machine code for the hot parts</span>
-jrgc suhu.jrg --emit-llvm    <span class="k-kom"> # native compilation through clang, then run</span>
-jrgc suhu.jrg --emit-llvm -o suhu --no-run  <span class="k-kom"> # compile only; the result is ./suhu</span></code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc temperature.jrg                <span class="k-kom"> # interpreter</span>
+jrgc temperature.jrg --vm           <span class="k-kom"> # bytecode VM, faster</span>
+jrgc temperature.jrg --jit          <span class="k-kom"> # VM plus machine code for the hot parts</span>
+jrgc temperature.jrg --emit-llvm    <span class="k-kom"> # native compilation through clang, then run</span>
+jrgc temperature.jrg --emit-llvm -o temperature --no-run  <span class="k-kom"> # compile only; the result is ./temperature</span></code></pre></figure>
 <p>The differences are explained in <a href="mesin.html">The engines</a>. For everyday work the interpreter is enough.</p>
 <h2 id="trying-things-in-the-repl"><a class="jangkar" href="#trying-things-in-the-repl">Trying things in the REPL</a></h2>
 <p><code>jrgc</code> with no file opens the REPL. An expression prints its value right away, and a block that is not closed yet continues on the next line.</p>
@@ -514,38 +514,38 @@ jrgc suhu.jrg --emit-llvm -o suhu --no-run  <span class="k-kom"> # compile only;
 jrg&gt; let x = 10
 jrg&gt; x * 3
 30
-jrg&gt; fn kuadrat(n) { return n * n }
-jrg&gt; kuadrat(12)
+jrg&gt; fn square(n) { return n * n }
+jrg&gt; square(12)
 144
 jrg&gt; :doc arr::sort
 arr::sort(a) -&gt; array
   Salinan terurut menaik; `a` sendiri tidak berubah.
-jrg&gt; :simpan coba.jrg</code></pre></figure>
+jrg&gt; :simpan try.jrg</code></pre></figure>
 <p><code>:cari word</code> searches the built-in functions, <code>:doc name</code> explains one, and <code>:simpan</code> writes the session out as a runnable <code>.jrg</code> file. Type <code>:bantuan</code> for the full list.</p>
 <h2 id="writing-tests"><a class="jangkar" href="#writing-tests">Writing tests</a></h2>
 <p>A function named <code>test_…</code> or <code>uji_…</code> is a test. <code>--uji</code> runs all of them instead of <code>main</code>.</p>
-<figure class="kode"><figcaption><span>hitung.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">tambah</span>(a, b) { <span class="k-kunci">return</span> a + b }
+<figure class="kode"><figcaption><span>calc.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">add</span>(a, b) { <span class="k-kunci">return</span> a + b }
 
-<span class="k-kunci">fn</span> <span class="k-fn">test_tambah</span>() {
-    <span class="k-fn">assert_eq</span>(<span class="k-fn">tambah</span>(<span class="k-ang">2</span>, <span class="k-ang">3</span>), <span class="k-ang">5</span>)
+<span class="k-kunci">fn</span> <span class="k-fn">test_add</span>() {
+    <span class="k-fn">assert_eq</span>(<span class="k-fn">add</span>(<span class="k-ang">2</span>, <span class="k-ang">3</span>), <span class="k-ang">5</span>)
 }
 
-<span class="k-kunci">fn</span> <span class="k-fn">test_salah</span>() {
-    <span class="k-fn">assert_eq</span>(<span class="k-fn">tambah</span>(<span class="k-ang">2</span>, <span class="k-ang">2</span>), <span class="k-ang">5</span>)
+<span class="k-kunci">fn</span> <span class="k-fn">test_wrong</span>() {
+    <span class="k-fn">assert_eq</span>(<span class="k-fn">add</span>(<span class="k-ang">2</span>, <span class="k-ang">2</span>), <span class="k-ang">5</span>)
 }</code></pre></figure>
-<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc hitung.jrg --uji
-  ok    test_tambah
-  GAGAL test_salah (baris 8) — assert_eq gagal — kiri `4` (int), kanan `5` (int)
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc calc.jrg --uji
+  ok    test_add
+  GAGAL test_wrong (baris 8) — assert_eq gagal — kiri `4` (int), kanan `5` (int)
 --- 2 test: 1 lulus, 1 gagal ---</code></pre></figure>
 <p>For a project with many test files, use <code>jrgm test</code> (see <a href="jrgm.html">jrgm</a>).</p>
 <h2 id="when-something-goes-wrong"><a class="jangkar" href="#when-something-goes-wrong">When something goes wrong</a></h2>
 <p>Take this example:</p>
-<figure class="kode" data-jalan><figcaption><span>harga.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> harga = [<span class="k-ang">12000</span>, <span class="k-ang">8500</span>, <span class="k-ang">4000</span>]
-<span class="k-fn">wok</span>(harga[<span class="k-ang">3</span>])</code></pre><pre class="keluaran"><code>error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2, atau -1..-3 kalau mau hitung dari belakang)
- --&gt; harga.jrg:2:5
+<figure class="kode" data-jalan><figcaption><span>prices.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> prices = [<span class="k-ang">12000</span>, <span class="k-ang">8500</span>, <span class="k-ang">4000</span>]
+<span class="k-fn">wok</span>(prices[<span class="k-ang">3</span>])</code></pre><pre class="keluaran"><code>error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2, atau -1..-3 kalau mau hitung dari belakang)
+ --&gt; prices.jrg:2:5
   |
-2 | wok(harga[3])
-  |     ^^^^^^^^
+2 | wok(prices[3])
+  |     ^^^^^^^^^
   |</code></pre></figure>
 <p>An error message says what went wrong, where, and shows the code with a <code>^</code> under the problem (here: "index [3] is out of bounds — this array holds 3 elements; valid indices are 0..2, or -1..-3 counting from the end"). Above it there is usually a one-line greeting (dropped here with <code>--sopan</code>); how to set its tone is in <a href="diagnostik.html">Diagnostics</a>. Messages are in Indonesian today; English messages are being written.</p>
 <h2 id="next"><a class="jangkar" href="#next">Next</a></h2>
@@ -560,7 +560,7 @@ jrg&gt; :simpan coba.jrg</code></pre></figure>
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

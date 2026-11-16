@@ -9,76 +9,76 @@ A struct groups named data. Fields marked `pub` can be read from outside; the re
 methods (and those of its descendants). A field may have a default, and a field without one must be filled in.
 
 ```jrg struct.jrg
-struct Akun {
-    pub nama: string,
-    pub saldo: int = 0,
+struct Account {
+    pub name: string,
+    pub balance: int = 0,
     pin: string = "0000",
 }
 
-impl Akun {
-    fn baru(nama) -> Akun {
-        return Akun { nama: nama }
+impl Account {
+    fn new(name) -> Account {
+        return Account { name: name }
     }
 
-    fn setor(self, n) -> Akun {
+    fn deposit(self, n) -> Account {
         var a = self
-        a.saldo += n
+        a.balance += n
         return a
     }
 
-    fn cek_pin(self, p) -> bool {
+    fn check_pin(self, p) -> bool {
         return self.pin == p
     }
 }
 
-var a = Akun::baru("Ani")
-a = a.setor(50)
-wok(a.nama, a.saldo, a.cek_pin("1234"))
+var a = Account::new("Ani")
+a = a.deposit(50)
+wok(a.name, a.balance, a.check_pin("1234"))
 ```
 ```keluaran
 Ani 50 false
 ```
 
-A function in an `impl` without `self` is called through the type name (`Akun::baru`). One that takes `self` is called
-through a value (`a.setor(50)`).
+A function in an `impl` without `self` is called through the type name (`Account::new`). One that takes `self` is called
+through a value (`a.deposit(50)`).
 
 Inside a method, `self` is a **copy**. Changing `self` does not change the caller's value, so a method that changes
-something returns a new value and the caller reassigns it: `a = a.setor(50)`. That form does not copy large data; see
+something returns a new value and the caller reassigns it: `a = a.deposit(50)`. That form does not copy large data; see
 [Memory model](memori.html).
 
 ### Building from another value
 
 `...` fills the fields that are not written from another value. It must come last.
 
-```jrg sebar.jrg
-struct Titik { pub x: int, pub y: int, pub z: int }
+```jrg spread.jrg
+struct Point { pub x: int, pub y: int, pub z: int }
 
-let awal = Titik { x: 1, y: 2, z: 3 }
-let geser = Titik { x: 10, ...awal }
-wok(geser)
+let start = Point { x: 1, y: 2, z: 3 }
+let moved = Point { x: 10, ...start }
+wok(moved)
 ```
 ```keluaran
-Titik {x: 10, y: 2, z: 3}
+Point {x: 10, y: 2, z: 3}
 ```
 
 ### Inheritance
 
 A struct may inherit from one other struct. The parent's fields and methods come along.
 
-```jrg waris.jrg
-struct Hewan { pub nama: string }
+```jrg inherit.jrg
+struct Animal { pub name: string }
 
-impl Hewan {
-    fn kenalan(self) -> string { return "aku " + self.nama }
+impl Animal {
+    fn intro(self) -> string { return "I am " + self.name }
 }
 
-struct Kucing: Hewan { pub warna: string }
+struct Cat: Animal { pub color: string }
 
-let k = Kucing { nama: "Oyen", warna: "oranye" }
-wok(k.kenalan(), k.warna)
+let c = Cat { name: "Oyen", color: "orange" }
+wok(c.intro(), c.color)
 ```
 ```keluaran
-aku Oyen oranye
+I am Oyen orange
 ```
 
 ## Enum
@@ -86,30 +86,30 @@ aku Oyen oranye
 An enum is a type whose value is one of several variants. A variant may carry data, positional or named.
 
 ```jrg enum.jrg
-enum Bentuk {
-    Lingkaran(float),
-    Persegi(float),
-    Segitiga { alas: float, tinggi: float },
+enum Shape {
+    Circle(float),
+    Square(float),
+    Triangle { base: float, height: float },
 }
 
-fn luas(b) {
-    return match b {
-        Bentuk::Lingkaran(r) => 3.14 * r * r,
-        Bentuk::Persegi(s) => s * s,
-        Bentuk::Segitiga { alas, tinggi } => alas * tinggi / 2.0,
+fn area(s) {
+    return match s {
+        Shape::Circle(r) => 3.14 * r * r,
+        Shape::Square(side) => side * side,
+        Shape::Triangle { base, height } => base * height / 2.0,
     }
 }
 
-wok(luas(Bentuk::Lingkaran(1.0)))
-wok(luas(Bentuk::Segitiga { alas: 4.0, tinggi: 3.0 }))
+wok(area(Shape::Circle(1.0)))
+wok(area(Shape::Triangle { base: 4.0, height: 3.0 }))
 
-enum Arah { Utara, Timur, Selatan, Barat }
-wok(Arah::Utara, Arah::Utara == Arah::Barat)
+enum Direction { North, East, South, West }
+wok(Direction::North, Direction::North == Direction::West)
 ```
 ```keluaran
 3.14
 6.0
-Arah::Utara false
+Direction::North false
 ```
 
 `Option` and `Result` are ordinary enums that come built in; both are covered in [Option and Result](galat.html).
@@ -120,29 +120,29 @@ A trait lists the methods a type must have. A method without a body must be prov
 a body becomes a default that may be overridden.
 
 ```jrg trait.jrg
-trait Bersuara {
-    fn suara(self) -> string
-    fn sapa(self) -> string = self.nama + " bilang " + self.suara()
+trait Speaks {
+    fn sound(self) -> string
+    fn greet(self) -> string = self.name + " says " + self.sound()
 }
 
-struct Anjing { pub nama: string }
-struct Bebek { pub nama: string }
+struct Dog { pub name: string }
+struct Duck { pub name: string }
 
-impl Bersuara for Anjing {
-    fn suara(self) -> string { return "guk" }
+impl Speaks for Dog {
+    fn sound(self) -> string { return "woof" }
 }
 
-impl Bersuara for Bebek {
-    fn suara(self) -> string { return "kwek" }
-    fn sapa(self) -> string { return self.nama + " cuma diam" }
+impl Speaks for Duck {
+    fn sound(self) -> string { return "quack" }
+    fn greet(self) -> string { return self.name + " stays quiet" }
 }
 
-wok(Anjing { nama: "Doggo" }.sapa())
-wok(Bebek { nama: "Donal" }.sapa())
+wok(Dog { name: "Doggo" }.greet())
+wok(Duck { name: "Donald" }.greet())
 ```
 ```keluaran
-Doggo bilang guk
-Donal cuma diam
+Doggo says woof
+Donald stays quiet
 ```
 
 An `impl` that forgets a required method is refused before the program runs.
@@ -150,16 +150,16 @@ An `impl` that forgets a required method is refused before the program runs.
 ## Generics
 
 Functions and structs may have type parameters. Because JRG is dynamically typed, type parameters and their trait
-bounds (`<T: Bersuara>`) are documentation: the names are checked, the constraint is not enforced.
+bounds (`<T: Speaks>`) are documentation: the names are checked, the constraint is not enforced.
 
-```jrg generik.jrg
-fn pertama<T>(xs: []T) -> T {
+```jrg generics.jrg
+fn first<T>(xs: []T) -> T {
     return xs[0]
 }
 
-struct Kotak<T> { pub isi: T }
+struct Box<T> { pub item: T }
 
-wok(pertama([3, 4]), pertama(["a"]), Kotak { isi: 5.5 }.isi)
+wok(first([3, 4]), first(["a"]), Box { item: 5.5 }.item)
 ```
 ```keluaran
 3 a 5.5
@@ -171,22 +171,22 @@ A type can give meaning to operators through specially named methods, and decide
 `to_string`.
 
 ```jrg operator.jrg
-struct Uang { pub rp: int }
+struct Money { pub cents: int }
 
-impl Uang {
-    fn add(self, o) -> Uang { return Uang { rp: self.rp + o.rp } }
-    fn cmp(self, o) -> int { return self.rp - o.rp }
-    fn to_string(self) -> string { return "Rp" + str(self.rp) }
+impl Money {
+    fn add(self, o) -> Money { return Money { cents: self.cents + o.cents } }
+    fn cmp(self, o) -> int { return self.cents - o.cents }
+    fn to_string(self) -> string { return "$" + str(self.cents / 100) + "." + str::pad_left(str(self.cents % 100), 2, "0") }
 }
 
-let kopi = Uang { rp: 18000 }
-let roti = Uang { rp: 12000 }
-wok(kopi + roti, kopi > roti)
-wok([kopi, roti], """total ${kopi + roti}""")
+let coffee = Money { cents: 450 }
+let bread = Money { cents: 325 }
+wok(coffee + bread, coffee > bread)
+wok([coffee, bread], """total ${coffee + bread}""")
 ```
 ```keluaran
-Rp30000 true
-[Rp18000, Rp12000] total Rp30000
+$7.75 true
+[$4.50, $3.25] total $7.75
 ```
 
 | Method | Operator |

@@ -70,7 +70,7 @@ Yang perlu diketahui:
 
 Mesin kelima sedang dibuat: ia mengompilasi program JRG jadi modul WebAssembly, jadi program yang sama jalan di
 peramban atau di Node tanpa membawa interpreter. Jalurnya lewat LLVM IR yang sama dengan backend native, dengan
-sasaran `wasm32`, jadi arti, optimisasi, dan tabel ujinya ikut: tiap program di tabel interpreter = LLVM sekaligus
+sasaran `wasm32` (WASI), jadi arti, optimisasi, dan tabel ujinya ikut: tiap program di tabel interpreter = LLVM sekaligus
 jadi pemeriksa paritas WebAssembly. Mesin ini belum masuk rilis.
 
 Ini berbeda dengan mesin [Praktik](../index.html) di situs ini, yang menjalankan *interpreter* JRG yang dikompilasi ke

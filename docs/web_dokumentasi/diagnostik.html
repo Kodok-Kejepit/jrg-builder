@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -462,21 +462,22 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <h1>Diagnostics</h1>
 <p class="ringkas">The shape of JRG's error messages, their tone, and how to use them from an editor or CI.</p>
 <h2 id="the-shape-of-a-message"><a class="jangkar" href="#the-shape-of-a-message">The shape of a message</a></h2>
-<figure class="kode"><figcaption><span>teks</span></figcaption><pre><code>berhenti di baris 3. gw tunjukin apa yang salah, di bawah.
-error: variabel `jumlas` belum dikenal — maksudnya `jumlah`? kalau bukan, cek lagi penulisannya atau jangan-jangan lupa `let jumlas = ...` dulu
- --&gt; hitung.jrg:3:9
+<p>Below, <code>totl</code> was typed where <code>total</code> was meant:</p>
+<figure class="kode"><figcaption><span>teks</span></figcaption><pre><code>kepentok di baris 3 waktu jalan. keterangannya di bawah.
+error: variabel `totl` belum dikenal — maksudnya `total`? kalau bukan, cek lagi penulisannya atau jangan-jangan lupa `let totl = ...` dulu
+ --&gt; calc.jrg:3:9
   |
-3 |     wok(jumlas)
-  |         ^^^^^^
+3 |     wok(totl)
+  |         ^^^^
   |</code></pre></figure>
 <ol><li><strong>A greeting</strong>, one line at the top. The wording varies; <code>--sopan</code> drops it.</li><li><strong>What is wrong</strong>, with the name you wrote and, when there is one, a spelling suggestion.</li><li><strong>Where</strong>: file, line, and column.</li><li><strong>A code excerpt</strong> with <code>^</code> under the part at fault.</li><li><strong><code>bantuan:</code></strong> (help) gives the way out, and <strong><code>catatan:</code></strong> (note) extra context, when there is any.</li><li><strong><code>jejak:</code></strong> (trace) for run-time errors: where the failing function was called from.</li></ol>
 <p>Messages are in Indonesian today. English messages are on the way, chosen once with <code>jrgm language en</code>.</p>
 <p>A message names a value's <strong>type</strong>, not its contents. Misusing an array of three numbers or of three thousand gives an equally short message.</p>
 <h2 id="tone"><a class="jangkar" href="#tone">Tone</a></h2>
 <p>The first time an error appears it is always delivered seriously. When the same error comes back, the greeting changes according to the chosen tone, and at the seventh repetition a help line is added, because the same message seven times means the explanation has not landed yet.</p>
-<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc f.jrg --nada hangat    <span class="k-kom"> # sopan | galak (bawaan) | judes | hangat | cool | lawak</span>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc f.jrg --nada hangat    <span class="k-kom"> # sopan | galak (default) | judes | hangat | cool | lawak</span>
 JRG_NADA=cool jrgc f.jrg
-jrgc f.jrg --sopan          <span class="k-kom"> # tanpa sapaan sama sekali</span></code></pre></figure>
+jrgc f.jrg --sopan          <span class="k-kom"> # no greeting at all</span></code></pre></figure>
 <p>Tone only changes the greeting line. The body of the message is always the same, so no information is lost in any tone. The wording is derived from the kind of error and how often it repeated, not rolled at random, so the same input always gives the same output.</p>
 <h2 id="for-editors-and-ci"><a class="jangkar" href="#for-editors-and-ci">For editors and CI</a></h2>
 <ul><li>Outside a terminal (piped to a file or another program) there is no colour and no separator line, and the repetition counter is not kept between runs.</li><li><code>--sopan</code> or <code>JRG_SOPAN=1</code> drops the greeting, which suits comparing output.</li><li><code>JRG_GALAT_KE=galat.txt</code> also writes each error to a file, one line per error: <code>file&lt;TAB&gt;line&lt;TAB&gt;column&lt;TAB&gt;message</code>.</li><li><code>jrgc --lsp</code> sends errors and warnings to the editor as you type.</li></ul>
@@ -493,7 +494,7 @@ jrgc f.jrg --sopan          <span class="k-kom"> # tanpa sapaan sama sekali</spa
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

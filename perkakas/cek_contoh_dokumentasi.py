@@ -51,8 +51,11 @@ def periksa(kode, nama, harapan, asal):
 
 def main():
     jumlah = gagal = 0
-    for p in sorted((SUMBER / "dokumentasi").glob("*.md")) + [SUMBER / "beranda.html"]:
-        if SARING and not any(s in p.stem for s in SARING):
+    halaman = []
+    for akar in (SUMBER, SUMBER / "en"):
+        halaman += sorted((akar / "dokumentasi").glob("*.md")) + [akar / "beranda.html"]
+    for p in halaman:
+        if SARING and not any(s in str(p.relative_to(SUMBER)) for s in SARING):
             continue
         teks = p.read_text(encoding="utf-8")
         baru, geser = teks, 0
@@ -71,8 +74,9 @@ def main():
         if PERBARUI and baru != teks:
             p.write_text(baru, encoding="utf-8")
             print(f"diperbarui: {p.relative_to(AKAR)}")
-    if not SARING or any(s in "matematika" for s in SARING):
-        pj = SUMBER / "matematika.json"
+    for pj in (SUMBER / "matematika.json", SUMBER / "en" / "matematika.json"):
+        if SARING and not any(s in str(pj.relative_to(SUMBER)) for s in SARING):
+            continue
         data = json.loads(pj.read_text(encoding="utf-8"))
         ubah = False
         for bab in data["content"]:
@@ -81,14 +85,14 @@ def main():
                     continue
                 jumlah += 1
                 nama = b.get("filename") or "contoh.jrg"
-                dapat, n = periksa(b["code"], nama, b.get("output"), f"matematika {bab['id']}/{nama}")
+                dapat, n = periksa(b["code"], nama, b.get("output"), f"{pj.relative_to(SUMBER)} {bab['id']}/{nama}")
                 gagal += n
                 if PERBARUI and b.get("output") is not None and dapat != b["output"].rstrip("\n"):
                     b["output"] = dapat
                     ubah = True
         if ubah:
             pj.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-            print("diperbarui: docs/_sumber/matematika.json")
+            print(f"diperbarui: {pj.relative_to(AKAR)}")
     print(f"{jumlah} contoh dijalankan, {gagal} masalah")
     if not SARING and jumlah < 150:
         print("GAGAL: contohnya terlalu sedikit; pemindaiannya mungkin salah membaca sumber")

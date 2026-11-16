@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -463,17 +463,17 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p class="ringkas">Numbers, text, arrays, tuples, dicts, and how to bind them to names.</p>
 <h2 id="binding-names"><a class="jangkar" href="#binding-names">Binding names</a></h2>
 <div class="tabel"><table><thead><tr><th>Form</th><th>Can be reassigned?</th></tr></thead><tbody><tr><td><code>let x = 1</code></td><td>no</td></tr><tr><td><code>const X = 1</code></td><td>no</td></tr><tr><td><code>var x = 1</code></td><td>yes</td></tr><tr><td><code>x := 1</code></td><td>yes, and it declares the name</td></tr><tr><td><code>let mut x = 1</code></td><td>yes, same as <code>var</code></td></tr></tbody></table></div>
-<figure class="kode" data-jalan><figcaption><span>ikat.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> skor = <span class="k-ang">10</span>
-skor = skor + <span class="k-ang">5</span>
+<figure class="kode" data-jalan><figcaption><span>bind.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> score = <span class="k-ang">10</span>
+score = score + <span class="k-ang">5</span>
 x := <span class="k-ang">3</span>
 x = x * <span class="k-ang">2</span>
-<span class="k-kunci">const</span> <span class="k-tipe">BATAS</span> = <span class="k-ang">100</span>
-<span class="k-fn">wok</span>(skor, x, <span class="k-tipe">BATAS</span>)</code></pre><pre class="keluaran"><code>15 6 100</code></pre></figure>
+<span class="k-kunci">const</span> <span class="k-tipe">LIMIT</span> = <span class="k-ang">100</span>
+<span class="k-fn">wok</span>(score, x, <span class="k-tipe">LIMIT</span>)</code></pre><pre class="keluaran"><code>15 6 100</code></pre></figure>
 <p>A name must be declared before it is assigned. <code>totl = 5</code> on a name that does not exist is refused, so a typo never quietly creates a new variable. A name bound with <code>let</code> cannot have its contents changed either: <code>let a = [1, 2]</code> followed by <code>a[0] = 9</code> is refused.</p>
 <p>Type annotations may be written (<code>let n: int = 5</code>), and JRG checks that the type name exists. The type itself is not enforced: JRG is dynamically typed, so annotations work as documentation.</p>
 <h2 id="numbers"><a class="jangkar" href="#numbers">Numbers</a></h2>
 <p><code>int</code> is a 128-bit integer, <code>float</code> a 64-bit floating-point number. Dividing two <code>int</code>s gives an <code>int</code> (truncated toward zero), and <code>%</code> is the remainder.</p>
-<figure class="kode" data-jalan><figcaption><span>angka.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ang">7</span> / <span class="k-ang">2</span>, <span class="k-ang">7</span> % <span class="k-ang">2</span>, <span class="k-ang">7.0</span> / <span class="k-ang">2.0</span>, -<span class="k-ang">7</span> / <span class="k-ang">2</span>)
+<figure class="kode" data-jalan><figcaption><span>numbers.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ang">7</span> / <span class="k-ang">2</span>, <span class="k-ang">7</span> % <span class="k-ang">2</span>, <span class="k-ang">7.0</span> / <span class="k-ang">2.0</span>, -<span class="k-ang">7</span> / <span class="k-ang">2</span>)
 <span class="k-fn">wok</span>(<span class="k-ang">2</span> ** <span class="k-ang">10</span>, <span class="k-ang">2.0</span> ** <span class="k-ang">0.5</span>)
 <span class="k-fn">wok</span>(<span class="k-ang">1_000_000</span>, <span class="k-ang">0xff</span>, 0b1010)
 <span class="k-fn">wok</span>(<span class="k-ang">0.1</span> + <span class="k-ang">0.2</span>)</code></pre><pre class="keluaran"><code>3 1 3.5 -3
@@ -484,26 +484,26 @@ x = x * <span class="k-ang">2</span>
 <p>Fixed-width integer types exist too: <code>i8</code> to <code>i128</code>, <code>u8</code> to <code>u128</code>, <code>isize</code>, <code>usize</code>, and <code>byte</code> (a number 0–255). Floating point: <code>f32</code>, <code>f64</code>.</p>
 <h2 id="text"><a class="jangkar" href="#text">Text</a></h2>
 <p><code>string</code> is UTF-8 text. Indices count characters, not bytes, and a single character has type <code>rune</code> (written <code>&#x27;a&#x27;</code>).</p>
-<figure class="kode" data-jalan><figcaption><span>teks.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> s = <span class="k-str">&quot;Halo&quot;</span>
+<figure class="kode" data-jalan><figcaption><span>text.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> s = <span class="k-str">&quot;Hello&quot;</span>
 <span class="k-fn">wok</span>(s.<span class="k-fn">len</span>(), s.<span class="k-fn">upper</span>(), s[<span class="k-ang">0</span>], s[-<span class="k-ang">1</span>], s[<span class="k-ang">1</span>:<span class="k-ang">3</span>])
-<span class="k-fn">wok</span>(s + <span class="k-str">&quot; dunia&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">repeat</span>(<span class="k-str">&quot;ab&quot;</span>, <span class="k-ang">3</span>))
-<span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">split</span>(<span class="k-str">&quot;a,b,c&quot;</span>, <span class="k-str">&quot;,&quot;</span>), <span class="k-str">&quot;  rapi  &quot;</span>.<span class="k-fn">trim</span>())</code></pre><pre class="keluaran"><code>4 HALO H o al
-Halo dunia ababab
-[a, b, c] rapi</code></pre></figure>
+<span class="k-fn">wok</span>(s + <span class="k-str">&quot; world&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">repeat</span>(<span class="k-str">&quot;ab&quot;</span>, <span class="k-ang">3</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">split</span>(<span class="k-str">&quot;a,b,c&quot;</span>, <span class="k-str">&quot;,&quot;</span>), <span class="k-str">&quot;  tidy  &quot;</span>.<span class="k-fn">trim</span>())</code></pre><pre class="keluaran"><code>5 HELLO H o el
+Hello world ababab
+[a, b, c] tidy</code></pre></figure>
 <p>There are three ways to write a text literal:</p>
-<figure class="kode" data-jalan><figcaption><span>literal.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> nama = <span class="k-str">&quot;Ani&quot;</span>
-<span class="k-kunci">let</span> umur = <span class="k-ang">20</span>
-<span class="k-fn">wok</span>(<span class="k-str">&quot;biasa, dengan \&quot;escape\&quot;\tdan tab&quot;</span>)
-<span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;&quot;halo ${nama}, tahun depan umurmu ${umur + 1}&quot;&quot;&quot;</span>)
-<span class="k-fn">wok</span>(<span class="k-str">«sama, versi pendek: ${nama}»</span>)
-<span class="k-fn">wok</span>(<span class="k-str">`mentah: ${nama} \n tidak diproses`</span>)</code></pre><pre class="keluaran"><code>biasa, dengan &quot;escape&quot;	dan tab
-halo Ani, tahun depan umurmu 21
-sama, versi pendek: Ani
-mentah: ${nama} \n tidak diproses</code></pre></figure>
+<figure class="kode" data-jalan><figcaption><span>literal.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> name = <span class="k-str">&quot;Ani&quot;</span>
+<span class="k-kunci">let</span> age = <span class="k-ang">20</span>
+<span class="k-fn">wok</span>(<span class="k-str">&quot;plain, with \&quot;escapes\&quot;\tand a tab&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;&quot;hello ${name}, next year you will be ${age + 1}&quot;&quot;&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-str">«same, short form: ${name}»</span>)
+<span class="k-fn">wok</span>(<span class="k-str">`raw: ${name} \n not processed`</span>)</code></pre><pre class="keluaran"><code>plain, with &quot;escapes&quot;	and a tab
+hello Ani, next year you will be 21
+same, short form: Ani
+raw: ${name} \n not processed</code></pre></figure>
 <p><code>&quot;&quot;&quot;…&quot;&quot;&quot;</code> and <code>«…»</code> are <em>templates</em>: what is inside <code>${…}</code> is evaluated and inserted, and they may span several lines. Backticks give raw text, with no escapes and no insertion.</p>
 <p><code>str::format</code> builds text with <code>{}</code>, including number formatting:</p>
-<figure class="kode" data-jalan><figcaption><span>format.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{} dapat {:.2}&quot;</span>, <span class="k-str">&quot;Ani&quot;</span>, <span class="k-ang">91.456</span>))
-<span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">pad_left</span>(<span class="k-str">&quot;7&quot;</span>, <span class="k-ang">3</span>, <span class="k-str">&quot;0&quot;</span>))</code></pre><pre class="keluaran"><code>Ani dapat 91.46
+<figure class="kode" data-jalan><figcaption><span>format.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{} scored {:.2}&quot;</span>, <span class="k-str">&quot;Ani&quot;</span>, <span class="k-ang">91.456</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">pad_left</span>(<span class="k-str">&quot;7&quot;</span>, <span class="k-ang">3</span>, <span class="k-str">&quot;0&quot;</span>))</code></pre><pre class="keluaran"><code>Ani scored 91.46
 007</code></pre></figure>
 <h2 id="arrays"><a class="jangkar" href="#arrays">Arrays</a></h2>
 <p>An array holds values in order. A negative index counts from the end, and an index out of range is always an error.</p>
@@ -519,30 +519,30 @@ true Option::Some(11) Option::None</code></pre></figure>
 <p>Anything that may find nothing (<code>first</code>, <code>last</code>, <code>get</code>, <code>find</code>, <code>pop</code>) returns an <code>Option</code>, never <code>nil</code> or <code>-1</code>. See <a href="galat.html">Option and Result</a>.</p>
 <h2 id="tuples"><a class="jangkar" href="#tuples">Tuples</a></h2>
 <p>A tuple groups several values of different types. Its elements are read with <code>.0</code>, <code>.1</code>, or <code>[i]</code>, and it can be unpacked into several names at once.</p>
-<figure class="kode" data-jalan><figcaption><span>tuple.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bagi</span>(a, b) { <span class="k-kunci">return</span> (a / b, a % b) }
+<figure class="kode" data-jalan><figcaption><span>tuple.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">divide</span>(a, b) { <span class="k-kunci">return</span> (a / b, a % b) }
 
-<span class="k-kunci">let</span> t = (<span class="k-ang">1</span>, <span class="k-str">&quot;dua&quot;</span>, <span class="k-ang">3.0</span>)
+<span class="k-kunci">let</span> t = (<span class="k-ang">1</span>, <span class="k-str">&quot;two&quot;</span>, <span class="k-ang">3.0</span>)
 <span class="k-fn">wok</span>(t, t.<span class="k-ang">0</span>, t[<span class="k-ang">1</span>])
-hasil, sisa := <span class="k-fn">bagi</span>(<span class="k-ang">17</span>, <span class="k-ang">5</span>)
-<span class="k-fn">wok</span>(hasil, sisa)</code></pre><pre class="keluaran"><code>(1, dua, 3.0) 1 dua
+quotient, remainder := <span class="k-fn">divide</span>(<span class="k-ang">17</span>, <span class="k-ang">5</span>)
+<span class="k-fn">wok</span>(quotient, remainder)</code></pre><pre class="keluaran"><code>(1, two, 3.0) 1 two
 3 2</code></pre></figure>
 <h2 id="dicts"><a class="jangkar" href="#dicts">Dicts</a></h2>
 <p>A dict maps keys to values. Keys are stored as text, so <code>d[1]</code> and <code>d[&quot;1&quot;]</code> point at the same place. It prints in key order.</p>
-<figure class="kode" data-jalan><figcaption><span>dict.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> stok = {<span class="k-str">&quot;apel&quot;</span>: <span class="k-ang">3</span>, <span class="k-str">&quot;jeruk&quot;</span>: <span class="k-ang">5</span>}
-stok[<span class="k-str">&quot;mangga&quot;</span>] = <span class="k-ang">2</span>
-<span class="k-fn">wok</span>(stok, stok[<span class="k-str">&quot;apel&quot;</span>], stok.<span class="k-fn">len</span>())
-<span class="k-fn">wok</span>(<span class="k-ns">dict</span>::<span class="k-fn">get</span>(stok, <span class="k-str">&quot;durian&quot;</span>), <span class="k-ns">dict</span>::<span class="k-fn">get_or</span>(stok, <span class="k-str">&quot;durian&quot;</span>, <span class="k-ang">0</span>))
-<span class="k-kunci">for</span> k, v <span class="k-kunci">in</span> stok {
+<figure class="kode" data-jalan><figcaption><span>dict.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> stock = {<span class="k-str">&quot;apple&quot;</span>: <span class="k-ang">3</span>, <span class="k-str">&quot;orange&quot;</span>: <span class="k-ang">5</span>}
+stock[<span class="k-str">&quot;mango&quot;</span>] = <span class="k-ang">2</span>
+<span class="k-fn">wok</span>(stock, stock[<span class="k-str">&quot;apple&quot;</span>], stock.<span class="k-fn">len</span>())
+<span class="k-fn">wok</span>(<span class="k-ns">dict</span>::<span class="k-fn">get</span>(stock, <span class="k-str">&quot;durian&quot;</span>), <span class="k-ns">dict</span>::<span class="k-fn">get_or</span>(stock, <span class="k-str">&quot;durian&quot;</span>, <span class="k-ang">0</span>))
+<span class="k-kunci">for</span> k, v <span class="k-kunci">in</span> stock {
     <span class="k-fn">wok</span>(k, v)
-}</code></pre><pre class="keluaran"><code>dict {apel: 3, jeruk: 5, mangga: 2} 3 3
+}</code></pre><pre class="keluaran"><code>dict {apple: 3, mango: 2, orange: 5} 3 3
 Option::None 0
-apel 3
-jeruk 5
-mangga 2</code></pre></figure>
+apple 3
+mango 2
+orange 5</code></pre></figure>
 <p>Reading a missing key through <code>d[k]</code> is an error; use <code>dict::get</code> (which returns an <code>Option</code>) or <code>get_or</code>.</p>
 <h2 id="conversions"><a class="jangkar" href="#conversions">Conversions</a></h2>
 <p><code>as</code> converts between basic types. A conversion with no exact answer is refused, never silently truncated.</p>
-<figure class="kode" data-jalan><figcaption><span>konversi.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ang">3</span> <span class="k-kunci">as</span> <span class="k-tipe">float</span>, <span class="k-ang">3.9</span> <span class="k-kunci">as</span> <span class="k-tipe">int</span>, <span class="k-str">&#x27;A&#x27;</span> <span class="k-kunci">as</span> <span class="k-tipe">int</span>, <span class="k-ang">66</span> <span class="k-kunci">as</span> <span class="k-tipe">rune</span>)
+<figure class="kode" data-jalan><figcaption><span>convert.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ang">3</span> <span class="k-kunci">as</span> <span class="k-tipe">float</span>, <span class="k-ang">3.9</span> <span class="k-kunci">as</span> <span class="k-tipe">int</span>, <span class="k-str">&#x27;A&#x27;</span> <span class="k-kunci">as</span> <span class="k-tipe">int</span>, <span class="k-ang">66</span> <span class="k-kunci">as</span> <span class="k-tipe">rune</span>)
 <span class="k-fn">wok</span>(<span class="k-tipe">int</span>(<span class="k-str">&quot;42&quot;</span>) + <span class="k-ang">1</span>, <span class="k-tipe">float</span>(<span class="k-str">&quot;2.5&quot;</span>), <span class="k-fn">str</span>(<span class="k-ang">42</span>) + <span class="k-str">&quot;!&quot;</span>, <span class="k-str">&quot;17&quot;</span>.<span class="k-fn">to_int</span>())
 <span class="k-fn">wok</span>(<span class="k-fn">typeof</span>(<span class="k-ang">1</span>), <span class="k-fn">typeof</span>(<span class="k-ang">1.5</span>), <span class="k-fn">typeof</span>(<span class="k-str">&quot;a&quot;</span>), <span class="k-fn">typeof</span>(<span class="k-str">&#x27;a&#x27;</span>), <span class="k-fn">typeof</span>([<span class="k-ang">1</span>]), <span class="k-fn">typeof</span>({<span class="k-str">&quot;a&quot;</span>: <span class="k-ang">1</span>}))</code></pre><pre class="keluaran"><code>3.0 3 65 B
 43 2.5 42! 17
@@ -560,7 +560,7 @@ int float string rune array dict</code></pre></figure>
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

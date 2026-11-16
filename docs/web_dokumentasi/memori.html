@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -463,17 +463,17 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p class="ringkas">Values never share storage, and a copy is only made when someone writes.</p>
 <h2 id="values-never-share"><a class="jangkar" href="#values-never-share">Values never share</a></h2>
 <p>Assigning, passing to a function, returning, or reading from a collection always gives a value that stands on its own. Changing a copy never changes the original.</p>
-<figure class="kode" data-jalan><figcaption><span>salinan.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> a = [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>]
+<figure class="kode" data-jalan><figcaption><span>copies.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> a = [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>]
 <span class="k-kunci">var</span> b = a
 b[<span class="k-ang">0</span>] = <span class="k-ang">99</span>
 
-<span class="k-kunci">fn</span> <span class="k-fn">ubah</span>(xs) {
+<span class="k-kunci">fn</span> <span class="k-fn">change</span>(xs) {
     <span class="k-kunci">var</span> ys = xs
     ys[<span class="k-ang">1</span>] = <span class="k-ang">0</span>
     <span class="k-kunci">return</span> ys
 }
 
-<span class="k-kunci">let</span> c = <span class="k-fn">ubah</span>(a)
+<span class="k-kunci">let</span> c = <span class="k-fn">change</span>(a)
 <span class="k-fn">wok</span>(a, b, c)</code></pre><pre class="keluaran"><code>[1, 2, 3] [99, 2, 3] [1, 0, 3]</code></pre></figure>
 <p>Because every value has exactly one owner, it lives exactly as long as the variable that owns it. JRG needs no garbage collector, and ordinary values have no dangling pointers.</p>
 <h2 id="copying-is-cheap"><a class="jangkar" href="#copying-is-cheap">Copying is cheap</a></h2>
@@ -483,7 +483,7 @@ b[<span class="k-ang">0</span>] = <span class="k-ang">99</span>
 <h2 id="what-shares-on-purpose"><a class="jangkar" href="#what-shares-on-purpose">What shares on purpose</a></h2>
 <p>A few things are designed to share, and all of them are plain to see in the code:</p>
 <div class="tabel"><table><thead><tr><th>What</th><th>Example</th></tr></thead><tbody><tr><td>variables captured by a closure</td><td><code>let naik = || { n += 1 }</code> changes the outer <code>n</code></td></tr><tr><td>synchronisation handles</td><td><code>Atomic</code>, <code>Mutex</code>, channels</td></tr><tr><td>explicit handles</td><td><code>ptr::new(value)</code></td></tr><tr><td>manual allocation</td><td><code>jawa::alloc</code> and <code>jawir::free</code></td></tr><tr><td>objects from other languages</td><td><code>py::</code>, <code>js::</code>, <code>jvm::</code> handles</td></tr></tbody></table></div>
-<figure class="kode" data-jalan><figcaption><span>pegangan.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> p = <span class="k-ns">ptr</span>::<span class="k-fn">new</span>(<span class="k-ang">0</span>)
+<figure class="kode" data-jalan><figcaption><span>handles.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> p = <span class="k-ns">ptr</span>::<span class="k-fn">new</span>(<span class="k-ang">0</span>)
 <span class="k-kunci">let</span> q = p
 <span class="k-ns">ptr</span>::<span class="k-fn">set</span>(q, <span class="k-ang">42</span>)
 <span class="k-fn">wok</span>(<span class="k-ns">ptr</span>::<span class="k-fn">get</span>(p))
@@ -505,7 +505,7 @@ false</code></pre></figure>
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

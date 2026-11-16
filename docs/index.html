@@ -446,7 +446,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <a class="merek" href="index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a href="web_dokumentasi/index.html">Docs</a><a href="matematika_x_jrg/index.html">Matematika × JRG</a><a href="profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a href="web_dokumentasi/index.html">Docs</a><a href="matematika_x_jrg/index.html">Math × JRG</a><a href="profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -479,22 +479,22 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
     </div>
   </div>
   <div>
-<figure class="kode" data-jalan><figcaption><span>rapor.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Murid</span> { <span class="k-kunci">pub</span> nama: <span class="k-tipe">string</span>, <span class="k-kunci">pub</span> nilai: <span class="k-tipe">int</span> }
+<figure class="kode" data-jalan><figcaption><span>report.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Student</span> { <span class="k-kunci">pub</span> name: <span class="k-tipe">string</span>, <span class="k-kunci">pub</span> score: <span class="k-tipe">int</span> }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> kelas = [
-        <span class="k-tipe">Murid</span> { nama: <span class="k-str">&quot;Ani&quot;</span>, nilai: <span class="k-ang">92</span> },
-        <span class="k-tipe">Murid</span> { nama: <span class="k-str">&quot;Budi&quot;</span>, nilai: <span class="k-ang">78</span> },
-        <span class="k-tipe">Murid</span> { nama: <span class="k-str">&quot;Citra&quot;</span>, nilai: <span class="k-ang">85</span> },
+    <span class="k-kunci">let</span> class = [
+        <span class="k-tipe">Student</span> { name: <span class="k-str">&quot;Ani&quot;</span>, score: <span class="k-ang">92</span> },
+        <span class="k-tipe">Student</span> { name: <span class="k-str">&quot;Budi&quot;</span>, score: <span class="k-ang">78</span> },
+        <span class="k-tipe">Student</span> { name: <span class="k-str">&quot;Citra&quot;</span>, score: <span class="k-ang">85</span> },
     ]
-    <span class="k-kunci">for</span> _, m <span class="k-kunci">in</span> kelas.<span class="k-fn">filter</span>(|m| m.nilai &gt;= <span class="k-ang">80</span>) {
-        <span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;&quot;${m.nama} lulus dengan ${m.nilai}&quot;&quot;&quot;</span>)
+    <span class="k-kunci">for</span> _, s <span class="k-kunci">in</span> class.<span class="k-fn">filter</span>(|s| s.score &gt;= <span class="k-ang">80</span>) {
+        <span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;&quot;${s.name} passed with ${s.score}&quot;&quot;&quot;</span>)
     }
-    <span class="k-kunci">let</span> rata = <span class="k-ns">arr</span>::<span class="k-fn">sum</span>(kelas.<span class="k-fn">map</span>(|m| m.nilai)) / <span class="k-fn">len</span>(kelas)
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;rata-rata kelas:&quot;</span>, rata)
-}</code></pre><pre class="keluaran"><code>Ani lulus dengan 92
-Citra lulus dengan 85
-rata-rata kelas: 85</code></pre></figure>
+    <span class="k-kunci">let</span> average = <span class="k-ns">arr</span>::<span class="k-fn">sum</span>(class.<span class="k-fn">map</span>(|s| s.score)) / <span class="k-fn">len</span>(class)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;class average:&quot;</span>, average)
+}</code></pre><pre class="keluaran"><code>Ani passed with 92
+Citra passed with 85
+class average: 85</code></pre></figure>
   </div>
 </section>
 
@@ -518,13 +518,13 @@ rata-rata kelas: 85</code></pre></figure>
 <section class="bagian-beranda">
   <h2>Errors you can read</h2>
   <p>A message names where the problem is, what went wrong, and the way out.</p>
-<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc harga.jrg
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc prices.jrg
 kepentok di baris 2 waktu jalan. keterangannya di bawah.
 error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2, atau -1..-3 kalau mau hitung dari belakang)
- --&gt; harga.jrg:2:5
+ --&gt; prices.jrg:2:5
   |
-2 | wok(harga[3])
-  |     ^^^^^^^^</code></pre></figure>
+2 | wok(prices[3])
+  |     ^^^^^^^^^</code></pre></figure>
   <p>Messages are in Indonesian today ("index [3] is out of bounds — this array holds 3 elements; valid indices are
   0..2, or -1..-3 counting from the end"). English messages are being written, and the language will be chosen
   with <code>jrgm language en</code>.</p>
@@ -566,7 +566,7 @@ error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2,
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="aset/cari.js?v=011e8de6c1"></script>
+<script defer src="aset/cari.js?v=15c39b4883"></script>
 <script defer src="aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

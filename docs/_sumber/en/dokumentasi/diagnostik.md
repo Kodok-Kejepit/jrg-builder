@@ -4,13 +4,15 @@ ringkas: The shape of JRG's error messages, their tone, and how to use them from
 ---
 ## The shape of a message
 
+Below, `totl` was typed where `total` was meant:
+
 ```teks
-berhenti di baris 3. gw tunjukin apa yang salah, di bawah.
-error: variabel `jumlas` belum dikenal — maksudnya `jumlah`? kalau bukan, cek lagi penulisannya atau jangan-jangan lupa `let jumlas = ...` dulu
- --> hitung.jrg:3:9
+kepentok di baris 3 waktu jalan. keterangannya di bawah.
+error: variabel `totl` belum dikenal — maksudnya `total`? kalau bukan, cek lagi penulisannya atau jangan-jangan lupa `let totl = ...` dulu
+ --> calc.jrg:3:9
   |
-3 |     wok(jumlas)
-  |         ^^^^^^
+3 |     wok(totl)
+  |         ^^^^
   |
 ```
 
@@ -33,9 +35,9 @@ according to the chosen tone, and at the seventh repetition a help line is added
 times means the explanation has not landed yet.
 
 ```sh
-jrgc f.jrg --nada hangat     # sopan | galak (bawaan) | judes | hangat | cool | lawak
+jrgc f.jrg --nada hangat     # sopan | galak (default) | judes | hangat | cool | lawak
 JRG_NADA=cool jrgc f.jrg
-jrgc f.jrg --sopan           # tanpa sapaan sama sekali
+jrgc f.jrg --sopan           # no greeting at all
 ```
 
 Tone only changes the greeting line. The body of the message is always the same, so no information is lost in any

@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Struct &amp; Method — Matematika × JRG</title>
-<meta name="description" content="Membuat tipe datamu sendiri. Supaya &quot;titik&quot; tidak lagi berupa dua variabel yang kebetulan berdekatan, melainkan satu benda utuh.">
+<title>Structs &amp; Methods — Math × JRG</title>
+<meta name="description" content="Making your own data type. So that a &quot;point&quot; is no longer two variables that happen to sit next to each other, but one whole thing.">
 <link rel="canonical" href="https://jrg-lang.org/matematika_x_jrg/jrg8.html">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/matematika_x_jrg/jrg8.html">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/matematika_x_jrg/jrg8.html">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/matematika_x_jrg/jrg8.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
-<meta property="og:locale" content="id_ID">
-<meta property="og:title" content="Struct &amp; Method — Matematika × JRG">
-<meta property="og:description" content="Membuat tipe datamu sendiri. Supaya &quot;titik&quot; tidak lagi berupa dua variabel yang kebetulan berdekatan, melainkan satu benda utuh.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Structs &amp; Methods — Math × JRG">
+<meta property="og:description" content="Making your own data type. So that a &quot;point&quot; is no longer two variables that happen to sit next to each other, but one whole thing.">
 <meta property="og:url" content="https://jrg-lang.org/matematika_x_jrg/jrg8.html">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
@@ -438,192 +441,192 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body data-situs="mtk">
-<a class="lewati" href="#isi">Lewati ke isi</a>
+<a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
-  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
+  <nav class="situs" aria-label="Site"><a href="../web_dokumentasi/index.html">Docs</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
-    <a class="tombol-bahasa" href="../index.html" hreflang="en" lang="en" aria-label="English">EN</a>
-    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="Saluran WhatsApp JRG" title="Saluran WhatsApp JRG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
-    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="../id/matematika_x_jrg/jrg8.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="JRG WhatsApp channel" title="JRG WhatsApp channel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
   </div>
 </header>
 <div class="tata">
-<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a class="aktif" aria-current="page" href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<aside class="sisi" aria-label="Chapter list"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> of 32 chapters done</p></div><p class="sisi-grup">Start</p><ul><li><a href="index.html" data-bab="mulai">Start here</a></li></ul><p class="sisi-grup">JRG Basics</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — First Program</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variables &amp; Types</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operators</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Branching</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Loops</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Functions</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Arrays &amp; Text</a></li><li><a class="aktif" aria-current="page" href="jrg8.html" data-bab="jrg8">JRG 8 — Structs &amp; Methods</a></li></ul><p class="sisi-grup">More JRG</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closures &amp; HOFs</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dicts</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Reading Errors</a></li></ul><p class="sisi-grup">Basic Arithmetic</p><ul><li><a href="ch1.html" data-bab="ch1">Chapter 1 — Numbers</a></li><li><a href="ch2.html" data-bab="ch2">Chapter 2 — Add &amp; Subtract</a></li><li><a href="ch3.html" data-bab="ch3">Chapter 3 — Multiply &amp; Divide</a></li><li><a href="ch4.html" data-bab="ch4">Chapter 4 — Order of Operations</a></li><li><a href="ch5.html" data-bab="ch5">Chapter 5 — Negative Numbers</a></li></ul><p class="sisi-grup">Further Concepts</p><ul><li><a href="ch6.html" data-bab="ch6">Chapter 6 — Fractions &amp; Decimals</a></li><li><a href="ch7.html" data-bab="ch7">Chapter 7 — Percentages</a></li><li><a href="ch8.html" data-bab="ch8">Chapter 8 — Variables &amp; Equations</a></li><li><a href="ch9.html" data-bab="ch9">Chapter 9 — Math Functions</a></li></ul><p class="sisi-grup">Applied Math</p><ul><li><a href="ch10.html" data-bab="ch10">Chapter 10 — Primes, GCD &amp; LCM</a></li><li><a href="ch11.html" data-bab="ch11">Chapter 11 — Basic Statistics</a></li><li><a href="ch12.html" data-bab="ch12">Chapter 12 — Plane Geometry</a></li><li><a href="ch13.html" data-bab="ch13">Chapter 13 — Exponents &amp; Roots</a></li><li><a href="ch14.html" data-bab="ch14">Chapter 14 — Logarithms</a></li><li><a href="ch15.html" data-bab="ch15">Chapter 15 — Probability</a></li></ul><p class="sisi-grup">Advanced Level</p><ul><li><a href="ch16.html" data-bab="ch16">Chapter 16 — Ratios &amp; Proportions</a></li><li><a href="ch17.html" data-bab="ch17">Chapter 17 — Solids</a></li><li><a href="ch18.html" data-bab="ch18">Chapter 18 — Sequences &amp; Series</a></li><li><a href="ch19.html" data-bab="ch19">Chapter 19 — Basic Trigonometry</a></li></ul><p class="sisi-grup">Final Project</p><ul><li><a href="ch20.html" data-bab="ch20">Chapter 20 — Report-Card Calculator</a></li></ul><p class="sisi-grup">Extra</p><ul><li><a href="referensi.html" data-bab="referensi">Reference &amp; Glossary</a></li></ul></nav></aside>
 <main id="isi" class="isi">
 <article class="artikel kelas" data-bab="jrg8">
-<p class="rel">JRG 8 · Dasar JRG</p>
-<h1>Struct &amp; Method</h1>
-<p class="ringkas">Membuat tipe datamu sendiri. Supaya "titik" tidak lagi berupa dua variabel yang kebetulan berdekatan, melainkan satu benda utuh.</p>
+<p class="rel">JRG 8 · JRG Basics</p>
+<h1>Structs &amp; Methods</h1>
+<p class="ringkas">Making your own data type. So that a "point" is no longer two variables that happen to sit next to each other, but one whole thing.</p>
 
-<h2 id="masalahnya-dulu"><span class="lencana">tipe</span>Masalahnya dulu</h2>
-<p>Bayangkan kamu menyimpan data siswa: nama, nilai, dan kehadiran. Tanpa struct, ketiganya jadi variabel terpisah &mdash; dan tidak ada yang mengikat mereka.</p>
-<figure class="kode" data-jalan><figcaption><span>tanpa-struct.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> nama = <span class="k-str">&quot;Sari&quot;</span>
-    <span class="k-kunci">let</span> nilai = <span class="k-ang">88</span>
-    <span class="k-kunci">let</span> hadir = <span class="k-ang">95</span>
-    <span class="k-fn">wok</span>(nama, nilai, hadir)
+<h2 id="the-problem-first"><span class="lencana">types</span>The problem first</h2>
+<p>Imagine you store a student's data: name, score, and attendance. Without a struct, the three become separate variables &mdash; and nothing ties them together.</p>
+<figure class="kode" data-jalan><figcaption><span>no-struct.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> name = <span class="k-str">&quot;Sari&quot;</span>
+    <span class="k-kunci">let</span> score = <span class="k-ang">88</span>
+    <span class="k-kunci">let</span> attendance = <span class="k-ang">95</span>
+    <span class="k-fn">wok</span>(name, score, attendance)
 }</code></pre><pre class="keluaran"><code>Sari 88 95</code></pre></figure>
-<p>Sekarang bayangkan ada 30 siswa. Struct menyelesaikan itu:</p>
-<figure class="kode" data-jalan><figcaption><span>struct.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Siswa</span> {
-    <span class="k-kunci">pub</span> nama: <span class="k-tipe">string</span>,
-    <span class="k-kunci">pub</span> nilai: <span class="k-tipe">int</span>,
-    <span class="k-kunci">pub</span> hadir: <span class="k-tipe">int</span>
+<p>Now imagine there are 30 students. A struct solves that:</p>
+<figure class="kode" data-jalan><figcaption><span>struct.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Student</span> {
+    <span class="k-kunci">pub</span> name: <span class="k-tipe">string</span>,
+    <span class="k-kunci">pub</span> score: <span class="k-tipe">int</span>,
+    <span class="k-kunci">pub</span> attendance: <span class="k-tipe">int</span>
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> s = <span class="k-tipe">Siswa</span> { nama: <span class="k-str">&quot;Sari&quot;</span>, nilai: <span class="k-ang">88</span>, hadir: <span class="k-ang">95</span> }
+    <span class="k-kunci">let</span> s = <span class="k-tipe">Student</span> { name: <span class="k-str">&quot;Sari&quot;</span>, score: <span class="k-ang">88</span>, attendance: <span class="k-ang">95</span> }
     <span class="k-fn">wok</span>(s)
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Nama :&quot;</span>, s.nama)
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Nilai:&quot;</span>, s.nilai)
-}</code></pre><pre class="keluaran"><code>Siswa {hadir: 95, nama: Sari, nilai: 88}
-Nama : Sari
-Nilai: 88</code></pre></figure>
-<h2 id="pub-field-yang-boleh-dilihat-dari-luar"><code>pub</code>: field yang boleh dilihat dari luar</h2>
-<p>Perhatikan kata <code>pub</code> di depan setiap field tadi. Tanpa itu, field hanya bisa dibaca dari dalam method tipe itu sendiri &mdash; dan JRG menolak kalau kamu mencoba membacanya dari luar.</p>
-<figure class="kode" data-jalan><figcaption><span>private.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Dompet</span> {
-    saldo: <span class="k-tipe">int</span>          <span class="k-kom">// tanpa pub -&gt; tertutup</span>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Name :&quot;</span>, s.name)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Score:&quot;</span>, s.score)
+}</code></pre><pre class="keluaran"><code>Student {attendance: 95, name: Sari, score: 88}
+Name : Sari
+Score: 88</code></pre></figure>
+<h2 id="pub-fields-that-may-be-seen-from-outside"><code>pub</code>: fields that may be seen from outside</h2>
+<p>Notice the word <code>pub</code> in front of each field. Without it, a field can only be read from inside that type's own methods &mdash; and JRG refuses if you try to read it from outside.</p>
+<figure class="kode" data-jalan><figcaption><span>private.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Wallet</span> {
+    balance: <span class="k-tipe">int</span>          <span class="k-kom">// no pub -&gt; closed</span>
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> d = <span class="k-tipe">Dompet</span> { saldo: <span class="k-ang">50000</span> }
-    <span class="k-fn">wok</span>(d.saldo)
-}</code></pre><pre class="keluaran"><code>error: field `saldo` di `Dompet` bersifat private — cuma bisa diakses dari dalam method tipe itu sendiri atau turunannya. Tambahkan `pub` di depan field itu di deklarasi struct kalau memang harus publik.
+    <span class="k-kunci">let</span> w = <span class="k-tipe">Wallet</span> { balance: <span class="k-ang">50000</span> }
+    <span class="k-fn">wok</span>(w.balance)
+}</code></pre><pre class="keluaran"><code>error: field `balance` di `Wallet` bersifat private — cuma bisa diakses dari dalam method tipe itu sendiri atau turunannya. Tambahkan `pub` di depan field itu di deklarasi struct kalau memang harus publik.
  --&gt; private.jrg:7:9
   |
-7 |     wok(d.saldo)
-  |         ^^^^^^^
+7 |     wok(w.balance)
+  |         ^^^^^^^^^
   |</code></pre></figure>
-<aside class="catatan catatan-info"><p class="catatan-judul">Ini bukan kerepotan, ini pilihan</p><div>Field tertutup memaksa data hanya berubah lewat method yang kamu tulis sendiri &mdash; jadi aturannya (misalnya "saldo tidak boleh minus") ada di satu tempat, bukan tersebar di setiap baris yang menyentuhnya.</div></aside>
-<figure class="kode" data-jalan><figcaption><span>lewat-method.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Dompet</span> { saldo: <span class="k-tipe">int</span> }
+<aside class="catatan catatan-info"><p class="catatan-judul">This is not a hassle, it is a choice</p><div>A closed field forces data to change only through methods you write yourself &mdash; so the rule (say, "the balance can never go negative") lives in one place, not scattered over every line that touches it.</div></aside>
+<figure class="kode" data-jalan><figcaption><span>through-method.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Wallet</span> { balance: <span class="k-tipe">int</span> }
 
-<span class="k-kunci">impl</span> <span class="k-tipe">Dompet</span> {
-    <span class="k-kunci">fn</span> <span class="k-fn">baru</span>(awal: <span class="k-tipe">int</span>) -&gt; <span class="k-tipe">Dompet</span> { <span class="k-kunci">return</span> <span class="k-tipe">Dompet</span> { saldo: awal } }
-    <span class="k-kunci">fn</span> <span class="k-fn">lihat</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">int</span> { <span class="k-kunci">return</span> <span class="k-kunci">self</span>.saldo }
-    <span class="k-kunci">fn</span> <span class="k-fn">tarik</span>(<span class="k-kunci">self</span>, n: <span class="k-tipe">int</span>) -&gt; <span class="k-tipe">Dompet</span> {
-        <span class="k-kunci">if</span> n &gt; <span class="k-kunci">self</span>.saldo { <span class="k-kunci">return</span> <span class="k-kunci">self</span> }      <span class="k-kom">// aturannya di sini saja</span>
-        <span class="k-kunci">return</span> <span class="k-tipe">Dompet</span> { saldo: <span class="k-kunci">self</span>.saldo - n }
+<span class="k-kunci">impl</span> <span class="k-tipe">Wallet</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">new</span>(start: <span class="k-tipe">int</span>) -&gt; <span class="k-tipe">Wallet</span> { <span class="k-kunci">return</span> <span class="k-tipe">Wallet</span> { balance: start } }
+    <span class="k-kunci">fn</span> <span class="k-fn">look</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">int</span> { <span class="k-kunci">return</span> <span class="k-kunci">self</span>.balance }
+    <span class="k-kunci">fn</span> <span class="k-fn">withdraw</span>(<span class="k-kunci">self</span>, n: <span class="k-tipe">int</span>) -&gt; <span class="k-tipe">Wallet</span> {
+        <span class="k-kunci">if</span> n &gt; <span class="k-kunci">self</span>.balance { <span class="k-kunci">return</span> <span class="k-kunci">self</span> }      <span class="k-kom">// the rule lives here only</span>
+        <span class="k-kunci">return</span> <span class="k-tipe">Wallet</span> { balance: <span class="k-kunci">self</span>.balance - n }
     }
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">var</span> d = <span class="k-ns">Dompet</span>::<span class="k-fn">baru</span>(<span class="k-ang">50000</span>)
-    d = d.<span class="k-fn">tarik</span>(<span class="k-ang">20000</span>)
-    d = d.<span class="k-fn">tarik</span>(<span class="k-ang">999999</span>)      <span class="k-kom">// ditolak diam-diam oleh aturannya</span>
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Saldo:&quot;</span>, d.<span class="k-fn">lihat</span>())
-}</code></pre><pre class="keluaran"><code>Saldo: 30000</code></pre></figure>
-<h2 id="method-fungsi-milik-sebuah-tipe">Method: fungsi milik sebuah tipe</h2>
-<p>Blok <code>impl</code> menempelkan fungsi ke sebuah struct. Di dalamnya, <code>self</code> berarti “benda yang sedang dipanggil”.</p>
-<figure class="kode" data-jalan><figcaption><span>impl.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Siswa</span> {
-    nama: <span class="k-tipe">string</span>,
-    nilai: <span class="k-tipe">int</span>,
-    hadir: <span class="k-tipe">int</span>
+    <span class="k-kunci">var</span> w = <span class="k-ns">Wallet</span>::<span class="k-fn">new</span>(<span class="k-ang">50000</span>)
+    w = w.<span class="k-fn">withdraw</span>(<span class="k-ang">20000</span>)
+    w = w.<span class="k-fn">withdraw</span>(<span class="k-ang">999999</span>)      <span class="k-kom">// quietly refused by the rule</span>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Balance:&quot;</span>, w.<span class="k-fn">look</span>())
+}</code></pre><pre class="keluaran"><code>Balance: 30000</code></pre></figure>
+<h2 id="methods-functions-that-belong-to-a-type">Methods: functions that belong to a type</h2>
+<p>An <code>impl</code> block attaches functions to a struct. Inside it, <code>self</code> means “the thing being called”.</p>
+<figure class="kode" data-jalan><figcaption><span>impl.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Student</span> {
+    name: <span class="k-tipe">string</span>,
+    score: <span class="k-tipe">int</span>,
+    attendance: <span class="k-tipe">int</span>
 }
 
-<span class="k-kunci">impl</span> <span class="k-tipe">Siswa</span> {
-    <span class="k-kunci">fn</span> <span class="k-fn">lulus</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">bool</span> {
-        <span class="k-kunci">return</span> <span class="k-kunci">self</span>.nilai &gt;= <span class="k-ang">75</span> &amp;&amp; <span class="k-kunci">self</span>.hadir &gt;= <span class="k-ang">80</span>
+<span class="k-kunci">impl</span> <span class="k-tipe">Student</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">passed</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">bool</span> {
+        <span class="k-kunci">return</span> <span class="k-kunci">self</span>.score &gt;= <span class="k-ang">75</span> &amp;&amp; <span class="k-kunci">self</span>.attendance &gt;= <span class="k-ang">80</span>
     }
-    <span class="k-kunci">fn</span> <span class="k-fn">ringkas</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">string</span> {
-        <span class="k-kunci">return</span> <span class="k-kunci">self</span>.nama + <span class="k-str">&quot;: &quot;</span> + <span class="k-kunci">self</span>.nilai + (<span class="k-kunci">self</span>.<span class="k-fn">lulus</span>() $ <span class="k-str">&quot; (lulus)&quot;</span> : <span class="k-str">&quot; (ulang)&quot;</span>)
+    <span class="k-kunci">fn</span> <span class="k-fn">summary</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">string</span> {
+        <span class="k-kunci">return</span> <span class="k-kunci">self</span>.name + <span class="k-str">&quot;: &quot;</span> + <span class="k-kunci">self</span>.score + (<span class="k-kunci">self</span>.<span class="k-fn">passed</span>() $ <span class="k-str">&quot; (passed)&quot;</span> : <span class="k-str">&quot; (retake)&quot;</span>)
     }
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> a = <span class="k-tipe">Siswa</span> { nama: <span class="k-str">&quot;Sari&quot;</span>, nilai: <span class="k-ang">88</span>, hadir: <span class="k-ang">95</span> }
-    <span class="k-kunci">let</span> b = <span class="k-tipe">Siswa</span> { nama: <span class="k-str">&quot;Budi&quot;</span>, nilai: <span class="k-ang">60</span>, hadir: <span class="k-ang">90</span> }
-    <span class="k-fn">wok</span>(a.<span class="k-fn">ringkas</span>())
-    <span class="k-fn">wok</span>(b.<span class="k-fn">ringkas</span>())
-}</code></pre><pre class="keluaran"><code>Sari: 88 (lulus)
-Budi: 60 (ulang)</code></pre></figure>
-<aside class="catatan catatan-info"><p class="catatan-judul">Kenapa method, bukan fungsi biasa?</p><div>Karena aturannya milik tipe itu. <code>a.lulus()</code> membaca lebih jelas daripada <code>lulus(a)</code>, dan kalau kelak ada tipe lain dengan aturan berbeda, keduanya tidak saling mengganggu.</div></aside>
-<h2 id="pembuat-constructor">Pembuat (constructor)</h2>
-<p>Method tanpa <code>self</code> dipanggil lewat nama tipenya. Biasa dipakai untuk membuat isi awal.</p>
-<figure class="kode" data-jalan><figcaption><span>konstruktor.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Titik</span> {
+    <span class="k-kunci">let</span> a = <span class="k-tipe">Student</span> { name: <span class="k-str">&quot;Sari&quot;</span>, score: <span class="k-ang">88</span>, attendance: <span class="k-ang">95</span> }
+    <span class="k-kunci">let</span> b = <span class="k-tipe">Student</span> { name: <span class="k-str">&quot;Budi&quot;</span>, score: <span class="k-ang">60</span>, attendance: <span class="k-ang">90</span> }
+    <span class="k-fn">wok</span>(a.<span class="k-fn">summary</span>())
+    <span class="k-fn">wok</span>(b.<span class="k-fn">summary</span>())
+}</code></pre><pre class="keluaran"><code>Sari: 88 (passed)
+Budi: 60 (retake)</code></pre></figure>
+<aside class="catatan catatan-info"><p class="catatan-judul">Why a method, not a plain function?</p><div>Because the rule belongs to that type. <code>a.passed()</code> reads more clearly than <code>passed(a)</code>, and if another type with different rules appears later, the two do not get in each other's way.</div></aside>
+<h2 id="constructors">Constructors</h2>
+<p>A method without <code>self</code> is called through the type's name. It is usually used to build the starting value.</p>
+<figure class="kode" data-jalan><figcaption><span>constructor.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Point</span> {
     x: <span class="k-tipe">float</span>,
     y: <span class="k-tipe">float</span>
 }
 
-<span class="k-kunci">impl</span> <span class="k-tipe">Titik</span> {
-    <span class="k-kunci">fn</span> <span class="k-fn">baru</span>(x: <span class="k-tipe">float</span>, y: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">Titik</span> {
-        <span class="k-kunci">return</span> <span class="k-tipe">Titik</span> { x: x, y: y }
+<span class="k-kunci">impl</span> <span class="k-tipe">Point</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">new</span>(x: <span class="k-tipe">float</span>, y: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">Point</span> {
+        <span class="k-kunci">return</span> <span class="k-tipe">Point</span> { x: x, y: y }
     }
-    <span class="k-kunci">fn</span> <span class="k-fn">asal</span>() -&gt; <span class="k-tipe">Titik</span> {
-        <span class="k-kunci">return</span> <span class="k-tipe">Titik</span> { x: <span class="k-ang">0.0</span>, y: <span class="k-ang">0.0</span> }
+    <span class="k-kunci">fn</span> <span class="k-fn">origin</span>() -&gt; <span class="k-tipe">Point</span> {
+        <span class="k-kunci">return</span> <span class="k-tipe">Point</span> { x: <span class="k-ang">0.0</span>, y: <span class="k-ang">0.0</span> }
     }
-    <span class="k-kunci">fn</span> <span class="k-fn">jarakKe</span>(<span class="k-kunci">self</span>, lain: <span class="k-tipe">Titik</span>) -&gt; <span class="k-tipe">float</span> {
-        <span class="k-kunci">let</span> dx = <span class="k-kunci">self</span>.x - lain.x
-        <span class="k-kunci">let</span> dy = <span class="k-kunci">self</span>.y - lain.y
+    <span class="k-kunci">fn</span> <span class="k-fn">distanceTo</span>(<span class="k-kunci">self</span>, other: <span class="k-tipe">Point</span>) -&gt; <span class="k-tipe">float</span> {
+        <span class="k-kunci">let</span> dx = <span class="k-kunci">self</span>.x - other.x
+        <span class="k-kunci">let</span> dy = <span class="k-kunci">self</span>.y - other.y
         <span class="k-kunci">return</span> <span class="k-ns">math</span>::<span class="k-fn">sqrt</span>(dx * dx + dy * dy)
     }
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> p = <span class="k-ns">Titik</span>::<span class="k-fn">baru</span>(<span class="k-ang">3.0</span>, <span class="k-ang">4.0</span>)
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Jarak ke titik asal:&quot;</span>, p.<span class="k-fn">jarakKe</span>(<span class="k-ns">Titik</span>::<span class="k-fn">asal</span>()))
-}</code></pre><pre class="keluaran"><code>Jarak ke titik asal: 5.0</code></pre></figure>
-<h2 id="nilai-bawaan-untuk-field">Nilai bawaan untuk field</h2>
-<figure class="kode" data-jalan><figcaption><span>default.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Pengaturan</span> {
-    <span class="k-kunci">pub</span> judul: <span class="k-tipe">string</span> = <span class="k-str">&quot;Tanpa judul&quot;</span>,
-    <span class="k-kunci">pub</span> lebar: <span class="k-tipe">int</span> = <span class="k-ang">80</span>,
-    <span class="k-kunci">pub</span> tinggi: <span class="k-tipe">int</span> = <span class="k-ang">24</span>
+    <span class="k-kunci">let</span> p = <span class="k-ns">Point</span>::<span class="k-fn">new</span>(<span class="k-ang">3.0</span>, <span class="k-ang">4.0</span>)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Distance to the origin:&quot;</span>, p.<span class="k-fn">distanceTo</span>(<span class="k-ns">Point</span>::<span class="k-fn">origin</span>()))
+}</code></pre><pre class="keluaran"><code>Distance to the origin: 5.0</code></pre></figure>
+<h2 id="default-values-for-fields">Default values for fields</h2>
+<figure class="kode" data-jalan><figcaption><span>default.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Settings</span> {
+    <span class="k-kunci">pub</span> title: <span class="k-tipe">string</span> = <span class="k-str">&quot;Untitled&quot;</span>,
+    <span class="k-kunci">pub</span> width: <span class="k-tipe">int</span> = <span class="k-ang">80</span>,
+    <span class="k-kunci">pub</span> height: <span class="k-tipe">int</span> = <span class="k-ang">24</span>
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> a = <span class="k-tipe">Pengaturan</span> {}
-    <span class="k-kunci">let</span> b = <span class="k-tipe">Pengaturan</span> { judul: <span class="k-str">&quot;Laporan&quot;</span> }
+    <span class="k-kunci">let</span> a = <span class="k-tipe">Settings</span> {}
+    <span class="k-kunci">let</span> b = <span class="k-tipe">Settings</span> { title: <span class="k-str">&quot;Report&quot;</span> }
     <span class="k-fn">wok</span>(a)
     <span class="k-fn">wok</span>(b)
-}</code></pre><pre class="keluaran"><code>Pengaturan {judul: Tanpa judul, lebar: 80, tinggi: 24}
-Pengaturan {judul: Laporan, lebar: 80, tinggi: 24}</code></pre></figure>
-<h2 id="nilai-tidak-pernah-berbagi-tempat">Nilai tidak pernah berbagi tempat</h2>
-<p>Kalau kamu menyalin sebuah struct ke nama lain, keduanya berdiri sendiri. Mengubah satu tidak menyentuh yang lain &mdash; ini aturan pokok JRG.</p>
-<figure class="kode" data-jalan><figcaption><span>salinan.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Kotak</span> { <span class="k-kunci">pub</span> isi: <span class="k-tipe">int</span> }
+}</code></pre><pre class="keluaran"><code>Settings {height: 24, title: Untitled, width: 80}
+Settings {height: 24, title: Report, width: 80}</code></pre></figure>
+<h2 id="values-never-share-a-place">Values never share a place</h2>
+<p>If you copy a struct to another name, the two stand on their own. Changing one never touches the other &mdash; this is a core JRG rule.</p>
+<figure class="kode" data-jalan><figcaption><span>copy.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Box</span> { <span class="k-kunci">pub</span> item: <span class="k-tipe">int</span> }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">var</span> a = <span class="k-tipe">Kotak</span> { isi: <span class="k-ang">1</span> }
-    <span class="k-kunci">var</span> b = a          <span class="k-kom">// salinan, bukan penunjuk yang sama</span>
-    b.isi = <span class="k-ang">99</span>
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;a:&quot;</span>, a.isi, <span class="k-str">&quot; b:&quot;</span>, b.isi)
+    <span class="k-kunci">var</span> a = <span class="k-tipe">Box</span> { item: <span class="k-ang">1</span> }
+    <span class="k-kunci">var</span> b = a          <span class="k-kom">// a copy, not a pointer to the same thing</span>
+    b.item = <span class="k-ang">99</span>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;a:&quot;</span>, a.item, <span class="k-str">&quot; b:&quot;</span>, b.item)
 }</code></pre><pre class="keluaran"><code>a: 1  b: 99</code></pre></figure>
-<aside class="catatan catatan-tip"><p class="catatan-judul">Kenapa ini melegakan</p><div>Di banyak bahasa, menyerahkan sebuah objek ke fungsi lain berarti fungsi itu <em>bisa</em> mengubah punyamu. Di JRG tidak. Kamu tidak perlu menebak-nebak siapa yang diam-diam mengubah datamu.</div></aside>
-<h2 id="menampilkan-struct-dengan-caramu-sendiri">Menampilkan struct dengan caramu sendiri</h2>
-<p>Kalau sebuah tipe punya method bernama <code>to_string</code>, semua tempat yang mencetak akan memakainya.</p>
-<figure class="kode" data-jalan><figcaption><span>to-string.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Uang</span> { jumlah: <span class="k-tipe">int</span> }
+<aside class="catatan catatan-tip"><p class="catatan-judul">Why this is a relief</p><div>In many languages, handing an object to another function means that function <em>can</em> change yours. Not in JRG. You never have to guess who is quietly changing your data.</div></aside>
+<h2 id="showing-a-struct-your-own-way">Showing a struct your own way</h2>
+<p>If a type has a method named <code>to_string</code>, every place that prints will use it.</p>
+<figure class="kode" data-jalan><figcaption><span>to-string.jrg</span></figcaption><pre><code><span class="k-kunci">struct</span> <span class="k-tipe">Money</span> { amount: <span class="k-tipe">int</span> }
 
-<span class="k-kunci">impl</span> <span class="k-tipe">Uang</span> {
+<span class="k-kunci">impl</span> <span class="k-tipe">Money</span> {
     <span class="k-kunci">fn</span> <span class="k-fn">to_string</span>(<span class="k-kunci">self</span>) -&gt; <span class="k-tipe">string</span> {
-        <span class="k-kunci">return</span> <span class="k-str">&quot;Rp&quot;</span> + <span class="k-kunci">self</span>.jumlah
+        <span class="k-kunci">return</span> <span class="k-str">&quot;$&quot;</span> + <span class="k-kunci">self</span>.amount
     }
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> harga = <span class="k-tipe">Uang</span> { jumlah: <span class="k-ang">12500</span> }
-    <span class="k-fn">wok</span>(harga)
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Total:&quot;</span>, harga)
-}</code></pre><pre class="keluaran"><code>Rp12500
-Total: Rp12500</code></pre></figure>
-<div class="kuis" data-kuis="qj8_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Apa arti <code>self</code> di dalam blok <code>impl</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>Nama structnya</button><button type="button" data-benar="1"><span>B</span>Benda yang sedang dipanggil methodnya</button><button type="button" data-benar="0"><span>C</span>Kata kunci untuk mengulang</button></div><p class="kuis-umpan benar" hidden>Tepat. Kalau kamu memanggil <code>a.lulus()</code>, maka <code>self</code> adalah <code>a</code>.</p><p class="kuis-umpan salah" hidden>Pikirkan <code>a.lulus()</code> &mdash; siapa <code>self</code> di sana?</p></div>
-<div class="kuis" data-kuis="qj8_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Sesudah <code>var b = a</code> lalu <code>b.isi = 99</code>, berapa <code>a.isi</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>99, karena keduanya sama</button><button type="button" data-benar="1"><span>B</span>Tetap seperti semula</button><button type="button" data-benar="0"><span>C</span>Error</button></div><p class="kuis-umpan benar" hidden>Betul. Di JRG penugasan membuat salinan; dua nama tidak pernah berbagi isi.</p><p class="kuis-umpan salah" hidden>Aturan pokok JRG: nilai tidak pernah berbagi tempat.</p></div>
-<div class="kuis" data-kuis="qj8_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Bagaimana memanggil method yang tidak punya <code>self</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>a.asal()</code></button><button type="button" data-benar="1"><span>B</span><code>Titik::asal()</code></button><button type="button" data-benar="0"><span>C</span><code>asal(Titik)</code></button></div><p class="kuis-umpan benar" hidden>Tepat &mdash; lewat nama tipenya, memakai <code>::</code>.</p><p class="kuis-umpan salah" hidden>Tanpa <code>self</code> ia tidak terikat ke benda tertentu, jadi dipanggil lewat nama tipenya.</p></div>
-<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Buat struct <code>Persegi</code> dengan field <code>sisi</code>, dan method <code>luas()</code> serta <code>keliling()</code>.</p><p><strong>2.</strong> Tambahkan method <code>lebihBesarDari(lain)</code> yang menjawab true/false.</p><div class="math-box"><div class="math-step"><span>Jawaban 1:</span> <code>fn luas(self) -&gt; int { return self.sisi * self.sisi }</code>, keliling <code>4 * self.sisi</code>.</div><div class="math-step"><span>Jawaban 2:</span> <code>fn lebihBesarDari(self, lain: Persegi) -&gt; bool { return self.luas() &gt; lain.luas() }</code>.</div></div></div></details>
-<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke JRG 9</p><div>Berikutnya: memperlakukan fungsi sebagai <em>nilai</em> &mdash; dititipkan, disimpan, dan dijalankan belakangan.</div></aside>
+    <span class="k-kunci">let</span> price = <span class="k-tipe">Money</span> { amount: <span class="k-ang">125</span> }
+    <span class="k-fn">wok</span>(price)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Total:&quot;</span>, price)
+}</code></pre><pre class="keluaran"><code>$125
+Total: $125</code></pre></figure>
+<div class="kuis" data-kuis="qj8_1"><p class="kuis-label">Quiz 1</p><p class="kuis-tanya">What does <code>self</code> mean inside an <code>impl</code> block?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>The name of the struct</button><button type="button" data-benar="1"><span>B</span>The thing whose method is being called</button><button type="button" data-benar="0"><span>C</span>A keyword for repeating</button></div><p class="kuis-umpan benar" hidden>Exactly. If you call <code>a.passed()</code>, then <code>self</code> is <code>a</code>.</p><p class="kuis-umpan salah" hidden>Think of <code>a.passed()</code> &mdash; who is <code>self</code> there?</p></div>
+<div class="kuis" data-kuis="qj8_2"><p class="kuis-label">Quiz 2</p><p class="kuis-tanya">After <code>var b = a</code> and then <code>b.item = 99</code>, what is <code>a.item</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>99, because they are the same</button><button type="button" data-benar="1"><span>B</span>Still what it was</button><button type="button" data-benar="0"><span>C</span>An error</button></div><p class="kuis-umpan benar" hidden>Right. In JRG assignment makes a copy; two names never share contents.</p><p class="kuis-umpan salah" hidden>The core JRG rule: values never share a place.</p></div>
+<div class="kuis" data-kuis="qj8_3"><p class="kuis-label">Quiz 3</p><p class="kuis-tanya">How do you call a method that has no <code>self</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>a.origin()</code></button><button type="button" data-benar="1"><span>B</span><code>Point::origin()</code></button><button type="button" data-benar="0"><span>C</span><code>origin(Point)</code></button></div><p class="kuis-umpan benar" hidden>Exactly &mdash; through the type's name, using <code>::</code>.</p><p class="kuis-umpan salah" hidden>Without <code>self</code> it is not tied to a particular thing, so it is called through the type's name.</p></div>
+<details class="latihan"><summary>Practice on your own</summary><div><p><strong>1.</strong> Make a struct <code>Square</code> with a field <code>side</code>, and methods <code>area()</code> and <code>perimeter()</code>.</p><p><strong>2.</strong> Add a method <code>biggerThan(other)</code> that answers true/false.</p><div class="math-box"><div class="math-step"><span>Answer 1:</span> <code>fn area(self) -&gt; int { return self.side * self.side }</code>, perimeter <code>4 * self.side</code>.</div><div class="math-step"><span>Answer 2:</span> <code>fn biggerThan(self, other: Square) -&gt; bool { return self.area() &gt; other.area() }</code>.</div></div></div></details>
+<aside class="catatan catatan-real"><p class="catatan-judul">On to JRG 9</p><div>Next: treating functions as <em>values</em> &mdash; handed over, stored, and run later.</div></aside>
 
 </article>
-<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="jrg7.html"><small>Bab sebelumnya</small><strong>Array &amp; Teks</strong></a><a class="ke-kanan" href="jrg9.html"><small>Bab berikutnya</small><strong>Fungsi sebagai Nilai</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">Saluran WhatsApp</a></span></footer>
+<nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="jrg7.html"><small>Previous chapter</small><strong>Arrays &amp; Text</strong></a><a class="ke-kanan" href="jrg9.html"><small>Next chapter</small><strong>Functions as Values</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
 </main>
 </div>
-<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
-  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
+  <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari-id.js?v=5f93a322d5"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 <script defer src="../aset/kelas-data.js?v=c386df7ff6"></script>
-<script defer src="../aset/kelas.js?v=505624797c"></script>
+<script defer src="../aset/kelas.js?v=cfe2ec492f"></script>
 </body>
 </html>

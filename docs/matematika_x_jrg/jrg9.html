@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fungsi sebagai Nilai — Matematika × JRG</title>
-<meta name="description" content="Fungsi di JRG bukan cuma sesuatu yang dipanggil &amp;mdash; ia bisa disimpan di variabel, dititipkan ke fungsi lain, dan dibuat di tempat.">
+<title>Functions as Values — Math × JRG</title>
+<meta name="description" content="In JRG a function is not just something you call &amp;mdash; it can be stored in a variable, handed to another function, and made on the spot.">
 <link rel="canonical" href="https://jrg-lang.org/matematika_x_jrg/jrg9.html">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/matematika_x_jrg/jrg9.html">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/matematika_x_jrg/jrg9.html">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/matematika_x_jrg/jrg9.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
-<meta property="og:locale" content="id_ID">
-<meta property="og:title" content="Fungsi sebagai Nilai — Matematika × JRG">
-<meta property="og:description" content="Fungsi di JRG bukan cuma sesuatu yang dipanggil &amp;mdash; ia bisa disimpan di variabel, dititipkan ke fungsi lain, dan dibuat di tempat.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Functions as Values — Math × JRG">
+<meta property="og:description" content="In JRG a function is not just something you call &amp;mdash; it can be stored in a variable, handed to another function, and made on the spot.">
 <meta property="og:url" content="https://jrg-lang.org/matematika_x_jrg/jrg9.html">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
@@ -438,118 +441,118 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body data-situs="mtk">
-<a class="lewati" href="#isi">Lewati ke isi</a>
+<a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
-  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
+  <nav class="situs" aria-label="Site"><a href="../web_dokumentasi/index.html">Docs</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
-    <a class="tombol-bahasa" href="../index.html" hreflang="en" lang="en" aria-label="English">EN</a>
-    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="Saluran WhatsApp JRG" title="Saluran WhatsApp JRG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
-    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="../id/matematika_x_jrg/jrg9.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="JRG WhatsApp channel" title="JRG WhatsApp channel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
   </div>
 </header>
 <div class="tata">
-<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a class="aktif" aria-current="page" href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<aside class="sisi" aria-label="Chapter list"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> of 32 chapters done</p></div><p class="sisi-grup">Start</p><ul><li><a href="index.html" data-bab="mulai">Start here</a></li></ul><p class="sisi-grup">JRG Basics</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — First Program</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variables &amp; Types</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operators</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Branching</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Loops</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Functions</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Arrays &amp; Text</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Structs &amp; Methods</a></li></ul><p class="sisi-grup">More JRG</p><ul><li><a class="aktif" aria-current="page" href="jrg9.html" data-bab="jrg9">JRG 9 — Closures &amp; HOFs</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dicts</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Reading Errors</a></li></ul><p class="sisi-grup">Basic Arithmetic</p><ul><li><a href="ch1.html" data-bab="ch1">Chapter 1 — Numbers</a></li><li><a href="ch2.html" data-bab="ch2">Chapter 2 — Add &amp; Subtract</a></li><li><a href="ch3.html" data-bab="ch3">Chapter 3 — Multiply &amp; Divide</a></li><li><a href="ch4.html" data-bab="ch4">Chapter 4 — Order of Operations</a></li><li><a href="ch5.html" data-bab="ch5">Chapter 5 — Negative Numbers</a></li></ul><p class="sisi-grup">Further Concepts</p><ul><li><a href="ch6.html" data-bab="ch6">Chapter 6 — Fractions &amp; Decimals</a></li><li><a href="ch7.html" data-bab="ch7">Chapter 7 — Percentages</a></li><li><a href="ch8.html" data-bab="ch8">Chapter 8 — Variables &amp; Equations</a></li><li><a href="ch9.html" data-bab="ch9">Chapter 9 — Math Functions</a></li></ul><p class="sisi-grup">Applied Math</p><ul><li><a href="ch10.html" data-bab="ch10">Chapter 10 — Primes, GCD &amp; LCM</a></li><li><a href="ch11.html" data-bab="ch11">Chapter 11 — Basic Statistics</a></li><li><a href="ch12.html" data-bab="ch12">Chapter 12 — Plane Geometry</a></li><li><a href="ch13.html" data-bab="ch13">Chapter 13 — Exponents &amp; Roots</a></li><li><a href="ch14.html" data-bab="ch14">Chapter 14 — Logarithms</a></li><li><a href="ch15.html" data-bab="ch15">Chapter 15 — Probability</a></li></ul><p class="sisi-grup">Advanced Level</p><ul><li><a href="ch16.html" data-bab="ch16">Chapter 16 — Ratios &amp; Proportions</a></li><li><a href="ch17.html" data-bab="ch17">Chapter 17 — Solids</a></li><li><a href="ch18.html" data-bab="ch18">Chapter 18 — Sequences &amp; Series</a></li><li><a href="ch19.html" data-bab="ch19">Chapter 19 — Basic Trigonometry</a></li></ul><p class="sisi-grup">Final Project</p><ul><li><a href="ch20.html" data-bab="ch20">Chapter 20 — Report-Card Calculator</a></li></ul><p class="sisi-grup">Extra</p><ul><li><a href="referensi.html" data-bab="referensi">Reference &amp; Glossary</a></li></ul></nav></aside>
 <main id="isi" class="isi">
 <article class="artikel kelas" data-bab="jrg9">
-<p class="rel">JRG 9 · JRG Lanjut</p>
-<h1>Fungsi sebagai Nilai</h1>
-<p class="ringkas">Fungsi di JRG bukan cuma sesuatu yang dipanggil &mdash; ia bisa disimpan di variabel, dititipkan ke fungsi lain, dan dibuat di tempat.</p>
+<p class="rel">JRG 9 · More JRG</p>
+<h1>Functions as Values</h1>
+<p class="ringkas">In JRG a function is not just something you call &mdash; it can be stored in a variable, handed to another function, and made on the spot.</p>
 
-<h2 id="menyimpan-fungsi-di-variabel"><span class="lencana">fungsional</span>Menyimpan fungsi di variabel</h2>
-<figure class="kode" data-jalan><figcaption><span>fn-nilai.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">dua</span>(n: <span class="k-tipe">int</span>) -&gt; <span class="k-tipe">int</span> { <span class="k-kunci">return</span> n * <span class="k-ang">2</span> }
+<h2 id="storing-a-function-in-a-variable"><span class="lencana">functional</span>Storing a function in a variable</h2>
+<figure class="kode" data-jalan><figcaption><span>fn-value.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">twice</span>(n: <span class="k-tipe">int</span>) -&gt; <span class="k-tipe">int</span> { <span class="k-kunci">return</span> n * <span class="k-ang">2</span> }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> f = dua           <span class="k-kom">// disimpan, belum dipanggil</span>
+    <span class="k-kunci">let</span> f = twice           <span class="k-kom">// stored, not called yet</span>
     <span class="k-fn">wok</span>(<span class="k-fn">f</span>(<span class="k-ang">21</span>))
     <span class="k-fn">wok</span>(<span class="k-fn">typeof</span>(f))
 }</code></pre><pre class="keluaran"><code>42
 function</code></pre></figure>
-<h2 id="closure-fungsi-tanpa-nama">Closure: fungsi tanpa nama</h2>
-<p>Kalau fungsinya cuma dipakai sekali, tidak perlu diberi nama. Bentuk ringkasnya memakai sepasang garis tegak.</p>
+<h2 id="closures-functions-without-a-name">Closures: functions without a name</h2>
+<p>If a function is only used once, it does not need a name. The short form uses a pair of vertical bars.</p>
 <figure class="kode" data-jalan><figcaption><span>closure.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> kuadrat = |x| x * x
-    <span class="k-kunci">let</span> tambah = |a, b| a + b
-    <span class="k-fn">wok</span>(<span class="k-fn">kuadrat</span>(<span class="k-ang">7</span>))
-    <span class="k-fn">wok</span>(<span class="k-fn">tambah</span>(<span class="k-ang">3</span>, <span class="k-ang">4</span>))
+    <span class="k-kunci">let</span> square = |x| x * x
+    <span class="k-kunci">let</span> add = |a, b| a + b
+    <span class="k-fn">wok</span>(<span class="k-fn">square</span>(<span class="k-ang">7</span>))
+    <span class="k-fn">wok</span>(<span class="k-fn">add</span>(<span class="k-ang">3</span>, <span class="k-ang">4</span>))
 }</code></pre><pre class="keluaran"><code>49
 7</code></pre></figure>
-<aside class="catatan catatan-info"><p class="catatan-judul">Kenapa disebut <em>closure</em></p><div>Karena ia "menutup" nilai di sekitarnya &mdash; variabel dari luar tetap terbaca di dalamnya, bahkan sesudah baris itu lewat.</div></aside>
-<figure class="kode" data-jalan><figcaption><span>tangkap.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> pajak = <span class="k-ang">0.11</span>
-    <span class="k-kunci">let</span> hitung = |harga| harga * (<span class="k-ang">1.0</span> + pajak)
-    <span class="k-fn">wok</span>(<span class="k-fn">hitung</span>(<span class="k-ang">100000.0</span>))
+<aside class="catatan catatan-info"><p class="catatan-judul">Why it is called a <em>closure</em></p><div>Because it "closes over" the values around it &mdash; variables from outside stay readable inside it, even after that line has passed.</div></aside>
+<figure class="kode" data-jalan><figcaption><span>capture.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> tax = <span class="k-ang">0.11</span>
+    <span class="k-kunci">let</span> withTax = |price| price * (<span class="k-ang">1.0</span> + tax)
+    <span class="k-fn">wok</span>(<span class="k-fn">withTax</span>(<span class="k-ang">100000.0</span>))
 }</code></pre><pre class="keluaran"><code>111000.00000000001</code></pre></figure>
-<h2 id="tiga-fungsi-yang-mengubah-cara-kamu-menulis">Tiga fungsi yang mengubah cara kamu menulis</h2>
-<div class="tabel"><table><thead><tr><th>Fungsi</th><th>Gunanya</th><th>Hasilnya</th></tr></thead><tbody><tr><td><code>arr::map</code></td><td>Ubah setiap elemen</td><td>Array baru, panjang sama</td></tr><tr><td><code>arr::filter</code></td><td>Saring yang memenuhi syarat</td><td>Array baru, biasanya lebih pendek</td></tr><tr><td><code>arr::reduce</code></td><td>Peras jadi satu nilai</td><td>Satu nilai</td></tr></tbody></table></div>
+<h2 id="three-functions-that-change-how-you-write">Three functions that change how you write</h2>
+<div class="tabel"><table><thead><tr><th>Function</th><th>What it does</th><th>Result</th></tr></thead><tbody><tr><td><code>arr::map</code></td><td>Change every element</td><td>A new array, same length</td></tr><tr><td><code>arr::filter</code></td><td>Keep the ones that meet a condition</td><td>A new array, usually shorter</td></tr><tr><td><code>arr::reduce</code></td><td>Squeeze it down to one value</td><td>One value</td></tr></tbody></table></div>
 <figure class="kode" data-jalan><figcaption><span>map-filter.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
     <span class="k-kunci">let</span> n = [<span class="k-ang">12</span>, <span class="k-ang">7</span>, <span class="k-ang">25</span>, <span class="k-ang">3</span>, <span class="k-ang">18</span>]
 
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Dikuadratkan:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">map</span>(n, |x| x * x))
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Yang genap  :&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">filter</span>(n, |x| x % <span class="k-ang">2</span> == <span class="k-ang">0</span>))
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Dijumlahkan :&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">reduce</span>(n, |a, b| a + b, <span class="k-ang">0</span>))
-}</code></pre><pre class="keluaran"><code>Dikuadratkan: [144, 49, 625, 9, 324]
-Yang genap  : [12, 18]
-Dijumlahkan : 65</code></pre></figure>
-<p>Bandingkan dengan menulisnya memakai perulangan &mdash; keduanya benar, tapi yang atas menyebutkan <em>apa</em> yang diinginkan, bukan <em>bagaimana</em> caranya.</p>
-<figure class="kode" data-jalan><figcaption><span>banding-loop.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Squared :&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">map</span>(n, |x| x * x))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;The even:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">filter</span>(n, |x| x % <span class="k-ang">2</span> == <span class="k-ang">0</span>))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Summed  :&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">reduce</span>(n, |a, b| a + b, <span class="k-ang">0</span>))
+}</code></pre><pre class="keluaran"><code>Squared : [144, 49, 625, 9, 324]
+The even: [12, 18]
+Summed  : 65</code></pre></figure>
+<p>Compare it with writing a loop &mdash; both are correct, but the one above states <em>what</em> you want, not <em>how</em> to do it.</p>
+<figure class="kode" data-jalan><figcaption><span>versus-loop.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
     <span class="k-kunci">let</span> n = [<span class="k-ang">12</span>, <span class="k-ang">7</span>, <span class="k-ang">25</span>, <span class="k-ang">3</span>, <span class="k-ang">18</span>]
 
-    <span class="k-kunci">var</span> genap = []
+    <span class="k-kunci">var</span> even = []
     <span class="k-kunci">for</span> _, x <span class="k-kunci">in</span> n {
-        <span class="k-kunci">if</span> x % <span class="k-ang">2</span> == <span class="k-ang">0</span> { genap = <span class="k-ns">arr</span>::<span class="k-fn">push</span>(genap, x) }
+        <span class="k-kunci">if</span> x % <span class="k-ang">2</span> == <span class="k-ang">0</span> { even = <span class="k-ns">arr</span>::<span class="k-fn">push</span>(even, x) }
     }
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Cara perulangan:&quot;</span>, genap)
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Cara filter    :&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">filter</span>(n, |x| x % <span class="k-ang">2</span> == <span class="k-ang">0</span>))
-}</code></pre><pre class="keluaran"><code>Cara perulangan: [12, 18]
-Cara filter    : [12, 18]</code></pre></figure>
-<h2 id="merangkai-beberapa-langkah">Merangkai beberapa langkah</h2>
-<figure class="kode" data-jalan><figcaption><span>rangkai.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> nilai = [<span class="k-ang">45</span>, <span class="k-ang">88</span>, <span class="k-ang">92</span>, <span class="k-ang">67</span>, <span class="k-ang">79</span>, <span class="k-ang">95</span>]
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;With a loop  :&quot;</span>, even)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;With a filter:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">filter</span>(n, |x| x % <span class="k-ang">2</span> == <span class="k-ang">0</span>))
+}</code></pre><pre class="keluaran"><code>With a loop  : [12, 18]
+With a filter: [12, 18]</code></pre></figure>
+<h2 id="chaining-several-steps">Chaining several steps</h2>
+<figure class="kode" data-jalan><figcaption><span>chain.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> scores = [<span class="k-ang">45</span>, <span class="k-ang">88</span>, <span class="k-ang">92</span>, <span class="k-ang">67</span>, <span class="k-ang">79</span>, <span class="k-ang">95</span>]
 
-    <span class="k-kunci">let</span> lulus = <span class="k-ns">arr</span>::<span class="k-fn">filter</span>(nilai, |n| n &gt;= <span class="k-ang">75</span>)
-    <span class="k-kunci">let</span> bonus = <span class="k-ns">arr</span>::<span class="k-fn">map</span>(lulus, |n| n + <span class="k-ang">5</span>)
+    <span class="k-kunci">let</span> passed = <span class="k-ns">arr</span>::<span class="k-fn">filter</span>(scores, |n| n &gt;= <span class="k-ang">75</span>)
+    <span class="k-kunci">let</span> bonus = <span class="k-ns">arr</span>::<span class="k-fn">map</span>(passed, |n| n + <span class="k-ang">5</span>)
     <span class="k-kunci">let</span> total = <span class="k-ns">arr</span>::<span class="k-fn">reduce</span>(bonus, |a, b| a + b, <span class="k-ang">0</span>)
 
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Lulus :&quot;</span>, lulus)
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Bonus :&quot;</span>, bonus)
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Total :&quot;</span>, total)
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Rata2 :&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, total <span class="k-kunci">as</span> <span class="k-tipe">float</span> / <span class="k-fn">len</span>(bonus) <span class="k-kunci">as</span> <span class="k-tipe">float</span>))
-}</code></pre><pre class="keluaran"><code>Lulus : [88, 92, 79, 95]
-Bonus : [93, 97, 84, 100]
-Total : 374
-Rata2 : 93.50</code></pre></figure>
-<h2 id="fungsi-yang-menerima-fungsi">Fungsi yang menerima fungsi</h2>
-<p>Kamu bisa menulis fungsimu sendiri yang menerima fungsi sebagai parameter.</p>
-<figure class="kode" data-jalan><figcaption><span>terima-fn.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">terapkanDuaKali</span>(f, x) {
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Passed :&quot;</span>, passed)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Bonus  :&quot;</span>, bonus)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Total  :&quot;</span>, total)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Average:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, total <span class="k-kunci">as</span> <span class="k-tipe">float</span> / <span class="k-fn">len</span>(bonus) <span class="k-kunci">as</span> <span class="k-tipe">float</span>))
+}</code></pre><pre class="keluaran"><code>Passed : [88, 92, 79, 95]
+Bonus  : [93, 97, 84, 100]
+Total  : 374
+Average: 93.50</code></pre></figure>
+<h2 id="functions-that-take-functions">Functions that take functions</h2>
+<p>You can write your own functions that take a function as a parameter.</p>
+<figure class="kode" data-jalan><figcaption><span>take-fn.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">applyTwice</span>(f, x) {
     <span class="k-kunci">return</span> <span class="k-fn">f</span>(<span class="k-fn">f</span>(x))
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-fn">wok</span>(<span class="k-fn">terapkanDuaKali</span>(|n| n * <span class="k-ang">3</span>, <span class="k-ang">2</span>))
-    <span class="k-fn">wok</span>(<span class="k-fn">terapkanDuaKali</span>(|s| s + <span class="k-str">&quot;!&quot;</span>, <span class="k-str">&quot;hore&quot;</span>))
+    <span class="k-fn">wok</span>(<span class="k-fn">applyTwice</span>(|n| n * <span class="k-ang">3</span>, <span class="k-ang">2</span>))
+    <span class="k-fn">wok</span>(<span class="k-fn">applyTwice</span>(|s| s + <span class="k-str">&quot;!&quot;</span>, <span class="k-str">&quot;hooray&quot;</span>))
 }</code></pre><pre class="keluaran"><code>18
-hore!!</code></pre></figure>
-<div class="kuis" data-kuis="qj9_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Apa hasil <code>arr::map([1,2,3], |x| x * 10)</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>60</code></button><button type="button" data-benar="1"><span>B</span><code>[10, 20, 30]</code></button><button type="button" data-benar="0"><span>C</span><code>[1, 2, 3]</code></button></div><p class="kuis-umpan benar" hidden>Tepat &mdash; <code>map</code> mengubah setiap elemen dan menghasilkan array baru sepanjang yang asli.</p><p class="kuis-umpan salah" hidden><code>map</code> tidak menjumlahkan; yang menjumlahkan adalah <code>reduce</code>.</p></div>
-<div class="kuis" data-kuis="qj9_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Fungsi mana yang memeras array jadi satu nilai?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>arr::map</code></button><button type="button" data-benar="1"><span>B</span><code>arr::reduce</code></button><button type="button" data-benar="0"><span>C</span><code>arr::filter</code></button></div><p class="kuis-umpan benar" hidden>Betul.</p><p class="kuis-umpan salah" hidden><code>map</code> dan <code>filter</code> sama-sama menghasilkan array.</p></div>
-<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Dari <code>[3, 8, 15, 4, 22]</code>, ambil yang lebih dari 5 lalu kalikan 2.</p><p><strong>2.</strong> Cari hasil kali semua isi <code>[1, 2, 3, 4]</code> memakai <code>reduce</code>.</p><div class="math-box"><div class="math-step"><span>Jawaban 1:</span> <code>arr::map(arr::filter(a, |x| x &gt; 5), |x| x * 2)</code> &rarr; <code>[16, 30, 44]</code>.</div><div class="math-step"><span>Jawaban 2:</span> <code>arr::reduce(a, |x, y| x * y, 1)</code> &rarr; 24. Perhatikan nilai awalnya <strong>1</strong>, bukan 0.</div></div></div></details>
-<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke JRG 10</p><div>Berikutnya: apa yang dilakukan JRG ketika sebuah jawaban <em>mungkin tidak ada</em> &mdash; dan kenapa itu bukan <code>nil</code>.</div></aside>
+hooray!!</code></pre></figure>
+<div class="kuis" data-kuis="qj9_1"><p class="kuis-label">Quiz 1</p><p class="kuis-tanya">What does <code>arr::map([1,2,3], |x| x * 10)</code> give?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>60</code></button><button type="button" data-benar="1"><span>B</span><code>[10, 20, 30]</code></button><button type="button" data-benar="0"><span>C</span><code>[1, 2, 3]</code></button></div><p class="kuis-umpan benar" hidden>Exactly &mdash; <code>map</code> changes every element and gives a new array as long as the original.</p><p class="kuis-umpan salah" hidden><code>map</code> does not add things up; <code>reduce</code> does.</p></div>
+<div class="kuis" data-kuis="qj9_2"><p class="kuis-label">Quiz 2</p><p class="kuis-tanya">Which function squeezes an array down to one value?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>arr::map</code></button><button type="button" data-benar="1"><span>B</span><code>arr::reduce</code></button><button type="button" data-benar="0"><span>C</span><code>arr::filter</code></button></div><p class="kuis-umpan benar" hidden>Right.</p><p class="kuis-umpan salah" hidden><code>map</code> and <code>filter</code> both give an array.</p></div>
+<details class="latihan"><summary>Practice on your own</summary><div><p><strong>1.</strong> From <code>[3, 8, 15, 4, 22]</code>, take the ones greater than 5 and multiply them by 2.</p><p><strong>2.</strong> Find the product of everything in <code>[1, 2, 3, 4]</code> using <code>reduce</code>.</p><div class="math-box"><div class="math-step"><span>Answer 1:</span> <code>arr::map(arr::filter(a, |x| x &gt; 5), |x| x * 2)</code> &rarr; <code>[16, 30, 44]</code>.</div><div class="math-step"><span>Answer 2:</span> <code>arr::reduce(a, |x, y| x * y, 1)</code> &rarr; 24. Note that the starting value is <strong>1</strong>, not 0.</div></div></div></details>
+<aside class="catatan catatan-real"><p class="catatan-judul">On to JRG 10</p><div>Next: what JRG does when an answer <em>might not exist</em> &mdash; and why that is not <code>nil</code>.</div></aside>
 
 </article>
-<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="jrg8.html"><small>Bab sebelumnya</small><strong>Struct &amp; Method</strong></a><a class="ke-kanan" href="jrg10.html"><small>Bab berikutnya</small><strong>Kalau Jawabannya Mungkin Tidak Ada</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">Saluran WhatsApp</a></span></footer>
+<nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="jrg8.html"><small>Previous chapter</small><strong>Structs &amp; Methods</strong></a><a class="ke-kanan" href="jrg10.html"><small>Next chapter</small><strong>When the Answer Might Not Exist</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
 </main>
 </div>
-<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
-  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
+  <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari-id.js?v=5f93a322d5"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 <script defer src="../aset/kelas-data.js?v=c386df7ff6"></script>
-<script defer src="../aset/kelas.js?v=505624797c"></script>
+<script defer src="../aset/kelas.js?v=cfe2ec492f"></script>
 </body>
 </html>

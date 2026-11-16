@@ -5,9 +5,9 @@ ringkas: Managing projects: creating, running, testing, formatting, checking, de
 ## A new project
 
 ```sh
-$ jrgm new kalku
-Created `kalku` (bin) package
-$ cd kalku
+$ jrgm new calc
+Created `calc` (bin) package
+$ cd calc
 $ jrgm run
 Halo dari JawaRustGo++!
 ```
@@ -15,7 +15,7 @@ Halo dari JawaRustGo++!
 What it contains:
 
 ```teks
-kalku/
+calc/
 ├── jrgm.toml        project manifest
 ├── src/main.jrg     entry point
 └── tests/dasar.jrg  tests
@@ -23,17 +23,17 @@ kalku/
 
 ```toml jrgm.toml
 [package]
-name        = "kalku"
+name        = "calc"
 version     = "0.1.0"
 edition     = "jrg2025"
 entry       = "src/main.jrg"
 
 [dependencies]
-bantu = { path = "../bantu" }
+helper = { path = "../helper" }
 ```
 
 `jrgm new name --kind lib` makes a library, `--kind web` a web application, and `--android` adds an `[android]`
-section. Projects in other languages work too: `jrgm new alat --bahasa python` (also `javascript`, `c`, `cpp`,
+section. Projects in other languages work too: `jrgm new tool --bahasa python` (also `javascript`, `c`, `cpp`,
 `rust`, `go`, `java`, `php`, `lua`, `ruby`, `sh`); `run`, `build`, `test`, and `fmt` then use that language's
 tools.
 
@@ -100,22 +100,22 @@ A dependency can be a local folder or a git repository. Git serves as the regist
 and the commit used is locked in `jrgm.lock`.
 
 ```sh
-jrgm add bantu --path ../bantu
-jrgm add warna --git https://github.com/contoh/warna-jrg --version 0.2.0
-jrgm add alat --git https://github.com/contoh/alat --rev main --dev
+jrgm add helper --path ../helper
+jrgm add colors --git https://github.com/example/colors-jrg --version 0.2.0
+jrgm add tools --git https://github.com/example/tools --rev main --dev
 jrgm update            # move every git dependency forward
-jrgm update warna
-jrgm remove bantu
+jrgm update colors
+jrgm remove helper
 jrgm tree
 ```
 
 ```sh
 $ jrgm tree
-kalku 0.1.0
-└── bantu 0.1.0
+calc 0.1.0
+└── helper 0.1.0
 ```
 
-Once added, a dependency's module can be used right away with `import "bantu"`. A dependency cycle, and two
+Once added, a dependency's module can be used right away with `import "helper"`. A dependency cycle, and two
 dependencies exposing the same module name, are refused with the chain named.
 
 ## Publishing

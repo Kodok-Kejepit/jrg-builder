@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -462,10 +462,10 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <h1>JawaRustGo++</h1>
 <p class="ringkas">A programming language with four execution engines, diagnostics that explain the way out, and a library big enough for real applications.</p>
 <p>JawaRustGo++, JRG for short, is a programming language written in Rust. Its code looks like Rust and Go, it is dynamically typed, and its messages explain what went wrong and where. These docs are for version <strong>0.6.0</strong>.</p>
-<figure class="kode" data-jalan><figcaption><span>halo.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> nama = <span class="k-str">&quot;Nusantara&quot;</span>
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;&quot;sugeng rawuh, ${nama}!&quot;&quot;&quot;</span>)
-}</code></pre><pre class="keluaran"><code>sugeng rawuh, Nusantara!</code></pre></figure>
+<figure class="kode" data-jalan><figcaption><span>hello.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> name = <span class="k-str">&quot;Nusantara&quot;</span>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;&quot;welcome, ${name}!&quot;&quot;&quot;</span>)
+}</code></pre><pre class="keluaran"><code>welcome, Nusantara!</code></pre></figure>
 <p><code>wok</code> prints to the screen. The <strong>Run</strong> button above a code block runs the example right in the browser, and <strong>Edit</strong> makes it editable.</p>
 <h2 id="what-is-inside"><a class="jangkar" href="#what-is-inside">What is inside</a></h2>
 <ul><li><strong>Four engines.</strong> The interpreter (the default), a bytecode VM (<code>--vm</code>), a JIT that compiles hot code while it runs (<code>--jit</code>), and native compilation through LLVM (<code>--emit-llvm</code>). The same program prints the same output on all four. A fifth engine, WebAssembly, is being built so JRG programs run on the web.</li><li><strong>Values never share.</strong> Copying, passing, and returning a value always yields a copy, so there is no garbage collector and no surprising change from a distance.</li><li><strong>Errors you can read.</strong> Every error names the file, line, column, the piece of code, and usually the way out. Messages are in Indonesian today; English messages are being written.</li><li><strong>A complete library.</strong> 871 built-in functions and the <code>std/</code> modules: text, collections, files, JSON, HTTP, a web server, SQLite, canvas, sound, numerics, and a 2D game engine.</li><li><strong>Other languages.</strong> Call C, C++, Rust, Go, Python, JavaScript, PHP, Lua, Java, Kotlin, .NET, and WebAssembly.</li><li><strong>Tools.</strong> <code>jrgm</code> for projects, dependencies, tests, formatting, and linting; a terminal editor; a REPL; a language server (LSP); and an Android APK packager.</li></ul>
@@ -483,7 +483,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

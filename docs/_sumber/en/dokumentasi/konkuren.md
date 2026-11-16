@@ -11,11 +11,11 @@ real operating-system thread, so it suits tens to hundreds of tasks, not million
 sends, `<-c` receives.
 
 ```jrg channel.jrg lokal
-fn berat(n) { return n * n }
+fn heavy(n) { return n * n }
 
 let c = make_chan(int, 2)
-spawn { c <- berat(3) }
-spawn { c <- berat(4) }
+spawn { c <- heavy(3) }
+spawn { c <- heavy(4) }
 wok(<-c + <-c)
 ```
 ```keluaran
@@ -30,28 +30,28 @@ finish before it ends, so no output is lost because `main` finished first.
 `select` waits on several channels at once and takes the first one ready. A `default` arm makes it not wait.
 
 ```jrg select.jrg lokal
-let hasil = make_chan(string, 0)
-let selesai = make_chan(bool, 0)
+let results = make_chan(string, 0)
+let done = make_chan(bool, 0)
 
 spawn {
-    for _, kata in ["satu", "dua", "tiga"] {
-        hasil <- kata
+    for _, word in ["one", "two", "three"] {
+        results <- word
     }
-    selesai <- true
+    done <- true
 }
 
-var jalan = true
-while jalan {
+var running = true
+while running {
     select {
-        case k := <-hasil: { wok("terima", k) }
-        case _ := <-selesai: { jalan = false }
+        case w := <-results: { wok("received", w) }
+        case _ := <-done: { running = false }
     }
 }
 ```
 ```keluaran
-terima satu
-terima dua
-terima tiga
+received one
+received two
+received three
 ```
 
 ## Future and Task
@@ -59,14 +59,14 @@ terima tiga
 For "start now, collect the result later", use `Future::new(function, arguments…)` and then `future::await`.
 
 ```jrg future.jrg lokal
-fn hitung(n) {
+fn sum_to(n) {
     var t = 0
     for _, i in 0..n { t += i }
     return t
 }
 
-let a = Future::new(hitung, 1000)
-let b = Future::new(hitung, 2000)
+let a = Future::new(sum_to, 1000)
+let b = Future::new(sum_to, 2000)
 wok(future::await(a) + future::await(b))
 ```
 ```keluaran
@@ -84,21 +84,21 @@ is safe to add to from many threads) and `Mutex` (a lock).
 
 ```jrg atomic.jrg lokal
 let n = Atomic::new(0)
-var tugas = []
+var tasks = []
 for _, i in 0..4 {
-    tugas = tugas.push(Task::spawn(|| {
+    tasks = tasks.push(Task::spawn(|| {
         for _, j in 0..1000 { n.add(1) }
     }))
 }
-for _, t in tugas { task::join(t) }
+for _, t in tasks { task::join(t) }
 wok(n.get())
 
-let kunci = Mutex::new()
-mutex::with_lock(kunci, || wok("di dalam kunci"))
+let lock = Mutex::new()
+mutex::with_lock(lock, || wok("inside the lock"))
 ```
 ```keluaran
 4000
-di dalam kunci
+inside the lock
 ```
 
 Copying an `Atomic` or a `Mutex` copies the handle, so every copy points at the same state. `with_lock` releases the

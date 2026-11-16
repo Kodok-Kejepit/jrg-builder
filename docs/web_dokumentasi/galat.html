@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -463,74 +463,74 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p class="ringkas">How JRG says "might not be there" and "might fail", and how to stop a program on purpose.</p>
 <h2 id="option"><a class="jangkar" href="#option">Option</a></h2>
 <p><code>Option</code> is an answer that may be empty: <code>Some(value)</code> or <code>None</code>. A built-in function that may find nothing (<code>first</code>, <code>get</code>, <code>find</code>, <code>pop</code>, <code>dict::get</code>, <code>env::get</code>, <code>str::find</code>) returns an <code>Option</code>, never <code>nil</code> or <code>-1</code>.</p>
-<figure class="kode" data-jalan><figcaption><span>option.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> ada = [<span class="k-ang">4</span>, <span class="k-ang">8</span>, <span class="k-ang">15</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">5</span>)
-<span class="k-kunci">let</span> kosong = [<span class="k-ang">4</span>, <span class="k-ang">8</span>, <span class="k-ang">15</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">50</span>)
-<span class="k-fn">wok</span>(ada, kosong)
-<span class="k-fn">wok</span>(ada.<span class="k-fn">is_some</span>(), kosong.<span class="k-fn">is_none</span>())
-<span class="k-fn">wok</span>(ada.<span class="k-fn">unwrap</span>(), kosong.<span class="k-fn">unwrap_or</span>(<span class="k-ang">0</span>), kosong ?? -<span class="k-ang">1</span>)
-<span class="k-fn">wok</span>(ada.<span class="k-fn">map</span>(|x| x * <span class="k-ang">2</span>), kosong.<span class="k-fn">map</span>(|x| x * <span class="k-ang">2</span>))</code></pre><pre class="keluaran"><code>Option::Some(8) Option::None
+<figure class="kode" data-jalan><figcaption><span>option.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> found = [<span class="k-ang">4</span>, <span class="k-ang">8</span>, <span class="k-ang">15</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">5</span>)
+<span class="k-kunci">let</span> empty = [<span class="k-ang">4</span>, <span class="k-ang">8</span>, <span class="k-ang">15</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">50</span>)
+<span class="k-fn">wok</span>(found, empty)
+<span class="k-fn">wok</span>(found.<span class="k-fn">is_some</span>(), empty.<span class="k-fn">is_none</span>())
+<span class="k-fn">wok</span>(found.<span class="k-fn">unwrap</span>(), empty.<span class="k-fn">unwrap_or</span>(<span class="k-ang">0</span>), empty ?? -<span class="k-ang">1</span>)
+<span class="k-fn">wok</span>(found.<span class="k-fn">map</span>(|x| x * <span class="k-ang">2</span>), empty.<span class="k-fn">map</span>(|x| x * <span class="k-ang">2</span>))</code></pre><pre class="keluaran"><code>Option::Some(8) Option::None
 true true
 8 0 -1
 Option::Some(16) Option::None</code></pre></figure>
 <p><code>unwrap()</code> on <code>None</code> is an error. Use <code>unwrap_or</code>, <code>??</code>, or <code>match</code> when emptiness is expected.</p>
 <h2 id="result"><a class="jangkar" href="#result">Result</a></h2>
 <p><code>Result</code> is an answer that may fail: <code>Ok(value)</code> or <code>Err(reason)</code>. Functions that touch the outside world (<code>fs::try_read</code>, <code>http::get</code>, FFI, databases) return a <code>Result</code>, and your own functions may too.</p>
-<figure class="kode" data-jalan><figcaption><span>result.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bagi</span>(a, b) -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
+<figure class="kode" data-jalan><figcaption><span>result.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">divide</span>(a, b) -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
     <span class="k-kunci">if</span> b == <span class="k-ang">0</span> {
-        <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;pembagi nol&quot;</span>)
+        <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;division by zero&quot;</span>)
     }
     <span class="k-kunci">return</span> <span class="k-fn">Ok</span>(a / b)
 }
 
-<span class="k-fn">wok</span>(<span class="k-fn">bagi</span>(<span class="k-ang">10</span>, <span class="k-ang">2</span>), <span class="k-fn">bagi</span>(<span class="k-ang">1</span>, <span class="k-ang">0</span>))
+<span class="k-fn">wok</span>(<span class="k-fn">divide</span>(<span class="k-ang">10</span>, <span class="k-ang">2</span>), <span class="k-fn">divide</span>(<span class="k-ang">1</span>, <span class="k-ang">0</span>))
 
-<span class="k-kunci">match</span> <span class="k-fn">bagi</span>(<span class="k-ang">9</span>, <span class="k-ang">0</span>) {
-    <span class="k-fn">Ok</span>(v) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;hasil&quot;</span>, v),
-    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;gagal:&quot;</span>, e),
+<span class="k-kunci">match</span> <span class="k-fn">divide</span>(<span class="k-ang">9</span>, <span class="k-ang">0</span>) {
+    <span class="k-fn">Ok</span>(v) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;result&quot;</span>, v),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;failed:&quot;</span>, e),
 }
 
-<span class="k-fn">wok</span>(<span class="k-fn">bagi</span>(<span class="k-ang">8</span>, <span class="k-ang">2</span>).<span class="k-fn">unwrap_or</span>(-<span class="k-ang">1</span>), <span class="k-fn">bagi</span>(<span class="k-ang">8</span>, <span class="k-ang">0</span>).<span class="k-fn">unwrap_or</span>(-<span class="k-ang">1</span>))</code></pre><pre class="keluaran"><code>Result::Ok(5) Result::Err(pembagi nol)
-gagal: pembagi nol
+<span class="k-fn">wok</span>(<span class="k-fn">divide</span>(<span class="k-ang">8</span>, <span class="k-ang">2</span>).<span class="k-fn">unwrap_or</span>(-<span class="k-ang">1</span>), <span class="k-fn">divide</span>(<span class="k-ang">8</span>, <span class="k-ang">0</span>).<span class="k-fn">unwrap_or</span>(-<span class="k-ang">1</span>))</code></pre><pre class="keluaran"><code>Result::Ok(5) Result::Err(division by zero)
+failed: division by zero
 4 -1</code></pre></figure>
 <h2 id="propagating-failure-with"><a class="jangkar" href="#propagating-failure-with">Propagating failure with ?</a></h2>
 <p><code>expression?</code> opens an <code>Ok</code>, or returns its <code>Err</code> straight out of the running function. It works on <code>Option</code> too: a <code>None</code> is passed on.</p>
-<figure class="kode" data-jalan><figcaption><span>tanya.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bagi</span>(a, b) -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
-    <span class="k-kunci">if</span> b == <span class="k-ang">0</span> { <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;pembagi nol&quot;</span>) }
+<figure class="kode" data-jalan><figcaption><span>question.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">divide</span>(a, b) -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
+    <span class="k-kunci">if</span> b == <span class="k-ang">0</span> { <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;division by zero&quot;</span>) }
     <span class="k-kunci">return</span> <span class="k-fn">Ok</span>(a / b)
 }
 
-<span class="k-kunci">fn</span> <span class="k-fn">hitung</span>(a, b, c) -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
-    <span class="k-kunci">let</span> x = <span class="k-fn">bagi</span>(a, b)?
-    <span class="k-kunci">let</span> y = <span class="k-fn">bagi</span>(x, c)?
+<span class="k-kunci">fn</span> <span class="k-fn">compute</span>(a, b, c) -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
+    <span class="k-kunci">let</span> x = <span class="k-fn">divide</span>(a, b)?
+    <span class="k-kunci">let</span> y = <span class="k-fn">divide</span>(x, c)?
     <span class="k-kunci">return</span> <span class="k-fn">Ok</span>(y)
 }
 
-<span class="k-fn">wok</span>(<span class="k-fn">hitung</span>(<span class="k-ang">100</span>, <span class="k-ang">5</span>, <span class="k-ang">2</span>))
-<span class="k-fn">wok</span>(<span class="k-fn">hitung</span>(<span class="k-ang">100</span>, <span class="k-ang">0</span>, <span class="k-ang">2</span>))</code></pre><pre class="keluaran"><code>Result::Ok(10)
-Result::Err(pembagi nol)</code></pre></figure>
+<span class="k-fn">wok</span>(<span class="k-fn">compute</span>(<span class="k-ang">100</span>, <span class="k-ang">5</span>, <span class="k-ang">2</span>))
+<span class="k-fn">wok</span>(<span class="k-fn">compute</span>(<span class="k-ang">100</span>, <span class="k-ang">0</span>, <span class="k-ang">2</span>))</code></pre><pre class="keluaran"><code>Result::Ok(10)
+Result::Err(division by zero)</code></pre></figure>
 <h2 id="when-main-fails"><a class="jangkar" href="#when-main-fails">When main fails</a></h2>
 <p><code>main</code> may return a <code>Result</code>. An <code>Err</code> that leaves <code>main</code> is reported as an error and the program stops with exit code 1.</p>
-<figure class="kode" data-jalan><figcaption><span>main-gagal.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
-    <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;berkas konfigurasi tidak ada&quot;</span>)
-}</code></pre><pre class="keluaran"><code>error: program berhenti karena `Result::Err` merambat keluar dari `main`: berkas konfigurasi tidak ada — tangani dengan `match` di dalam `main`, atau pakai `.unwrap_or(...)`, kalau kegagalan ini memang boleh terjadi</code></pre></figure>
+<figure class="kode" data-jalan><figcaption><span>main-fails.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() -&gt; <span class="k-tipe">Result</span>&lt;<span class="k-tipe">int</span>, <span class="k-tipe">string</span>&gt; {
+    <span class="k-kunci">return</span> <span class="k-fn">Err</span>(<span class="k-str">&quot;config file not found&quot;</span>)
+}</code></pre><pre class="keluaran"><code>error: program berhenti karena `Result::Err` merambat keluar dari `main`: config file not found — tangani dengan `match` di dalam `main`, atau pakai `.unwrap_or(...)`, kalau kegagalan ini memang boleh terjadi</code></pre></figure>
 <h2 id="stopping-a-program"><a class="jangkar" href="#stopping-a-program">Stopping a program</a></h2>
 <p><code>panik(message)</code> stops the program with an error. Use it for states that should be impossible; for ordinary failure, return a <code>Result</code>.</p>
-<figure class="kode" data-jalan><figcaption><span>panik.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">umur_valid</span>(n) {
+<figure class="kode" data-jalan><figcaption><span>panic.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">valid_age</span>(n) {
     <span class="k-kunci">if</span> n &lt; <span class="k-ang">0</span> {
-        <span class="k-fn">panik</span>(<span class="k-str">&quot;umur tidak boleh negatif&quot;</span>)
+        <span class="k-fn">panik</span>(<span class="k-str">&quot;age cannot be negative&quot;</span>)
     }
     <span class="k-kunci">return</span> n
 }
 
-<span class="k-fn">wok</span>(<span class="k-fn">umur_valid</span>(<span class="k-ang">5</span>))
-<span class="k-fn">wok</span>(<span class="k-fn">umur_valid</span>(-<span class="k-ang">1</span>))</code></pre><pre class="keluaran"><code>5
-error: umur tidak boleh negatif
- --&gt; panik.jrg:3:9
+<span class="k-fn">wok</span>(<span class="k-fn">valid_age</span>(<span class="k-ang">5</span>))
+<span class="k-fn">wok</span>(<span class="k-fn">valid_age</span>(-<span class="k-ang">1</span>))</code></pre><pre class="keluaran"><code>5
+error: age cannot be negative
+ --&gt; panic.jrg:3:9
   |
-3 |         panik(&quot;umur tidak boleh negatif&quot;)
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |         panik(&quot;age cannot be negative&quot;)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = jejak: `umur_valid` dipanggil di panik.jrg:9:5</code></pre></figure>
+  = jejak: `valid_age` dipanggil di panic.jrg:9:5</code></pre></figure>
 <p>The <code>jejak:</code> (trace) line shows where the function was called from. <code>exit(code)</code> ends the program with an exit code 0–255 and no message.</p>
 <h2 id="checking-assumptions"><a class="jangkar" href="#checking-assumptions">Checking assumptions</a></h2>
 <p><code>assert(condition)</code> and <code>assert_eq(a, b)</code> stop the program when an assumption is false. Inside a test (see the <a href="tur.html#writing-tests">Quick tour</a>), a failing assert marks that test as failed.</p>
@@ -553,7 +553,7 @@ error: umur tidak boleh negatif
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

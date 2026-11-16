@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Variabel &amp; Tipe — Matematika × JRG</title>
-<meta name="description" content="Cara komputer mengingat. Dan satu hal yang membuat banyak orang tersandung di awal: JRG membedakan bilangan bulat dari bilangan berkoma.">
+<title>Variables &amp; Types — Math × JRG</title>
+<meta name="description" content="How the computer remembers. And one thing that trips many people up at the start: JRG tells whole numbers apart from numbers with a decimal point.">
 <link rel="canonical" href="https://jrg-lang.org/matematika_x_jrg/jrg2.html">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/matematika_x_jrg/jrg2.html">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/matematika_x_jrg/jrg2.html">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/matematika_x_jrg/jrg2.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
-<meta property="og:locale" content="id_ID">
-<meta property="og:title" content="Variabel &amp; Tipe — Matematika × JRG">
-<meta property="og:description" content="Cara komputer mengingat. Dan satu hal yang membuat banyak orang tersandung di awal: JRG membedakan bilangan bulat dari bilangan berkoma.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Variables &amp; Types — Math × JRG">
+<meta property="og:description" content="How the computer remembers. And one thing that trips many people up at the start: JRG tells whole numbers apart from numbers with a decimal point.">
 <meta property="og:url" content="https://jrg-lang.org/matematika_x_jrg/jrg2.html">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
@@ -438,117 +441,117 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body data-situs="mtk">
-<a class="lewati" href="#isi">Lewati ke isi</a>
+<a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
-  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
+  <nav class="situs" aria-label="Site"><a href="../web_dokumentasi/index.html">Docs</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
-    <a class="tombol-bahasa" href="../index.html" hreflang="en" lang="en" aria-label="English">EN</a>
-    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="Saluran WhatsApp JRG" title="Saluran WhatsApp JRG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
-    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="../id/matematika_x_jrg/jrg2.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="JRG WhatsApp channel" title="JRG WhatsApp channel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
   </div>
 </header>
 <div class="tata">
-<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a class="aktif" aria-current="page" href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<aside class="sisi" aria-label="Chapter list"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> of 32 chapters done</p></div><p class="sisi-grup">Start</p><ul><li><a href="index.html" data-bab="mulai">Start here</a></li></ul><p class="sisi-grup">JRG Basics</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — First Program</a></li><li><a class="aktif" aria-current="page" href="jrg2.html" data-bab="jrg2">JRG 2 — Variables &amp; Types</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operators</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Branching</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Loops</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Functions</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Arrays &amp; Text</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Structs &amp; Methods</a></li></ul><p class="sisi-grup">More JRG</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closures &amp; HOFs</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dicts</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Reading Errors</a></li></ul><p class="sisi-grup">Basic Arithmetic</p><ul><li><a href="ch1.html" data-bab="ch1">Chapter 1 — Numbers</a></li><li><a href="ch2.html" data-bab="ch2">Chapter 2 — Add &amp; Subtract</a></li><li><a href="ch3.html" data-bab="ch3">Chapter 3 — Multiply &amp; Divide</a></li><li><a href="ch4.html" data-bab="ch4">Chapter 4 — Order of Operations</a></li><li><a href="ch5.html" data-bab="ch5">Chapter 5 — Negative Numbers</a></li></ul><p class="sisi-grup">Further Concepts</p><ul><li><a href="ch6.html" data-bab="ch6">Chapter 6 — Fractions &amp; Decimals</a></li><li><a href="ch7.html" data-bab="ch7">Chapter 7 — Percentages</a></li><li><a href="ch8.html" data-bab="ch8">Chapter 8 — Variables &amp; Equations</a></li><li><a href="ch9.html" data-bab="ch9">Chapter 9 — Math Functions</a></li></ul><p class="sisi-grup">Applied Math</p><ul><li><a href="ch10.html" data-bab="ch10">Chapter 10 — Primes, GCD &amp; LCM</a></li><li><a href="ch11.html" data-bab="ch11">Chapter 11 — Basic Statistics</a></li><li><a href="ch12.html" data-bab="ch12">Chapter 12 — Plane Geometry</a></li><li><a href="ch13.html" data-bab="ch13">Chapter 13 — Exponents &amp; Roots</a></li><li><a href="ch14.html" data-bab="ch14">Chapter 14 — Logarithms</a></li><li><a href="ch15.html" data-bab="ch15">Chapter 15 — Probability</a></li></ul><p class="sisi-grup">Advanced Level</p><ul><li><a href="ch16.html" data-bab="ch16">Chapter 16 — Ratios &amp; Proportions</a></li><li><a href="ch17.html" data-bab="ch17">Chapter 17 — Solids</a></li><li><a href="ch18.html" data-bab="ch18">Chapter 18 — Sequences &amp; Series</a></li><li><a href="ch19.html" data-bab="ch19">Chapter 19 — Basic Trigonometry</a></li></ul><p class="sisi-grup">Final Project</p><ul><li><a href="ch20.html" data-bab="ch20">Chapter 20 — Report-Card Calculator</a></li></ul><p class="sisi-grup">Extra</p><ul><li><a href="referensi.html" data-bab="referensi">Reference &amp; Glossary</a></li></ul></nav></aside>
 <main id="isi" class="isi">
 <article class="artikel kelas" data-bab="jrg2">
-<p class="rel">JRG 2 · Dasar JRG</p>
-<h1>Variabel &amp; Tipe</h1>
-<p class="ringkas">Cara komputer mengingat. Dan satu hal yang membuat banyak orang tersandung di awal: JRG membedakan bilangan bulat dari bilangan berkoma.</p>
+<p class="rel">JRG 2 · JRG Basics</p>
+<h1>Variables &amp; Types</h1>
+<p class="ringkas">How the computer remembers. And one thing that trips many people up at the start: JRG tells whole numbers apart from numbers with a decimal point.</p>
 
-<h2 id="menyimpan-nilai-dengan-nama"><span class="lencana">dasar</span>Menyimpan nilai dengan nama</h2>
-<p>Variabel itu seperti kotak berlabel. Kamu taruh nilai di dalamnya, lalu memanggilnya lewat namanya.</p>
-<figure class="kode" data-jalan><figcaption><span>variabel.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> nama = <span class="k-str">&quot;Sari&quot;</span>
-    <span class="k-kunci">let</span> umur = <span class="k-ang">17</span>
-    <span class="k-fn">wok</span>(nama, <span class="k-str">&quot;berumur&quot;</span>, umur, <span class="k-str">&quot;tahun&quot;</span>)
-}</code></pre><pre class="keluaran"><code>Sari berumur 17 tahun</code></pre></figure>
-<h2 id="tiga-kata-kunci-dan-bedanya-nyata">Tiga kata kunci, dan bedanya nyata</h2>
-<div class="tabel"><table><thead><tr><th>Kata kunci</th><th>Bisa diubah?</th><th>Dipakai kapan</th></tr></thead><tbody><tr><td><code>let</code></td><td>Tidak</td><td>Nilai yang tidak berubah sepanjang program &mdash; ini pilihan bawaan</td></tr><tr><td><code>let mut</code> / <code>var</code></td><td>Ya</td><td>Nilai yang memang harus berubah, misalnya penghitung</td></tr><tr><td><code>const</code></td><td>Tidak</td><td>Tetapan yang ditulis di luar fungsi, misalnya <code>PI</code></td></tr></tbody></table></div>
-<p>Ini bukan formalitas. Kalau kamu menulis <code>let</code> lalu mencoba mengubahnya, JRG <strong>menolak</strong> &mdash; dan itu menyelamatkanmu dari mengubah sesuatu yang tidak kamu sadari.</p>
-<figure class="kode" data-jalan><figcaption><span>ubah.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">var</span> skor = <span class="k-ang">0</span>
-    skor = skor + <span class="k-ang">10</span>
-    skor += <span class="k-ang">5</span>          <span class="k-kom">// sama artinya dengan baris di atas</span>
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Skor:&quot;</span>, skor)
-}</code></pre><pre class="keluaran"><code>Skor: 15</code></pre></figure>
-<figure class="kode" data-jalan><figcaption><span>let-ditolak.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> skor = <span class="k-ang">0</span>
-    skor = <span class="k-ang">10</span>
-}</code></pre><pre class="keluaran"><code>error[E0103]: `skor` dideklarasikan dengan `let`, jadi ia tidak bisa ditugasi ulang.
- --&gt; let-ditolak.jrg:3:5
+<h2 id="storing-a-value-under-a-name"><span class="lencana">basics</span>Storing a value under a name</h2>
+<p>A variable is like a labelled box. You put a value in it, then call it up by its name.</p>
+<figure class="kode" data-jalan><figcaption><span>variables.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> name = <span class="k-str">&quot;Sari&quot;</span>
+    <span class="k-kunci">let</span> age = <span class="k-ang">17</span>
+    <span class="k-fn">wok</span>(name, <span class="k-str">&quot;is&quot;</span>, age, <span class="k-str">&quot;years old&quot;</span>)
+}</code></pre><pre class="keluaran"><code>Sari is 17 years old</code></pre></figure>
+<h2 id="three-keywords-and-the-difference-is-real">Three keywords, and the difference is real</h2>
+<div class="tabel"><table><thead><tr><th>Keyword</th><th>Can it change?</th><th>When to use it</th></tr></thead><tbody><tr><td><code>let</code></td><td>No</td><td>A value that does not change for the whole program &mdash; this is the default choice</td></tr><tr><td><code>let mut</code> / <code>var</code></td><td>Yes</td><td>A value that really has to change, such as a counter</td></tr><tr><td><code>const</code></td><td>No</td><td>A constant written outside functions, such as <code>PI</code></td></tr></tbody></table></div>
+<p>This is not a formality. If you write <code>let</code> and then try to change it, JRG <strong>refuses</strong> &mdash; and that saves you from changing something you did not mean to.</p>
+<figure class="kode" data-jalan><figcaption><span>change.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">var</span> score = <span class="k-ang">0</span>
+    score = score + <span class="k-ang">10</span>
+    score += <span class="k-ang">5</span>          <span class="k-kom">// means the same as the line above</span>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Score:&quot;</span>, score)
+}</code></pre><pre class="keluaran"><code>Score: 15</code></pre></figure>
+<figure class="kode" data-jalan><figcaption><span>let-refused.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> score = <span class="k-ang">0</span>
+    score = <span class="k-ang">10</span>
+}</code></pre><pre class="keluaran"><code>error[E0103]: `score` dideklarasikan dengan `let`, jadi ia tidak bisa ditugasi ulang.
+ --&gt; let-refused.jrg:3:5
   |
-3 |     skor = 10
-  |     ^^^^
+3 |     score = 10
+  |     ^^^^^
   |
   = bantuan: pakai `var` atau `let mut` kalau nilainya memang harus berubah
   = catatan: `let` dan `const` mengikat nilainya; `var` dan `:=` tidak</code></pre></figure>
-<aside class="catatan catatan-warn"><p class="catatan-judul">Kesalahan umum</p><div>Menulis <code>let</code> lalu ingin mengubah isinya. Gantilah menjadi <code>var</code> &mdash; pesan galatnya menyebutkan itu langsung.</div></aside>
-<h2 id="int-dan-float-itu-dua-hal-berbeda"><code>int</code> dan <code>float</code> itu dua hal berbeda</h2>
-<p>Angka <code>7</code> dan <code>7.0</code> terlihat sama nilainya, tapi JRG memperlakukannya berbeda. Yang pertama <strong>bilangan bulat</strong> (<code>int</code>), yang kedua <strong>bilangan berkoma</strong> (<code>float</code>).</p>
-<figure class="kode" data-jalan><figcaption><span>tipe.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+<aside class="catatan catatan-warn"><p class="catatan-judul">A common mistake</p><div>Writing <code>let</code> and then wanting to change the value. Change it to <code>var</code> &mdash; the error message says so directly (its <code>bantuan:</code> line, “help”).</div></aside>
+<h2 id="int-and-float-are-two-different-things"><code>int</code> and <code>float</code> are two different things</h2>
+<p>The numbers <code>7</code> and <code>7.0</code> look like the same value, but JRG treats them differently. The first is a <strong>whole number</strong> (<code>int</code>), the second a <strong>number with a decimal point</strong> (<code>float</code>).</p>
+<figure class="kode" data-jalan><figcaption><span>types.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
     <span class="k-fn">wok</span>(<span class="k-fn">typeof</span>(<span class="k-ang">7</span>), <span class="k-fn">typeof</span>(<span class="k-ang">7.0</span>))
-    <span class="k-fn">wok</span>(<span class="k-ang">7.0</span>)             <span class="k-kom">// float selalu tampil dengan koma</span>
-    <span class="k-fn">wok</span>(<span class="k-ang">1</span> + <span class="k-ang">2.0</span>)         <span class="k-kom">// campur -&gt; hasilnya float</span>
+    <span class="k-fn">wok</span>(<span class="k-ang">7.0</span>)             <span class="k-kom">// a float always shows its decimal point</span>
+    <span class="k-fn">wok</span>(<span class="k-ang">1</span> + <span class="k-ang">2.0</span>)         <span class="k-kom">// mixed -&gt; the result is a float</span>
 }</code></pre><pre class="keluaran"><code>int float
 7.0
 3.0</code></pre></figure>
-<aside class="catatan catatan-bug"><p class="catatan-judul">Ini jebakan yang paling sering memakan korban</p><div>Membagi dua bilangan bulat menghasilkan bilangan bulat &mdash; sisanya <em>dibuang</em>, bukan dibulatkan. Jadi <code>7 / 2</code> itu <code>3</code>, bukan 3.5 dan bukan 4. Kalau kamu mau 3.5, salah satu sisinya harus float.</div></aside>
-<figure class="kode" data-jalan><figcaption><span>bagi.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+<aside class="catatan catatan-bug"><p class="catatan-judul">This is the trap that catches the most people</p><div>Dividing two whole numbers gives a whole number &mdash; the remainder is <em>thrown away</em>, not rounded. So <code>7 / 2</code> is <code>3</code>, not 3.5 and not 4. If you want 3.5, one of the sides has to be a float.</div></aside>
+<figure class="kode" data-jalan><figcaption><span>divide.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
     <span class="k-fn">wok</span>(<span class="k-ang">7</span> / <span class="k-ang">2</span>)           <span class="k-kom">// int / int -&gt; int</span>
     <span class="k-fn">wok</span>(<span class="k-ang">7.0</span> / <span class="k-ang">2.0</span>)       <span class="k-kom">// float / float -&gt; float</span>
-    <span class="k-fn">wok</span>(<span class="k-ang">7</span> <span class="k-kunci">as</span> <span class="k-tipe">float</span> / <span class="k-ang">2</span>)  <span class="k-kom">// dipaksa jadi float dulu</span>
+    <span class="k-fn">wok</span>(<span class="k-ang">7</span> <span class="k-kunci">as</span> <span class="k-tipe">float</span> / <span class="k-ang">2</span>)  <span class="k-kom">// turned into a float first</span>
 }</code></pre><pre class="keluaran"><code>3
 3.5
 3.5</code></pre></figure>
-<h2 id="mengubah-tipe-dengan-as">Mengubah tipe dengan <code>as</code></h2>
+<h2 id="changing-type-with-as">Changing type with <code>as</code></h2>
 <figure class="kode" data-jalan><figcaption><span>as.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
     <span class="k-kunci">let</span> x = <span class="k-ang">4.9</span>
-    <span class="k-fn">wok</span>(x <span class="k-kunci">as</span> <span class="k-tipe">int</span>)        <span class="k-kom">// dipotong, bukan dibulatkan</span>
+    <span class="k-fn">wok</span>(x <span class="k-kunci">as</span> <span class="k-tipe">int</span>)        <span class="k-kom">// cut off, not rounded</span>
     <span class="k-fn">wok</span>(<span class="k-ang">4</span> <span class="k-kunci">as</span> <span class="k-tipe">float</span>)
-    <span class="k-fn">wok</span>(<span class="k-ns">math</span>::<span class="k-fn">round</span>(x))  <span class="k-kom">// ini baru pembulatan</span>
+    <span class="k-fn">wok</span>(<span class="k-ns">math</span>::<span class="k-fn">round</span>(x))  <span class="k-kom">// this one rounds</span>
 }</code></pre><pre class="keluaran"><code>4
 4.0
 5.0</code></pre></figure>
-<h2 id="anotasi-tipe-dokumentasi-bukan-penjaga">Anotasi tipe: dokumentasi, bukan penjaga</h2>
-<p>Kamu boleh menulis tipe di belakang titik dua. JRG memeriksa bahwa <em>nama tipenya ada</em>, tapi tidak memaksa nilainya cocok &mdash; JRG bertipe dinamis.</p>
-<figure class="kode" data-jalan><figcaption><span>anotasi.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> tinggi: <span class="k-tipe">float</span> = <span class="k-ang">170</span>     <span class="k-kom">// diterima, walau 170 itu int</span>
-    <span class="k-fn">wok</span>(tinggi, <span class="k-fn">typeof</span>(tinggi))
+<h2 id="type-annotations-documentation-not-a-guard">Type annotations: documentation, not a guard</h2>
+<p>You may write a type after a colon. JRG checks that <em>the type name exists</em>, but does not force the value to match &mdash; JRG is dynamically typed.</p>
+<figure class="kode" data-jalan><figcaption><span>annotation.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> height: <span class="k-tipe">float</span> = <span class="k-ang">170</span>     <span class="k-kom">// accepted, even though 170 is an int</span>
+    <span class="k-fn">wok</span>(height, <span class="k-fn">typeof</span>(height))
 }</code></pre><pre class="keluaran"><code>170 int</code></pre></figure>
-<figure class="kode" data-jalan><figcaption><span>anotasi-salah.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> x: <span class="k-tipe">Hantu</span> = <span class="k-ang">5</span>
+<figure class="kode" data-jalan><figcaption><span>annotation-wrong.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> x: <span class="k-tipe">Ghost</span> = <span class="k-ang">5</span>
     <span class="k-fn">wok</span>(x)
-}</code></pre><pre class="keluaran"><code>error[E0103]: tipe `Hantu` tidak ada
- --&gt; anotasi-salah.jrg:2:12
+}</code></pre><pre class="keluaran"><code>error[E0103]: tipe `Ghost` tidak ada
+ --&gt; annotation-wrong.jrg:2:12
   |
-2 |     let x: Hantu = 5
+2 |     let x: Ghost = 5
   |            ^^^^^
   |
-  = bantuan: deklarasikan `struct Hantu`/`enum Hantu`, atau pakai tipe yang ada
+  = bantuan: deklarasikan `struct Ghost`/`enum Ghost`, atau pakai tipe yang ada
   = catatan: JRG TIDAK menegakkan anotasi tipe — `let x: int = &quot;teks&quot;` diterima — jadi yang diperiksa di sini cuma ADA-tidaknya namanya, bukan cocok-tidaknya nilainya</code></pre></figure>
-<aside class="catatan catatan-info"><p class="catatan-judul">Jadi anotasi buat apa?</p><div>Buat pembaca berikutnya &mdash; termasuk kamu tiga bulan lagi. Ia menyatakan <em>maksudmu</em>. Yang dijaga JRG hanya ejaan nama tipenya, dan itu memang kesalahan yang sering terjadi.</div></aside>
-<div class="kuis" data-kuis="qj2_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Berapa hasil <code>9 / 2</code> di JRG?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>4.5</button><button type="button" data-benar="1"><span>B</span>4</button><button type="button" data-benar="0"><span>C</span>5</button></div><p class="kuis-umpan benar" hidden>Tepat. Keduanya <code>int</code>, jadi hasilnya <code>int</code> dan sisanya dibuang.</p><p class="kuis-umpan salah" hidden>Ingat: <code>int / int</code> tetap <code>int</code>. Sisanya dibuang, bukan dibulatkan.</p></div>
-<div class="kuis" data-kuis="qj2_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Mana yang menghasilkan <code>4.5</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>9 / 2</code></button><button type="button" data-benar="1"><span>B</span><code>9.0 / 2</code></button><button type="button" data-benar="0"><span>C</span><code>(9 / 2) as float</code></button></div><p class="kuis-umpan benar" hidden>Betul. Salah satu sisi float sudah cukup membuat hasilnya float.</p><p class="kuis-umpan salah" hidden>Pilihan ketiga membagi dulu (dapat 4), baru diubah &mdash; jadi <code>4.0</code>.</p></div>
-<div class="kuis" data-kuis="qj2_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Kapan sebaiknya pakai <code>var</code> daripada <code>let</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>Selalu, biar aman</button><button type="button" data-benar="1"><span>B</span>Kalau nilainya memang harus berubah</button><button type="button" data-benar="0"><span>C</span>Kalau nilainya angka</button></div><p class="kuis-umpan benar" hidden>Tepat. Mulai dari <code>let</code>; naikkan ke <code>var</code> hanya ketika perlu.</p><p class="kuis-umpan salah" hidden>Kebalikannya &mdash; <code>let</code> yang jadi pilihan bawaan.</p></div>
-<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Simpan harga 15000 dan jumlah 3, lalu cetak totalnya.</p><p><strong>2.</strong> Hitung rata-rata dari 7 dan 8 sehingga hasilnya <code>7.5</code>, bukan <code>7</code>.</p><div class="math-box"><div class="math-step"><span>Jawaban 1:</span> <code>let total = 15000 * 3</code> lalu <code>wok(total)</code>.</div><div class="math-step"><span>Jawaban 2:</span> <code>(7 + 8) as float / 2.0</code> &mdash; kalau ditulis <code>(7+8)/2</code> hasilnya <code>7</code>.</div></div></div></details>
-<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke JRG 3</p><div>Kamu sudah bisa menyimpan. Berikutnya: menghitung &mdash; dan mengetahui operator mana yang berperilaku tak terduga.</div></aside>
+<aside class="catatan catatan-info"><p class="catatan-judul">So what are annotations for?</p><div>For the next reader &mdash; including you three months from now. They state <em>what you meant</em>. JRG only guards the spelling of the type name, and that is a mistake that really happens.</div></aside>
+<div class="kuis" data-kuis="qj2_1"><p class="kuis-label">Quiz 1</p><p class="kuis-tanya">What is <code>9 / 2</code> in JRG?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>4.5</button><button type="button" data-benar="1"><span>B</span>4</button><button type="button" data-benar="0"><span>C</span>5</button></div><p class="kuis-umpan benar" hidden>Exactly. Both are <code>int</code>, so the result is an <code>int</code> and the remainder is thrown away.</p><p class="kuis-umpan salah" hidden>Remember: <code>int / int</code> stays <code>int</code>. The remainder is thrown away, not rounded.</p></div>
+<div class="kuis" data-kuis="qj2_2"><p class="kuis-label">Quiz 2</p><p class="kuis-tanya">Which one gives <code>4.5</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span><code>9 / 2</code></button><button type="button" data-benar="1"><span>B</span><code>9.0 / 2</code></button><button type="button" data-benar="0"><span>C</span><code>(9 / 2) as float</code></button></div><p class="kuis-umpan benar" hidden>Right. One float side is enough to make the result a float.</p><p class="kuis-umpan salah" hidden>The third option divides first (giving 4), then converts &mdash; so <code>4.0</code>.</p></div>
+<div class="kuis" data-kuis="qj2_3"><p class="kuis-label">Quiz 3</p><p class="kuis-tanya">When should you use <code>var</code> instead of <code>let</code>?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>Always, to be safe</button><button type="button" data-benar="1"><span>B</span>When the value really has to change</button><button type="button" data-benar="0"><span>C</span>When the value is a number</button></div><p class="kuis-umpan benar" hidden>Exactly. Start with <code>let</code>; move to <code>var</code> only when you need to.</p><p class="kuis-umpan salah" hidden>The other way round &mdash; <code>let</code> is the default choice.</p></div>
+<details class="latihan"><summary>Practice on your own</summary><div><p><strong>1.</strong> Store a price of 15000 and a quantity of 3, then print the total.</p><p><strong>2.</strong> Work out the average of 7 and 8 so the result is <code>7.5</code>, not <code>7</code>.</p><div class="math-box"><div class="math-step"><span>Answer 1:</span> <code>let total = 15000 * 3</code> then <code>wok(total)</code>.</div><div class="math-step"><span>Answer 2:</span> <code>(7 + 8) as float / 2.0</code> &mdash; written as <code>(7+8)/2</code> the result is <code>7</code>.</div></div></div></details>
+<aside class="catatan catatan-real"><p class="catatan-judul">On to JRG 3</p><div>You can store things now. Next: calculating &mdash; and knowing which operators behave unexpectedly.</div></aside>
 
 </article>
-<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="jrg1.html"><small>Bab sebelumnya</small><strong>Program Pertama</strong></a><a class="ke-kanan" href="jrg3.html"><small>Bab berikutnya</small><strong>Operator &amp; Hitungan</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">Saluran WhatsApp</a></span></footer>
+<nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="jrg1.html"><small>Previous chapter</small><strong>First Program</strong></a><a class="ke-kanan" href="jrg3.html"><small>Next chapter</small><strong>Operators &amp; Arithmetic</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
 </main>
 </div>
-<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
-  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
+  <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari-id.js?v=5f93a322d5"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 <script defer src="../aset/kelas-data.js?v=c386df7ff6"></script>
-<script defer src="../aset/kelas.js?v=505624797c"></script>
+<script defer src="../aset/kelas.js?v=cfe2ec492f"></script>
 </body>
 </html>

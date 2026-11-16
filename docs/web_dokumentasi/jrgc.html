@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -476,8 +476,8 @@ jrgc program.jrg --emit-ast  <span class="k-kom"> # print the syntax tree</span>
 jrgc program.jrg --emit-tokens</code></pre></figure>
 <p><code>--periksa</code> (check) finds syntax errors, undeclared names, and assignments to things that are not variables, before a single line runs.</p>
 <h2 id="tests-and-profiling"><a class="jangkar" href="#tests-and-profiling">Tests and profiling</a></h2>
-<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc hitung.jrg --uji                  <span class="k-kom"> # run every fn test_*/uji_*</span>
-jrgc hitung.jrg --uji --uji-filter tambah
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc calc.jrg --uji                    <span class="k-kom"> # run every fn test_*/uji_*</span>
+jrgc calc.jrg --uji --uji-filter add
 jrgc program.jrg --profile             <span class="k-kom"> # time per function after the program ends</span>
 jrgc program.jrg --profile-json p.json <span class="k-kom"> # the JSON version</span></code></pre></figure>
 <h2 id="finding-functions"><a class="jangkar" href="#finding-functions">Finding functions</a></h2>
@@ -500,7 +500,7 @@ jrgc program.jrg --apk app.apk                    <span class="k-kom"> # an Andr
 <h2 id="error-messages"><a class="jangkar" href="#error-messages">Error messages</a></h2>
 <figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc program.jrg --nada hangat   <span class="k-kom"> # sopan, galak, judes, hangat, cool, lawak</span>
 jrgc program.jrg --sopan         <span class="k-kom"> # no greeting line, good for CI</span>
-JRG_GALAT_KE=galat.txt jrgc program.jrg  <span class="k-kom"> # also write each error to a file: file, line, column, message</span></code></pre></figure>
+JRG_GALAT_KE=errors.txt jrgc program.jrg <span class="k-kom"> # also write each error to a file: file, line, column, message</span></code></pre></figure>
 <p>The details are in <a href="diagnostik.html">Diagnostics</a>.</p>
 <h2 id="other"><a class="jangkar" href="#other">Other</a></h2>
 <div class="tabel"><table><thead><tr><th>Command</th><th>What it is for</th></tr></thead><tbody><tr><td><code>jrgc --sunting file.jrg</code></td><td>a text editor in the terminal, see <a href="editor.html">Editor</a></td></tr><tr><td><code>jrgc --lsp</code></td><td>a language server for editors (VS Code, Neovim)</td></tr><tr><td><code>jrgc -I folder</code></td><td>an extra folder to search for <code>import</code></td></tr><tr><td><code>jrgc --jrgm …</code></td><td>the same <code>jrgc</code> acting as <code>jrgm</code></td></tr><tr><td><code>-v</code></td><td>print every stage it works through</td></tr></tbody></table></div>
@@ -514,7 +514,7 @@ JRG_GALAT_KE=galat.txt jrgc program.jrg  <span class="k-kom"> # also write each 
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

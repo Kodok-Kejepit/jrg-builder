@@ -14,9 +14,9 @@ adb install -r game.apk
 
 ```sh
 jrgm siapkan android      # once: download the platform, build-tools, and NDK
-jrgm new gameku --android
-cd gameku
-jrgm apk                  # target/gameku.apk
+jrgm new mygame --android
+cd mygame
+jrgm apk                  # target/mygame.apk
 jrgm run --android        # install to the phone through adb, open it, follow its output
 ```
 
@@ -24,8 +24,8 @@ The app's identity is written in `jrgm.toml`:
 
 ```toml
 [android]
-nama       = "Game Ku"
-paket      = "id.jrg.gameku"
+nama       = "My Game"
+paket      = "id.jrg.mygame"
 versi      = "1.2.0"
 orientasi  = "portrait"          # bebas | portrait | landscape
 abi        = ["arm64-v8a"]       # add "x86_64" for the emulator
@@ -61,14 +61,14 @@ name (`android.permission.X`) is accepted too.
 bahasa = ["lua", "js", "sql"]     # Lua, QuickJS, and SQLite runners ship in the APK
 
 [android.pustaka_c]
-libhitung = ["native/hitung.c", "native/teks.cpp"]
+libcalc = ["native/calc.c", "native/text.cpp"]
 
 [android.pustaka_rust]
-librumus = "rust/rumus"
+libformula = "rust/formula"
 ```
 
 `jrgm` downloads the official sources once (their fingerprints are checked), then compiles them for each ABI. A
-native library is called from JRG through `extern "C" "libhitung.so" { … }`.
+native library is called from JRG through `extern "C" "libcalc.so" { … }`.
 
 ## Releasing to the Play Store
 

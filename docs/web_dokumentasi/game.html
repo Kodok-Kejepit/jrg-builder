@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -461,26 +461,26 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p class="rel">Library</p>
 <h1>Game engine</h1>
 <p class="ringkas">std/mesin, a 2D game engine on top of the canvas, which can be tested without opening a window.</p>
-<p><code>import &quot;std/mesin&quot;</code> gives a 2D game engine written in JRG. A game is three things: an initial state, a <code>perbarui</code> (update) function that computes the next state, and a <code>gambar</code> (draw) function.</p>
+<p><code>import &quot;std/mesin&quot;</code> gives a 2D game engine written in JRG. A game is three things: an initial state, an <code>update</code> function that computes the next state, and a <code>draw</code> function. The engine's own API keeps its Indonesian names (<code>mesin::baru</code>, <code>simulasi</code>, <code>jalankan</code>).</p>
 <h2 id="the-smallest-game"><a class="jangkar" href="#the-smallest-game">The smallest game</a></h2>
-<figure class="kode" data-jalan><figcaption><span>bola.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> main
+<figure class="kode" data-jalan><figcaption><span>ball.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> main
 <span class="k-kunci">import</span> <span class="k-str">&quot;std/mesin&quot;</span>
 <span class="k-kunci">import</span> <span class="k-str">&quot;std/mesin/warna&quot;</span>
 
-<span class="k-kunci">struct</span> <span class="k-tipe">Bola</span> { <span class="k-kunci">pub</span> x: <span class="k-tipe">float</span> }
+<span class="k-kunci">struct</span> <span class="k-tipe">Ball</span> { <span class="k-kunci">pub</span> x: <span class="k-tipe">float</span> }
 
-<span class="k-kunci">fn</span> <span class="k-fn">perbarui</span>(k, m, dt) {
-    <span class="k-kunci">var</span> s = k
-    s.x = k.x + m.<span class="k-fn">arah</span>(<span class="k-str">&quot;Left&quot;</span>, <span class="k-str">&quot;Right&quot;</span>, <span class="k-str">&quot;Up&quot;</span>, <span class="k-str">&quot;Down&quot;</span>).x * <span class="k-ang">60.0</span> * dt
+<span class="k-kunci">fn</span> <span class="k-fn">update</span>(state, input, dt) {
+    <span class="k-kunci">var</span> s = state
+    s.x = state.x + input.<span class="k-fn">arah</span>(<span class="k-str">&quot;Left&quot;</span>, <span class="k-str">&quot;Right&quot;</span>, <span class="k-str">&quot;Up&quot;</span>, <span class="k-str">&quot;Down&quot;</span>).x * <span class="k-ang">60.0</span> * dt
     <span class="k-kunci">return</span> s
 }
 
-<span class="k-kunci">fn</span> <span class="k-fn">gambar</span>(c, k) {
-    <span class="k-ns">canvas</span>::<span class="k-fn">fill_circle</span>(c, k.x, <span class="k-ang">40</span>, <span class="k-ang">6</span>, <span class="k-ns">warna</span>::<span class="k-tipe">MERAH</span>)
+<span class="k-kunci">fn</span> <span class="k-fn">draw</span>(c, state) {
+    <span class="k-ns">canvas</span>::<span class="k-fn">fill_circle</span>(c, state.x, <span class="k-ang">40</span>, <span class="k-ang">6</span>, <span class="k-ns">warna</span>::<span class="k-tipe">MERAH</span>)
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> g = <span class="k-ns">mesin</span>::<span class="k-fn">baru</span>(<span class="k-str">&quot;Bola&quot;</span>, <span class="k-ang">160</span>, <span class="k-ang">80</span>, <span class="k-tipe">Bola</span> { x: <span class="k-ang">80.0</span> }, perbarui, gambar)
+    <span class="k-kunci">let</span> g = <span class="k-ns">mesin</span>::<span class="k-fn">baru</span>(<span class="k-str">&quot;Ball&quot;</span>, <span class="k-ang">160</span>, <span class="k-ang">80</span>, <span class="k-tipe">Ball</span> { x: <span class="k-ang">80.0</span> }, update, draw)
     <span class="k-kunci">if</span> <span class="k-ns">canvas</span>::<span class="k-fn">punya_jendela</span>() {
         g.<span class="k-fn">jalankan</span>()
     } <span class="k-kunci">else</span> {
@@ -489,8 +489,8 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 }</code></pre><pre class="keluaran"><code>82.0</code></pre></figure>
 <p>On a computer with a screen, <code>g.jalankan()</code> opens a window and the ball moves with the arrow keys. Elsewhere, <code>simulasi</code> advances the game two steps with <code>Right</code> held, then prints the position.</p>
 <h2 id="three-rules"><a class="jangkar" href="#three-rules">Three rules</a></h2>
-<ol><li><strong>State is a value.</strong> <code>perbarui(state, input, dt)</code> returns a new state; nothing is changed in place. That is why a game can be replayed and tested.</li><li><strong>A fixed time step</strong>, 1/60 second by default (change it with <code>dengan_dt</code>). The physics is the same on fast and slow computers.</li><li><strong>It runs without a window.</strong> <code>simulasi(recording)</code> takes the list of keys held at each step. <code>dengan_rekam()</code> records a real play session, and <code>putar(recording)</code> replays it to the same state, so a bug that shows up while playing can become a test.</li></ol>
-<p>The state struct's fields need <code>pub</code>, because <code>perbarui</code> and <code>gambar</code> are plain functions, not methods.</p>
+<ol><li><strong>State is a value.</strong> <code>update(state, input, dt)</code> returns a new state; nothing is changed in place. That is why a game can be replayed and tested.</li><li><strong>A fixed time step</strong>, 1/60 second by default (change it with <code>dengan_dt</code>). The physics is the same on fast and slow computers.</li><li><strong>It runs without a window.</strong> <code>simulasi(recording)</code> takes the list of keys held at each step. <code>dengan_rekam()</code> records a real play session, and <code>putar(recording)</code> replays it to the same state, so a bug that shows up while playing can become a test.</li></ol>
+<p>The state struct's fields need <code>pub</code>, because <code>update</code> and <code>draw</code> are plain functions, not methods.</p>
 <h2 id="modules"><a class="jangkar" href="#modules">Modules</a></h2>
 <div class="tabel"><table><thead><tr><th>Module</th><th>Contents</th></tr></thead><tbody><tr><td><code>std/mesin</code></td><td><code>mesin::baru</code>, <code>langkah</code>, <code>simulasi</code>, <code>jalankan</code>, <code>dengan_latar</code>, <code>dengan_dt</code>, <code>dengan_rekam</code>, <code>putar</code></td></tr><tr><td><code>std/mesin/vek</code></td><td><code>Vek2</code> with operators <code>+ - * /</code>, <code>panjang</code>, <code>normal</code>, <code>putar</code>, <code>sudut</code>, <code>lerp</code>, <code>batasi</code></td></tr><tr><td><code>std/mesin/warna</code></td><td>named colours, <code>rgb</code>, <code>rgba</code>, <code>hex</code>, <code>campur</code>, <code>gelap</code>, <code>terang</code>, <code>alfa</code></td></tr><tr><td><code>std/mesin/masukan</code></td><td><code>tahan</code>, <code>tekan</code>, <code>lepas</code>, <code>arah</code>, mouse, and on-screen buttons for phones</td></tr><tr><td><code>std/mesin/fisika</code></td><td><code>Kotak</code>, <code>Lingkaran</code>, <code>tabrak</code>, <code>dorong_keluar</code>, <code>Benda</code></td></tr><tr><td><code>std/mesin/kamera</code></td><td>pan and zoom, <code>ikuti</code>, <code>batasi</code>, screen-to-world conversion</td></tr><tr><td><code>std/mesin/peta</code></td><td>tile maps from lines of text, per-tile collision, a <code>gerak</code> that stops exactly at the edge</td></tr><tr><td><code>std/mesin/sprite</code></td><td>sprite sheets, mirrored images, frame animation</td></tr><tr><td><code>std/mesin/partikel</code></td><td>a particle system with seeded randomness, so it can be replayed</td></tr><tr><td><code>std/mesin/tween</code></td><td>easing curves (names from easings.net)</td></tr><tr><td><code>std/mesin/ui</code></td><td><code>label</code>, <code>tombol</code>, <code>bilah</code>, and a keyboard-navigated <code>menu</code></td></tr><tr><td><code>std/mesin/adegan</code></td><td>a scene stack: menu, gameplay, pause screen</td></tr></tbody></table></div>
 <p>Each module is used by the last part of its path: <code>import &quot;std/mesin/vek&quot;</code> gives <code>vek::</code>.</p>
@@ -498,17 +498,17 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">if</span> <span class="k-ns">canvas</span>::<span class="k-fn">layar_sentuh</span>() {
     g = g.<span class="k-fn">dengan_tombol_layar</span>([<span class="k-str">&quot;Left&quot;</span>, <span class="k-str">&quot;Right&quot;</span>, <span class="k-str">&quot;Space&quot;</span>])
 }</code></pre></figure>
-<p>On-screen buttons are drawn in a strip at the bottom and read like keyboard keys, so <code>perbarui</code> does not change. A JRG game can be packaged as an APK with <code>jrgm apk</code> (see <a href="android.html">Android apps</a>).</p>
+<p>On-screen buttons are drawn in a strip at the bottom and read like keyboard keys, so <code>update</code> does not change. A JRG game can be packaged as an APK with <code>jrgm apk</code> (see <a href="android.html">Android apps</a>).</p>
 <h2 id="sound"><a class="jangkar" href="#sound">Sound</a></h2>
-<p>Sound is derived from state changes, not played from inside <code>perbarui</code>, so a replay stays silent:</p>
-<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bunyi</span>(lama, baru) {
-    <span class="k-kunci">if</span> baru.skor &gt; lama.skor {
+<p>Sound is derived from state changes, not played from inside <code>update</code>, so a replay stays silent:</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">sounds</span>(old, new) {
+    <span class="k-kunci">if</span> new.score &gt; old.score {
         <span class="k-kunci">return</span> [<span class="k-ns">suara</span>::<span class="k-fn">nada</span>(<span class="k-ang">880</span>, <span class="k-ang">80</span>, <span class="k-str">&quot;kotak&quot;</span>)]
     }
     <span class="k-kunci">return</span> []
 }
 
-<span class="k-kunci">let</span> g = <span class="k-ns">mesin</span>::<span class="k-fn">baru</span>(<span class="k-str">&quot;Tangkap&quot;</span>, <span class="k-ang">160</span>, <span class="k-ang">120</span>, awal, perbarui, gambar).<span class="k-fn">dengan_bunyi</span>(bunyi)</code></pre></figure>
+<span class="k-kunci">let</span> g = <span class="k-ns">mesin</span>::<span class="k-fn">baru</span>(<span class="k-str">&quot;Catch&quot;</span>, <span class="k-ang">160</span>, <span class="k-ang">120</span>, start, update, draw).<span class="k-fn">dengan_bunyi</span>(sounds)</code></pre></figure>
 </article>
 <nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="grafis.html"><small>Previous</small><strong>Canvas, sound, numerics</strong></a><a class="ke-kanan" href="ffi.html"><small>Next</small><strong>Other languages</strong></a></nav>
 <footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
@@ -519,7 +519,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

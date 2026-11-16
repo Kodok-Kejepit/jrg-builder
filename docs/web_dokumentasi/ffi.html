@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -469,30 +469,30 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
     <span class="k-kunci">fn</span> <span class="k-fn">strlen</span>(s: <span class="k-tipe">string</span>) -&gt; <span class="k-tipe">usize</span>
 }
 
-<span class="k-fn">wok</span>(<span class="k-fn">abs</span>(-<span class="k-ang">17</span>), <span class="k-fn">strlen</span>(<span class="k-str">&quot;halo&quot;</span>))</code></pre><pre class="keluaran"><code>Result::Ok(17) Result::Ok(4)</code></pre></figure>
+<span class="k-fn">wok</span>(<span class="k-fn">abs</span>(-<span class="k-ang">17</span>), <span class="k-fn">strlen</span>(<span class="k-str">&quot;hello&quot;</span>))</code></pre><pre class="keluaran"><code>Result::Ok(17) Result::Ok(5)</code></pre></figure>
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">extern</span> <span class="k-str">&quot;C&quot;</span> <span class="k-str">&quot;libm.so.6&quot;</span> {
-    <span class="k-kunci">fn</span> <span class="k-fn">pow</span>(basis: <span class="k-tipe">f64</span>, pangkat: <span class="k-tipe">f64</span>) -&gt; <span class="k-tipe">f64</span>
+    <span class="k-kunci">fn</span> <span class="k-fn">pow</span>(base: <span class="k-tipe">f64</span>, exponent: <span class="k-tipe">f64</span>) -&gt; <span class="k-tipe">f64</span>
 }
-<span class="k-kunci">extern</span> <span class="k-str">&quot;C&quot;</span> <span class="k-str">&quot;./libhitung.so&quot;</span> {
-    <span class="k-kunci">fn</span> <span class="k-fn">proses</span>(data: *<span class="k-kunci">mut</span> <span class="k-tipe">i32</span>, n: <span class="k-tipe">i32</span>) -&gt; <span class="k-tipe">i32</span>
+<span class="k-kunci">extern</span> <span class="k-str">&quot;C&quot;</span> <span class="k-str">&quot;./libcalc.so&quot;</span> {
+    <span class="k-kunci">fn</span> <span class="k-fn">process</span>(data: *<span class="k-kunci">mut</span> <span class="k-tipe">i32</span>, n: <span class="k-tipe">i32</span>) -&gt; <span class="k-tipe">i32</span>
 }</code></pre></figure>
 <p>Rust (<code>#[no_mangle] pub extern &quot;C&quot; fn</code>) and Go (<code>-buildmode=c-shared</code> with <code>//export</code>) produce plain C symbols, so they are called the same way.</p>
 <h2 id="c"><a class="jangkar" href="#c">C++</a></h2>
 <p><code>extern &quot;C++&quot;</code> computes the C++ symbol name (<em>mangling</em>) from the signature itself, so a C++ library can be called without a wrapper. A function inside a namespace is written with its path.</p>
-<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">extern</span> <span class="k-str">&quot;C++&quot;</span> <span class="k-str">&quot;./libmilik.so&quot;</span> {
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">extern</span> <span class="k-str">&quot;C++&quot;</span> <span class="k-str">&quot;./libmine.so&quot;</span> {
     <span class="k-kunci">fn</span> <span class="k-fn">add</span>(a: <span class="k-tipe">i32</span>, b: <span class="k-tipe">i32</span>) -&gt; <span class="k-tipe">i32</span>
     <span class="k-kunci">fn</span> <span class="k-ns">math</span>::<span class="k-fn">mul</span>(a: <span class="k-tipe">i32</span>, b: <span class="k-tipe">i32</span>) -&gt; <span class="k-tipe">i32</span>
 }</code></pre></figure>
 <h2 id="python"><a class="jangkar" href="#python">Python</a></h2>
 <p><code>py::</code> runs Python in a separate process and talks to it, so any library that can be <code>import</code>ed can be used: numpy, pandas, requests, PIL, and so on.</p>
-<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">kali10</span>(x) { <span class="k-kunci">return</span> x * <span class="k-ang">10</span> }
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">times10</span>(x) { <span class="k-kunci">return</span> x * <span class="k-ang">10</span> }
 
 <span class="k-fn">wok</span>(<span class="k-ns">py</span>::<span class="k-fn">eval</span>(<span class="k-str">&quot;sum(range(10))&quot;</span>))
 <span class="k-fn">wok</span>(<span class="k-ns">py</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;statistics&quot;</span>, <span class="k-str">&quot;median&quot;</span>, [<span class="k-ang">3</span>, <span class="k-ang">1</span>, <span class="k-ang">4</span>, <span class="k-ang">1</span>, <span class="k-ang">5</span>]))
-<span class="k-fn">wok</span>(<span class="k-ns">py</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;builtins&quot;</span>, <span class="k-str">&quot;list&quot;</span>, <span class="k-ns">py</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;builtins&quot;</span>, <span class="k-str">&quot;map&quot;</span>, kali10, [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>])?))
+<span class="k-fn">wok</span>(<span class="k-ns">py</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;builtins&quot;</span>, <span class="k-str">&quot;list&quot;</span>, <span class="k-ns">py</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;builtins&quot;</span>, <span class="k-str">&quot;map&quot;</span>, times10, [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>])?))
 
-<span class="k-kunci">let</span> himpunan = <span class="k-ns">py</span>::<span class="k-fn">eval</span>(<span class="k-str">&quot;{1, 2}&quot;</span>)?
-<span class="k-fn">wok</span>(<span class="k-fn">typeof</span>(himpunan), <span class="k-ns">py</span>::<span class="k-fn">method</span>(himpunan, <span class="k-str">&quot;issubset&quot;</span>, [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>]))</code></pre></figure>
+<span class="k-kunci">let</span> set = <span class="k-ns">py</span>::<span class="k-fn">eval</span>(<span class="k-str">&quot;{1, 2}&quot;</span>)?
+<span class="k-fn">wok</span>(<span class="k-fn">typeof</span>(set), <span class="k-ns">py</span>::<span class="k-fn">method</span>(set, <span class="k-str">&quot;issubset&quot;</span>, [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>]))</code></pre></figure>
 <figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>Result::Ok(45)
 Result::Ok(3)
 Result::Ok([10, 20, 30])
@@ -502,34 +502,34 @@ py:set Result::Ok(true)</code></pre></figure>
 <p>All three use the same machinery as <code>py::</code>, so the rules are the same: a value or a handle, JRG functions as callbacks, and a <code>Result</code> on every call.</p>
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ns">js</span>::<span class="k-fn">eval</span>(<span class="k-str">&quot;[1,2,3].map(x =&gt; x * 2)&quot;</span>))
 <span class="k-fn">wok</span>(<span class="k-ns">js</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;path&quot;</span>, <span class="k-str">&quot;join&quot;</span>, <span class="k-str">&quot;a&quot;</span>, <span class="k-str">&quot;b&quot;</span>))
-<span class="k-fn">wok</span>(<span class="k-ns">lua</span>::<span class="k-fn">eval</span>(<span class="k-str">&quot;1 + 2, &#x27;tiga&#x27;&quot;</span>), <span class="k-ns">lua</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;string.upper&quot;</span>, <span class="k-str">&quot;lua&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">lua</span>::<span class="k-fn">eval</span>(<span class="k-str">&quot;1 + 2, &#x27;three&#x27;&quot;</span>), <span class="k-ns">lua</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;string.upper&quot;</span>, <span class="k-str">&quot;lua&quot;</span>))
 <span class="k-fn">wok</span>(<span class="k-ns">php</span>::<span class="k-fn">call</span>(<span class="k-str">&quot;array_map&quot;</span>, |x| x * <span class="k-ang">10</span>, [<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>]))</code></pre></figure>
 <figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>Result::Ok([2, 4, 6])
 Result::Ok(a/b)
-Result::Ok([3, tiga]) Result::Ok(LUA)
+Result::Ok([3, three]) Result::Ok(LUA)
 Result::Ok([10, 20, 30])</code></pre></figure>
 <ul><li><code>js::</code> needs Node. A <code>Promise</code> is awaited automatically, so <code>fetch</code> and async libraries work as they are.</li><li><code>php::</code> needs PHP 8. A PHP warning becomes an <code>Err</code>, <code>echo</code> goes to stderr, and Composer libraries are loaded with <code>php::require(&quot;vendor/autoload.php&quot;)</code>.</li><li><code>lua::</code> needs Lua 5.3 or newer.</li></ul>
 <h2 id="java-and-kotlin"><a class="jangkar" href="#java-and-kotlin">Java and Kotlin</a></h2>
 <p><code>jvm::</code> loads the JVM from the installed JDK through JNI. Method signatures are written as JNI descriptors, exactly as <code>javap -s</code> prints them.</p>
-<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">jvm</span>::<span class="k-fn">mulai</span>([<span class="k-str">&quot;-Djava.class.path=./kelas&quot;</span>])
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">jvm</span>::<span class="k-fn">mulai</span>([<span class="k-str">&quot;-Djava.class.path=./classes&quot;</span>])
 <span class="k-fn">wok</span>(<span class="k-ns">jvm</span>::<span class="k-fn">panggil_statis</span>(<span class="k-str">&quot;java.lang.Math&quot;</span>, <span class="k-str">&quot;abs&quot;</span>, <span class="k-str">&quot;(I)I&quot;</span>, [-<span class="k-ang">17</span>]))
 
 <span class="k-kunci">let</span> sb = <span class="k-ns">jvm</span>::<span class="k-fn">baru</span>(<span class="k-str">&quot;java.lang.StringBuilder&quot;</span>, <span class="k-str">&quot;()V&quot;</span>)?
-<span class="k-ns">jvm</span>::<span class="k-fn">panggil</span>(sb, <span class="k-str">&quot;append&quot;</span>, <span class="k-str">&quot;(Ljava/lang/String;)Ljava/lang/StringBuilder;&quot;</span>, [<span class="k-str">&quot;halo&quot;</span>])?
+<span class="k-ns">jvm</span>::<span class="k-fn">panggil</span>(sb, <span class="k-str">&quot;append&quot;</span>, <span class="k-str">&quot;(Ljava/lang/String;)Ljava/lang/StringBuilder;&quot;</span>, [<span class="k-str">&quot;hello&quot;</span>])?
 <span class="k-fn">wok</span>(<span class="k-ns">jvm</span>::<span class="k-fn">ke_teks</span>(sb))
 <span class="k-ns">jvm</span>::<span class="k-fn">lepas</span>(sb)</code></pre></figure>
-<p><code>kotlin::</code> translates Kotlin's naming rules to the JVM: top-level functions (<code>kotlin::fungsi(&quot;Hitung&quot;, &quot;tambah&quot;, …)</code>), <code>object</code> (<code>kotlin::objek</code>), properties (<code>kotlin::properti</code>), and companions.</p>
+<p><code>kotlin::</code> translates Kotlin's naming rules to the JVM: top-level functions (<code>kotlin::fungsi(&quot;Calc&quot;, &quot;add&quot;, …)</code>), <code>object</code> (<code>kotlin::objek</code>), properties (<code>kotlin::properti</code>), and companions.</p>
 <h2 id="net"><a class="jangkar" href="#net">.NET</a></h2>
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">dotnet</span>::<span class="k-fn">mulai</span>(<span class="k-str">&quot;./App.runtimeconfig.json&quot;</span>)
-<span class="k-kunci">let</span> tambah = <span class="k-ns">dotnet</span>::<span class="k-fn">fungsi</span>(<span class="k-str">&quot;./App.dll&quot;</span>, <span class="k-str">&quot;UjiJrg, App&quot;</span>, <span class="k-str">&quot;Tambah&quot;</span>, [<span class="k-str">&quot;i32&quot;</span>, <span class="k-str">&quot;i32&quot;</span>], <span class="k-str">&quot;i32&quot;</span>)?
-<span class="k-fn">wok</span>(<span class="k-ns">dotnet</span>::<span class="k-fn">panggil</span>(tambah, [<span class="k-ang">2</span>, <span class="k-ang">3</span>]))</code></pre></figure>
+<span class="k-kunci">let</span> add = <span class="k-ns">dotnet</span>::<span class="k-fn">fungsi</span>(<span class="k-str">&quot;./App.dll&quot;</span>, <span class="k-str">&quot;JrgTest, App&quot;</span>, <span class="k-str">&quot;Add&quot;</span>, [<span class="k-str">&quot;i32&quot;</span>, <span class="k-str">&quot;i32&quot;</span>], <span class="k-str">&quot;i32&quot;</span>)?
+<span class="k-fn">wok</span>(<span class="k-ns">dotnet</span>::<span class="k-fn">panggil</span>(add, [<span class="k-ang">2</span>, <span class="k-ang">3</span>]))</code></pre></figure>
 <p>The method being called must be marked <code>[UnmanagedCallersOnly]</code>; after that it is treated like a C function.</p>
 <h2 id="webassembly"><a class="jangkar" href="#webassembly">WebAssembly</a></h2>
 <p><code>wasm::</code> runs a <code>.wasm</code> module with an interpreter built into JRG itself. The module can only touch its own memory, so it suits running outside code that is not fully trusted. <code>wasm::batas_langkah(m, n)</code> caps the number of steps, so a module that never stops is halted with an error.</p>
-<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">let</span> m = <span class="k-ns">wasm</span>::<span class="k-fn">muat</span>(<span class="k-str">&quot;modul.wasm&quot;</span>)?
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">let</span> m = <span class="k-ns">wasm</span>::<span class="k-fn">muat</span>(<span class="k-str">&quot;module.wasm&quot;</span>)?
 <span class="k-fn">wok</span>(<span class="k-ns">wasm</span>::<span class="k-fn">ekspor</span>(m))
 <span class="k-fn">wok</span>(<span class="k-ns">wasm</span>::<span class="k-fn">panggil</span>(m, <span class="k-str">&quot;fib&quot;</span>, [<span class="k-ang">20</span>]))
-<span class="k-ns">wasm</span>::<span class="k-fn">tulis_memori</span>(m, <span class="k-ang">200</span>, <span class="k-str">&quot;halo&quot;</span>)
+<span class="k-ns">wasm</span>::<span class="k-fn">tulis_memori</span>(m, <span class="k-ang">200</span>, <span class="k-str">&quot;hello&quot;</span>)
 <span class="k-fn">wok</span>(<span class="k-ns">wasm</span>::<span class="k-fn">baca_memori</span>(m, <span class="k-ang">200</span>, <span class="k-ang">4</span>))</code></pre></figure>
 <p>WASM features not yet supported (imports, <code>call_indirect</code>, SIMD) are refused at load time, naming the feature. This is a way to run <em>someone else's</em> WebAssembly from JRG; compiling JRG programs <em>to</em> WebAssembly is the fifth engine, still being built (see <a href="jrgc.html">jrgc</a>).</p>
 </article>
@@ -542,7 +542,7 @@ Result::Ok([10, 20, 30])</code></pre></figure>
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

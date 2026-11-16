@@ -2956,7 +2956,7 @@
      "type": "keypoint",
      "subtype": "fun",
      "title": "Kenapa dipisah int vs float?",
-     "html": "Komputer menyimpan keduanya secara berbeda di memori. <code>int</code> lebih hemat dan presisi, tapi tidak bisa menyimpan koma. Kalau kamu menulis <code>let x: int = 3.5</code>, JRG akan menolaknya — mismatch tipe."
+     "html": "Komputer menyimpan keduanya secara berbeda di memori. <code>int</code> lebih hemat dan presisi, tapi tidak bisa menyimpan koma. Anotasi tipe di JRG cuma dokumentasi: <code>let x: int = 3.5</code> tetap diterima, dan <code>x</code> tetap <code>3.5</code> bertipe <code>float</code>. Yang diperiksa hanya bahwa nama tipenya ada (lihat JRG 2)."
     },
     {
      "type": "quiz",
@@ -3006,20 +3006,20 @@
      "question": "Kode <code>let x: int = 7.2</code> di JRG akan...",
      "options": [
       {
-       "text": "Berhasil, otomatis dibulatkan",
+       "text": "Berhasil, otomatis dibulatkan jadi 7",
        "correct": false
       },
       {
-       "text": "Gagal — mismatch tipe data",
+       "text": "Berhasil &mdash; anotasi tidak ditegakkan, <code>x</code> tetap <code>7.2</code> (float)",
        "correct": true
       },
       {
-       "text": "Berhasil, disimpan sebagai teks",
+       "text": "Gagal &mdash; mismatch tipe data",
        "correct": false
       }
      ],
-     "feedbackOk": "Tepat! <code>int</code> tidak bisa menampung nilai berdesimal — harus pakai <code>float</code>.",
-     "feedbackNo": "Belum tepat — ingat sifat tipe <code>int</code> yang kaku, tidak seperti Python."
+     "feedbackOk": "Tepat! Anotasi tipe di JRG cuma dokumentasi. JRG memeriksa bahwa nama <code>int</code> ada, tapi tidak memaksa nilainya cocok &mdash; jadi <code>typeof(x)</code> tetap <code>float</code>.",
+     "feedbackNo": "Belum tepat. Coba jalankan <code>let x: int = 7.2</code> lalu <code>wok(x, typeof(x))</code> &mdash; JRG bertipe dinamis (lihat JRG 2)."
     },
     {
      "type": "keypoint",
@@ -4834,7 +4834,7 @@
     {
      "type": "keypoint",
      "subtype": "fun",
-     "title": "Ini persis Bab 16!",
+     "title": "Ini persis Bab 20!",
      "html": "Fungsi <code>hitungMean()</code> di atas adalah inti dari proyek kalkulator rapor yang akan kamu bangun sendiri nanti. Modul ini bukan cuma teori — kamu akan memakainya langsung."
     },
     {
@@ -6806,7 +6806,7 @@
      "type": "keypoint",
      "subtype": "real",
      "title": "Dokumentasi lengkap JRG",
-     "html": "Halaman ini mengajarkan dasarnya. Untuk keterangan lengkap seluruh bahasa — pustaka standar, FFI, ketiga mesin penjalannya, dan cara memasang — buka situs dokumentasi resminya di <a href=\"https://jrg-lang.org\" target=\"_blank\" rel=\"noopener\">jrg-lang.org</a>, dan kode sumbernya di <a href=\"https://github.com/Kodok-Kejepit/jrg\" target=\"_blank\" rel=\"noopener\">github.com/Kodok-Kejepit/jrg</a>."
+     "html": "Halaman ini mengajarkan dasarnya. Untuk keterangan lengkap seluruh bahasa — pustaka standar, FFI, keempat mesin penjalannya, dan cara memasang — buka situs dokumentasi resminya di <a href=\"https://jrg-lang.org\" target=\"_blank\" rel=\"noopener\">jrg-lang.org</a>, dan kode sumbernya di <a href=\"https://github.com/Kodok-Kejepit/jrg\" target=\"_blank\" rel=\"noopener\">github.com/Kodok-Kejepit/jrg</a>."
     },
     {
      "type": "reftitle",
@@ -6962,7 +6962,7 @@
      "type": "keypoint",
      "subtype": "real",
      "title": "Membuat aplikasi dengan JRG",
-     "html": "Selain FFI, JRG punya <code>dok::</code> &mdash; 119 fungsi untuk membuat aplikasi: router HTTP, WebSocket, SQLite, template yang melolosi HTML sendiri, cookie bertanda tangan, dan hash sandi. Contoh utuhnya ada di repo: <code>examples/web_app_demo.jrg</code>."
+     "html": "Selain FFI, JRG punya <code>dok::</code> &mdash; lebih dari seratus fungsi untuk membuat aplikasi: router HTTP, WebSocket, SQLite, template yang melolosi HTML sendiri, cookie bertanda tangan, dan hash sandi. Contoh utuhnya ada di repo: <code>examples/web_app_demo.jrg</code>."
     },
     {
      "type": "keypoint",

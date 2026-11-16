@@ -6,49 +6,49 @@ ringkas: Your first ten minutes with JRG, from one line to a program with tests.
 
 The shortest `.jrg` file holds just the statement:
 
-```jrg halo.jrg
-wok("halo")
+```jrg hello.jrg
+wok("hello")
 ```
 ```keluaran
-halo
+hello
 ```
 
 ```sh
-jrgc halo.jrg
+jrgc hello.jrg
 ```
 
 A file without `package` is a *script*: top-level lines run from top to bottom. Functions, structs, and other types
 can be declared anywhere in the file.
 
-```jrg sapa.jrg
-wok(sapa("Ani"))
+```jrg greet.jrg
+wok(greet("Ani"))
 
-fn sapa(nama) {
-    return "halo, " + nama
+fn greet(name) {
+    return "hello, " + name
 }
 
-let angka = [5, 3, 8, 1]
-wok("terurut:", arr::sort(angka))
+let numbers = [5, 3, 8, 1]
+wok("sorted:", arr::sort(numbers))
 ```
 ```keluaran
-halo, Ani
-terurut: [1, 3, 5, 8]
+hello, Ani
+sorted: [1, 3, 5, 8]
 ```
 
 ## A program with main
 
 For bigger programs, write `package` and a `pub fn main()`. That is where the program starts.
 
-```jrg suhu.jrg
+```jrg temperature.jrg
 package main
 
-fn ke_fahrenheit(c: float) -> float {
+fn to_fahrenheit(c: float) -> float {
     return c * 9.0 / 5.0 + 32.0
 }
 
 pub fn main() {
     for _, c in [0.0, 25.0, 100.0] {
-        wok(c, "°C =", ke_fahrenheit(c), "°F")
+        wok(c, "°C =", to_fahrenheit(c), "°F")
     }
 }
 ```
@@ -66,16 +66,16 @@ stderr), and `str::format` for building text.
 `tok()` reads one line from the keyboard. `env::args()` holds the script name, then the arguments written after `--`.
 
 ```jrg-cuplikan
-let nama = tok()
-wok("halo,", nama)
+let name = tok()
+wok("hello,", name)
 wok(env::args())
 ```
 
 ```sh
-$ jrgc tanya.jrg -- satu dua
+$ jrgc ask.jrg -- one two
 Ani
-halo, Ani
-[tanya.jrg, satu, dua]
+hello, Ani
+[ask.jrg, one, two]
 ```
 
 ## The other engines
@@ -83,11 +83,11 @@ halo, Ani
 The same program can run in several ways:
 
 ```sh
-jrgc suhu.jrg                 # interpreter
-jrgc suhu.jrg --vm            # bytecode VM, faster
-jrgc suhu.jrg --jit           # VM plus machine code for the hot parts
-jrgc suhu.jrg --emit-llvm     # native compilation through clang, then run
-jrgc suhu.jrg --emit-llvm -o suhu --no-run   # compile only; the result is ./suhu
+jrgc temperature.jrg                 # interpreter
+jrgc temperature.jrg --vm            # bytecode VM, faster
+jrgc temperature.jrg --jit           # VM plus machine code for the hot parts
+jrgc temperature.jrg --emit-llvm     # native compilation through clang, then run
+jrgc temperature.jrg --emit-llvm -o temperature --no-run   # compile only; the result is ./temperature
 ```
 
 The differences are explained in [The engines](mesin.html). For everyday work the interpreter is enough.
@@ -102,13 +102,13 @@ $ jrgc
 jrg> let x = 10
 jrg> x * 3
 30
-jrg> fn kuadrat(n) { return n * n }
-jrg> kuadrat(12)
+jrg> fn square(n) { return n * n }
+jrg> square(12)
 144
 jrg> :doc arr::sort
 arr::sort(a) -> array
   Salinan terurut menaik; `a` sendiri tidak berubah.
-jrg> :simpan coba.jrg
+jrg> :simpan try.jrg
 ```
 
 `:cari word` searches the built-in functions, `:doc name` explains one, and `:simpan` writes the session out as a
@@ -118,22 +118,22 @@ runnable `.jrg` file. Type `:bantuan` for the full list.
 
 A function named `test_…` or `uji_…` is a test. `--uji` runs all of them instead of `main`.
 
-```jrg-cuplikan hitung.jrg
-fn tambah(a, b) { return a + b }
+```jrg-cuplikan calc.jrg
+fn add(a, b) { return a + b }
 
-fn test_tambah() {
-    assert_eq(tambah(2, 3), 5)
+fn test_add() {
+    assert_eq(add(2, 3), 5)
 }
 
-fn test_salah() {
-    assert_eq(tambah(2, 2), 5)
+fn test_wrong() {
+    assert_eq(add(2, 2), 5)
 }
 ```
 
 ```sh
-$ jrgc hitung.jrg --uji
-  ok    test_tambah
-  GAGAL test_salah (baris 8) — assert_eq gagal — kiri `4` (int), kanan `5` (int)
+$ jrgc calc.jrg --uji
+  ok    test_add
+  GAGAL test_wrong (baris 8) — assert_eq gagal — kiri `4` (int), kanan `5` (int)
 --- 2 test: 1 lulus, 1 gagal ---
 ```
 
@@ -143,16 +143,16 @@ For a project with many test files, use `jrgm test` (see [jrgm](jrgm.html)).
 
 Take this example:
 
-```jrg harga.jrg
-let harga = [12000, 8500, 4000]
-wok(harga[3])
+```jrg prices.jrg
+let prices = [12000, 8500, 4000]
+wok(prices[3])
 ```
 ```keluaran
 error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2, atau -1..-3 kalau mau hitung dari belakang)
- --> harga.jrg:2:5
+ --> prices.jrg:2:5
   |
-2 | wok(harga[3])
-  |     ^^^^^^^^
+2 | wok(prices[3])
+  |     ^^^^^^^^^
   |
 ```
 

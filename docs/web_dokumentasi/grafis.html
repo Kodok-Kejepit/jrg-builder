@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -463,16 +463,16 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p class="ringkas">Drawing and saving PNGs, making sound, and computing with numeric arrays.</p>
 <h2 id="canvas"><a class="jangkar" href="#canvas">Canvas</a></h2>
 <p><code>Canvas::new(width, height)</code> makes a drawing surface. Colours are written <code>0xRRGGBB</code>, and the point (0, 0) is at the top left.</p>
-<figure class="kode"><figcaption><span>kanvas.jrg</span><span class="lokal" title="Needs threads, files, the network, or a system library the browser does not have">run with jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> c = <span class="k-ns">Canvas</span>::<span class="k-fn">new</span>(<span class="k-ang">200</span>, <span class="k-ang">120</span>)
+<figure class="kode"><figcaption><span>canvas.jrg</span><span class="lokal" title="Needs threads, files, the network, or a system library the browser does not have">run with jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> c = <span class="k-ns">Canvas</span>::<span class="k-fn">new</span>(<span class="k-ang">200</span>, <span class="k-ang">120</span>)
 c.<span class="k-fn">clear</span>(<span class="k-ang">0xF4EFE4</span>)
 c.<span class="k-fn">fill_round_rect</span>(<span class="k-ang">10</span>, <span class="k-ang">10</span>, <span class="k-ang">180</span>, <span class="k-ang">100</span>, <span class="k-ang">14</span>, <span class="k-ang">0xA94F28</span>)
 c.<span class="k-fn">fill_circle</span>(<span class="k-ang">60</span>, <span class="k-ang">60</span>, <span class="k-ang">28</span>, <span class="k-ang">0xFFFFFF</span>)
 c.<span class="k-fn">draw_text</span>(<span class="k-ang">110</span>, <span class="k-ang">52</span>, <span class="k-str">&quot;JRG&quot;</span>, <span class="k-ang">0xFFFFFF</span>)
-c.<span class="k-fn">save_png</span>(<span class="k-str">&quot;kartu.png&quot;</span>)
+c.<span class="k-fn">save_png</span>(<span class="k-str">&quot;card.png&quot;</span>)
 
-<span class="k-kunci">let</span> lagi = <span class="k-ns">Canvas</span>::<span class="k-fn">load_png</span>(<span class="k-str">&quot;kartu.png&quot;</span>)
-<span class="k-fn">wok</span>(lagi.<span class="k-fn">width</span>(), lagi.<span class="k-fn">height</span>(), lagi.<span class="k-fn">get_pixel</span>(<span class="k-ang">60</span>, <span class="k-ang">60</span>))
-<span class="k-ns">fs</span>::<span class="k-fn">delete</span>(<span class="k-str">&quot;kartu.png&quot;</span>)</code></pre><pre class="keluaran"><code>200 120 Warna {a: 255, b: 255, g: 255, r: 255}</code></pre></figure>
+<span class="k-kunci">let</span> again = <span class="k-ns">Canvas</span>::<span class="k-fn">load_png</span>(<span class="k-str">&quot;card.png&quot;</span>)
+<span class="k-fn">wok</span>(again.<span class="k-fn">width</span>(), again.<span class="k-fn">height</span>(), again.<span class="k-fn">get_pixel</span>(<span class="k-ang">60</span>, <span class="k-ang">60</span>))
+<span class="k-ns">fs</span>::<span class="k-fn">delete</span>(<span class="k-str">&quot;card.png&quot;</span>)</code></pre><pre class="keluaran"><code>200 120 Warna {a: 255, b: 255, g: 255, r: 255}</code></pre></figure>
 <p>What is available (57 functions, all of them callable as methods too):</p>
 <ul><li><strong>Shapes:</strong> lines (plain and anti-aliased), rectangles, rounded rectangles, circles, ellipses, arcs, triangles, polygons, Bezier curves, and scaled text.</li><li><strong>Fills:</strong> solid colour, linear gradients, and radial gradients.</li><li><strong>Transforms:</strong> <code>translate</code>, <code>rotate</code>, <code>scale</code>, with a <code>push</code>/<code>pop</code> stack, and <code>clip</code>.</li><li><strong>Images:</strong> <code>save_png</code>, <code>save_bmp</code>, <code>Canvas::load_png</code>, and <code>blit</code>/<code>blit_region</code> to paste another canvas (sprites, tiles).</li><li><strong>Input:</strong> keyboard keys, mouse, and touch, for a canvas that has a window.</li></ul>
 <h3 id="windows"><a class="jangkar" href="#windows">Windows</a></h3>
@@ -481,12 +481,12 @@ c.<span class="k-fn">save_png</span>(<span class="k-str">&quot;kartu.png&quot;</
 <p>The animation loop: while <code>c.is_open()</code>, draw, then call <code>c.update()</code>. <code>c.delta_time()</code> gives the length of the last frame in seconds. For games, the <a href="game.html">game engine</a> is more comfortable.</p>
 <h2 id="sound"><a class="jangkar" href="#sound">Sound</a></h2>
 <p><code>suara::</code> makes sound as an array of samples (mono, 44,100 Hz), saves it as WAV, and plays it through PulseAudio or PipeWire.</p>
-<figure class="kode"><figcaption><span>suara.jrg</span><span class="lokal" title="Needs threads, files, the network, or a system library the browser does not have">run with jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> do_ = <span class="k-ns">suara</span>::<span class="k-fn">nada</span>(<span class="k-ang">261.6</span>, <span class="k-ang">300</span>)
+<figure class="kode"><figcaption><span>sound.jrg</span><span class="lokal" title="Needs threads, files, the network, or a system library the browser does not have">run with jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> do_ = <span class="k-ns">suara</span>::<span class="k-fn">nada</span>(<span class="k-ang">261.6</span>, <span class="k-ang">300</span>)
 <span class="k-kunci">let</span> mi = <span class="k-ns">suara</span>::<span class="k-fn">nada</span>(<span class="k-ang">329.6</span>, <span class="k-ang">300</span>)
-<span class="k-kunci">let</span> lagu = <span class="k-ns">suara</span>::<span class="k-fn">sambung</span>(<span class="k-ns">suara</span>::<span class="k-fn">sambung</span>(do_, <span class="k-ns">suara</span>::<span class="k-fn">sunyi</span>(<span class="k-ang">100</span>)), mi)
-<span class="k-ns">suara</span>::<span class="k-fn">simpan_wav</span>(lagu, <span class="k-str">&quot;lagu.wav&quot;</span>)
-<span class="k-fn">wok</span>(<span class="k-ns">suara</span>::<span class="k-fn">durasi_ms</span>(lagu), <span class="k-str">&quot;ms&quot;</span>)
-<span class="k-ns">fs</span>::<span class="k-fn">delete</span>(<span class="k-str">&quot;lagu.wav&quot;</span>)</code></pre><pre class="keluaran"><code>700.0 ms</code></pre></figure>
+<span class="k-kunci">let</span> tune = <span class="k-ns">suara</span>::<span class="k-fn">sambung</span>(<span class="k-ns">suara</span>::<span class="k-fn">sambung</span>(do_, <span class="k-ns">suara</span>::<span class="k-fn">sunyi</span>(<span class="k-ang">100</span>)), mi)
+<span class="k-ns">suara</span>::<span class="k-fn">simpan_wav</span>(tune, <span class="k-str">&quot;tune.wav&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">suara</span>::<span class="k-fn">durasi_ms</span>(tune), <span class="k-str">&quot;ms&quot;</span>)
+<span class="k-ns">fs</span>::<span class="k-fn">delete</span>(<span class="k-str">&quot;tune.wav&quot;</span>)</code></pre><pre class="keluaran"><code>700.0 ms</code></pre></figure>
 <p><code>suara::putar(sound)</code> plays without waiting, <code>putar_tunggu</code> waits until it ends. <code>suara::tersedia()</code> tells whether there is an audio output. Others: <code>derau</code> (noise), <code>selubung</code> (fade in/out), and <code>muat_wav</code>.</p>
 <h2 id="numerics-wokwok"><a class="jangkar" href="#numerics-wokwok">Numerics: wokwok</a></h2>
 <p><code>wokwok::</code> has its own n-dimensional array whose contents are stored packed in one kind of number. For element-wise work on large data, it is far faster than an ordinary array.</p>
@@ -501,7 +501,7 @@ c.<span class="k-fn">save_png</span>(<span class="k-str">&quot;kartu.png&quot;</
 <p>There are 86 functions: constructors (<code>zeros</code>, <code>ones</code>, <code>eye</code>, <code>linspace</code>, <code>random</code>), element-wise operations, aggregates (<code>sum</code>, <code>mean</code>, <code>std</code>, <code>var</code>, <code>argmax</code>), shape (<code>reshape</code>, <code>transpose</code>, <code>flatten</code>), and linear algebra (<code>dot</code>, <code>matmul</code>, <code>inv</code>, <code>det</code>, <code>solve</code>). Summation is pairwise, so a million <code>0.1</code>s add up to exactly <code>100000</code>.</p>
 <h3 id="statistics-and-small-matrices"><a class="jangkar" href="#statistics-and-small-matrices">Statistics and small matrices</a></h3>
 <p>For data in ordinary arrays, <code>dok::</code> has statistics (<code>stat_percentile</code>, <code>stat_linreg</code>, <code>stat_correlation</code>, <code>stat_normal_cdf</code>), vectors (<code>vec_dot</code>, <code>vec_cross</code>, <code>vec_normalize</code>), matrices (<code>mat_mul</code>, <code>mat_inverse</code>, <code>mat_det</code>), and number theory (<code>num_is_prime</code>, <code>num_prime_factors</code>, <code>num_mod_pow</code>).</p>
-<figure class="kode" data-jalan><figcaption><span>statistik.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">stat_percentile</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>, <span class="k-ang">4</span>, <span class="k-ang">5</span>], <span class="k-ang">50</span>))
+<figure class="kode" data-jalan><figcaption><span>stats.jrg</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">stat_percentile</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>, <span class="k-ang">4</span>, <span class="k-ang">5</span>], <span class="k-ang">50</span>))
 <span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">stat_linreg</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>], [<span class="k-ang">2</span>, <span class="k-ang">4</span>, <span class="k-ang">6</span>]))
 <span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">num_prime_factors</span>(<span class="k-ang">360</span>))</code></pre><pre class="keluaran"><code>3.0
 DokLinReg {intercept: 0.0, r2: 1.0, slope: 2.0}
@@ -516,7 +516,7 @@ DokLinReg {intercept: 0.0, r2: 1.0, slope: 2.0}
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

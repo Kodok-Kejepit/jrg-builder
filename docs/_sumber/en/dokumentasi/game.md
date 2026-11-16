@@ -2,30 +2,31 @@
 judul: Game engine
 ringkas: std/mesin, a 2D game engine on top of the canvas, which can be tested without opening a window.
 ---
-`import "std/mesin"` gives a 2D game engine written in JRG. A game is three things: an initial state, a `perbarui`
-(update) function that computes the next state, and a `gambar` (draw) function.
+`import "std/mesin"` gives a 2D game engine written in JRG. A game is three things: an initial state, an `update` function
+that computes the next state, and a `draw` function. The engine's own API keeps its Indonesian names (`mesin::baru`,
+`simulasi`, `jalankan`).
 
 ## The smallest game
 
-```jrg bola.jrg
+```jrg ball.jrg
 package main
 import "std/mesin"
 import "std/mesin/warna"
 
-struct Bola { pub x: float }
+struct Ball { pub x: float }
 
-fn perbarui(k, m, dt) {
-    var s = k
-    s.x = k.x + m.arah("Left", "Right", "Up", "Down").x * 60.0 * dt
+fn update(state, input, dt) {
+    var s = state
+    s.x = state.x + input.arah("Left", "Right", "Up", "Down").x * 60.0 * dt
     return s
 }
 
-fn gambar(c, k) {
-    canvas::fill_circle(c, k.x, 40, 6, warna::MERAH)
+fn draw(c, state) {
+    canvas::fill_circle(c, state.x, 40, 6, warna::MERAH)
 }
 
 pub fn main() {
-    let g = mesin::baru("Bola", 160, 80, Bola { x: 80.0 }, perbarui, gambar)
+    let g = mesin::baru("Ball", 160, 80, Ball { x: 80.0 }, update, draw)
     if canvas::punya_jendela() {
         g.jalankan()
     } else {
@@ -42,7 +43,7 @@ On a computer with a screen, `g.jalankan()` opens a window and the ball moves wi
 
 ## Three rules
 
-1. **State is a value.** `perbarui(state, input, dt)` returns a new state; nothing is changed in place. That is why
+1. **State is a value.** `update(state, input, dt)` returns a new state; nothing is changed in place. That is why
    a game can be replayed and tested.
 2. **A fixed time step**, 1/60 second by default (change it with `dengan_dt`). The physics is the same on fast and
    slow computers.
@@ -50,7 +51,7 @@ On a computer with a screen, `g.jalankan()` opens a window and the ball moves wi
    records a real play session, and `putar(recording)` replays it to the same state, so a bug that shows up while
    playing can become a test.
 
-The state struct's fields need `pub`, because `perbarui` and `gambar` are plain functions, not methods.
+The state struct's fields need `pub`, because `update` and `draw` are plain functions, not methods.
 
 ## Modules
 
@@ -79,20 +80,20 @@ if canvas::layar_sentuh() {
 }
 ```
 
-On-screen buttons are drawn in a strip at the bottom and read like keyboard keys, so `perbarui` does not change. A
+On-screen buttons are drawn in a strip at the bottom and read like keyboard keys, so `update` does not change. A
 JRG game can be packaged as an APK with `jrgm apk` (see [Android apps](android.html)).
 
 ## Sound
 
-Sound is derived from state changes, not played from inside `perbarui`, so a replay stays silent:
+Sound is derived from state changes, not played from inside `update`, so a replay stays silent:
 
 ```jrg-cuplikan
-fn bunyi(lama, baru) {
-    if baru.skor > lama.skor {
+fn sounds(old, new) {
+    if new.score > old.score {
         return [suara::nada(880, 80, "kotak")]
     }
     return []
 }
 
-let g = mesin::baru("Tangkap", 160, 120, awal, perbarui, gambar).dengan_bunyi(bunyi)
+let g = mesin::baru("Catch", 160, 120, start, update, draw).dengan_bunyi(sounds)
 ```

@@ -6,14 +6,14 @@ ringkas: A programming language with four execution engines, diagnostics that ex
 JawaRustGo++, JRG for short, is a programming language written in Rust. Its code looks like Rust and Go, it is
 dynamically typed, and its messages explain what went wrong and where. These docs are for version **0.6.0**.
 
-```jrg halo.jrg
+```jrg hello.jrg
 pub fn main() {
-    let nama = "Nusantara"
-    wok("""sugeng rawuh, ${nama}!""")
+    let name = "Nusantara"
+    wok("""welcome, ${name}!""")
 }
 ```
 ```keluaran
-sugeng rawuh, Nusantara!
+welcome, Nusantara!
 ```
 
 `wok` prints to the screen. The **Run** button above a code block runs the example right in the browser, and **Edit**

@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bangun Ruang — Matematika × JRG</title>
-<meta name="description" content="Geometri bidang (Bab 12) mengukur permukaan yang rata. Bangun ruang menambah satu dimensi lagi: kedalaman. Sekarang kita menghitung isi (volume), bukan cuma luasnya.">
+<title>Solids — Math × JRG</title>
+<meta name="description" content="Plane geometry (Chapter 12) measures flat surfaces. Solids add one more dimension: depth. Now we compute what is inside (the volume), not just the area.">
 <link rel="canonical" href="https://jrg-lang.org/matematika_x_jrg/ch17.html">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/matematika_x_jrg/ch17.html">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/matematika_x_jrg/ch17.html">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/matematika_x_jrg/ch17.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
-<meta property="og:locale" content="id_ID">
-<meta property="og:title" content="Bangun Ruang — Matematika × JRG">
-<meta property="og:description" content="Geometri bidang (Bab 12) mengukur permukaan yang rata. Bangun ruang menambah satu dimensi lagi: kedalaman. Sekarang kita menghitung isi (volume), bukan cuma luasnya.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Solids — Math × JRG">
+<meta property="og:description" content="Plane geometry (Chapter 12) measures flat surfaces. Solids add one more dimension: depth. Now we compute what is inside (the volume), not just the area.">
 <meta property="og:url" content="https://jrg-lang.org/matematika_x_jrg/ch17.html">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
@@ -438,78 +441,78 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body data-situs="mtk">
-<a class="lewati" href="#isi">Lewati ke isi</a>
+<a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
-  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
+  <nav class="situs" aria-label="Site"><a href="../web_dokumentasi/index.html">Docs</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
-    <a class="tombol-bahasa" href="../index.html" hreflang="en" lang="en" aria-label="English">EN</a>
-    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="Saluran WhatsApp JRG" title="Saluran WhatsApp JRG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
-    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="../id/matematika_x_jrg/ch17.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="JRG WhatsApp channel" title="JRG WhatsApp channel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
   </div>
 </header>
 <div class="tata">
-<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a class="aktif" aria-current="page" href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<aside class="sisi" aria-label="Chapter list"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> of 32 chapters done</p></div><p class="sisi-grup">Start</p><ul><li><a href="index.html" data-bab="mulai">Start here</a></li></ul><p class="sisi-grup">JRG Basics</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — First Program</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variables &amp; Types</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operators</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Branching</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Loops</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Functions</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Arrays &amp; Text</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Structs &amp; Methods</a></li></ul><p class="sisi-grup">More JRG</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closures &amp; HOFs</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dicts</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Reading Errors</a></li></ul><p class="sisi-grup">Basic Arithmetic</p><ul><li><a href="ch1.html" data-bab="ch1">Chapter 1 — Numbers</a></li><li><a href="ch2.html" data-bab="ch2">Chapter 2 — Add &amp; Subtract</a></li><li><a href="ch3.html" data-bab="ch3">Chapter 3 — Multiply &amp; Divide</a></li><li><a href="ch4.html" data-bab="ch4">Chapter 4 — Order of Operations</a></li><li><a href="ch5.html" data-bab="ch5">Chapter 5 — Negative Numbers</a></li></ul><p class="sisi-grup">Further Concepts</p><ul><li><a href="ch6.html" data-bab="ch6">Chapter 6 — Fractions &amp; Decimals</a></li><li><a href="ch7.html" data-bab="ch7">Chapter 7 — Percentages</a></li><li><a href="ch8.html" data-bab="ch8">Chapter 8 — Variables &amp; Equations</a></li><li><a href="ch9.html" data-bab="ch9">Chapter 9 — Math Functions</a></li></ul><p class="sisi-grup">Applied Math</p><ul><li><a href="ch10.html" data-bab="ch10">Chapter 10 — Primes, GCD &amp; LCM</a></li><li><a href="ch11.html" data-bab="ch11">Chapter 11 — Basic Statistics</a></li><li><a href="ch12.html" data-bab="ch12">Chapter 12 — Plane Geometry</a></li><li><a href="ch13.html" data-bab="ch13">Chapter 13 — Exponents &amp; Roots</a></li><li><a href="ch14.html" data-bab="ch14">Chapter 14 — Logarithms</a></li><li><a href="ch15.html" data-bab="ch15">Chapter 15 — Probability</a></li></ul><p class="sisi-grup">Advanced Level</p><ul><li><a href="ch16.html" data-bab="ch16">Chapter 16 — Ratios &amp; Proportions</a></li><li><a class="aktif" aria-current="page" href="ch17.html" data-bab="ch17">Chapter 17 — Solids</a></li><li><a href="ch18.html" data-bab="ch18">Chapter 18 — Sequences &amp; Series</a></li><li><a href="ch19.html" data-bab="ch19">Chapter 19 — Basic Trigonometry</a></li></ul><p class="sisi-grup">Final Project</p><ul><li><a href="ch20.html" data-bab="ch20">Chapter 20 — Report-Card Calculator</a></li></ul><p class="sisi-grup">Extra</p><ul><li><a href="referensi.html" data-bab="referensi">Reference &amp; Glossary</a></li></ul></nav></aside>
 <main id="isi" class="isi">
 <article class="artikel kelas" data-bab="ch17">
-<p class="rel">Bab 17 · Level Lanjut</p>
-<h1>Bangun Ruang</h1>
-<p class="ringkas">Geometri bidang (Bab 12) mengukur permukaan yang rata. Bangun ruang menambah satu dimensi lagi: kedalaman. Sekarang kita menghitung isi (volume), bukan cuma luasnya.</p>
+<p class="rel">Chapter 17 · Advanced Level</p>
+<h1>Solids</h1>
+<p class="ringkas">Plane geometry (Chapter 12) measures flat surfaces. Solids add one more dimension: depth. Now we compute what is inside (the volume), not just the area.</p>
 
-<h2 id="rumus-volume-amp-luas-permukaan"><span class="lencana">Konsep</span>Rumus volume &amp; luas permukaan</h2>
-<div class="daftar-bentuk"><div class="bentuk"><b>Kubus</b><span>V = s³<br>L = 6s²</span></div><div class="bentuk"><b>Balok</b><span>V = p×l×t<br>L = 2(pl+pt+lt)</span></div><div class="bentuk"><b>Tabung</b><span>V = πr²h<br>L = 2πr(r+h)</span></div><div class="bentuk"><b>Bola</b><span>V = 4/3πr³<br>L = 4πr²</span></div></div>
-<aside class="catatan catatan-warn"><p class="catatan-judul">Kesalahan umum</p><div>Satuan volume HARUS pangkat tiga (cm³, m³) — bukan cm² (itu luas) atau cm (itu panjang). Lupa menaikkan pangkat satuan adalah tanda konsep "dimensi" belum benar-benar dipahami, bukan cuma salah tulis.</div></aside>
-<h2 id="contoh-soal-bak-air">Contoh soal: bak air</h2>
-<div class="rumus"><div class="rumus-persamaan">Bak balok 2m × 1.5m × 1m, diisi air sampai penuh</div><div class="rumus-langkah">V = 2 × 1.5 × 1 = <span>3 m³</span></div><div class="rumus-langkah">1 m³ = 1000 liter, jadi bak ini menampung 3000 liter air</div></div>
-<h2 id="kubus-vs-bola-bervolume-sama-mana-permukaannya-lebih-kecil">Kubus vs bola bervolume sama — mana permukaannya lebih kecil?</h2>
-<p>Fakta menarik: dari semua bentuk dengan volume sama, <strong>bola punya luas permukaan paling kecil</strong>. Inilah kenapa tetesan air, gelembung sabun, dan planet cenderung berbentuk bola — alam "menghemat" permukaan secara otomatis.</p>
-<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Kubus dengan sisi 5cm. Berapa volumenya?</p>
-      <p><strong>2.</strong> Tabung radius 3cm, tinggi 10cm (π≈3.14). Berapa volumenya?</p>
+<h2 id="volume-amp-surface-area-formulas"><span class="lencana">concept</span>Volume &amp; surface-area formulas</h2>
+<div class="daftar-bentuk"><div class="bentuk"><b>Cube</b><span>V = s³<br>A = 6s²</span></div><div class="bentuk"><b>Cuboid</b><span>V = l×w×h<br>A = 2(lw+lh+wh)</span></div><div class="bentuk"><b>Cylinder</b><span>V = πr²h<br>A = 2πr(r+h)</span></div><div class="bentuk"><b>Sphere</b><span>V = 4/3πr³<br>A = 4πr²</span></div></div>
+<aside class="catatan catatan-warn"><p class="catatan-judul">A common mistake</p><div>Volume units MUST be cubed (cm³, m³) — not cm² (that is area) or cm (that is length). Forgetting to raise the unit's power is a sign the idea of "dimensions" is not really understood yet, not just a slip of the pen.</div></aside>
+<h2 id="an-example-a-water-tank">An example: a water tank</h2>
+<div class="rumus"><div class="rumus-persamaan">A 2m × 1.5m × 1m cuboid tank, filled to the top with water</div><div class="rumus-langkah">V = 2 × 1.5 × 1 = <span>3 m³</span></div><div class="rumus-langkah">1 m³ = 1000 litres, so this tank holds 3000 litres of water</div></div>
+<h2 id="a-cube-vs-a-sphere-of-equal-volume-which-has-the-smaller-surface">A cube vs a sphere of equal volume — which has the smaller surface?</h2>
+<p>An interesting fact: of all shapes with the same volume, <strong>the sphere has the smallest surface area</strong>. That is why water droplets, soap bubbles, and planets tend to be round — nature "saves" surface automatically.</p>
+<details class="latihan"><summary>Practice on your own</summary><div><p><strong>1.</strong> A cube has 5cm sides. What is its volume?</p>
+      <p><strong>2.</strong> A cylinder has a radius of 3cm and a height of 10cm (π≈3.14). What is its volume?</p>
       <div class="math-box">
-        <div class="math-step"><span>Jawaban 1:</span> 5³ = 125 cm³</div>
-        <div class="math-step"><span>Jawaban 2:</span> 3.14×3²×10 = 3.14×9×10 = 282.6 cm³</div>
+        <div class="math-step"><span>Answer 1:</span> 5³ = 125 cm³</div>
+        <div class="math-step"><span>Answer 2:</span> 3.14×3²×10 = 3.14×9×10 = 282.6 cm³</div>
       </div></div></details>
-<h2 id="menghitung-volume-berbagai-bangun-ruang"><span class="lencana">Kode JRG</span>Menghitung volume berbagai bangun ruang</h2>
-<figure class="kode" data-jalan><figcaption><span>bangun_ruang.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">volumeBalok</span>(p: <span class="k-tipe">float</span>, l: <span class="k-tipe">float</span>, t: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
-    <span class="k-kunci">return</span> p * l * t
+<h2 id="computing-the-volume-of-several-solids"><span class="lencana">code</span>Computing the volume of several solids</h2>
+<figure class="kode" data-jalan><figcaption><span>solids.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">cuboidVolume</span>(l: <span class="k-tipe">float</span>, w: <span class="k-tipe">float</span>, h: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
+    <span class="k-kunci">return</span> l * w * h
 }
 
-<span class="k-kunci">fn</span> <span class="k-fn">volumeTabung</span>(r: <span class="k-tipe">float</span>, h: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
+<span class="k-kunci">fn</span> <span class="k-fn">cylinderVolume</span>(r: <span class="k-tipe">float</span>, h: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
     <span class="k-kunci">return</span> <span class="k-ns">math</span>::<span class="k-tipe">PI</span> * r * r * h
 }
 
-<span class="k-kunci">fn</span> <span class="k-fn">volumeBola</span>(r: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
+<span class="k-kunci">fn</span> <span class="k-fn">sphereVolume</span>(r: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
     <span class="k-kunci">return</span> (<span class="k-ang">4.0</span> / <span class="k-ang">3.0</span>) * <span class="k-ns">math</span>::<span class="k-tipe">PI</span> * <span class="k-ns">math</span>::<span class="k-fn">pow</span>(r, <span class="k-ang">3.0</span>)
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Volume bak air:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, <span class="k-fn">volumeBalok</span>(<span class="k-ang">2.0</span>, <span class="k-ang">1.5</span>, <span class="k-ang">1.0</span>)), <span class="k-str">&quot;m3&quot;</span>)
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Volume tabung:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, <span class="k-fn">volumeTabung</span>(<span class="k-ang">3.0</span>, <span class="k-ang">10.0</span>)), <span class="k-str">&quot;cm3&quot;</span>)
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Volume bola r=6:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, <span class="k-fn">volumeBola</span>(<span class="k-ang">6.0</span>)), <span class="k-str">&quot;cm3&quot;</span>)
-}</code></pre><pre class="keluaran"><code>Volume bak air: 3.00 m3
-Volume tabung: 282.74 cm3
-Volume bola r=6: 904.78 cm3</code></pre></figure>
-<aside class="catatan catatan-real"><p class="catatan-judul">Di dunia nyata</p><div>Grafis 3D game/film membangun setiap objek dari bentuk-bentuk dasar ini (atau versi yang lebih rumit darinya). Menghitung volume juga penting untuk kemasan, pengiriman barang (kubikasi), dan mesin fisika dalam game.</div></aside>
-<div class="kuis" data-kuis="q17_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Volume kubus dengan sisi 4cm adalah...</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>16 cm³</button><button type="button" data-benar="1"><span>B</span>64 cm³</button><button type="button" data-benar="0"><span>C</span>12 cm³</button></div><p class="kuis-umpan benar" hidden>Tepat! 4³ = 4×4×4 = 64 cm³.</p><p class="kuis-umpan salah" hidden>Volume kubus = sisi³ (bukan sisi² atau sisi×3).</p></div>
-<div class="kuis" data-kuis="q17_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Manakah satuan yang tepat untuk VOLUME?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>cm</button><button type="button" data-benar="0"><span>B</span>cm²</button><button type="button" data-benar="1"><span>C</span>cm³</button></div><p class="kuis-umpan benar" hidden>Benar! Volume selalu satuan pangkat tiga (3D).</p><p class="kuis-umpan salah" hidden>Ingat: cm=panjang(1D), cm²=luas(2D), cm³=volume(3D).</p></div>
-<div class="kuis" data-kuis="q17_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Balok berukuran 3×4×5 cm. Berapa volumenya?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>12 cm³</button><button type="button" data-benar="0"><span>B</span>47 cm³</button><button type="button" data-benar="1"><span>C</span>60 cm³</button></div><p class="kuis-umpan benar" hidden>Tepat! 3×4×5 = 60 cm³.</p><p class="kuis-umpan salah" hidden>Volume balok = panjang × lebar × tinggi, kalikan semua.</p></div>
-<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke Bab 18</p><div>Sekarang kita ke barisan &amp; deret — pola angka yang berurutan, dan cara menjumlahkannya tanpa menghitung satu-satu.</div></aside>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Water tank volume:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, <span class="k-fn">cuboidVolume</span>(<span class="k-ang">2.0</span>, <span class="k-ang">1.5</span>, <span class="k-ang">1.0</span>)), <span class="k-str">&quot;m3&quot;</span>)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Cylinder volume:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, <span class="k-fn">cylinderVolume</span>(<span class="k-ang">3.0</span>, <span class="k-ang">10.0</span>)), <span class="k-str">&quot;cm3&quot;</span>)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Sphere volume r=6:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, <span class="k-fn">sphereVolume</span>(<span class="k-ang">6.0</span>)), <span class="k-str">&quot;cm3&quot;</span>)
+}</code></pre><pre class="keluaran"><code>Water tank volume: 3.00 m3
+Cylinder volume: 282.74 cm3
+Sphere volume r=6: 904.78 cm3</code></pre></figure>
+<aside class="catatan catatan-real"><p class="catatan-judul">In the real world</p><div>3D graphics in games and films build every object from these basic shapes (or more complicated versions of them). Computing volume also matters for packaging, shipping (volumetric weight), and the physics engines in games.</div></aside>
+<div class="kuis" data-kuis="q17_1"><p class="kuis-label">Quiz 1</p><p class="kuis-tanya">The volume of a cube with 4cm sides is...</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>16 cm³</button><button type="button" data-benar="1"><span>B</span>64 cm³</button><button type="button" data-benar="0"><span>C</span>12 cm³</button></div><p class="kuis-umpan benar" hidden>Exactly! 4³ = 4×4×4 = 64 cm³.</p><p class="kuis-umpan salah" hidden>A cube's volume = side³ (not side² or side×3).</p></div>
+<div class="kuis" data-kuis="q17_2"><p class="kuis-label">Quiz 2</p><p class="kuis-tanya">Which unit is right for VOLUME?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>cm</button><button type="button" data-benar="0"><span>B</span>cm²</button><button type="button" data-benar="1"><span>C</span>cm³</button></div><p class="kuis-umpan benar" hidden>Right! Volume is always in cubed units (3D).</p><p class="kuis-umpan salah" hidden>Remember: cm=length (1D), cm²=area (2D), cm³=volume (3D).</p></div>
+<div class="kuis" data-kuis="q17_3"><p class="kuis-label">Quiz 3</p><p class="kuis-tanya">A cuboid measures 3×4×5 cm. What is its volume?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>12 cm³</button><button type="button" data-benar="0"><span>B</span>47 cm³</button><button type="button" data-benar="1"><span>C</span>60 cm³</button></div><p class="kuis-umpan benar" hidden>Exactly! 3×4×5 = 60 cm³.</p><p class="kuis-umpan salah" hidden>A cuboid's volume = length × width × height; multiply all of them.</p></div>
+<aside class="catatan catatan-real"><p class="catatan-judul">On to Chapter 18</p><div>Now on to sequences &amp; series — number patterns in order, and how to add them up without counting one by one.</div></aside>
 
 </article>
-<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="ch16.html"><small>Bab sebelumnya</small><strong>Perbandingan &amp; Rasio</strong></a><a class="ke-kanan" href="ch18.html"><small>Bab berikutnya</small><strong>Barisan &amp; Deret</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">Saluran WhatsApp</a></span></footer>
+<nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="ch16.html"><small>Previous chapter</small><strong>Ratios &amp; Proportions</strong></a><a class="ke-kanan" href="ch18.html"><small>Next chapter</small><strong>Sequences &amp; Series</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
 </main>
 </div>
-<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
-  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
+  <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari-id.js?v=5f93a322d5"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 <script defer src="../aset/kelas-data.js?v=c386df7ff6"></script>
-<script defer src="../aset/kelas.js?v=505624797c"></script>
+<script defer src="../aset/kelas.js?v=cfe2ec492f"></script>
 </body>
 </html>

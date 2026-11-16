@@ -7,18 +7,18 @@ ringkas: Values never share storage, and a copy is only made when someone writes
 Assigning, passing to a function, returning, or reading from a collection always gives a value that stands on its
 own. Changing a copy never changes the original.
 
-```jrg salinan.jrg
+```jrg copies.jrg
 var a = [1, 2, 3]
 var b = a
 b[0] = 99
 
-fn ubah(xs) {
+fn change(xs) {
     var ys = xs
     ys[1] = 0
     return ys
 }
 
-let c = ubah(a)
+let c = change(a)
 wok(a, b, c)
 ```
 ```keluaran
@@ -53,7 +53,7 @@ A few things are designed to share, and all of them are plain to see in the code
 | manual allocation | `jawa::alloc` and `jawir::free` |
 | objects from other languages | `py::`, `js::`, `jvm::` handles |
 
-```jrg pegangan.jrg
+```jrg handles.jrg
 let p = ptr::new(0)
 let q = p
 ptr::set(q, 42)

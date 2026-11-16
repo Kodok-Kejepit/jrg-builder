@@ -11,7 +11,7 @@ there.
 ```sh
 jrgc --sunting program.jrg
 jrgc --sunting a.jrg b.jrg:120     # several files; open b.jrg at line 120
-jrgc --sunting proyek/             # browse a folder
+jrgc --sunting project/            # browse a folder
 ```
 
 | Key | What it does |

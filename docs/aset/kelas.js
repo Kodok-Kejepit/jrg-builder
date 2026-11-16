@@ -1,6 +1,7 @@
 // Kelas Matematika x JRG: kuis dan progres. Progres disimpan di perangkat pembaca (localStorage).
 (function () {
   const KUNCI = 'jrg-kelas';
+  const EN = document.documentElement.lang === 'en';
   const data = window.JRG_KELAS || { bab: [], soal: {}, proyek: [] };
   let keadaan = { benar: {}, proyek: {} };
   try { keadaan = Object.assign(keadaan, JSON.parse(localStorage.getItem(KUNCI) || '{}')); } catch (e) { /* kosong */ }
@@ -25,7 +26,7 @@
     if (batang) batang.style.width = (data.bab.length ? n / data.bab.length * 100 : 0) + '%';
     document.querySelectorAll('[data-proyek]').forEach(function (t) {
       const ok = !!keadaan.proyek[t.dataset.proyek];
-      t.textContent = ok ? 'Proyek sudah ditandai selesai' : 'Tandai proyek selesai';
+      t.textContent = ok ? (EN ? 'Project marked as done' : 'Proyek sudah ditandai selesai') : (EN ? 'Mark project as done' : 'Tandai proyek selesai');
       t.disabled = ok;
     });
     document.querySelectorAll('[data-lanjut]').forEach(function (a) {
@@ -76,7 +77,7 @@
   });
   document.querySelectorAll('[data-ulang]').forEach(function (t) {
     t.addEventListener('click', function () {
-      if (!confirm('Hapus semua progres kuis di perangkat ini?')) return;
+      if (!confirm(EN ? 'Delete all quiz progress on this device?' : 'Hapus semua progres kuis di perangkat ini?')) return;
       keadaan = { benar: {}, proyek: {} };
       simpan();
       location.reload();

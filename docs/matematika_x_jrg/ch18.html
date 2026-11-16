@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Barisan &amp; Deret — Matematika × JRG</title>
-<meta name="description" content="Barisan adalah pola angka berurutan. Sekali polanya ditemukan, kamu bisa menebak suku ke-100 tanpa menulis 99 suku sebelumnya — dan menjumlahkannya tanpa menjumlah satu-satu.">
+<title>Sequences &amp; Series — Math × JRG</title>
+<meta name="description" content="A sequence is a pattern of numbers in order. Once you find the pattern, you can guess the 100th term without writing the 99 before it — and add them up without adding one by one.">
 <link rel="canonical" href="https://jrg-lang.org/matematika_x_jrg/ch18.html">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/matematika_x_jrg/ch18.html">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/matematika_x_jrg/ch18.html">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/matematika_x_jrg/ch18.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
-<meta property="og:locale" content="id_ID">
-<meta property="og:title" content="Barisan &amp; Deret — Matematika × JRG">
-<meta property="og:description" content="Barisan adalah pola angka berurutan. Sekali polanya ditemukan, kamu bisa menebak suku ke-100 tanpa menulis 99 suku sebelumnya — dan menjumlahkannya tanpa menjumlah satu-satu.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Sequences &amp; Series — Math × JRG">
+<meta property="og:description" content="A sequence is a pattern of numbers in order. Once you find the pattern, you can guess the 100th term without writing the 99 before it — and add them up without adding one by one.">
 <meta property="og:url" content="https://jrg-lang.org/matematika_x_jrg/ch18.html">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
@@ -438,82 +441,82 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body data-situs="mtk">
-<a class="lewati" href="#isi">Lewati ke isi</a>
+<a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
-  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
+  <nav class="situs" aria-label="Site"><a href="../web_dokumentasi/index.html">Docs</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
-    <a class="tombol-bahasa" href="../index.html" hreflang="en" lang="en" aria-label="English">EN</a>
-    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="Saluran WhatsApp JRG" title="Saluran WhatsApp JRG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
-    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="../id/matematika_x_jrg/ch18.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="JRG WhatsApp channel" title="JRG WhatsApp channel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
   </div>
 </header>
 <div class="tata">
-<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a class="aktif" aria-current="page" href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<aside class="sisi" aria-label="Chapter list"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> of 32 chapters done</p></div><p class="sisi-grup">Start</p><ul><li><a href="index.html" data-bab="mulai">Start here</a></li></ul><p class="sisi-grup">JRG Basics</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — First Program</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variables &amp; Types</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operators</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Branching</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Loops</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Functions</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Arrays &amp; Text</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Structs &amp; Methods</a></li></ul><p class="sisi-grup">More JRG</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closures &amp; HOFs</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dicts</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Reading Errors</a></li></ul><p class="sisi-grup">Basic Arithmetic</p><ul><li><a href="ch1.html" data-bab="ch1">Chapter 1 — Numbers</a></li><li><a href="ch2.html" data-bab="ch2">Chapter 2 — Add &amp; Subtract</a></li><li><a href="ch3.html" data-bab="ch3">Chapter 3 — Multiply &amp; Divide</a></li><li><a href="ch4.html" data-bab="ch4">Chapter 4 — Order of Operations</a></li><li><a href="ch5.html" data-bab="ch5">Chapter 5 — Negative Numbers</a></li></ul><p class="sisi-grup">Further Concepts</p><ul><li><a href="ch6.html" data-bab="ch6">Chapter 6 — Fractions &amp; Decimals</a></li><li><a href="ch7.html" data-bab="ch7">Chapter 7 — Percentages</a></li><li><a href="ch8.html" data-bab="ch8">Chapter 8 — Variables &amp; Equations</a></li><li><a href="ch9.html" data-bab="ch9">Chapter 9 — Math Functions</a></li></ul><p class="sisi-grup">Applied Math</p><ul><li><a href="ch10.html" data-bab="ch10">Chapter 10 — Primes, GCD &amp; LCM</a></li><li><a href="ch11.html" data-bab="ch11">Chapter 11 — Basic Statistics</a></li><li><a href="ch12.html" data-bab="ch12">Chapter 12 — Plane Geometry</a></li><li><a href="ch13.html" data-bab="ch13">Chapter 13 — Exponents &amp; Roots</a></li><li><a href="ch14.html" data-bab="ch14">Chapter 14 — Logarithms</a></li><li><a href="ch15.html" data-bab="ch15">Chapter 15 — Probability</a></li></ul><p class="sisi-grup">Advanced Level</p><ul><li><a href="ch16.html" data-bab="ch16">Chapter 16 — Ratios &amp; Proportions</a></li><li><a href="ch17.html" data-bab="ch17">Chapter 17 — Solids</a></li><li><a class="aktif" aria-current="page" href="ch18.html" data-bab="ch18">Chapter 18 — Sequences &amp; Series</a></li><li><a href="ch19.html" data-bab="ch19">Chapter 19 — Basic Trigonometry</a></li></ul><p class="sisi-grup">Final Project</p><ul><li><a href="ch20.html" data-bab="ch20">Chapter 20 — Report-Card Calculator</a></li></ul><p class="sisi-grup">Extra</p><ul><li><a href="referensi.html" data-bab="referensi">Reference &amp; Glossary</a></li></ul></nav></aside>
 <main id="isi" class="isi">
 <article class="artikel kelas" data-bab="ch18">
-<p class="rel">Bab 18 · Level Lanjut</p>
-<h1>Barisan &amp; Deret</h1>
-<p class="ringkas">Barisan adalah pola angka berurutan. Sekali polanya ditemukan, kamu bisa menebak suku ke-100 tanpa menulis 99 suku sebelumnya — dan menjumlahkannya tanpa menjumlah satu-satu.</p>
+<p class="rel">Chapter 18 · Advanced Level</p>
+<h1>Sequences &amp; Series</h1>
+<p class="ringkas">A sequence is a pattern of numbers in order. Once you find the pattern, you can guess the 100th term without writing the 99 before it — and add them up without adding one by one.</p>
 
-<h2 id="barisan-aritmatika-beda-tetap"><span class="lencana">Konsep</span>Barisan aritmatika — beda tetap</h2>
-<p>Setiap suku didapat dari suku sebelumnya dengan <strong>menambahkan</strong> angka yang sama (disebut <em>beda</em>, b).</p>
-<div class="rumus"><div class="rumus-persamaan">2, 5, 8, 11, 14, ... &nbsp;&nbsp;(beda = 3)</div><div class="rumus-persamaan">Un = a + (n−1)×b</div><div class="rumus-langkah">Suku ke-10: U₁₀ = 2 + (10−1)×3 = 2+27 = <span>29</span></div></div>
-<h2 id="barisan-geometri-rasio-tetap">Barisan geometri — rasio tetap</h2>
-<p>Setiap suku didapat dari suku sebelumnya dengan <strong>mengalikan</strong> angka yang sama (disebut <em>rasio</em>, r).</p>
-<div class="rumus"><div class="rumus-persamaan">3, 6, 12, 24, 48, ... &nbsp;&nbsp;(rasio = 2)</div><div class="rumus-persamaan">Un = a × r^(n−1)</div><div class="rumus-langkah">Suku ke-8: U₈ = 3 × 2⁷ = 3×128 = <span>384</span></div></div>
-<aside class="catatan catatan-warn"><p class="catatan-judul">Kesalahan umum</p><div>Menyamakan semua barisan sebagai aritmatika. Cek dulu: apakah SELISIH antar suku tetap (aritmatika), atau HASIL BAGI antar suku tetap (geometri)? 2,4,8,16 bukan aritmatika (selisihnya 2,4,8 — tidak tetap), tapi geometri (rasio tetap 2).</div></aside>
-<h2 id="deret-jumlah-semua-suku">Deret — jumlah semua suku</h2>
-<div class="rumus"><div class="rumus-persamaan">Sn (aritmatika) = n/2 × (a + Un)</div><div class="rumus-langkah">Jumlah 10 suku pertama barisan 2,5,8,...: S₁₀ = 10/2 × (2+29) = 5×31 = <span>155</span></div></div>
-<aside class="catatan catatan-tip"><p class="catatan-judul">Kisah Gauss yang legendaris</p><div>Matematikawan muda Gauss diminta menjumlahkan 1 sampai 100. Ia langsung menjawab 5050 — bukan menghitung satu-satu, tapi memasangkan (1+100), (2+99), (3+98)... yang masing-masing berjumlah 101, sebanyak 50 pasang: 50×101=5050. Itulah inti rumus deret aritmatika.</div></aside>
-<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Barisan 7, 12, 17, 22, ... Berapa suku ke-15?</p>
-      <p><strong>2.</strong> Barisan geometri 2, 6, 18, 54, ... Berapa suku ke-6?</p>
+<h2 id="arithmetic-sequences-a-fixed-difference"><span class="lencana">concept</span>Arithmetic sequences — a fixed difference</h2>
+<p>Each term comes from the one before by <strong>adding</strong> the same number (called the <em>common difference</em>, d).</p>
+<div class="rumus"><div class="rumus-persamaan">2, 5, 8, 11, 14, ... &nbsp;&nbsp;(difference = 3)</div><div class="rumus-persamaan">Un = a + (n−1)×d</div><div class="rumus-langkah">The 10th term: U₁₀ = 2 + (10−1)×3 = 2+27 = <span>29</span></div></div>
+<h2 id="geometric-sequences-a-fixed-ratio">Geometric sequences — a fixed ratio</h2>
+<p>Each term comes from the one before by <strong>multiplying</strong> by the same number (called the <em>common ratio</em>, r).</p>
+<div class="rumus"><div class="rumus-persamaan">3, 6, 12, 24, 48, ... &nbsp;&nbsp;(ratio = 2)</div><div class="rumus-persamaan">Un = a × r^(n−1)</div><div class="rumus-langkah">The 8th term: U₈ = 3 × 2⁷ = 3×128 = <span>384</span></div></div>
+<aside class="catatan catatan-warn"><p class="catatan-judul">A common mistake</p><div>Treating every sequence as arithmetic. Check first: is the DIFFERENCE between terms fixed (arithmetic), or the QUOTIENT between terms fixed (geometric)? 2,4,8,16 is not arithmetic (the differences are 2,4,8 — not fixed), but it is geometric (a fixed ratio of 2).</div></aside>
+<h2 id="series-the-sum-of-all-the-terms">Series — the sum of all the terms</h2>
+<div class="rumus"><div class="rumus-persamaan">Sn (arithmetic) = n/2 × (a + Un)</div><div class="rumus-langkah">The sum of the first 10 terms of 2,5,8,...: S₁₀ = 10/2 × (2+29) = 5×31 = <span>155</span></div></div>
+<aside class="catatan catatan-tip"><p class="catatan-judul">The legendary story of Gauss</p><div>The young mathematician Gauss was asked to add up 1 to 100. He answered 5050 at once — not by counting one by one, but by pairing (1+100), (2+99), (3+98)... which each add up to 101, 50 pairs in all: 50×101=5050. That is the heart of the arithmetic-series formula.</div></aside>
+<details class="latihan"><summary>Practice on your own</summary><div><p><strong>1.</strong> The sequence 7, 12, 17, 22, ... What is the 15th term?</p>
+      <p><strong>2.</strong> The geometric sequence 2, 6, 18, 54, ... What is the 6th term?</p>
       <div class="math-box">
-        <div class="math-step"><span>Jawaban 1:</span> a=7, b=5. U₁₅=7+(14×5)=7+70=77</div>
-        <div class="math-step"><span>Jawaban 2:</span> a=2, r=3. U₆=2×3⁵=2×243=486</div>
+        <div class="math-step"><span>Answer 1:</span> a=7, d=5. U₁₅=7+(14×5)=7+70=77</div>
+        <div class="math-step"><span>Answer 2:</span> a=2, r=3. U₆=2×3⁵=2×243=486</div>
       </div></div></details>
-<h2 id="membangkitkan-barisan-dengan-perulangan"><span class="lencana">Kode JRG</span>Membangkitkan barisan dengan perulangan</h2>
-<figure class="kode" data-jalan><figcaption><span>barisan.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Barisan aritmatika (a=2, b=3):&quot;</span>)
+<h2 id="generating-a-sequence-with-a-loop"><span class="lencana">code</span>Generating a sequence with a loop</h2>
+<figure class="kode" data-jalan><figcaption><span>sequence.jrg</span></figcaption><pre><code><span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Arithmetic sequence (a=2, d=3):&quot;</span>)
     <span class="k-kunci">let</span> a = <span class="k-ang">2</span>
-    <span class="k-kunci">let</span> b = <span class="k-ang">3</span>
+    <span class="k-kunci">let</span> d = <span class="k-ang">3</span>
 
     <span class="k-kunci">for</span> _, n <span class="k-kunci">in</span> <span class="k-ang">1</span>..=<span class="k-ang">6</span> {
-        <span class="k-kunci">let</span> suku = a + (n - <span class="k-ang">1</span>) * b
-        <span class="k-fn">wok_</span>(suku, <span class="k-str">&quot; &quot;</span>)
+        <span class="k-kunci">let</span> term = a + (n - <span class="k-ang">1</span>) * d
+        <span class="k-fn">wok_</span>(term, <span class="k-str">&quot; &quot;</span>)
     }
     <span class="k-fn">wok</span>(<span class="k-str">&quot;&quot;</span>)
 
-    <span class="k-kom">// Deret: total 6 suku pertama</span>
+    <span class="k-kom">// Series: the total of the first 6 terms</span>
     <span class="k-kunci">let</span> <span class="k-kunci">mut</span> total = <span class="k-ang">0</span>
     <span class="k-kunci">for</span> _, n <span class="k-kunci">in</span> <span class="k-ang">1</span>..=<span class="k-ang">6</span> {
-        total += a + (n - <span class="k-ang">1</span>) * b
+        total += a + (n - <span class="k-ang">1</span>) * d
     }
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Jumlah 6 suku pertama:&quot;</span>, total)
-}</code></pre><pre class="keluaran"><code>Barisan aritmatika (a=2, b=3):
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Sum of the first 6 terms:&quot;</span>, total)
+}</code></pre><pre class="keluaran"><code>Arithmetic sequence (a=2, d=3):
 2  5  8  11  14  17  
-Jumlah 6 suku pertama: 57</code></pre></figure>
-<aside class="catatan catatan-fun"><p class="catatan-judul">Loop = barisan berjalan</p><div>Perulangan <code>for n in 1..=6</code> pada dasarnya "membangkitkan" barisan suku demi suku — persis mekanisme yang dijelaskan rumus Un di atas, hanya dijalankan otomatis oleh komputer.</div></aside>
-<div class="kuis" data-kuis="q18_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Barisan 4, 9, 14, 19, ... Berapa suku ke-7?</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span>34</button><button type="button" data-benar="0"><span>B</span>39</button><button type="button" data-benar="0"><span>C</span>29</button></div><p class="kuis-umpan benar" hidden>Tepat! a=4,b=5. U₇=4+(6×5)=4+30=34.</p><p class="kuis-umpan salah" hidden>Gunakan rumus Un=a+(n−1)×b dengan a=4, b=5, n=7.</p></div>
-<div class="kuis" data-kuis="q18_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Manakah yang termasuk barisan GEOMETRI?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>3, 6, 9, 12</button><button type="button" data-benar="1"><span>B</span>3, 6, 12, 24</button><button type="button" data-benar="0"><span>C</span>3, 5, 7, 9</button></div><p class="kuis-umpan benar" hidden>Benar! Rasio tetap ×2 di setiap suku — itu ciri geometri.</p><p class="kuis-umpan salah" hidden>Cek: apakah SELISIH tetap (aritmatika) atau RASIO tetap (geometri)?</p></div>
-<div class="kuis" data-kuis="q18_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Jumlah 1+2+3+...+50 (rumus Gauss) adalah...</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span>1275</button><button type="button" data-benar="0"><span>B</span>2500</button><button type="button" data-benar="0"><span>C</span>1250</button></div><p class="kuis-umpan benar" hidden>Tepat! Sn=n/2×(a+Un)=50/2×(1+50)=25×51=1275.</p><p class="kuis-umpan salah" hidden>Gunakan Sn = n/2 × (suku pertama + suku terakhir).</p></div>
-<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke Bab 19</p><div>Bab teori terakhir: trigonometri dasar — menghubungkan sudut dan sisi segitiga siku-siku lewat sin, cos, dan tan.</div></aside>
+Sum of the first 6 terms: 57</code></pre></figure>
+<aside class="catatan catatan-fun"><p class="catatan-judul">A loop = a sequence in motion</p><div>The loop <code>for _, n in 1..=6</code> basically "generates" the sequence term by term — exactly the mechanism the Un formula above describes, just run automatically by the computer.</div></aside>
+<div class="kuis" data-kuis="q18_1"><p class="kuis-label">Quiz 1</p><p class="kuis-tanya">The sequence 4, 9, 14, 19, ... What is the 7th term?</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span>34</button><button type="button" data-benar="0"><span>B</span>39</button><button type="button" data-benar="0"><span>C</span>29</button></div><p class="kuis-umpan benar" hidden>Exactly! a=4,d=5. U₇=4+(6×5)=4+30=34.</p><p class="kuis-umpan salah" hidden>Use the formula Un=a+(n−1)×d with a=4, d=5, n=7.</p></div>
+<div class="kuis" data-kuis="q18_2"><p class="kuis-label">Quiz 2</p><p class="kuis-tanya">Which one is a GEOMETRIC sequence?</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>3, 6, 9, 12</button><button type="button" data-benar="1"><span>B</span>3, 6, 12, 24</button><button type="button" data-benar="0"><span>C</span>3, 5, 7, 9</button></div><p class="kuis-umpan benar" hidden>Right! A fixed ratio of ×2 at every term — that is the sign of a geometric sequence.</p><p class="kuis-umpan salah" hidden>Check: is the DIFFERENCE fixed (arithmetic) or the RATIO fixed (geometric)?</p></div>
+<div class="kuis" data-kuis="q18_3"><p class="kuis-label">Quiz 3</p><p class="kuis-tanya">The sum 1+2+3+...+50 (Gauss's formula) is...</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span>1275</button><button type="button" data-benar="0"><span>B</span>2500</button><button type="button" data-benar="0"><span>C</span>1250</button></div><p class="kuis-umpan benar" hidden>Exactly! Sn=n/2×(a+Un)=50/2×(1+50)=25×51=1275.</p><p class="kuis-umpan salah" hidden>Use Sn = n/2 × (first term + last term).</p></div>
+<aside class="catatan catatan-real"><p class="catatan-judul">On to Chapter 19</p><div>The last theory chapter: basic trigonometry — linking the angles and sides of a right triangle through sin, cos, and tan.</div></aside>
 
 </article>
-<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="ch17.html"><small>Bab sebelumnya</small><strong>Bangun Ruang</strong></a><a class="ke-kanan" href="ch19.html"><small>Bab berikutnya</small><strong>Trigonometri Dasar</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">Saluran WhatsApp</a></span></footer>
+<nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="ch17.html"><small>Previous chapter</small><strong>Solids</strong></a><a class="ke-kanan" href="ch19.html"><small>Next chapter</small><strong>Basic Trigonometry</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
 </main>
 </div>
-<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
-  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
+  <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari-id.js?v=5f93a322d5"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 <script defer src="../aset/kelas-data.js?v=c386df7ff6"></script>
-<script defer src="../aset/kelas.js?v=505624797c"></script>
+<script defer src="../aset/kelas.js?v=cfe2ec492f"></script>
 </body>
 </html>

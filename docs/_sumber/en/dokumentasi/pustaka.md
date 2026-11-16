@@ -27,31 +27,31 @@ Most `arr::` and `str::` functions can also be called as methods: `arr::sort(a)`
 
 ## Everyday examples
 
-```jrg sehari.jrg lokal
+```jrg everyday.jrg lokal
 wok(math::sqrt(16.0), math::gcd(12, 18), math::round(2.567))
 wok(arr::unique([1, 1, 2]), arr::chunks([1, 2, 3, 4, 5], 2))
-wok(str::title("budi santoso"), str::words("satu dua  tiga"))
+wok(str::title("ada lovelace"), str::words("one two  three"))
 
-let j = json::parse("{\"nama\": \"Ani\", \"nilai\": [90, 85]}")
-wok(j["nama"], j["nilai"][1], json::stringify({"ok": true}))
+let j = json::parse("{\"name\": \"Ani\", \"scores\": [90, 85]}")
+wok(j["name"], j["scores"][1], json::stringify({"ok": true}))
 
-wok(re::test("[0-9]+", "kode 4521"), re::replace_all("[0-9]", "x9y8", "#"))
+wok(re::test("[0-9]+", "code 4521"), re::replace_all("[0-9]", "x9y8", "#"))
 
-fs::write("catatan.txt", "baris satu\nbaris dua\n")
-wok(fs::read_lines("catatan.txt"), fs::size("catatan.txt"))
-fs::delete("catatan.txt")
+fs::write("notes.txt", "line one\nline two\n")
+wok(fs::read_lines("notes.txt"), fs::size("notes.txt"))
+fs::delete("notes.txt")
 
-wok(crypto::sha256("halo")[0:16], crypto::base64_encode("JRG"))
+wok(crypto::sha256("hello")[0:16], crypto::base64_encode("JRG"))
 wok(time::format(0, "%d/%m/%Y %H:%M"))
 ```
 ```keluaran
 4.0 6 3.0
 [1, 2] [[1, 2], [3, 4], [5]]
-Budi Santoso [satu, dua, tiga]
+Ada Lovelace [one, two, three]
 Ani 85 {"ok":true}
 true x#y#
-[baris satu, baris dua] 21
-a4e63bcacf6c172a SlJH
+[line one, line two] 18
+2cf24dba5fb0a30e SlJH
 01/01/1970 00:00
 ```
 
@@ -106,23 +106,23 @@ These modules are written in JRG and embedded in `jrgc`. Use them with `import "
 | `testing` | groups of checks reported together |
 | `mesin` | a 2D game engine (12 modules), see [Game engine](game.html) |
 
-```jrg uang.jrg
+```jrg money.jrg
 import "std/uang"
 import "std/tabel"
 
-let harga = uang::rupiah(19999.5)
-wok(harga.rupiah(), harga.kali(3).rupiah())
+let price = uang::rupiah(19999.5)
+wok(price.rupiah(), price.kali(3).rupiah())
 
-var t = tabel::baru(["barang", "jumlah"]).rata_kanan(1)
-t = t.baris_baru(["kopi", 3]).baris_baru(["teh manis", 12])
+var t = tabel::baru(["item", "qty"]).rata_kanan(1)
+t = t.baris_baru(["coffee", 3]).baris_baru(["sweet tea", 12])
 wok(t)
 ```
 ```keluaran
 Rp 19.999,50 Rp 59.998,50
-barang     jumlah
----------  ------
-kopi            3
-teh manis      12
+item       qty
+---------  ---
+coffee       3
+sweet tea   12
 ```
 
 Your own `.jrg` files win over these names: if there is a `set.jrg` in the program's folder, `import "set"` loads that

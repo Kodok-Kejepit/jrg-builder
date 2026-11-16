@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -467,14 +467,14 @@ jrgc game.jrg --apk game.apk --apk-abi arm64-v8a,x86_64
 adb install -r game.apk</code></pre></figure>
 <h2 id="from-a-project"><a class="jangkar" href="#from-a-project">From a project</a></h2>
 <figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgm siapkan android     <span class="k-kom"> # once: download the platform, build-tools, and NDK</span>
-jrgm new gameku --android
-cd gameku
-jrgm apk                 <span class="k-kom"> # target/gameku.apk</span>
+jrgm new mygame --android
+cd mygame
+jrgm apk                 <span class="k-kom"> # target/mygame.apk</span>
 jrgm run --android       <span class="k-kom"> # install to the phone through adb, open it, follow its output</span></code></pre></figure>
 <p>The app's identity is written in <code>jrgm.toml</code>:</p>
 <figure class="kode"><figcaption><span>toml</span></figcaption><pre><code>[android]
-nama       = &quot;Game Ku&quot;
-paket      = &quot;id.jrg.gameku&quot;
+nama       = &quot;My Game&quot;
+paket      = &quot;id.jrg.mygame&quot;
 versi      = &quot;1.2.0&quot;
 orientasi  = &quot;portrait&quot;          # bebas | portrait | landscape
 abi        = [&quot;arm64-v8a&quot;]       # add &quot;x86_64&quot; for the emulator
@@ -492,11 +492,11 @@ izin       = [&quot;internet&quot;, &quot;getar&quot;]</code></pre></figure>
 bahasa = [&quot;lua&quot;, &quot;js&quot;, &quot;sql&quot;]     # Lua, QuickJS, and SQLite runners ship in the APK
 
 [android.pustaka_c]
-libhitung = [&quot;native/hitung.c&quot;, &quot;native/teks.cpp&quot;]
+libcalc = [&quot;native/calc.c&quot;, &quot;native/text.cpp&quot;]
 
 [android.pustaka_rust]
-librumus = &quot;rust/rumus&quot;</code></pre></figure>
-<p><code>jrgm</code> downloads the official sources once (their fingerprints are checked), then compiles them for each ABI. A native library is called from JRG through <code>extern &quot;C&quot; &quot;libhitung.so&quot; { … }</code>.</p>
+libformula = &quot;rust/formula&quot;</code></pre></figure>
+<p><code>jrgm</code> downloads the official sources once (their fingerprints are checked), then compiles them for each ABI. A native library is called from JRG through <code>extern &quot;C&quot; &quot;libcalc.so&quot; { … }</code>.</p>
 <h2 id="releasing-to-the-play-store"><a class="jangkar" href="#releasing-to-the-play-store">Releasing to the Play Store</a></h2>
 <figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgm kunci                        <span class="k-kom"> # once: make a release key</span>
 JRG_KUNCI_SANDI=… jrgm apk --rilis
@@ -512,7 +512,7 @@ JRG_KUNCI_SANDI=… jrgm apk --aab  <span class="k-kom"> # an Android App Bundle
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

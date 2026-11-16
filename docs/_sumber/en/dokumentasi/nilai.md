@@ -12,13 +12,13 @@ ringkas: Numbers, text, arrays, tuples, dicts, and how to bind them to names.
 | `x := 1` | yes, and it declares the name |
 | `let mut x = 1` | yes, same as `var` |
 
-```jrg ikat.jrg
-var skor = 10
-skor = skor + 5
+```jrg bind.jrg
+var score = 10
+score = score + 5
 x := 3
 x = x * 2
-const BATAS = 100
-wok(skor, x, BATAS)
+const LIMIT = 100
+wok(score, x, LIMIT)
 ```
 ```keluaran
 15 6 100
@@ -36,7 +36,7 @@ enforced: JRG is dynamically typed, so annotations work as documentation.
 `int` is a 128-bit integer, `float` a 64-bit floating-point number. Dividing two `int`s gives an `int` (truncated
 toward zero), and `%` is the remainder.
 
-```jrg angka.jrg
+```jrg numbers.jrg
 wok(7 / 2, 7 % 2, 7.0 / 2.0, -7 / 2)
 wok(2 ** 10, 2.0 ** 0.5)
 wok(1_000_000, 0xff, 0b1010)
@@ -61,33 +61,33 @@ Floating point: `f32`, `f64`.
 `string` is UTF-8 text. Indices count characters, not bytes, and a single character has type `rune` (written
 `'a'`).
 
-```jrg teks.jrg
-let s = "Halo"
+```jrg text.jrg
+let s = "Hello"
 wok(s.len(), s.upper(), s[0], s[-1], s[1:3])
-wok(s + " dunia", str::repeat("ab", 3))
-wok(str::split("a,b,c", ","), "  rapi  ".trim())
+wok(s + " world", str::repeat("ab", 3))
+wok(str::split("a,b,c", ","), "  tidy  ".trim())
 ```
 ```keluaran
-4 HALO H o al
-Halo dunia ababab
-[a, b, c] rapi
+5 HELLO H o el
+Hello world ababab
+[a, b, c] tidy
 ```
 
 There are three ways to write a text literal:
 
 ```jrg literal.jrg
-let nama = "Ani"
-let umur = 20
-wok("biasa, dengan \"escape\"\tdan tab")
-wok("""halo ${nama}, tahun depan umurmu ${umur + 1}""")
-wok(«sama, versi pendek: ${nama}»)
-wok(`mentah: ${nama} \n tidak diproses`)
+let name = "Ani"
+let age = 20
+wok("plain, with \"escapes\"\tand a tab")
+wok("""hello ${name}, next year you will be ${age + 1}""")
+wok(«same, short form: ${name}»)
+wok(`raw: ${name} \n not processed`)
 ```
 ```keluaran
-biasa, dengan "escape"	dan tab
-halo Ani, tahun depan umurmu 21
-sama, versi pendek: Ani
-mentah: ${nama} \n tidak diproses
+plain, with "escapes"	and a tab
+hello Ani, next year you will be 21
+same, short form: Ani
+raw: ${name} \n not processed
 ```
 
 `"""…"""` and `«…»` are *templates*: what is inside `${…}` is evaluated and inserted, and they may span several
@@ -96,11 +96,11 @@ lines. Backticks give raw text, with no escapes and no insertion.
 `str::format` builds text with `{}`, including number formatting:
 
 ```jrg format.jrg
-wok(str::format("{} dapat {:.2}", "Ani", 91.456))
+wok(str::format("{} scored {:.2}", "Ani", 91.456))
 wok(str::pad_left("7", 3, "0"))
 ```
 ```keluaran
-Ani dapat 91.46
+Ani scored 91.46
 007
 ```
 
@@ -135,15 +135,15 @@ A tuple groups several values of different types. Its elements are read with `.0
 unpacked into several names at once.
 
 ```jrg tuple.jrg
-fn bagi(a, b) { return (a / b, a % b) }
+fn divide(a, b) { return (a / b, a % b) }
 
-let t = (1, "dua", 3.0)
+let t = (1, "two", 3.0)
 wok(t, t.0, t[1])
-hasil, sisa := bagi(17, 5)
-wok(hasil, sisa)
+quotient, remainder := divide(17, 5)
+wok(quotient, remainder)
 ```
 ```keluaran
-(1, dua, 3.0) 1 dua
+(1, two, 3.0) 1 two
 3 2
 ```
 
@@ -153,20 +153,20 @@ A dict maps keys to values. Keys are stored as text, so `d[1]` and `d["1"]` poin
 key order.
 
 ```jrg dict.jrg
-var stok = {"apel": 3, "jeruk": 5}
-stok["mangga"] = 2
-wok(stok, stok["apel"], stok.len())
-wok(dict::get(stok, "durian"), dict::get_or(stok, "durian", 0))
-for k, v in stok {
+var stock = {"apple": 3, "orange": 5}
+stock["mango"] = 2
+wok(stock, stock["apple"], stock.len())
+wok(dict::get(stock, "durian"), dict::get_or(stock, "durian", 0))
+for k, v in stock {
     wok(k, v)
 }
 ```
 ```keluaran
-dict {apel: 3, jeruk: 5, mangga: 2} 3 3
+dict {apple: 3, mango: 2, orange: 5} 3 3
 Option::None 0
-apel 3
-jeruk 5
-mangga 2
+apple 3
+mango 2
+orange 5
 ```
 
 Reading a missing key through `d[k]` is an error; use `dict::get` (which returns an `Option`) or `get_or`.
@@ -175,7 +175,7 @@ Reading a missing key through `d[k]` is an error; use `dict::get` (which returns
 
 `as` converts between basic types. A conversion with no exact answer is refused, never silently truncated.
 
-```jrg konversi.jrg
+```jrg convert.jrg
 wok(3 as float, 3.9 as int, 'A' as int, 66 as rune)
 wok(int("42") + 1, float("2.5"), str(42) + "!", "17".to_int())
 wok(typeof(1), typeof(1.5), typeof("a"), typeof('a'), typeof([1]), typeof({"a": 1}))

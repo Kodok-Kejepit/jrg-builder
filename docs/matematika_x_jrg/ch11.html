@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Statistik Dasar — Matematika × JRG</title>
-<meta name="description" content="Statistik adalah seni meringkas segunung data jadi segenggam angka yang masih bermakna. Empat angka kunci: rata-rata, median, modus, dan rentang.">
+<title>Basic Statistics — Math × JRG</title>
+<meta name="description" content="Statistics is the art of summing up a mountain of data in a handful of numbers that still mean something. Four key numbers: the mean, the median, the mode, and the range.">
 <link rel="canonical" href="https://jrg-lang.org/matematika_x_jrg/ch11.html">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/matematika_x_jrg/ch11.html">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/matematika_x_jrg/ch11.html">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/matematika_x_jrg/ch11.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
-<meta property="og:locale" content="id_ID">
-<meta property="og:title" content="Statistik Dasar — Matematika × JRG">
-<meta property="og:description" content="Statistik adalah seni meringkas segunung data jadi segenggam angka yang masih bermakna. Empat angka kunci: rata-rata, median, modus, dan rentang.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Basic Statistics — Math × JRG">
+<meta property="og:description" content="Statistics is the art of summing up a mountain of data in a handful of numbers that still mean something. Four key numbers: the mean, the median, the mode, and the range.">
 <meta property="og:url" content="https://jrg-lang.org/matematika_x_jrg/ch11.html">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
@@ -438,87 +441,87 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body data-situs="mtk">
-<a class="lewati" href="#isi">Lewati ke isi</a>
+<a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
-  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
+  <nav class="situs" aria-label="Site"><a href="../web_dokumentasi/index.html">Docs</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
-    <a class="tombol-bahasa" href="../index.html" hreflang="en" lang="en" aria-label="English">EN</a>
-    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="Saluran WhatsApp JRG" title="Saluran WhatsApp JRG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
-    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="../id/matematika_x_jrg/ch11.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="JRG WhatsApp channel" title="JRG WhatsApp channel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
   </div>
 </header>
 <div class="tata">
-<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a class="aktif" aria-current="page" href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<aside class="sisi" aria-label="Chapter list"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> of 32 chapters done</p></div><p class="sisi-grup">Start</p><ul><li><a href="index.html" data-bab="mulai">Start here</a></li></ul><p class="sisi-grup">JRG Basics</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — First Program</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variables &amp; Types</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operators</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Branching</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Loops</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Functions</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Arrays &amp; Text</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Structs &amp; Methods</a></li></ul><p class="sisi-grup">More JRG</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closures &amp; HOFs</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dicts</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Reading Errors</a></li></ul><p class="sisi-grup">Basic Arithmetic</p><ul><li><a href="ch1.html" data-bab="ch1">Chapter 1 — Numbers</a></li><li><a href="ch2.html" data-bab="ch2">Chapter 2 — Add &amp; Subtract</a></li><li><a href="ch3.html" data-bab="ch3">Chapter 3 — Multiply &amp; Divide</a></li><li><a href="ch4.html" data-bab="ch4">Chapter 4 — Order of Operations</a></li><li><a href="ch5.html" data-bab="ch5">Chapter 5 — Negative Numbers</a></li></ul><p class="sisi-grup">Further Concepts</p><ul><li><a href="ch6.html" data-bab="ch6">Chapter 6 — Fractions &amp; Decimals</a></li><li><a href="ch7.html" data-bab="ch7">Chapter 7 — Percentages</a></li><li><a href="ch8.html" data-bab="ch8">Chapter 8 — Variables &amp; Equations</a></li><li><a href="ch9.html" data-bab="ch9">Chapter 9 — Math Functions</a></li></ul><p class="sisi-grup">Applied Math</p><ul><li><a href="ch10.html" data-bab="ch10">Chapter 10 — Primes, GCD &amp; LCM</a></li><li><a class="aktif" aria-current="page" href="ch11.html" data-bab="ch11">Chapter 11 — Basic Statistics</a></li><li><a href="ch12.html" data-bab="ch12">Chapter 12 — Plane Geometry</a></li><li><a href="ch13.html" data-bab="ch13">Chapter 13 — Exponents &amp; Roots</a></li><li><a href="ch14.html" data-bab="ch14">Chapter 14 — Logarithms</a></li><li><a href="ch15.html" data-bab="ch15">Chapter 15 — Probability</a></li></ul><p class="sisi-grup">Advanced Level</p><ul><li><a href="ch16.html" data-bab="ch16">Chapter 16 — Ratios &amp; Proportions</a></li><li><a href="ch17.html" data-bab="ch17">Chapter 17 — Solids</a></li><li><a href="ch18.html" data-bab="ch18">Chapter 18 — Sequences &amp; Series</a></li><li><a href="ch19.html" data-bab="ch19">Chapter 19 — Basic Trigonometry</a></li></ul><p class="sisi-grup">Final Project</p><ul><li><a href="ch20.html" data-bab="ch20">Chapter 20 — Report-Card Calculator</a></li></ul><p class="sisi-grup">Extra</p><ul><li><a href="referensi.html" data-bab="referensi">Reference &amp; Glossary</a></li></ul></nav></aside>
 <main id="isi" class="isi">
 <article class="artikel kelas" data-bab="ch11">
-<p class="rel">Bab 11 · Matematika Terapan</p>
-<h1>Statistik Dasar</h1>
-<p class="ringkas">Statistik adalah seni meringkas segunung data jadi segenggam angka yang masih bermakna. Empat angka kunci: rata-rata, median, modus, dan rentang.</p>
+<p class="rel">Chapter 11 · Applied Math</p>
+<h1>Basic Statistics</h1>
+<p class="ringkas">Statistics is the art of summing up a mountain of data in a handful of numbers that still mean something. Four key numbers: the mean, the median, the mode, and the range.</p>
 
-<h2 id="data-contoh-nilai-ulangan-7-siswa"><span class="lencana">Konsep</span>Data contoh: nilai ulangan 7 siswa</h2>
+<h2 id="example-data-test-scores-of-7-students"><span class="lencana">concept</span>Example data: test scores of 7 students</h2>
 <div class="rumus"><div class="rumus-persamaan">[70, 85, 90, 65, 85, 100, 60]</div></div>
-<h2 id="mean-rata-rata">Mean (rata-rata)</h2>
-<div class="rumus"><div class="rumus-persamaan">Mean = jumlah semua data ÷ banyak data</div><div class="rumus-langkah">(70+85+90+65+85+100+60) ÷ 7 = 555 ÷ 7 = <span>≈79.3</span></div></div>
-<h2 id="median-nilai-tengah">Median (nilai tengah)</h2>
-<div class="rumus"><div class="rumus-persamaan">Urutkan dulu: [60, 65, 70, 85, 85, 90, 100]</div><div class="rumus-langkah">7 data (ganjil) → median = data ke-4 = <span>85</span></div><div class="rumus-langkah">Kalau data genap, median = rata-rata dua nilai tengah</div></div>
-<aside class="catatan catatan-warn"><p class="catatan-judul">Kesalahan umum</p><div>Mencari median TANPA mengurutkan data dulu. Median adalah "nilai tengah setelah diurutkan" — kalau langsung ambil data tengah dari urutan asli (belum diurutkan), hasilnya hampir pasti salah.</div></aside>
-<h2 id="modus-amp-rentang">Modus &amp; Rentang</h2>
-<div class="daftar-bentuk"><div class="bentuk"><b>Modus</b><span>Nilai paling sering muncul: 85</span></div><div class="bentuk"><b>Rentang</b><span>Max−Min: 100−60=40</span></div></div>
-<h2 id="mean-vs-median-mana-yang-dipercaya">Mean vs Median: mana yang dipercaya?</h2>
-<p>Mean sangat sensitif terhadap nilai ekstrem (outlier); median tidak. Bayangkan gaji 5 karyawan: <code>[4jt, 4.5jt, 5jt, 5jt, 50jt]</code> (bos ikut dihitung).</p>
-<div class="rumus"><div class="rumus-langkah">Mean = (4+4.5+5+5+50)/5 = <span>13.7jt</span> ← menyesatkan, tidak ada yang benar-benar bergaji segini</div><div class="rumus-langkah">Median = <span>5jt</span> ← lebih mewakili "gaji tipikal" karyawan</div></div>
-<aside class="catatan catatan-tip"><p class="catatan-judul">Aturan praktis</p><div>Kalau data punya outlier ekstrem (gaji, harga rumah, kekayaan), median biasanya lebih jujur menggambarkan "yang tipikal". Mean lebih cocok untuk data yang relatif merata seperti nilai ujian atau tinggi badan.</div></aside>
-<h2 id="bonus-seberapa-tersebar-data-itu">Bonus: seberapa "tersebar" data itu?</h2>
-<p>Dua kelas bisa punya mean sama tapi sebaran sangat berbeda. <strong>Standar deviasi</strong> mengukur ini — rata-rata "seberapa jauh" tiap data dari mean.</p>
-<div class="rumus"><div class="rumus-persamaan">Kelas A: [78, 80, 82] &nbsp;&nbsp;vs&nbsp;&nbsp; Kelas B: [50, 80, 110]</div><div class="rumus-langkah">Mean sama-sama <span>80</span>, tapi Kelas B jauh lebih "tersebar"</div><div class="rumus-langkah">Standar deviasi Kelas A kecil, Kelas B besar — walau mean identik</div></div>
-<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Data: [4, 8, 6, 8, 2]. Cari mean, median, modus, dan rentang.</p>
+<h2 id="the-mean-average">The mean (average)</h2>
+<div class="rumus"><div class="rumus-persamaan">Mean = the sum of all the data ÷ how many there are</div><div class="rumus-langkah">(70+85+90+65+85+100+60) ÷ 7 = 555 ÷ 7 = <span>≈79.3</span></div></div>
+<h2 id="the-median-middle-value">The median (middle value)</h2>
+<div class="rumus"><div class="rumus-persamaan">Sort first: [60, 65, 70, 85, 85, 90, 100]</div><div class="rumus-langkah">7 values (odd) → median = the 4th value = <span>85</span></div><div class="rumus-langkah">With an even count, the median = the average of the two middle values</div></div>
+<aside class="catatan catatan-warn"><p class="catatan-judul">A common mistake</p><div>Looking for the median WITHOUT sorting the data first. The median is "the middle value after sorting" — take the middle of the original (unsorted) order and the result is almost certainly wrong.</div></aside>
+<h2 id="mode-amp-range">Mode &amp; range</h2>
+<div class="daftar-bentuk"><div class="bentuk"><b>Mode</b><span>The most frequent value: 85</span></div><div class="bentuk"><b>Range</b><span>Max−Min: 100−60=40</span></div></div>
+<h2 id="mean-vs-median-which-to-trust">Mean vs median: which to trust?</h2>
+<p>The mean is very sensitive to extreme values (outliers); the median is not. Imagine the salaries of 5 employees: <code>[4k, 4.5k, 5k, 5k, 50k]</code> (the boss is included).</p>
+<div class="rumus"><div class="rumus-langkah">Mean = (4+4.5+5+5+50)/5 = <span>13.7k</span> ← misleading, nobody actually earns this</div><div class="rumus-langkah">Median = <span>5k</span> ← much closer to an employee's "typical salary"</div></div>
+<aside class="catatan catatan-tip"><p class="catatan-judul">A rule of thumb</p><div>If the data has extreme outliers (salaries, house prices, wealth), the median usually describes "the typical" more honestly. The mean suits fairly even data such as test scores or heights.</div></aside>
+<h2 id="bonus-how-spread-out-is-the-data">Bonus: how "spread out" is the data?</h2>
+<p>Two classes can have the same mean but very different spreads. <strong>The standard deviation</strong> measures this — on average, "how far" each value is from the mean.</p>
+<div class="rumus"><div class="rumus-persamaan">Class A: [78, 80, 82] &nbsp;&nbsp;vs&nbsp;&nbsp; Class B: [50, 80, 110]</div><div class="rumus-langkah">Both means are <span>80</span>, but Class B is much more "spread out"</div><div class="rumus-langkah">Class A's standard deviation is small, Class B's is large — even though the means are identical</div></div>
+<details class="latihan"><summary>Practice on your own</summary><div><p><strong>1.</strong> Data: [4, 8, 6, 8, 2]. Find the mean, median, mode, and range.</p>
       <div class="math-box">
         <div class="math-step"><span>Mean:</span> (4+8+6+8+2)/5 = 28/5 = 5.6</div>
-        <div class="math-step"><span>Median:</span> urut [2,4,6,8,8] → tengah = 6</div>
-        <div class="math-step"><span>Modus:</span> 8 (muncul 2×)</div>
-        <div class="math-step"><span>Rentang:</span> 8−2 = 6</div>
+        <div class="math-step"><span>Median:</span> sorted [2,4,6,8,8] → middle = 6</div>
+        <div class="math-step"><span>Mode:</span> 8 (appears twice)</div>
+        <div class="math-step"><span>Range:</span> 8−2 = 6</div>
       </div></div></details>
-<h2 id="menghitung-mean-dari-sebuah-array"><span class="lencana">Kode JRG</span>Menghitung mean dari sebuah array</h2>
-<figure class="kode" data-jalan><figcaption><span>statistik.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">hitungMean</span>(data: []<span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
+<h2 id="computing-the-mean-of-an-array"><span class="lencana">code</span>Computing the mean of an array</h2>
+<figure class="kode" data-jalan><figcaption><span>statistics.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">mean</span>(data: []<span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
     <span class="k-kunci">let</span> <span class="k-kunci">mut</span> total = <span class="k-ang">0.0</span>
-    <span class="k-kunci">for</span> _, nilai <span class="k-kunci">in</span> data {
-        total += nilai
+    <span class="k-kunci">for</span> _, value <span class="k-kunci">in</span> data {
+        total += value
     }
     <span class="k-kunci">return</span> total / data.<span class="k-fn">len</span>() <span class="k-kunci">as</span> <span class="k-tipe">float</span>
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-kunci">let</span> nilai = [<span class="k-ang">70.0</span>, <span class="k-ang">85.0</span>, <span class="k-ang">90.0</span>, <span class="k-ang">65.0</span>, <span class="k-ang">85.0</span>, <span class="k-ang">100.0</span>, <span class="k-ang">60.0</span>]
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Mean:&quot;</span>, <span class="k-fn">hitungMean</span>(nilai))
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Nilai tertinggi:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">max</span>(nilai))
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Nilai terendah:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">min</span>(nilai))
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Median:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">median</span>(nilai))
+    <span class="k-kunci">let</span> scores = [<span class="k-ang">70.0</span>, <span class="k-ang">85.0</span>, <span class="k-ang">90.0</span>, <span class="k-ang">65.0</span>, <span class="k-ang">85.0</span>, <span class="k-ang">100.0</span>, <span class="k-ang">60.0</span>]
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Mean:&quot;</span>, <span class="k-fn">mean</span>(scores))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Highest score:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">max</span>(scores))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Lowest score:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">min</span>(scores))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Median:&quot;</span>, <span class="k-ns">arr</span>::<span class="k-fn">median</span>(scores))
 }</code></pre><pre class="keluaran"><code>Mean: 79.28571428571429
-Nilai tertinggi: 100.0
-Nilai terendah: 60.0
+Highest score: 100.0
+Lowest score: 60.0
 Median: 85.0</code></pre></figure>
-<aside class="catatan catatan-fun"><p class="catatan-judul">Ini persis Bab 16!</p><div>Fungsi <code>hitungMean()</code> di atas adalah inti dari proyek kalkulator rapor yang akan kamu bangun sendiri nanti. Modul ini bukan cuma teori — kamu akan memakainya langsung.</div></aside>
-<div class="kuis" data-kuis="q11_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Data: [3, 7, 3, 9]. Berapa modusnya?</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span>3</button><button type="button" data-benar="0"><span>B</span>7</button><button type="button" data-benar="0"><span>C</span>5.5</button></div><p class="kuis-umpan benar" hidden>Tepat! 3 muncul dua kali, paling sering.</p><p class="kuis-umpan salah" hidden>Modus adalah nilai yang paling SERING muncul, bukan rata-rata.</p></div>
-<div class="kuis" data-kuis="q11_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Kapan median lebih dipercaya daripada mean?</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span>Saat ada outlier/nilai ekstrem</button><button type="button" data-benar="0"><span>B</span>Saat semua data identik</button><button type="button" data-benar="0"><span>C</span>Median selalu lebih baik dari mean</button></div><p class="kuis-umpan benar" hidden>Benar! Median tidak terpengaruh nilai ekstrem seperti mean.</p><p class="kuis-umpan salah" hidden>Ingat contoh gaji karyawan vs bos di atas.</p></div>
-<div class="kuis" data-kuis="q11_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Sebelum mencari median, data harus...</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>Dijumlahkan semua</button><button type="button" data-benar="1"><span>B</span>Diurutkan dari kecil ke besar</button><button type="button" data-benar="0"><span>C</span>Dikalikan dengan banyak data</button></div><p class="kuis-umpan benar" hidden>Tepat! Tanpa urut, "nilai tengah" tidak bermakna.</p><p class="kuis-umpan salah" hidden>Coba baca ulang callout "Kesalahan umum" di atas.</p></div>
-<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke Bab 12</p><div>Dari data angka, kita beralih ke bentuk dan ruang — geometri bidang datar: keliling, luas, dan sifat-sifat bangun datar.</div></aside>
+<aside class="catatan catatan-fun"><p class="catatan-judul">This is exactly Chapter 20!</p><div>The <code>mean()</code> function above is the heart of the report-card calculator project you will build yourself later. This module is not just theory — you will use it directly.</div></aside>
+<div class="kuis" data-kuis="q11_1"><p class="kuis-label">Quiz 1</p><p class="kuis-tanya">Data: [3, 7, 3, 9]. What is the mode?</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span>3</button><button type="button" data-benar="0"><span>B</span>7</button><button type="button" data-benar="0"><span>C</span>5.5</button></div><p class="kuis-umpan benar" hidden>Exactly! 3 appears twice, more often than anything else.</p><p class="kuis-umpan salah" hidden>The mode is the value that appears MOST OFTEN, not the average.</p></div>
+<div class="kuis" data-kuis="q11_2"><p class="kuis-label">Quiz 2</p><p class="kuis-tanya">When is the median more trustworthy than the mean?</p><div class="kuis-pilihan"><button type="button" data-benar="1"><span>A</span>When there are outliers/extreme values</button><button type="button" data-benar="0"><span>B</span>When all the data is identical</button><button type="button" data-benar="0"><span>C</span>The median is always better than the mean</button></div><p class="kuis-umpan benar" hidden>Right! The median is not pulled around by extreme values the way the mean is.</p><p class="kuis-umpan salah" hidden>Remember the employees-vs-boss salary example above.</p></div>
+<div class="kuis" data-kuis="q11_3"><p class="kuis-label">Quiz 3</p><p class="kuis-tanya">Before finding the median, the data must be...</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>Added up</button><button type="button" data-benar="1"><span>B</span>Sorted from smallest to largest</button><button type="button" data-benar="0"><span>C</span>Multiplied by how many there are</button></div><p class="kuis-umpan benar" hidden>Exactly! Without sorting, "the middle value" means nothing.</p><p class="kuis-umpan salah" hidden>Read the "A common mistake" box above again.</p></div>
+<aside class="catatan catatan-real"><p class="catatan-judul">On to Chapter 12</p><div>From number data we turn to shape and space — plane geometry: perimeter, area, and the properties of flat shapes.</div></aside>
 
 </article>
-<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="ch10.html"><small>Bab sebelumnya</small><strong>Prima, FPB &amp; KPK</strong></a><a class="ke-kanan" href="ch12.html"><small>Bab berikutnya</small><strong>Geometri Bidang Datar</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">Saluran WhatsApp</a></span></footer>
+<nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="ch10.html"><small>Previous chapter</small><strong>Primes, GCD &amp; LCM</strong></a><a class="ke-kanan" href="ch12.html"><small>Next chapter</small><strong>Plane Geometry</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
 </main>
 </div>
-<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
-  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
+  <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari-id.js?v=5f93a322d5"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 <script defer src="../aset/kelas-data.js?v=c386df7ff6"></script>
-<script defer src="../aset/kelas.js?v=505624797c"></script>
+<script defer src="../aset/kelas.js?v=cfe2ec492f"></script>
 </body>
 </html>

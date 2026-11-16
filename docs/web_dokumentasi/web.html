@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -468,78 +468,78 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
     <span class="k-kunci">let</span> r = <span class="k-ns">dok</span>::<span class="k-fn">router_new</span>()
 
-    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">html</span>(<span class="k-str">&quot;&lt;h1&gt;Halo dari JRG&lt;/h1&gt;&quot;</span>))
-    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/sapa/:nama&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">text</span>(<span class="k-str">&quot;halo, &quot;</span> + req.params.nama))
-    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/api/kuadrat&quot;</span>, |req| {
+    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">html</span>(<span class="k-str">&quot;&lt;h1&gt;Hello from JRG&lt;/h1&gt;&quot;</span>))
+    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/greet/:name&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">text</span>(<span class="k-str">&quot;hello, &quot;</span> + req.params.name))
+    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/api/square&quot;</span>, |req| {
         <span class="k-kunci">let</span> n = <span class="k-tipe">int</span>(<span class="k-ns">dok</span>::<span class="k-fn">query_get</span>(req.query, <span class="k-str">&quot;n&quot;</span>) ?? <span class="k-str">&quot;0&quot;</span>)
-        <span class="k-kunci">return</span> <span class="k-ns">dok</span>::<span class="k-fn">json_response</span>({<span class="k-str">&quot;n&quot;</span>: n, <span class="k-str">&quot;kuadrat&quot;</span>: n * n})
+        <span class="k-kunci">return</span> <span class="k-ns">dok</span>::<span class="k-fn">json_response</span>({<span class="k-str">&quot;n&quot;</span>: n, <span class="k-str">&quot;square&quot;</span>: n * n})
     })
-    <span class="k-ns">dok</span>::<span class="k-fn">router_post</span>(r, <span class="k-str">&quot;/gema&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">text</span>(req.body))
-    <span class="k-ns">dok</span>::<span class="k-fn">router_static</span>(r, <span class="k-str">&quot;/aset&quot;</span>, <span class="k-str">&quot;./publik&quot;</span>)
+    <span class="k-ns">dok</span>::<span class="k-fn">router_post</span>(r, <span class="k-str">&quot;/echo&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">text</span>(req.body))
+    <span class="k-ns">dok</span>::<span class="k-fn">router_static</span>(r, <span class="k-str">&quot;/assets&quot;</span>, <span class="k-str">&quot;./public&quot;</span>)
 
     <span class="k-ns">dok</span>::<span class="k-fn">serve</span>(r, <span class="k-ang">8080</span>)
 }</code></pre></figure>
-<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ curl localhost:8080/sapa/Ani
-halo, Ani
-$ curl &quot;localhost:8080/api/kuadrat?n=12&quot;
-{&quot;kuadrat&quot;:144,&quot;n&quot;:12}</code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ curl localhost:8080/greet/Ani
+hello, Ani
+$ curl &quot;localhost:8080/api/square?n=12&quot;
+{&quot;n&quot;:12,&quot;square&quot;:144}</code></pre></figure>
 <p><code>dok::serve</code> blocks and handles each connection in its own thread. The third argument sets the address. The default is <code>&quot;127.0.0.1&quot;</code>, so it is only reachable from the same machine (or through a proxy such as Caddy/nginx on that machine); write <code>&quot;0.0.0.0&quot;</code> to open it to the network.</p>
 <p><code>dok::router_static</code> does not serve files or folders whose name starts with a dot (<code>.env</code>, <code>.git/</code>, <code>.htpasswd</code>): they get a 404 like a missing file, so a secret that ended up in the public folder does not leak. The exception is <code>.well-known/</code>, which is public on purpose (for example ACME certificate challenges). Files are streamed from disk.</p>
-<div class="tabel"><table><thead><tr><th>Request (<code>req</code>)</th><th>Contents</th></tr></thead><tbody><tr><td><code>method</code>, <code>path</code></td><td><code>&quot;GET&quot;</code>, <code>&quot;/sapa/Ani&quot;</code></td></tr><tr><td><code>params</code></td><td>the <code>:name</code> parts of the route pattern, read as <code>req.params.nama</code></td></tr><tr><td><code>query</code></td><td>the pairs from <code>?a=1&amp;b=2</code>; read with <code>dok::query_get(req.query, &quot;a&quot;)</code></td></tr><tr><td><code>headers</code></td><td>read with <code>dok::header_get(req.headers, &quot;Content-Type&quot;)</code></td></tr><tr><td><code>body</code>, <code>body_bytes</code></td><td>the body as text; if it is not UTF-8 text, <code>body</code> is <code>nil</code> and the bytes are in <code>body_bytes</code></td></tr><tr><td><code>remote_addr</code></td><td>the requester's socket address, <code>&quot;127.0.0.1:51234&quot;</code> — the <code>X-Forwarded-For</code> header is written by the client itself, so use this for rate limits and logs, unless you are behind your own proxy</td></tr></tbody></table></div>
+<div class="tabel"><table><thead><tr><th>Request (<code>req</code>)</th><th>Contents</th></tr></thead><tbody><tr><td><code>method</code>, <code>path</code></td><td><code>&quot;GET&quot;</code>, <code>&quot;/greet/Ani&quot;</code></td></tr><tr><td><code>params</code></td><td>the <code>:name</code> parts of the route pattern, read as <code>req.params.name</code></td></tr><tr><td><code>query</code></td><td>the pairs from <code>?a=1&amp;b=2</code>; read with <code>dok::query_get(req.query, &quot;a&quot;)</code></td></tr><tr><td><code>headers</code></td><td>read with <code>dok::header_get(req.headers, &quot;Content-Type&quot;)</code></td></tr><tr><td><code>body</code>, <code>body_bytes</code></td><td>the body as text; if it is not UTF-8 text, <code>body</code> is <code>nil</code> and the bytes are in <code>body_bytes</code></td></tr><tr><td><code>remote_addr</code></td><td>the requester's socket address, <code>&quot;127.0.0.1:51234&quot;</code> — the <code>X-Forwarded-For</code> header is written by the client itself, so use this for rate limits and logs, unless you are behind your own proxy</td></tr></tbody></table></div>
 <p>A handler may return text (which becomes <code>200 text/plain</code>), the result of <code>dok::text</code>, <code>dok::html</code>, <code>dok::json_response</code>, <code>dok::redirect</code>, <code>dok::response(code, body)</code>, <code>dok::binary(bytes)</code>, or a <code>Result</code> (an <code>Err</code> becomes a 500).</p>
 <h3 id="middleware"><a class="jangkar" href="#middleware">Middleware</a></h3>
 <p><code>dok::router_use</code> runs before the route is looked up; returning <code>nil</code> means continue, returning a response means stop there. <code>dok::router_after</code> runs after the handler and may change its response.</p>
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">dok</span>::<span class="k-fn">router_use</span>(r, |req| {
-    <span class="k-kunci">if</span> <span class="k-ns">str</span>::<span class="k-fn">starts_with</span>(req.path, <span class="k-str">&quot;/admin&quot;</span>) &amp;&amp; <span class="k-ns">dok</span>::<span class="k-fn">cookie_get</span>(req, <span class="k-str">&quot;sesi&quot;</span>).<span class="k-fn">is_none</span>() {
-        <span class="k-kunci">return</span> <span class="k-ns">dok</span>::<span class="k-fn">response</span>(<span class="k-ang">401</span>, <span class="k-str">&quot;perlu masuk dulu&quot;</span>)
+    <span class="k-kunci">if</span> <span class="k-ns">str</span>::<span class="k-fn">starts_with</span>(req.path, <span class="k-str">&quot;/admin&quot;</span>) &amp;&amp; <span class="k-ns">dok</span>::<span class="k-fn">cookie_get</span>(req, <span class="k-str">&quot;session&quot;</span>).<span class="k-fn">is_none</span>() {
+        <span class="k-kunci">return</span> <span class="k-ns">dok</span>::<span class="k-fn">response</span>(<span class="k-ang">401</span>, <span class="k-str">&quot;please log in first&quot;</span>)
     }
     <span class="k-kunci">return</span> <span class="k-kunci">nil</span>
 })
 <span class="k-ns">dok</span>::<span class="k-fn">router_after</span>(r, |req, resp| <span class="k-ns">dok</span>::<span class="k-fn">header_set</span>(resp, <span class="k-str">&quot;X-Frame-Options&quot;</span>, <span class="k-str">&quot;DENY&quot;</span>))</code></pre></figure>
 <h2 id="templates"><a class="jangkar" href="#templates">Templates</a></h2>
 <p><code>dok::render</code> fills in <code>{{ name }}</code> and escapes its HTML, so user input is safe to display. <code>{{&amp; name }}</code> inserts it as is. There are also <code>{{#if}}…{{else}}…{{/if}}</code> and <code>{{#each}}…{{/each}}</code>.</p>
-<figure class="kode" data-jalan><figcaption><span>template.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> t = <span class="k-str">&quot;&lt;h1&gt;Halo {{nama}}&lt;/h1&gt;&lt;ul&gt;{{#each item}}&lt;li&gt;{{@index}}. {{.}}&lt;/li&gt;{{/each}}&lt;/ul&gt;&quot;</span>
-<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">render</span>(t, {<span class="k-str">&quot;nama&quot;</span>: <span class="k-str">&quot;&lt;Ani&gt;&quot;</span>, <span class="k-str">&quot;item&quot;</span>: [<span class="k-str">&quot;kopi&quot;</span>, <span class="k-str">&quot;teh&quot;</span>]}) {
+<figure class="kode" data-jalan><figcaption><span>template.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> t = <span class="k-str">&quot;&lt;h1&gt;Hello {{name}}&lt;/h1&gt;&lt;ul&gt;{{#each items}}&lt;li&gt;{{@index}}. {{.}}&lt;/li&gt;{{/each}}&lt;/ul&gt;&quot;</span>
+<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">render</span>(t, {<span class="k-str">&quot;name&quot;</span>: <span class="k-str">&quot;&lt;Ani&gt;&quot;</span>, <span class="k-str">&quot;items&quot;</span>: [<span class="k-str">&quot;coffee&quot;</span>, <span class="k-str">&quot;tea&quot;</span>]}) {
     <span class="k-fn">Ok</span>(html) =&gt; <span class="k-fn">wok</span>(html),
-    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;gagal:&quot;</span>, e),
-}</code></pre><pre class="keluaran"><code>&lt;h1&gt;Halo &amp;lt;Ani&amp;gt;&lt;/h1&gt;&lt;ul&gt;&lt;li&gt;0. kopi&lt;/li&gt;&lt;li&gt;1. teh&lt;/li&gt;&lt;/ul&gt;</code></pre></figure>
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;failed:&quot;</span>, e),
+}</code></pre><pre class="keluaran"><code>&lt;h1&gt;Hello &amp;lt;Ani&amp;gt;&lt;/h1&gt;&lt;ul&gt;&lt;li&gt;0. coffee&lt;/li&gt;&lt;li&gt;1. tea&lt;/li&gt;&lt;/ul&gt;</code></pre></figure>
 <p>HTML escaping only protects text and quoted attribute values, so <code>dok::render</code> reads where a <code>{{ name }}</code> sits. A value in a URL attribute (<code>href</code>, <code>src</code>, <code>action</code>, …) whose scheme is not <code>http</code>, <code>https</code>, <code>mailto</code>, or <code>tel</code> is replaced with <code>#jrg-url-ditolak</code>. A value inside <code>&lt;script&gt;</code>/<code>&lt;style&gt;</code>, in an <code>on*</code>/<code>style</code> attribute, in an unquoted attribute, or in the position of an attribute name is an <code>Err</code>: put the data in a quoted <code>data-*</code> attribute.</p>
-<figure class="kode" data-jalan><figcaption><span>konteks.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> d = {<span class="k-str">&quot;u&quot;</span>: <span class="k-str">&quot;javascript:alert(1)&quot;</span>, <span class="k-str">&quot;nama&quot;</span>: <span class="k-str">&quot;Ani&quot;</span>}
-<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">render</span>(<span class="k-str">&quot;&lt;a href=\&quot;{{u}}\&quot;&gt;{{nama}}&lt;/a&gt;&quot;</span>, d).<span class="k-fn">unwrap</span>())
-<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">render</span>(<span class="k-str">&quot;&lt;p title={{nama}}&gt;&quot;</span>, d) {
+<figure class="kode" data-jalan><figcaption><span>context.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> d = {<span class="k-str">&quot;u&quot;</span>: <span class="k-str">&quot;javascript:alert(1)&quot;</span>, <span class="k-str">&quot;name&quot;</span>: <span class="k-str">&quot;Ani&quot;</span>}
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">render</span>(<span class="k-str">&quot;&lt;a href=\&quot;{{u}}\&quot;&gt;{{name}}&lt;/a&gt;&quot;</span>, d).<span class="k-fn">unwrap</span>())
+<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">render</span>(<span class="k-str">&quot;&lt;p title={{name}}&gt;&quot;</span>, d) {
     <span class="k-fn">Ok</span>(html) =&gt; <span class="k-fn">wok</span>(html),
-    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;ditolak:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">contains</span>(e, <span class="k-str">&quot;tanpa tanda kutip&quot;</span>)),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;refused:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">contains</span>(e, <span class="k-str">&quot;tanpa tanda kutip&quot;</span>)),
 }</code></pre><pre class="keluaran"><code>&lt;a href=&quot;#jrg-url-ditolak&quot;&gt;Ani&lt;/a&gt;
-ditolak: true</code></pre></figure>
+refused: true</code></pre></figure>
 <p><code>dok::render_file(file, data)</code> reads the template from a file.</p>
 <h2 id="cookies-sessions-and-passwords"><a class="jangkar" href="#cookies-sessions-and-passwords">Cookies, sessions, and passwords</a></h2>
-<figure class="kode" data-jalan><figcaption><span>sesi.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> <span class="k-tipe">KUNCI</span> = <span class="k-str">&quot;kunci-sesi-yang-panjang-dan-acak&quot;</span>
+<figure class="kode" data-jalan><figcaption><span>session.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> <span class="k-tipe">KEY</span> = <span class="k-str">&quot;a-long-and-random-session-key&quot;</span>
 
-<span class="k-kunci">let</span> cookie = <span class="k-ns">dok</span>::<span class="k-fn">session_encode</span>({<span class="k-str">&quot;user&quot;</span>: <span class="k-str">&quot;budi&quot;</span>}, <span class="k-tipe">KUNCI</span>)
-<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">session_decode</span>(cookie, <span class="k-tipe">KUNCI</span>) {
-    <span class="k-fn">Ok</span>(d) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;masuk sebagai&quot;</span>, d.user),
-    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;ditolak:&quot;</span>, e),
+<span class="k-kunci">let</span> cookie = <span class="k-ns">dok</span>::<span class="k-fn">session_encode</span>({<span class="k-str">&quot;user&quot;</span>: <span class="k-str">&quot;budi&quot;</span>}, <span class="k-tipe">KEY</span>)
+<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">session_decode</span>(cookie, <span class="k-tipe">KEY</span>) {
+    <span class="k-fn">Ok</span>(d) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;logged in as&quot;</span>, d.user),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;refused:&quot;</span>, e),
 }
 
-<span class="k-kunci">let</span> simpanan = <span class="k-ns">dok</span>::<span class="k-fn">password_hash</span>(<span class="k-str">&quot;sandi123&quot;</span>)
-<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">password_verify</span>(<span class="k-str">&quot;sandi123&quot;</span>, simpanan), <span class="k-ns">dok</span>::<span class="k-fn">password_verify</span>(<span class="k-str">&quot;tebakan&quot;</span>, simpanan))</code></pre><pre class="keluaran"><code>masuk sebagai budi
+<span class="k-kunci">let</span> stored = <span class="k-ns">dok</span>::<span class="k-fn">password_hash</span>(<span class="k-str">&quot;secret123&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">password_verify</span>(<span class="k-str">&quot;secret123&quot;</span>, stored), <span class="k-ns">dok</span>::<span class="k-fn">password_verify</span>(<span class="k-str">&quot;guess&quot;</span>, stored))</code></pre><pre class="keluaran"><code>logged in as budi
 true false</code></pre></figure>
-<ul><li>A session is <strong>signed</strong>, not encrypted: anyone can read it, but nobody can change it without the key. Keep the key in an environment variable, not in the code.</li><li>A session carries a signed <strong>timestamp</strong>: <code>dok::session_decode</code> refuses a session older than 14 days, or than the third argument in seconds (<code>dok::session_decode(cookie, KUNCI, 3600)</code> = one hour). A stolen cookie does not last forever.</li><li><code>password_hash</code> uses PBKDF2-HMAC-SHA256 with a random salt per password. <code>dok::password_needs_rehash(hash)</code> says when a stored hash was made with other settings, so it can be re-hashed after a successful login.</li><li><code>dok::cookie_set(resp, name, value, options)</code> sets a cookie with <code>HttpOnly</code> and <code>SameSite=Lax</code> by default; <code>dok::cookie_get(req, name)</code> reads it.</li></ul>
+<ul><li>A session is <strong>signed</strong>, not encrypted: anyone can read it, but nobody can change it without the key. Keep the key in an environment variable, not in the code.</li><li>A session carries a signed <strong>timestamp</strong>: <code>dok::session_decode</code> refuses a session older than 14 days, or than the third argument in seconds (<code>dok::session_decode(cookie, KEY, 3600)</code> = one hour). A stolen cookie does not last forever.</li><li><code>password_hash</code> uses PBKDF2-HMAC-SHA256 with a random salt per password. <code>dok::password_needs_rehash(hash)</code> says when a stored hash was made with other settings, so it can be re-hashed after a successful login.</li><li><code>dok::cookie_set(resp, name, value, options)</code> sets a cookie with <code>HttpOnly</code> and <code>SameSite=Lax</code> by default; <code>dok::cookie_get(req, name)</code> reads it.</li></ul>
 <h3 id="csrf-tokens"><a class="jangkar" href="#csrf-tokens">CSRF tokens</a></h3>
 <p>A form that changes something (<code>POST</code>, <code>PUT</code>, <code>DELETE</code>) carries a token the server made for that session. Another site can make the victim's browser submit a form, but cannot read the token.</p>
-<figure class="kode" data-jalan><figcaption><span>csrf.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> <span class="k-tipe">RAHASIA</span> = <span class="k-str">&quot;rahasia-csrf-yang-panjangnya-32b&quot;</span>
+<figure class="kode" data-jalan><figcaption><span>csrf.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> <span class="k-tipe">SECRET</span> = <span class="k-str">&quot;a-csrf-secret-that-is-32-bytes!!&quot;</span>
 
-<span class="k-kunci">let</span> token = <span class="k-ns">dok</span>::<span class="k-fn">csrf_token</span>(<span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-ani&quot;</span>)
-<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">csrf_verify</span>(token, <span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-ani&quot;</span>))
-<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">csrf_verify</span>(token, <span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-budi&quot;</span>))</code></pre><pre class="keluaran"><code>true
+<span class="k-kunci">let</span> token = <span class="k-ns">dok</span>::<span class="k-fn">csrf_token</span>(<span class="k-tipe">SECRET</span>, <span class="k-str">&quot;session-ani&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">csrf_verify</span>(token, <span class="k-tipe">SECRET</span>, <span class="k-str">&quot;session-ani&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">csrf_verify</span>(token, <span class="k-tipe">SECRET</span>, <span class="k-str">&quot;session-budi&quot;</span>))</code></pre><pre class="keluaran"><code>true
 false</code></pre></figure>
 <ul><li>The third argument, the <strong>binding</strong>, is the session id: another session's token is refused, so an attacker cannot use a token from their own session. An empty binding is refused.</li><li>A token lives 12 hours; the fourth argument of <code>csrf_verify</code> changes that (in seconds).</li><li>The secret is at least 32 bytes. Put the token in an <code>&lt;input type=&quot;hidden&quot;&gt;</code> through <code>dok::render</code>, and check it before doing the request.</li></ul>
 <h2 id="websocket"><a class="jangkar" href="#websocket">WebSocket</a></h2>
 <p>WebSocket routes live on the same router as ordinary HTTP routes.</p>
-<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">dok</span>::<span class="k-fn">router_ws</span>(r, <span class="k-str">&quot;/gema&quot;</span>, |koneksi, req| {
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">dok</span>::<span class="k-fn">router_ws</span>(r, <span class="k-str">&quot;/echo&quot;</span>, |conn, req| {
     <span class="k-kunci">while</span> <span class="k-kunci">true</span> {
-        <span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">ws_recv</span>(koneksi) {
-            <span class="k-fn">Some</span>(pesan) =&gt; <span class="k-ns">dok</span>::<span class="k-fn">ws_send</span>(koneksi, <span class="k-str">&quot;gema: &quot;</span> + pesan),
+        <span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">ws_recv</span>(conn) {
+            <span class="k-fn">Some</span>(msg) =&gt; <span class="k-ns">dok</span>::<span class="k-fn">ws_send</span>(conn, <span class="k-str">&quot;echo: &quot;</span> + msg),
             <span class="k-tipe">None</span> =&gt; { <span class="k-kunci">break</span> }
         }
     }
@@ -548,11 +548,11 @@ false</code></pre></figure>
 <h2 id="the-http-client"><a class="jangkar" href="#the-http-client">The HTTP client</a></h2>
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">match</span> <span class="k-ns">http</span>::<span class="k-fn">get</span>(<span class="k-str">&quot;https://api.github.com/repos/Kodok-Kejepit/jrg&quot;</span>) {
     <span class="k-fn">Ok</span>(r) =&gt; <span class="k-fn">wok</span>(r.status, <span class="k-ns">json</span>::<span class="k-fn">parse</span>(r.body)[<span class="k-str">&quot;stargazers_count&quot;</span>]),
-    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;gagal:&quot;</span>, e),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;failed:&quot;</span>, e),
 }
 
-<span class="k-ns">http</span>::<span class="k-fn">post</span>(<span class="k-str">&quot;https://contoh.org/api&quot;</span>, <span class="k-ns">json</span>::<span class="k-fn">stringify</span>({<span class="k-str">&quot;a&quot;</span>: <span class="k-ang">1</span>}), <span class="k-str">&quot;application/json&quot;</span>)
-<span class="k-ns">http</span>::<span class="k-fn">unduh</span>(<span class="k-str">&quot;https://contoh.org/besar.zip&quot;</span>, <span class="k-str">&quot;besar.zip&quot;</span>)</code></pre></figure>
+<span class="k-ns">http</span>::<span class="k-fn">post</span>(<span class="k-str">&quot;https://example.org/api&quot;</span>, <span class="k-ns">json</span>::<span class="k-fn">stringify</span>({<span class="k-str">&quot;a&quot;</span>: <span class="k-ang">1</span>}), <span class="k-str">&quot;application/json&quot;</span>)
+<span class="k-ns">http</span>::<span class="k-fn">unduh</span>(<span class="k-str">&quot;https://example.org/big.zip&quot;</span>, <span class="k-str">&quot;big.zip&quot;</span>)</code></pre></figure>
 <p><code>http::get</code>, <code>post</code>, <code>put</code>, <code>delete</code>, and <code>request</code> answer a <code>Result</code> holding <code>status</code>, <code>headers</code>, <code>body</code>, and <code>ok</code>. HTTPS uses the system's libssl and needs TLS 1.2 or newer. <code>http::unduh</code> writes straight to a file, so it is safe for large downloads, and it does not follow a redirect from <code>https://</code> to <code>http://</code>. <code>http::tenggat(seconds)</code> sets a total deadline per request, so a server that trickles its answer cannot hold the caller forever.</p>
 <p>If the URL comes from a user (link previews, webhooks, image downloaders), turn on the SSRF guard once at the start:</p>
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">http</span>::<span class="k-fn">hanya_publik</span>(<span class="k-kunci">true</span>)
@@ -561,16 +561,16 @@ false</code></pre></figure>
 <h2 id="sqlite"><a class="jangkar" href="#sqlite">SQLite</a></h2>
 <p>The SQLite driver is loaded from the system's <code>libsqlite3</code>. <code>dok::db_tersedia()</code> tells whether the library is there.</p>
 <figure class="kode"><figcaption><span>sqlite.jrg</span><span class="lokal" title="Needs threads, files, the network, or a system library the browser does not have">run with jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> db = <span class="k-ns">dok</span>::<span class="k-fn">db_open</span>(<span class="k-str">&quot;:memory:&quot;</span>)?
-<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;CREATE TABLE murid(id INTEGER PRIMARY KEY, nama TEXT, nilai REAL)&quot;</span>)?
-<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;INSERT INTO murid(nama, nilai) VALUES (?, ?)&quot;</span>, [<span class="k-str">&quot;budi&quot;</span>, <span class="k-ang">8.5</span>])?
-<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;INSERT INTO murid(nama, nilai) VALUES (?, ?)&quot;</span>, [<span class="k-str">&quot;ani&quot;</span>, <span class="k-ang">9.25</span>])?
+<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;CREATE TABLE student(id INTEGER PRIMARY KEY, name TEXT, score REAL)&quot;</span>)?
+<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;INSERT INTO student(name, score) VALUES (?, ?)&quot;</span>, [<span class="k-str">&quot;budi&quot;</span>, <span class="k-ang">8.5</span>])?
+<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;INSERT INTO student(name, score) VALUES (?, ?)&quot;</span>, [<span class="k-str">&quot;ani&quot;</span>, <span class="k-ang">9.25</span>])?
 
-<span class="k-kunci">for</span> _, m <span class="k-kunci">in</span> <span class="k-ns">dok</span>::<span class="k-fn">db_query</span>(db, <span class="k-str">&quot;SELECT nama, nilai FROM murid ORDER BY nilai DESC&quot;</span>)? {
-    <span class="k-fn">wok</span>(m.nama, m.nilai)
+<span class="k-kunci">for</span> _, s <span class="k-kunci">in</span> <span class="k-ns">dok</span>::<span class="k-fn">db_query</span>(db, <span class="k-str">&quot;SELECT name, score FROM student ORDER BY score DESC&quot;</span>)? {
+    <span class="k-fn">wok</span>(s.name, s.score)
 }
 
-<span class="k-kunci">let</span> jahat = <span class="k-str">&quot;budi&#x27;; DROP TABLE murid; --&quot;</span>
-<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">db_query</span>(db, <span class="k-str">&quot;SELECT * FROM murid WHERE nama = ?&quot;</span>, [jahat])?)
+<span class="k-kunci">let</span> evil = <span class="k-str">&quot;budi&#x27;; DROP TABLE student; --&quot;</span>
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">db_query</span>(db, <span class="k-str">&quot;SELECT * FROM student WHERE name = ?&quot;</span>, [evil])?)
 <span class="k-ns">dok</span>::<span class="k-fn">db_close</span>(db)</code></pre><pre class="keluaran"><code>ani 9.25
 budi 8.5
 []</code></pre></figure>
@@ -587,7 +587,7 @@ budi 8.5
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

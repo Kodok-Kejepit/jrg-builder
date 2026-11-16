@@ -80,8 +80,8 @@ JRG runs without any of the following. Each is only needed by a particular featu
 ## Your first file
 
 ```sh
-echo 'wok("halo")' > halo.jrg
-jrgc halo.jrg
+echo 'wok("hello")' > hello.jrg
+jrgc hello.jrg
 ```
 
 Continue with the [Quick tour](tur.html).

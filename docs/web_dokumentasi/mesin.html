@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -480,7 +480,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p>Worth knowing:</p>
 <ul><li>Integers here are 64-bit, not 128. Overflow is still checked, and a number that does not fit is refused, naming <code>i128</code>.</li><li>Concurrency runs as coroutines on one thread: <code>spawn</code>, channels, and <code>select</code> work, but not in parallel. A deadlock is reported, not left hanging.</li><li>Unsupported features are refused at compile time with their reason, never producing a wrong program. The list is in <a href="batasan.html#backend-llvm">Not done yet</a>.</li></ul>
 <h2 id="webassembly-the-fifth-engine-in-progress"><a class="jangkar" href="#webassembly-the-fifth-engine-in-progress">WebAssembly (the fifth engine, in progress)</a></h2>
-<p>A fifth engine is being built: it compiles a JRG program into a WebAssembly module, so the same program runs in a browser or under Node without an interpreter shipped alongside it. It goes through the same LLVM IR as the native backend, aimed at the <code>wasm32</code> target, so it inherits that backend's meaning, optimisations, and test tables: every program in the interpreter = LLVM table becomes a parity check for WebAssembly too. It is not part of a release yet.</p>
+<p>A fifth engine is being built: it compiles a JRG program into a WebAssembly module, so the same program runs in a browser or under Node without an interpreter shipped alongside it. It goes through the same LLVM IR as the native backend, aimed at the <code>wasm32</code> (WASI) target, so it inherits that backend's meaning, optimisations, and test tables: every program in the interpreter = LLVM table becomes a parity check for WebAssembly too. It is not part of a release yet.</p>
 <p>This is different from the <a href="../index.html">Practice</a> engine on this site, which runs the JRG <em>interpreter</em> compiled to WebAssembly, and from <code>wasm::</code>, which runs <em>other people's</em> <code>.wasm</code> modules from JRG.</p>
 </article>
 <nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="android.html"><small>Previous</small><strong>Android apps</strong></a><a class="ke-kanan" href="memori.html"><small>Next</small><strong>Memory model</strong></a></nav>
@@ -492,7 +492,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

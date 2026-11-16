@@ -9,19 +9,19 @@ The condition has no parentheses, and the body always has braces. `if` can also 
 ```jrg if.jrg
 let n = 7
 if n % 2 == 0 {
-    wok("genap")
+    wok("even")
 } else if n > 5 {
-    wok("ganjil dan besar")
+    wok("odd and big")
 } else {
-    wok("ganjil")
+    wok("odd")
 }
 
-let jenis = if n > 5 { "besar" } else { "kecil" }
-wok(jenis)
+let size = if n > 5 { "big" } else { "small" }
+wok(size)
 ```
 ```keluaran
-ganjil dan besar
-besar
+odd and big
+big
 ```
 
 ## Ternary
@@ -30,11 +30,11 @@ The short form is `condition $ if_true : if_false`. It opens with `$`, not `?`, 
 errors (see [Option and Result](galat.html)).
 
 ```jrg ternary.jrg
-let nilai = 72
-wok(nilai >= 75 $ "lulus" : "remedial")
+let score = 72
+wok(score >= 75 $ "pass" : "retake")
 ```
 ```keluaran
-remedial
+retake
 ```
 
 ## for
@@ -45,26 +45,26 @@ remedial
 - `for i in collection`: **a single name always means the index**, ranges included.
 
 ```jrg for.jrg
-let buah = ["apel", "jeruk"]
-for i, b in buah {
-    wok(i, b)
+let fruit = ["apple", "orange"]
+for i, f in fruit {
+    wok(i, f)
 }
 
-var nilai = []
-for _, angka in 5..8 {
-    nilai = nilai.push(angka)
+var values = []
+for _, number in 5..8 {
+    values = values.push(number)
 }
-wok(nilai)
+wok(values)
 
-var indeks = []
+var indices = []
 for i in 5..8 {
-    indeks = indeks.push(i)
+    indices = indices.push(i)
 }
-wok(indeks)
+wok(indices)
 ```
 ```keluaran
-0 apel
-1 jeruk
+0 apple
+1 orange
 [5, 6, 7]
 [0, 1, 2]
 ```
@@ -93,22 +93,22 @@ A range in a `for` header is never turned into an array, so `for _, i in 0..1000
 
 ```jrg while.jrg
 var n = 27
-var langkah = 0
+var steps = 0
 while n != 1 {
     n = n % 2 == 0 $ n / 2 : 3 * n + 1
-    langkah += 1
+    steps += 1
 }
-wok("Collatz 27:", langkah, "langkah")
+wok("Collatz 27:", steps, "steps")
 
-var tebakan = 0
+var guess = 0
 loop {
-    tebakan += 1
-    if tebakan * tebakan > 50 { break }
+    guess += 1
+    if guess * guess > 50 { break }
 }
-wok(tebakan)
+wok(guess)
 ```
 ```keluaran
-Collatz 27: 111 langkah
+Collatz 27: 111 steps
 8
 ```
 
@@ -118,17 +118,17 @@ Collatz 27: 111 langkah
 quote.
 
 ```jrg label.jrg
-'cari: for _, i in 1..10 {
+'search: for _, i in 1..10 {
     for _, j in 1..10 {
         if i * j == 42 {
-            wok("ketemu:", i, j)
-            break 'cari
+            wok("found:", i, j)
+            break 'search
         }
     }
 }
 ```
 ```keluaran
-ketemu: 6 7
+found: 6 7
 ```
 
 ## match
@@ -136,17 +136,17 @@ ketemu: 6 7
 `match` matches a value against patterns and runs the first arm that matches. It is also an expression.
 
 ```jrg match.jrg
-fn hari(n) {
+fn day(n) {
     return match n {
-        0 | 6 => "akhir pekan",
-        1..=5 => "hari kerja",
-        _ => "bukan hari",
+        0 | 6 => "weekend",
+        1..=5 => "weekday",
+        _ => "not a day",
     }
 }
-wok(hari(0), hari(3), hari(9))
+wok(day(0), day(3), day(9))
 ```
 ```keluaran
-akhir pekan hari kerja bukan hari
+weekend weekday not a day
 ```
 
 The full set of patterns (tuples, arrays, structs, enums, `if` guards, `@` bindings) is in [Patterns](pola.html).
@@ -157,17 +157,17 @@ The full set of patterns (tuples, arrays, structs, enums, `if` guards, `@` bindi
 last one registered runs first, and its arguments are frozen when the `defer` line is read.
 
 ```jrg defer.jrg
-fn proses() {
-    var berkas = "laporan.txt"
-    defer wok("tutup", berkas)
-    defer wok("simpan")
-    berkas = "lain.txt"
-    wok("kerja dengan", berkas)
+fn work() {
+    var file = "report.txt"
+    defer wok("close", file)
+    defer wok("save")
+    file = "other.txt"
+    wok("working with", file)
 }
-proses()
+work()
 ```
 ```keluaran
-kerja dengan lain.txt
-simpan
-tutup laporan.txt
+working with other.txt
+save
+close report.txt
 ```

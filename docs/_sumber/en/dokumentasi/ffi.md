@@ -17,18 +17,18 @@ extern "C" {
     fn strlen(s: string) -> usize
 }
 
-wok(abs(-17), strlen("halo"))
+wok(abs(-17), strlen("hello"))
 ```
 ```keluaran
-Result::Ok(17) Result::Ok(4)
+Result::Ok(17) Result::Ok(5)
 ```
 
 ```jrg-cuplikan
 extern "C" "libm.so.6" {
-    fn pow(basis: f64, pangkat: f64) -> f64
+    fn pow(base: f64, exponent: f64) -> f64
 }
-extern "C" "./libhitung.so" {
-    fn proses(data: *mut i32, n: i32) -> i32
+extern "C" "./libcalc.so" {
+    fn process(data: *mut i32, n: i32) -> i32
 }
 ```
 
@@ -41,7 +41,7 @@ they are called the same way.
 without a wrapper. A function inside a namespace is written with its path.
 
 ```jrg-cuplikan
-extern "C++" "./libmilik.so" {
+extern "C++" "./libmine.so" {
     fn add(a: i32, b: i32) -> i32
     fn math::mul(a: i32, b: i32) -> i32
 }
@@ -53,14 +53,14 @@ extern "C++" "./libmilik.so" {
 pandas, requests, PIL, and so on.
 
 ```jrg-cuplikan
-fn kali10(x) { return x * 10 }
+fn times10(x) { return x * 10 }
 
 wok(py::eval("sum(range(10))"))
 wok(py::call("statistics", "median", [3, 1, 4, 1, 5]))
-wok(py::call("builtins", "list", py::call("builtins", "map", kali10, [1, 2, 3])?))
+wok(py::call("builtins", "list", py::call("builtins", "map", times10, [1, 2, 3])?))
 
-let himpunan = py::eval("{1, 2}")?
-wok(typeof(himpunan), py::method(himpunan, "issubset", [1, 2, 3]))
+let set = py::eval("{1, 2}")?
+wok(typeof(set), py::method(set, "issubset", [1, 2, 3]))
 ```
 
 ```sh
@@ -85,14 +85,14 @@ callbacks, and a `Result` on every call.
 ```jrg-cuplikan
 wok(js::eval("[1,2,3].map(x => x * 2)"))
 wok(js::call("path", "join", "a", "b"))
-wok(lua::eval("1 + 2, 'tiga'"), lua::call("string.upper", "lua"))
+wok(lua::eval("1 + 2, 'three'"), lua::call("string.upper", "lua"))
 wok(php::call("array_map", |x| x * 10, [1, 2, 3]))
 ```
 
 ```sh
 Result::Ok([2, 4, 6])
 Result::Ok(a/b)
-Result::Ok([3, tiga]) Result::Ok(LUA)
+Result::Ok([3, three]) Result::Ok(LUA)
 Result::Ok([10, 20, 30])
 ```
 
@@ -107,24 +107,24 @@ Result::Ok([10, 20, 30])
 `javap -s` prints them.
 
 ```jrg-cuplikan
-jvm::mulai(["-Djava.class.path=./kelas"])
+jvm::mulai(["-Djava.class.path=./classes"])
 wok(jvm::panggil_statis("java.lang.Math", "abs", "(I)I", [-17]))
 
 let sb = jvm::baru("java.lang.StringBuilder", "()V")?
-jvm::panggil(sb, "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", ["halo"])?
+jvm::panggil(sb, "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", ["hello"])?
 wok(jvm::ke_teks(sb))
 jvm::lepas(sb)
 ```
 
-`kotlin::` translates Kotlin's naming rules to the JVM: top-level functions (`kotlin::fungsi("Hitung", "tambah", …)`),
+`kotlin::` translates Kotlin's naming rules to the JVM: top-level functions (`kotlin::fungsi("Calc", "add", …)`),
 `object` (`kotlin::objek`), properties (`kotlin::properti`), and companions.
 
 ## .NET
 
 ```jrg-cuplikan
 dotnet::mulai("./App.runtimeconfig.json")
-let tambah = dotnet::fungsi("./App.dll", "UjiJrg, App", "Tambah", ["i32", "i32"], "i32")?
-wok(dotnet::panggil(tambah, [2, 3]))
+let add = dotnet::fungsi("./App.dll", "JrgTest, App", "Add", ["i32", "i32"], "i32")?
+wok(dotnet::panggil(add, [2, 3]))
 ```
 
 The method being called must be marked `[UnmanagedCallersOnly]`; after that it is treated like a C function.
@@ -136,10 +136,10 @@ so it suits running outside code that is not fully trusted. `wasm::batas_langkah
 a module that never stops is halted with an error.
 
 ```jrg-cuplikan
-let m = wasm::muat("modul.wasm")?
+let m = wasm::muat("module.wasm")?
 wok(wasm::ekspor(m))
 wok(wasm::panggil(m, "fib", [20]))
-wasm::tulis_memori(m, 200, "halo")
+wasm::tulis_memori(m, 200, "hello")
 wok(wasm::baca_memori(m, 200, 4))
 ```
 

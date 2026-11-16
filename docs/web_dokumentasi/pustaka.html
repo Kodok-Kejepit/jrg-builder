@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -477,27 +477,27 @@ arr::sort_by_key(a, f) -&gt; array
 <p>In the REPL the commands are <code>:cari</code> and <code>:doc</code>. A mistyped function name is answered with a suggestion ("did you mean <code>upper</code>?").</p>
 <p>Most <code>arr::</code> and <code>str::</code> functions can also be called as methods: <code>arr::sort(a)</code> is the same as <code>a.sort()</code>.</p>
 <h2 id="everyday-examples"><a class="jangkar" href="#everyday-examples">Everyday examples</a></h2>
-<figure class="kode"><figcaption><span>sehari.jrg</span><span class="lokal" title="Needs threads, files, the network, or a system library the browser does not have">run with jrgc</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ns">math</span>::<span class="k-fn">sqrt</span>(<span class="k-ang">16.0</span>), <span class="k-ns">math</span>::<span class="k-fn">gcd</span>(<span class="k-ang">12</span>, <span class="k-ang">18</span>), <span class="k-ns">math</span>::<span class="k-fn">round</span>(<span class="k-ang">2.567</span>))
+<figure class="kode"><figcaption><span>everyday.jrg</span><span class="lokal" title="Needs threads, files, the network, or a system library the browser does not have">run with jrgc</span></figcaption><pre><code><span class="k-fn">wok</span>(<span class="k-ns">math</span>::<span class="k-fn">sqrt</span>(<span class="k-ang">16.0</span>), <span class="k-ns">math</span>::<span class="k-fn">gcd</span>(<span class="k-ang">12</span>, <span class="k-ang">18</span>), <span class="k-ns">math</span>::<span class="k-fn">round</span>(<span class="k-ang">2.567</span>))
 <span class="k-fn">wok</span>(<span class="k-ns">arr</span>::<span class="k-fn">unique</span>([<span class="k-ang">1</span>, <span class="k-ang">1</span>, <span class="k-ang">2</span>]), <span class="k-ns">arr</span>::<span class="k-fn">chunks</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>, <span class="k-ang">4</span>, <span class="k-ang">5</span>], <span class="k-ang">2</span>))
-<span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">title</span>(<span class="k-str">&quot;budi santoso&quot;</span>), <span class="k-ns">str</span>::<span class="k-fn">words</span>(<span class="k-str">&quot;satu dua  tiga&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">str</span>::<span class="k-fn">title</span>(<span class="k-str">&quot;ada lovelace&quot;</span>), <span class="k-ns">str</span>::<span class="k-fn">words</span>(<span class="k-str">&quot;one two  three&quot;</span>))
 
-<span class="k-kunci">let</span> j = <span class="k-ns">json</span>::<span class="k-fn">parse</span>(<span class="k-str">&quot;{\&quot;nama\&quot;: \&quot;Ani\&quot;, \&quot;nilai\&quot;: [90, 85]}&quot;</span>)
-<span class="k-fn">wok</span>(j[<span class="k-str">&quot;nama&quot;</span>], j[<span class="k-str">&quot;nilai&quot;</span>][<span class="k-ang">1</span>], <span class="k-ns">json</span>::<span class="k-fn">stringify</span>({<span class="k-str">&quot;ok&quot;</span>: <span class="k-kunci">true</span>}))
+<span class="k-kunci">let</span> j = <span class="k-ns">json</span>::<span class="k-fn">parse</span>(<span class="k-str">&quot;{\&quot;name\&quot;: \&quot;Ani\&quot;, \&quot;scores\&quot;: [90, 85]}&quot;</span>)
+<span class="k-fn">wok</span>(j[<span class="k-str">&quot;name&quot;</span>], j[<span class="k-str">&quot;scores&quot;</span>][<span class="k-ang">1</span>], <span class="k-ns">json</span>::<span class="k-fn">stringify</span>({<span class="k-str">&quot;ok&quot;</span>: <span class="k-kunci">true</span>}))
 
-<span class="k-fn">wok</span>(<span class="k-ns">re</span>::<span class="k-fn">test</span>(<span class="k-str">&quot;[0-9]+&quot;</span>, <span class="k-str">&quot;kode 4521&quot;</span>), <span class="k-ns">re</span>::<span class="k-fn">replace_all</span>(<span class="k-str">&quot;[0-9]&quot;</span>, <span class="k-str">&quot;x9y8&quot;</span>, <span class="k-str">&quot;#&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">re</span>::<span class="k-fn">test</span>(<span class="k-str">&quot;[0-9]+&quot;</span>, <span class="k-str">&quot;code 4521&quot;</span>), <span class="k-ns">re</span>::<span class="k-fn">replace_all</span>(<span class="k-str">&quot;[0-9]&quot;</span>, <span class="k-str">&quot;x9y8&quot;</span>, <span class="k-str">&quot;#&quot;</span>))
 
-<span class="k-ns">fs</span>::<span class="k-fn">write</span>(<span class="k-str">&quot;catatan.txt&quot;</span>, <span class="k-str">&quot;baris satu\nbaris dua\n&quot;</span>)
-<span class="k-fn">wok</span>(<span class="k-ns">fs</span>::<span class="k-fn">read_lines</span>(<span class="k-str">&quot;catatan.txt&quot;</span>), <span class="k-ns">fs</span>::<span class="k-fn">size</span>(<span class="k-str">&quot;catatan.txt&quot;</span>))
-<span class="k-ns">fs</span>::<span class="k-fn">delete</span>(<span class="k-str">&quot;catatan.txt&quot;</span>)
+<span class="k-ns">fs</span>::<span class="k-fn">write</span>(<span class="k-str">&quot;notes.txt&quot;</span>, <span class="k-str">&quot;line one\nline two\n&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">fs</span>::<span class="k-fn">read_lines</span>(<span class="k-str">&quot;notes.txt&quot;</span>), <span class="k-ns">fs</span>::<span class="k-fn">size</span>(<span class="k-str">&quot;notes.txt&quot;</span>))
+<span class="k-ns">fs</span>::<span class="k-fn">delete</span>(<span class="k-str">&quot;notes.txt&quot;</span>)
 
-<span class="k-fn">wok</span>(<span class="k-ns">crypto</span>::<span class="k-fn">sha256</span>(<span class="k-str">&quot;halo&quot;</span>)[<span class="k-ang">0</span>:<span class="k-ang">16</span>], <span class="k-ns">crypto</span>::<span class="k-fn">base64_encode</span>(<span class="k-str">&quot;JRG&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">crypto</span>::<span class="k-fn">sha256</span>(<span class="k-str">&quot;hello&quot;</span>)[<span class="k-ang">0</span>:<span class="k-ang">16</span>], <span class="k-ns">crypto</span>::<span class="k-fn">base64_encode</span>(<span class="k-str">&quot;JRG&quot;</span>))
 <span class="k-fn">wok</span>(<span class="k-ns">time</span>::<span class="k-fn">format</span>(<span class="k-ang">0</span>, <span class="k-str">&quot;%d/%m/%Y %H:%M&quot;</span>))</code></pre><pre class="keluaran"><code>4.0 6 3.0
 [1, 2] [[1, 2], [3, 4], [5]]
-Budi Santoso [satu, dua, tiga]
+Ada Lovelace [one, two, three]
 Ani 85 {&quot;ok&quot;:true}
 true x#y#
-[baris satu, baris dua] 21
-a4e63bcacf6c172a SlJH
+[line one, line two] 18
+2cf24dba5fb0a30e SlJH
 01/01/1970 00:00</code></pre></figure>
 <h2 id="namespace"><a class="jangkar" href="#namespace">Namespace</a></h2>
 <div class="tabel"><table><thead><tr><th>Namespace</th><th>Contents</th></tr></thead><tbody><tr><td><code>str::</code> (52)</td><td>text: slice, search, replace, split, format, change case, pad left/right</td></tr><tr><td><code>arr::</code> (65)</td><td>arrays: sort, filter, map, fold, group, chunk, zip</td></tr><tr><td><code>dict::</code> (14)</td><td>dicts: get, set, merge, keys, values</td></tr><tr><td><code>math::</code> (41)</td><td>trigonometry, roots, powers, rounding, GCD/LCM, factorial, wrapping arithmetic</td></tr><tr><td><code>fs::</code> (34), <code>file::</code> (7)</td><td>files and folders; the <code>try_</code> versions answer a <code>Result</code></td></tr><tr><td><code>time::</code> (12)</td><td>the current time (milliseconds), date formatting, sleep</td></tr><tr><td><code>rand::</code> (6)</td><td>random numbers, random choice, shuffle</td></tr><tr><td><code>json::</code> (9)</td><td>read and write JSON</td></tr><tr><td><code>re::</code> (8)</td><td>regular expressions</td></tr><tr><td><code>crypto::</code> (20)</td><td>SHA, MD5, HMAC, AES, base64, hex</td></tr><tr><td><code>env::</code> (5)</td><td>program arguments and environment variables</td></tr><tr><td><code>proses::</code> (11)</td><td>running other programs</td></tr><tr><td><code>term::</code> (9)</td><td>the terminal: raw mode, reading keys, screen size</td></tr><tr><td><code>http::</code> (8)</td><td>an HTTP and HTTPS client, downloading to a file</td></tr><tr><td><code>dok::</code> (123)</td><td>web server, router, cookies, sessions, templates, WebSocket, TCP/UDP, SQLite, logging, statistics</td></tr><tr><td><code>canvas::</code> (57)</td><td>drawing: shapes, text, PNG images, transforms, windows</td></tr><tr><td><code>suara::</code> (11)</td><td>making, saving, and playing sound</td></tr><tr><td><code>wokwok::</code> (86)</td><td>fast n-dimensional numeric arrays</td></tr><tr><td><code>chan::</code>, <code>future::</code>, <code>task::</code>, <code>atomic::</code>, <code>mutex::</code></td><td>concurrency</td></tr><tr><td><code>ptr::</code> (11), <code>jawa::</code> (21), <code>jawir::</code> (2)</td><td>shared handles, and checked manual allocation</td></tr><tr><td><code>py::</code> <code>js::</code> <code>php::</code> <code>lua::</code> <code>jvm::</code> <code>kotlin::</code> <code>dotnet::</code> <code>wasm::</code></td><td>other languages, see <a href="ffi.html">FFI</a></td></tr><tr><td><code>fmt::</code> (5)</td><td>printing and building text</td></tr></tbody></table></div>
@@ -505,19 +505,19 @@ a4e63bcacf6c172a SlJH
 <h2 id="modul-std"><a class="jangkar" href="#modul-std">The std/ modules</a></h2>
 <p>These modules are written in JRG and embedded in <code>jrgc</code>. Use them with <code>import &quot;std/name&quot;</code>.</p>
 <div class="tabel"><table><thead><tr><th>Module</th><th>What it is for</th></tr></thead><tbody><tr><td><code>set</code></td><td>sets: fast membership, union, intersection</td></tr><tr><td><code>queue</code></td><td>a queue (in at the back, out at the front)</td></tr><tr><td><code>deque</code></td><td>a double-ended queue</td></tr><tr><td><code>heap</code></td><td>a priority queue, take the smallest</td></tr><tr><td><code>csv</code></td><td>reading and writing CSV with correct quoting rules</td></tr><tr><td><code>path</code></td><td>file paths: extension, name without extension, normalising <code>.</code> and <code>..</code></td></tr><tr><td><code>functional</code></td><td><code>compose</code>, <code>pipe</code>, <code>partial</code>, <code>curry2</code>, <code>memoize</code>, <code>once</code></td></tr><tr><td><code>teks</code></td><td>one vocabulary for arrays and text, beginner friendly</td></tr><tr><td><code>uang</code></td><td>money arithmetic without floats, Rupiah formatting</td></tr><tr><td><code>tabel</code></td><td>printing aligned columns</td></tr><tr><td><code>option</code>, <code>result</code></td><td>helpers for <code>Option</code> and <code>Result</code></td></tr><tr><td><code>iterator</code></td><td>lazy iterators</td></tr><tr><td><code>testing</code></td><td>groups of checks reported together</td></tr><tr><td><code>mesin</code></td><td>a 2D game engine (12 modules), see <a href="game.html">Game engine</a></td></tr></tbody></table></div>
-<figure class="kode" data-jalan><figcaption><span>uang.jrg</span></figcaption><pre><code><span class="k-kunci">import</span> <span class="k-str">&quot;std/uang&quot;</span>
+<figure class="kode" data-jalan><figcaption><span>money.jrg</span></figcaption><pre><code><span class="k-kunci">import</span> <span class="k-str">&quot;std/uang&quot;</span>
 <span class="k-kunci">import</span> <span class="k-str">&quot;std/tabel&quot;</span>
 
-<span class="k-kunci">let</span> harga = <span class="k-ns">uang</span>::<span class="k-fn">rupiah</span>(<span class="k-ang">19999.5</span>)
-<span class="k-fn">wok</span>(harga.<span class="k-fn">rupiah</span>(), harga.<span class="k-fn">kali</span>(<span class="k-ang">3</span>).<span class="k-fn">rupiah</span>())
+<span class="k-kunci">let</span> price = <span class="k-ns">uang</span>::<span class="k-fn">rupiah</span>(<span class="k-ang">19999.5</span>)
+<span class="k-fn">wok</span>(price.<span class="k-fn">rupiah</span>(), price.<span class="k-fn">kali</span>(<span class="k-ang">3</span>).<span class="k-fn">rupiah</span>())
 
-<span class="k-kunci">var</span> t = <span class="k-ns">tabel</span>::<span class="k-fn">baru</span>([<span class="k-str">&quot;barang&quot;</span>, <span class="k-str">&quot;jumlah&quot;</span>]).<span class="k-fn">rata_kanan</span>(<span class="k-ang">1</span>)
-t = t.<span class="k-fn">baris_baru</span>([<span class="k-str">&quot;kopi&quot;</span>, <span class="k-ang">3</span>]).<span class="k-fn">baris_baru</span>([<span class="k-str">&quot;teh manis&quot;</span>, <span class="k-ang">12</span>])
+<span class="k-kunci">var</span> t = <span class="k-ns">tabel</span>::<span class="k-fn">baru</span>([<span class="k-str">&quot;item&quot;</span>, <span class="k-str">&quot;qty&quot;</span>]).<span class="k-fn">rata_kanan</span>(<span class="k-ang">1</span>)
+t = t.<span class="k-fn">baris_baru</span>([<span class="k-str">&quot;coffee&quot;</span>, <span class="k-ang">3</span>]).<span class="k-fn">baris_baru</span>([<span class="k-str">&quot;sweet tea&quot;</span>, <span class="k-ang">12</span>])
 <span class="k-fn">wok</span>(t)</code></pre><pre class="keluaran"><code>Rp 19.999,50 Rp 59.998,50
-barang     jumlah
----------  ------
-kopi            3
-teh manis      12</code></pre></figure>
+item       qty
+---------  ---
+coffee       3
+sweet tea   12</code></pre></figure>
 <p>Your own <code>.jrg</code> files win over these names: if there is a <code>set.jrg</code> in the program's folder, <code>import &quot;set&quot;</code> loads that file, while <code>import &quot;std/set&quot;</code> still loads the standard library.</p>
 </article>
 <nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="konkuren.html"><small>Previous</small><strong>Concurrency</strong></a><a class="ke-kanan" href="web.html"><small>Next</small><strong>Web and data</strong></a></nav>
@@ -529,7 +529,7 @@ teh manis      12</code></pre></figure>
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

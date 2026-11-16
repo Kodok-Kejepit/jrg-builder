@@ -8,22 +8,22 @@ ringkas: Splitting a program into several files, and using the std/ library.
 Every `.jrg` file is a module. Another file uses it through `import`, and calls what is inside with the `name::`
 prefix.
 
-```jrg-cuplikan geometri.jrg
-package geometri
+```jrg-cuplikan geometry.jrg
+package geometry
 
 pub const PI = 3.14159
 
-pub fn luas_lingkaran(r: float) -> float {
+pub fn circle_area(r: float) -> float {
     return PI * r * r
 }
 
-fn _bantu() { return 1 }
+fn _helper() { return 1 }
 
-pub struct Titik { pub x: float, pub y: float }
+pub struct Point { pub x: float, pub y: float }
 
-impl Titik {
-    pub fn jarak(self, lain: Titik) -> float {
-        return math::sqrt((self.x - lain.x) ** 2.0 + (self.y - lain.y) ** 2.0)
+impl Point {
+    pub fn distance(self, other: Point) -> float {
+        return math::sqrt((self.x - other.x) ** 2.0 + (self.y - other.y) ** 2.0)
     }
 }
 ```
@@ -31,14 +31,14 @@ impl Titik {
 ```jrg-cuplikan main.jrg
 package main
 
-import "geometri"
-import "geometri" as g
+import "geometry"
+import "geometry" as g
 
 pub fn main() {
-    wok(geometri::luas_lingkaran(2.0))
-    let a = g::Titik { x: 0.0, y: 0.0 }
-    let b = geometri::Titik { x: 3.0, y: 4.0 }
-    wok(a.jarak(b), g::PI)
+    wok(geometry::circle_area(2.0))
+    let a = g::Point { x: 0.0, y: 0.0 }
+    let b = geometry::Point { x: 3.0, y: 4.0 }
+    wok(a.distance(b), g::PI)
 }
 ```
 
@@ -52,7 +52,7 @@ $ jrgc main.jrg
 
 - What an importer can use: functions, top-level `const`/`let`, structs, enums with their variants, and the methods of
   types the module owns.
-- A name starting with `_` is private. `geometri::_bantu()` is refused with a message that says why.
+- A name starting with `_` is private. `geometry::_helper()` is refused with a message that says why.
 - A top-level `var` stays with its module. If its value has to be read from outside, provide a reader function.
 - A file only sees the modules it imports itself. Modules imported by another module are not visible.
 
@@ -60,9 +60,9 @@ A file is one module however many times it is imported, under whatever alias.
 
 ## Where import looks
 
-`import "geometri"` looks for `geometri.jrg` in the importing file's folder, then in the project's dependency folders
-(see [jrgm](jrgm.html)), then in folders added with `jrgc -I folder`. Nested paths work too: `import "alat/teks"`
-loads `alat/teks.jrg` as the module `teks`.
+`import "geometry"` looks for `geometry.jrg` in the importing file's folder, then in the project's dependency folders
+(see [jrgm](jrgm.html)), then in folders added with `jrgc -I folder`. Nested paths work too: `import "tools/text"`
+loads `tools/text.jrg` as the module `text`.
 
 ## The std/ library
 
@@ -76,12 +76,12 @@ import "std/csv"
 let s = set::from([3, 1, 3, 2])
 wok(s.len(), s.has(3))
 
-let baris = csv::parse("nama,kota\n\"Ani, S.Kom\",Bandung")
-wok(baris[1][0])
+let rows = csv::parse("name,city\n\"Ani, PhD\",Bandung")
+wok(rows[1][0])
 ```
 ```keluaran
 3 true
-Ani, S.Kom
+Ani, PhD
 ```
 
 The list of modules is in the [Built-in library](pustaka.html#modul-std).
@@ -91,7 +91,7 @@ The list of modules is in the [Built-in library](pustaka.html#modul-std).
 When a program has a function with the same name as a built-in, the program's wins. `::name` always points at the
 language's built-in.
 
-```jrg bayang.jrg
+```jrg shadow.jrg
 fn len(a, b, c) { return a + b + c }
 
 wok(len(1, 2, 3), ::len("abc"))

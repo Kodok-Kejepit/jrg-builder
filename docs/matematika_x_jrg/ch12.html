@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Geometri Bidang Datar — Matematika × JRG</title>
-<meta name="description" content="Keliling mengukur &quot;jarak mengelilingi&quot; bentuk. Luas mengukur &quot;seberapa banyak ruang&quot; yang ditutupi. Dua hal yang sering tertukar, padahal artinya sangat berbeda.">
+<title>Plane Geometry — Math × JRG</title>
+<meta name="description" content="The perimeter measures the &quot;distance around&quot; a shape. The area measures &quot;how much space&quot; it covers. Two things that often get swapped, even though they mean very different things.">
 <link rel="canonical" href="https://jrg-lang.org/matematika_x_jrg/ch12.html">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/matematika_x_jrg/ch12.html">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/matematika_x_jrg/ch12.html">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/matematika_x_jrg/ch12.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
-<meta property="og:locale" content="id_ID">
-<meta property="og:title" content="Geometri Bidang Datar — Matematika × JRG">
-<meta property="og:description" content="Keliling mengukur &quot;jarak mengelilingi&quot; bentuk. Luas mengukur &quot;seberapa banyak ruang&quot; yang ditutupi. Dua hal yang sering tertukar, padahal artinya sangat berbeda.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Plane Geometry — Math × JRG">
+<meta property="og:description" content="The perimeter measures the &quot;distance around&quot; a shape. The area measures &quot;how much space&quot; it covers. Two things that often get swapped, even though they mean very different things.">
 <meta property="og:url" content="https://jrg-lang.org/matematika_x_jrg/ch12.html">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
@@ -438,74 +441,74 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body data-situs="mtk">
-<a class="lewati" href="#isi">Lewati ke isi</a>
+<a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
-  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Situs"><a href="../web_dokumentasi/index.html">Dokumentasi</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
+  <nav class="situs" aria-label="Site"><a href="../web_dokumentasi/index.html">Docs</a><a class="aktif" aria-current="page" href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
-    <a class="tombol-bahasa" href="../index.html" hreflang="en" lang="en" aria-label="English">EN</a>
-    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="Saluran WhatsApp JRG" title="Saluran WhatsApp JRG"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
-    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="../id/matematika_x_jrg/ch12.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener" aria-label="JRG WhatsApp channel" title="JRG WhatsApp channel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/><path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg></a>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
   </div>
 </header>
 <div class="tata">
-<aside class="sisi" aria-label="Daftar bab"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> dari 32 bab selesai</p></div><p class="sisi-grup">Mulai</p><ul><li><a href="index.html" data-bab="mulai">Mulai dari sini</a></li></ul><p class="sisi-grup">Dasar JRG</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — Program Pertama</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variabel &amp; Tipe</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operator</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Percabangan</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Perulangan</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Fungsi</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Array &amp; Teks</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Struct &amp; Method</a></li></ul><p class="sisi-grup">JRG Lanjut</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closure &amp; HOF</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dict</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Membaca Galat</a></li></ul><p class="sisi-grup">Aritmatika Dasar</p><ul><li><a href="ch1.html" data-bab="ch1">Bab 1 — Angka &amp; Bilangan</a></li><li><a href="ch2.html" data-bab="ch2">Bab 2 — Tambah &amp; Kurang</a></li><li><a href="ch3.html" data-bab="ch3">Bab 3 — Kali &amp; Bagi</a></li><li><a href="ch4.html" data-bab="ch4">Bab 4 — Urutan Operasi</a></li><li><a href="ch5.html" data-bab="ch5">Bab 5 — Bilangan Negatif</a></li></ul><p class="sisi-grup">Konsep Lanjutan</p><ul><li><a href="ch6.html" data-bab="ch6">Bab 6 — Pecahan &amp; Desimal</a></li><li><a href="ch7.html" data-bab="ch7">Bab 7 — Persen</a></li><li><a href="ch8.html" data-bab="ch8">Bab 8 — Variabel &amp; Persamaan</a></li><li><a href="ch9.html" data-bab="ch9">Bab 9 — Fungsi Matematika</a></li></ul><p class="sisi-grup">Matematika Terapan</p><ul><li><a href="ch10.html" data-bab="ch10">Bab 10 — Prima, FPB &amp; KPK</a></li><li><a href="ch11.html" data-bab="ch11">Bab 11 — Statistik Dasar</a></li><li><a class="aktif" aria-current="page" href="ch12.html" data-bab="ch12">Bab 12 — Geometri Bidang</a></li><li><a href="ch13.html" data-bab="ch13">Bab 13 — Eksponen &amp; Akar</a></li><li><a href="ch14.html" data-bab="ch14">Bab 14 — Logaritma</a></li><li><a href="ch15.html" data-bab="ch15">Bab 15 — Probabilitas</a></li></ul><p class="sisi-grup">Level Lanjut</p><ul><li><a href="ch16.html" data-bab="ch16">Bab 16 — Perbandingan &amp; Rasio</a></li><li><a href="ch17.html" data-bab="ch17">Bab 17 — Bangun Ruang</a></li><li><a href="ch18.html" data-bab="ch18">Bab 18 — Barisan &amp; Deret</a></li><li><a href="ch19.html" data-bab="ch19">Bab 19 — Trigonometri Dasar</a></li></ul><p class="sisi-grup">Proyek Akhir</p><ul><li><a href="ch20.html" data-bab="ch20">Bab 20 — Kalkulator Rapor</a></li></ul><p class="sisi-grup">Ekstra</p><ul><li><a href="referensi.html" data-bab="referensi">Referensi &amp; Glosarium</a></li></ul></nav></aside>
+<aside class="sisi" aria-label="Chapter list"><nav><div class="progres"><div class="progres-batang"><div></div></div><p><span class="progres-angka">0</span> of 32 chapters done</p></div><p class="sisi-grup">Start</p><ul><li><a href="index.html" data-bab="mulai">Start here</a></li></ul><p class="sisi-grup">JRG Basics</p><ul><li><a href="jrg1.html" data-bab="jrg1">JRG 1 — First Program</a></li><li><a href="jrg2.html" data-bab="jrg2">JRG 2 — Variables &amp; Types</a></li><li><a href="jrg3.html" data-bab="jrg3">JRG 3 — Operators</a></li><li><a href="jrg4.html" data-bab="jrg4">JRG 4 — Branching</a></li><li><a href="jrg5.html" data-bab="jrg5">JRG 5 — Loops</a></li><li><a href="jrg6.html" data-bab="jrg6">JRG 6 — Functions</a></li><li><a href="jrg7.html" data-bab="jrg7">JRG 7 — Arrays &amp; Text</a></li><li><a href="jrg8.html" data-bab="jrg8">JRG 8 — Structs &amp; Methods</a></li></ul><p class="sisi-grup">More JRG</p><ul><li><a href="jrg9.html" data-bab="jrg9">JRG 9 — Closures &amp; HOFs</a></li><li><a href="jrg10.html" data-bab="jrg10">JRG 10 — Option &amp; Result</a></li><li><a href="jrg11.html" data-bab="jrg11">JRG 11 — Dicts</a></li><li><a href="jrg12.html" data-bab="jrg12">JRG 12 — Reading Errors</a></li></ul><p class="sisi-grup">Basic Arithmetic</p><ul><li><a href="ch1.html" data-bab="ch1">Chapter 1 — Numbers</a></li><li><a href="ch2.html" data-bab="ch2">Chapter 2 — Add &amp; Subtract</a></li><li><a href="ch3.html" data-bab="ch3">Chapter 3 — Multiply &amp; Divide</a></li><li><a href="ch4.html" data-bab="ch4">Chapter 4 — Order of Operations</a></li><li><a href="ch5.html" data-bab="ch5">Chapter 5 — Negative Numbers</a></li></ul><p class="sisi-grup">Further Concepts</p><ul><li><a href="ch6.html" data-bab="ch6">Chapter 6 — Fractions &amp; Decimals</a></li><li><a href="ch7.html" data-bab="ch7">Chapter 7 — Percentages</a></li><li><a href="ch8.html" data-bab="ch8">Chapter 8 — Variables &amp; Equations</a></li><li><a href="ch9.html" data-bab="ch9">Chapter 9 — Math Functions</a></li></ul><p class="sisi-grup">Applied Math</p><ul><li><a href="ch10.html" data-bab="ch10">Chapter 10 — Primes, GCD &amp; LCM</a></li><li><a href="ch11.html" data-bab="ch11">Chapter 11 — Basic Statistics</a></li><li><a class="aktif" aria-current="page" href="ch12.html" data-bab="ch12">Chapter 12 — Plane Geometry</a></li><li><a href="ch13.html" data-bab="ch13">Chapter 13 — Exponents &amp; Roots</a></li><li><a href="ch14.html" data-bab="ch14">Chapter 14 — Logarithms</a></li><li><a href="ch15.html" data-bab="ch15">Chapter 15 — Probability</a></li></ul><p class="sisi-grup">Advanced Level</p><ul><li><a href="ch16.html" data-bab="ch16">Chapter 16 — Ratios &amp; Proportions</a></li><li><a href="ch17.html" data-bab="ch17">Chapter 17 — Solids</a></li><li><a href="ch18.html" data-bab="ch18">Chapter 18 — Sequences &amp; Series</a></li><li><a href="ch19.html" data-bab="ch19">Chapter 19 — Basic Trigonometry</a></li></ul><p class="sisi-grup">Final Project</p><ul><li><a href="ch20.html" data-bab="ch20">Chapter 20 — Report-Card Calculator</a></li></ul><p class="sisi-grup">Extra</p><ul><li><a href="referensi.html" data-bab="referensi">Reference &amp; Glossary</a></li></ul></nav></aside>
 <main id="isi" class="isi">
 <article class="artikel kelas" data-bab="ch12">
-<p class="rel">Bab 12 · Matematika Terapan</p>
-<h1>Geometri Bidang Datar</h1>
-<p class="ringkas">Keliling mengukur "jarak mengelilingi" bentuk. Luas mengukur "seberapa banyak ruang" yang ditutupi. Dua hal yang sering tertukar, padahal artinya sangat berbeda.</p>
+<p class="rel">Chapter 12 · Applied Math</p>
+<h1>Plane Geometry</h1>
+<p class="ringkas">The perimeter measures the "distance around" a shape. The area measures "how much space" it covers. Two things that often get swapped, even though they mean very different things.</p>
 
-<h2 id="rumus-keliling-amp-luas-bangun-datar"><span class="lencana">Konsep</span>Rumus keliling &amp; luas bangun datar</h2>
-<div class="daftar-bentuk"><div class="bentuk"><b>Persegi</b><span>K = 4s<br>L = s²</span></div><div class="bentuk"><b>Persegi Panjang</b><span>K = 2(p+l)<br>L = p×l</span></div><div class="bentuk"><b>Segitiga</b><span>K = a+b+c<br>L = ½×alas×tinggi</span></div><div class="bentuk"><b>Lingkaran</b><span>K = 2πr<br>L = πr²</span></div></div>
-<aside class="catatan catatan-warn"><p class="catatan-judul">Kesalahan umum #1</p><div>Memakai <strong>diameter</strong> padahal rumus butuh <strong>radius</strong> (r = d÷2). Lingkaran berdiameter 10 punya r=5, bukan r=10 — kesalahan ini melipatgandakan hasil luas jadi 4× lebih besar dari seharusnya.</div></aside>
-<aside class="catatan catatan-warn"><p class="catatan-judul">Kesalahan umum #2</p><div>Satuan luas HARUS dikuadratkan (cm², m²), sementara keliling tetap satuan biasa (cm, m). Menulis "luas = 20 cm" (tanpa kuadrat) adalah kesalahan yang sangat sering — dan sebenarnya menunjukkan kebingungan konsep, bukan cuma typo.</div></aside>
-<h2 id="contoh-soal-gabungan">Contoh soal gabungan</h2>
-<div class="rumus"><div class="rumus-persamaan">Taman persegi panjang 12m × 8m, akan dipagari &amp; ditanami rumput</div><div class="rumus-langkah">Panjang pagar (keliling) = 2(12+8) = 2(20) = <span>40m</span></div><div class="rumus-langkah">Luas rumput (luas) = 12×8 = <span>96 m²</span></div></div>
-<details class="latihan"><summary>Latihan mandiri</summary><div><p><strong>1.</strong> Segitiga alas 10cm, tinggi 6cm. Berapa luasnya?</p>
-      <p><strong>2.</strong> Lingkaran berdiameter 14cm (gunakan π≈22/7). Berapa luasnya?</p>
+<h2 id="perimeter-amp-area-formulas-for-flat-shapes"><span class="lencana">concept</span>Perimeter &amp; area formulas for flat shapes</h2>
+<div class="daftar-bentuk"><div class="bentuk"><b>Square</b><span>P = 4s<br>A = s²</span></div><div class="bentuk"><b>Rectangle</b><span>P = 2(l+w)<br>A = l×w</span></div><div class="bentuk"><b>Triangle</b><span>P = a+b+c<br>A = ½×base×height</span></div><div class="bentuk"><b>Circle</b><span>P = 2πr<br>A = πr²</span></div></div>
+<aside class="catatan catatan-warn"><p class="catatan-judul">Common mistake #1</p><div>Using the <strong>diameter</strong> when the formula needs the <strong>radius</strong> (r = d÷2). A circle with a diameter of 10 has r=5, not r=10 — this mistake makes the area 4× bigger than it should be.</div></aside>
+<aside class="catatan catatan-warn"><p class="catatan-judul">Common mistake #2</p><div>Area units MUST be squared (cm², m²), while a perimeter keeps ordinary units (cm, m). Writing "area = 20 cm" (with no square) is a very common mistake — and it really shows a confused idea, not just a typo.</div></aside>
+<h2 id="a-combined-example">A combined example</h2>
+<div class="rumus"><div class="rumus-persamaan">A 12m × 8m rectangular garden, to be fenced &amp; covered with grass</div><div class="rumus-langkah">Length of fence (perimeter) = 2(12+8) = 2(20) = <span>40m</span></div><div class="rumus-langkah">Grass (area) = 12×8 = <span>96 m²</span></div></div>
+<details class="latihan"><summary>Practice on your own</summary><div><p><strong>1.</strong> A triangle has a base of 10cm and a height of 6cm. What is its area?</p>
+      <p><strong>2.</strong> A circle has a diameter of 14cm (use π≈22/7). What is its area?</p>
       <div class="math-box">
-        <div class="math-step"><span>Jawaban 1:</span> ½×10×6 = 30 cm²</div>
-        <div class="math-step"><span>Jawaban 2:</span> r=7, L=22/7×7×7 = 154 cm²</div>
+        <div class="math-step"><span>Answer 1:</span> ½×10×6 = 30 cm²</div>
+        <div class="math-step"><span>Answer 2:</span> r=7, A=22/7×7×7 = 154 cm²</div>
       </div></div></details>
-<h2 id="fungsi-luas-untuk-berbagai-bangun"><span class="lencana">Kode JRG</span>Fungsi luas untuk berbagai bangun</h2>
-<figure class="kode" data-jalan><figcaption><span>geometri.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">luasLingkaran</span>(r: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
+<h2 id="area-functions-for-several-shapes"><span class="lencana">code</span>Area functions for several shapes</h2>
+<figure class="kode" data-jalan><figcaption><span>geometry.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">circleArea</span>(r: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
     <span class="k-kunci">return</span> <span class="k-ns">math</span>::<span class="k-tipe">PI</span> * r * r
 }
 
-<span class="k-kunci">fn</span> <span class="k-fn">luasSegitiga</span>(alas: <span class="k-tipe">float</span>, tinggi: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
-    <span class="k-kunci">return</span> <span class="k-ang">0.5</span> * alas * tinggi
+<span class="k-kunci">fn</span> <span class="k-fn">triangleArea</span>(base: <span class="k-tipe">float</span>, height: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
+    <span class="k-kunci">return</span> <span class="k-ang">0.5</span> * base * height
 }
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
     <span class="k-kunci">let</span> diameter = <span class="k-ang">14.0</span>
     <span class="k-kunci">let</span> radius = diameter / <span class="k-ang">2.0</span>
 
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Luas lingkaran:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, <span class="k-fn">luasLingkaran</span>(radius)))
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;Luas segitiga:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, <span class="k-fn">luasSegitiga</span>(<span class="k-ang">10.0</span>, <span class="k-ang">6.0</span>)))
-}</code></pre><pre class="keluaran"><code>Luas lingkaran: 153.94
-Luas segitiga: 30.00</code></pre></figure>
-<aside class="catatan catatan-real"><p class="catatan-judul">Di dunia nyata</p><div>Setiap game 2D memakai geometri bidang datar untuk deteksi tabrakan (collision detection) — mengecek apakah dua kotak atau lingkaran saling bersentuhan memakai rumus yang persis kamu pelajari di bab ini.</div></aside>
-<div class="kuis" data-kuis="q12_1"><p class="kuis-label">Kuis 1</p><p class="kuis-tanya">Luas persegi dengan sisi 9cm adalah...</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>36 cm²</button><button type="button" data-benar="1"><span>B</span>81 cm²</button><button type="button" data-benar="0"><span>C</span>18 cm²</button></div><p class="kuis-umpan benar" hidden>Tepat! 9² = 81 cm².</p><p class="kuis-umpan salah" hidden>Luas persegi = sisi × sisi, bukan sisi × 4 (itu keliling).</p></div>
-<div class="kuis" data-kuis="q12_2"><p class="kuis-label">Kuis 2</p><p class="kuis-tanya">Lingkaran berdiameter 20cm, radiusnya adalah...</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>20cm</button><button type="button" data-benar="1"><span>B</span>10cm</button><button type="button" data-benar="0"><span>C</span>40cm</button></div><p class="kuis-umpan benar" hidden>Benar! Radius = diameter ÷ 2.</p><p class="kuis-umpan salah" hidden>Ingat, radius selalu setengah dari diameter.</p></div>
-<div class="kuis" data-kuis="q12_3"><p class="kuis-label">Kuis 3</p><p class="kuis-tanya">Satuan yang benar untuk LUAS adalah...</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>cm</button><button type="button" data-benar="1"><span>B</span>cm²</button><button type="button" data-benar="0"><span>C</span>cm³</button></div><p class="kuis-umpan benar" hidden>Tepat! Luas selalu satuan kuadrat (2D).</p><p class="kuis-umpan salah" hidden>cm³ untuk volume (3D), cm untuk panjang/keliling (1D).</p></div>
-<aside class="catatan catatan-real"><p class="catatan-judul">Lanjut ke Bab 13</p><div>Berikutnya: eksponen (pangkat) dan akar — termasuk bagaimana bunga bank tumbuh secara eksponensial, bukan linear.</div></aside>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Circle area:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, <span class="k-fn">circleArea</span>(radius)))
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;Triangle area:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">format</span>(<span class="k-str">&quot;{:.2}&quot;</span>, <span class="k-fn">triangleArea</span>(<span class="k-ang">10.0</span>, <span class="k-ang">6.0</span>)))
+}</code></pre><pre class="keluaran"><code>Circle area: 153.94
+Triangle area: 30.00</code></pre></figure>
+<aside class="catatan catatan-real"><p class="catatan-judul">In the real world</p><div>Every 2D game uses plane geometry for collision detection — checking whether two boxes or circles touch uses exactly the formulas you learn in this chapter.</div></aside>
+<div class="kuis" data-kuis="q12_1"><p class="kuis-label">Quiz 1</p><p class="kuis-tanya">The area of a square with 9cm sides is...</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>36 cm²</button><button type="button" data-benar="1"><span>B</span>81 cm²</button><button type="button" data-benar="0"><span>C</span>18 cm²</button></div><p class="kuis-umpan benar" hidden>Exactly! 9² = 81 cm².</p><p class="kuis-umpan salah" hidden>The area of a square = side × side, not side × 4 (that is the perimeter).</p></div>
+<div class="kuis" data-kuis="q12_2"><p class="kuis-label">Quiz 2</p><p class="kuis-tanya">A circle has a diameter of 20cm; its radius is...</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>20cm</button><button type="button" data-benar="1"><span>B</span>10cm</button><button type="button" data-benar="0"><span>C</span>40cm</button></div><p class="kuis-umpan benar" hidden>Right! Radius = diameter ÷ 2.</p><p class="kuis-umpan salah" hidden>Remember, the radius is always half the diameter.</p></div>
+<div class="kuis" data-kuis="q12_3"><p class="kuis-label">Quiz 3</p><p class="kuis-tanya">The right unit for AREA is...</p><div class="kuis-pilihan"><button type="button" data-benar="0"><span>A</span>cm</button><button type="button" data-benar="1"><span>B</span>cm²</button><button type="button" data-benar="0"><span>C</span>cm³</button></div><p class="kuis-umpan benar" hidden>Exactly! Area is always in square units (2D).</p><p class="kuis-umpan salah" hidden>cm³ is for volume (3D), cm for length/perimeter (1D).</p></div>
+<aside class="catatan catatan-real"><p class="catatan-judul">On to Chapter 13</p><div>Next: exponents (powers) and roots — including how bank interest grows exponentially, not linearly.</div></aside>
 
 </article>
-<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="ch11.html"><small>Bab sebelumnya</small><strong>Statistik Dasar</strong></a><a class="ke-kanan" href="ch13.html"><small>Bab berikutnya</small><strong>Eksponen &amp; Akar</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">Saluran WhatsApp</a></span></footer>
+<nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="ch11.html"><small>Previous chapter</small><strong>Basic Statistics</strong></a><a class="ke-kanan" href="ch13.html"><small>Next chapter</small><strong>Exponents &amp; Roots</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
 </main>
 </div>
-<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
-  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
+  <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari-id.js?v=5f93a322d5"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 <script defer src="../aset/kelas-data.js?v=c386df7ff6"></script>
-<script defer src="../aset/kelas.js?v=505624797c"></script>
+<script defer src="../aset/kelas.js?v=cfe2ec492f"></script>
 </body>
 </html>

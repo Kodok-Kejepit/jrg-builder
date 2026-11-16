@@ -9,12 +9,12 @@ ringkas: How JRG says "might not be there" and "might fail", and how to stop a p
 `get`, `find`, `pop`, `dict::get`, `env::get`, `str::find`) returns an `Option`, never `nil` or `-1`.
 
 ```jrg option.jrg
-let ada = [4, 8, 15].find(|x| x > 5)
-let kosong = [4, 8, 15].find(|x| x > 50)
-wok(ada, kosong)
-wok(ada.is_some(), kosong.is_none())
-wok(ada.unwrap(), kosong.unwrap_or(0), kosong ?? -1)
-wok(ada.map(|x| x * 2), kosong.map(|x| x * 2))
+let found = [4, 8, 15].find(|x| x > 5)
+let empty = [4, 8, 15].find(|x| x > 50)
+wok(found, empty)
+wok(found.is_some(), empty.is_none())
+wok(found.unwrap(), empty.unwrap_or(0), empty ?? -1)
+wok(found.map(|x| x * 2), empty.map(|x| x * 2))
 ```
 ```keluaran
 Option::Some(8) Option::None
@@ -31,25 +31,25 @@ Option::Some(16) Option::None
 (`fs::try_read`, `http::get`, FFI, databases) return a `Result`, and your own functions may too.
 
 ```jrg result.jrg
-fn bagi(a, b) -> Result<int, string> {
+fn divide(a, b) -> Result<int, string> {
     if b == 0 {
-        return Err("pembagi nol")
+        return Err("division by zero")
     }
     return Ok(a / b)
 }
 
-wok(bagi(10, 2), bagi(1, 0))
+wok(divide(10, 2), divide(1, 0))
 
-match bagi(9, 0) {
-    Ok(v) => wok("hasil", v),
-    Err(e) => wok("gagal:", e),
+match divide(9, 0) {
+    Ok(v) => wok("result", v),
+    Err(e) => wok("failed:", e),
 }
 
-wok(bagi(8, 2).unwrap_or(-1), bagi(8, 0).unwrap_or(-1))
+wok(divide(8, 2).unwrap_or(-1), divide(8, 0).unwrap_or(-1))
 ```
 ```keluaran
-Result::Ok(5) Result::Err(pembagi nol)
-gagal: pembagi nol
+Result::Ok(5) Result::Err(division by zero)
+failed: division by zero
 4 -1
 ```
 
@@ -58,24 +58,24 @@ gagal: pembagi nol
 `expression?` opens an `Ok`, or returns its `Err` straight out of the running function. It works on `Option` too: a
 `None` is passed on.
 
-```jrg tanya.jrg
-fn bagi(a, b) -> Result<int, string> {
-    if b == 0 { return Err("pembagi nol") }
+```jrg question.jrg
+fn divide(a, b) -> Result<int, string> {
+    if b == 0 { return Err("division by zero") }
     return Ok(a / b)
 }
 
-fn hitung(a, b, c) -> Result<int, string> {
-    let x = bagi(a, b)?
-    let y = bagi(x, c)?
+fn compute(a, b, c) -> Result<int, string> {
+    let x = divide(a, b)?
+    let y = divide(x, c)?
     return Ok(y)
 }
 
-wok(hitung(100, 5, 2))
-wok(hitung(100, 0, 2))
+wok(compute(100, 5, 2))
+wok(compute(100, 0, 2))
 ```
 ```keluaran
 Result::Ok(10)
-Result::Err(pembagi nol)
+Result::Err(division by zero)
 ```
 
 ## When main fails
@@ -83,13 +83,13 @@ Result::Err(pembagi nol)
 `main` may return a `Result`. An `Err` that leaves `main` is reported as an error and the program stops with exit
 code 1.
 
-```jrg main-gagal.jrg
+```jrg main-fails.jrg
 pub fn main() -> Result<int, string> {
-    return Err("berkas konfigurasi tidak ada")
+    return Err("config file not found")
 }
 ```
 ```keluaran
-error: program berhenti karena `Result::Err` merambat keluar dari `main`: berkas konfigurasi tidak ada — tangani dengan `match` di dalam `main`, atau pakai `.unwrap_or(...)`, kalau kegagalan ini memang boleh terjadi
+error: program berhenti karena `Result::Err` merambat keluar dari `main`: config file not found — tangani dengan `match` di dalam `main`, atau pakai `.unwrap_or(...)`, kalau kegagalan ini memang boleh terjadi
 ```
 
 ## Stopping a program
@@ -97,26 +97,26 @@ error: program berhenti karena `Result::Err` merambat keluar dari `main`: berkas
 `panik(message)` stops the program with an error. Use it for states that should be impossible; for ordinary failure,
 return a `Result`.
 
-```jrg panik.jrg
-fn umur_valid(n) {
+```jrg panic.jrg
+fn valid_age(n) {
     if n < 0 {
-        panik("umur tidak boleh negatif")
+        panik("age cannot be negative")
     }
     return n
 }
 
-wok(umur_valid(5))
-wok(umur_valid(-1))
+wok(valid_age(5))
+wok(valid_age(-1))
 ```
 ```keluaran
 5
-error: umur tidak boleh negatif
- --> panik.jrg:3:9
+error: age cannot be negative
+ --> panic.jrg:3:9
   |
-3 |         panik("umur tidak boleh negatif")
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |         panik("age cannot be negative")
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = jejak: `umur_valid` dipanggil di panik.jrg:9:5
+  = jejak: `valid_age` dipanggil di panic.jrg:9:5
 ```
 
 The `jejak:` (trace) line shows where the function was called from. `exit(code)` ends the program with an exit code

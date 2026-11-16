@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -465,40 +465,40 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p>The condition has no parentheses, and the body always has braces. <code>if</code> can also be used as a value.</p>
 <figure class="kode" data-jalan><figcaption><span>if.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> n = <span class="k-ang">7</span>
 <span class="k-kunci">if</span> n % <span class="k-ang">2</span> == <span class="k-ang">0</span> {
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;genap&quot;</span>)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;even&quot;</span>)
 } <span class="k-kunci">else</span> <span class="k-kunci">if</span> n &gt; <span class="k-ang">5</span> {
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;ganjil dan besar&quot;</span>)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;odd and big&quot;</span>)
 } <span class="k-kunci">else</span> {
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;ganjil&quot;</span>)
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;odd&quot;</span>)
 }
 
-<span class="k-kunci">let</span> jenis = <span class="k-kunci">if</span> n &gt; <span class="k-ang">5</span> { <span class="k-str">&quot;besar&quot;</span> } <span class="k-kunci">else</span> { <span class="k-str">&quot;kecil&quot;</span> }
-<span class="k-fn">wok</span>(jenis)</code></pre><pre class="keluaran"><code>ganjil dan besar
-besar</code></pre></figure>
+<span class="k-kunci">let</span> size = <span class="k-kunci">if</span> n &gt; <span class="k-ang">5</span> { <span class="k-str">&quot;big&quot;</span> } <span class="k-kunci">else</span> { <span class="k-str">&quot;small&quot;</span> }
+<span class="k-fn">wok</span>(size)</code></pre><pre class="keluaran"><code>odd and big
+big</code></pre></figure>
 <h2 id="ternary"><a class="jangkar" href="#ternary">Ternary</a></h2>
 <p>The short form is <code>condition $ if_true : if_false</code>. It opens with <code>$</code>, not <code>?</code>, because <code>?</code> is used to propagate errors (see <a href="galat.html">Option and Result</a>).</p>
-<figure class="kode" data-jalan><figcaption><span>ternary.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> nilai = <span class="k-ang">72</span>
-<span class="k-fn">wok</span>(nilai &gt;= <span class="k-ang">75</span> $ <span class="k-str">&quot;lulus&quot;</span> : <span class="k-str">&quot;remedial&quot;</span>)</code></pre><pre class="keluaran"><code>remedial</code></pre></figure>
+<figure class="kode" data-jalan><figcaption><span>ternary.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> score = <span class="k-ang">72</span>
+<span class="k-fn">wok</span>(score &gt;= <span class="k-ang">75</span> $ <span class="k-str">&quot;pass&quot;</span> : <span class="k-str">&quot;retake&quot;</span>)</code></pre><pre class="keluaran"><code>retake</code></pre></figure>
 <h2 id="for"><a class="jangkar" href="#for">for</a></h2>
 <p><code>for</code> has two forms, and the difference matters:</p>
 <ul><li><code>for i, x in collection</code>: <code>i</code> is the index, <code>x</code> the value. Use <code>_</code> for the one you do not need.</li><li><code>for i in collection</code>: <strong>a single name always means the index</strong>, ranges included.</li></ul>
-<figure class="kode" data-jalan><figcaption><span>for.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> buah = [<span class="k-str">&quot;apel&quot;</span>, <span class="k-str">&quot;jeruk&quot;</span>]
-<span class="k-kunci">for</span> i, b <span class="k-kunci">in</span> buah {
-    <span class="k-fn">wok</span>(i, b)
+<figure class="kode" data-jalan><figcaption><span>for.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> fruit = [<span class="k-str">&quot;apple&quot;</span>, <span class="k-str">&quot;orange&quot;</span>]
+<span class="k-kunci">for</span> i, f <span class="k-kunci">in</span> fruit {
+    <span class="k-fn">wok</span>(i, f)
 }
 
-<span class="k-kunci">var</span> nilai = []
-<span class="k-kunci">for</span> _, angka <span class="k-kunci">in</span> <span class="k-ang">5</span>..<span class="k-ang">8</span> {
-    nilai = nilai.<span class="k-fn">push</span>(angka)
+<span class="k-kunci">var</span> values = []
+<span class="k-kunci">for</span> _, number <span class="k-kunci">in</span> <span class="k-ang">5</span>..<span class="k-ang">8</span> {
+    values = values.<span class="k-fn">push</span>(number)
 }
-<span class="k-fn">wok</span>(nilai)
+<span class="k-fn">wok</span>(values)
 
-<span class="k-kunci">var</span> indeks = []
+<span class="k-kunci">var</span> indices = []
 <span class="k-kunci">for</span> i <span class="k-kunci">in</span> <span class="k-ang">5</span>..<span class="k-ang">8</span> {
-    indeks = indeks.<span class="k-fn">push</span>(i)
+    indices = indices.<span class="k-fn">push</span>(i)
 }
-<span class="k-fn">wok</span>(indeks)</code></pre><pre class="keluaran"><code>0 apel
-1 jeruk
+<span class="k-fn">wok</span>(indices)</code></pre><pre class="keluaran"><code>0 apple
+1 orange
 [5, 6, 7]
 [0, 1, 2]</code></pre></figure>
 <p>The last line holds <code>[0, 1, 2]</code>, not <code>[5, 6, 7]</code>: with one name, <code>i</code> is the 0th, 1st, and 2nd index of that range. If you want the values, write <code>for _, i in 5..8</code>.</p>
@@ -512,53 +512,53 @@ besar</code></pre></figure>
 <p>A range in a <code>for</code> header is never turned into an array, so <code>for _, i in 0..1000000000</code> uses no memory.</p>
 <h2 id="while-and-loop"><a class="jangkar" href="#while-and-loop">while and loop</a></h2>
 <figure class="kode" data-jalan><figcaption><span>while.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> n = <span class="k-ang">27</span>
-<span class="k-kunci">var</span> langkah = <span class="k-ang">0</span>
+<span class="k-kunci">var</span> steps = <span class="k-ang">0</span>
 <span class="k-kunci">while</span> n != <span class="k-ang">1</span> {
     n = n % <span class="k-ang">2</span> == <span class="k-ang">0</span> $ n / <span class="k-ang">2</span> : <span class="k-ang">3</span> * n + <span class="k-ang">1</span>
-    langkah += <span class="k-ang">1</span>
+    steps += <span class="k-ang">1</span>
 }
-<span class="k-fn">wok</span>(<span class="k-str">&quot;Collatz 27:&quot;</span>, langkah, <span class="k-str">&quot;langkah&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-str">&quot;Collatz 27:&quot;</span>, steps, <span class="k-str">&quot;steps&quot;</span>)
 
-<span class="k-kunci">var</span> tebakan = <span class="k-ang">0</span>
+<span class="k-kunci">var</span> guess = <span class="k-ang">0</span>
 <span class="k-kunci">loop</span> {
-    tebakan += <span class="k-ang">1</span>
-    <span class="k-kunci">if</span> tebakan * tebakan &gt; <span class="k-ang">50</span> { <span class="k-kunci">break</span> }
+    guess += <span class="k-ang">1</span>
+    <span class="k-kunci">if</span> guess * guess &gt; <span class="k-ang">50</span> { <span class="k-kunci">break</span> }
 }
-<span class="k-fn">wok</span>(tebakan)</code></pre><pre class="keluaran"><code>Collatz 27: 111 langkah
+<span class="k-fn">wok</span>(guess)</code></pre><pre class="keluaran"><code>Collatz 27: 111 steps
 8</code></pre></figure>
 <h2 id="labeled-break-and-continue"><a class="jangkar" href="#labeled-break-and-continue">Labeled break and continue</a></h2>
 <p><code>break</code> and <code>continue</code> apply to the nearest loop. To leave an outer loop, give it a label that starts with a single quote.</p>
-<figure class="kode" data-jalan><figcaption><span>label.jrg</span></figcaption><pre><code>&#x27;cari: <span class="k-kunci">for</span> _, i <span class="k-kunci">in</span> <span class="k-ang">1</span>..<span class="k-ang">10</span> {
+<figure class="kode" data-jalan><figcaption><span>label.jrg</span></figcaption><pre><code>&#x27;search: <span class="k-kunci">for</span> _, i <span class="k-kunci">in</span> <span class="k-ang">1</span>..<span class="k-ang">10</span> {
     <span class="k-kunci">for</span> _, j <span class="k-kunci">in</span> <span class="k-ang">1</span>..<span class="k-ang">10</span> {
         <span class="k-kunci">if</span> i * j == <span class="k-ang">42</span> {
-            <span class="k-fn">wok</span>(<span class="k-str">&quot;ketemu:&quot;</span>, i, j)
-            <span class="k-kunci">break</span> &#x27;cari
+            <span class="k-fn">wok</span>(<span class="k-str">&quot;found:&quot;</span>, i, j)
+            <span class="k-kunci">break</span> &#x27;search
         }
     }
-}</code></pre><pre class="keluaran"><code>ketemu: 6 7</code></pre></figure>
+}</code></pre><pre class="keluaran"><code>found: 6 7</code></pre></figure>
 <h2 id="match"><a class="jangkar" href="#match">match</a></h2>
 <p><code>match</code> matches a value against patterns and runs the first arm that matches. It is also an expression.</p>
-<figure class="kode" data-jalan><figcaption><span>match.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">hari</span>(n) {
+<figure class="kode" data-jalan><figcaption><span>match.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">day</span>(n) {
     <span class="k-kunci">return</span> <span class="k-kunci">match</span> n {
-        <span class="k-ang">0</span> | <span class="k-ang">6</span> =&gt; <span class="k-str">&quot;akhir pekan&quot;</span>,
-        <span class="k-ang">1</span>..=<span class="k-ang">5</span> =&gt; <span class="k-str">&quot;hari kerja&quot;</span>,
-        _ =&gt; <span class="k-str">&quot;bukan hari&quot;</span>,
+        <span class="k-ang">0</span> | <span class="k-ang">6</span> =&gt; <span class="k-str">&quot;weekend&quot;</span>,
+        <span class="k-ang">1</span>..=<span class="k-ang">5</span> =&gt; <span class="k-str">&quot;weekday&quot;</span>,
+        _ =&gt; <span class="k-str">&quot;not a day&quot;</span>,
     }
 }
-<span class="k-fn">wok</span>(<span class="k-fn">hari</span>(<span class="k-ang">0</span>), <span class="k-fn">hari</span>(<span class="k-ang">3</span>), <span class="k-fn">hari</span>(<span class="k-ang">9</span>))</code></pre><pre class="keluaran"><code>akhir pekan hari kerja bukan hari</code></pre></figure>
+<span class="k-fn">wok</span>(<span class="k-fn">day</span>(<span class="k-ang">0</span>), <span class="k-fn">day</span>(<span class="k-ang">3</span>), <span class="k-fn">day</span>(<span class="k-ang">9</span>))</code></pre><pre class="keluaran"><code>weekend weekday not a day</code></pre></figure>
 <p>The full set of patterns (tuples, arrays, structs, enums, <code>if</code> guards, <code>@</code> bindings) is in <a href="pola.html">Patterns</a>.</p>
 <h2 id="defer"><a class="jangkar" href="#defer">defer</a></h2>
 <p><code>defer</code> delays a call until the function finishes, including when the function stops because of an error. The last one registered runs first, and its arguments are frozen when the <code>defer</code> line is read.</p>
-<figure class="kode" data-jalan><figcaption><span>defer.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">proses</span>() {
-    <span class="k-kunci">var</span> berkas = <span class="k-str">&quot;laporan.txt&quot;</span>
-    <span class="k-kunci">defer</span> <span class="k-fn">wok</span>(<span class="k-str">&quot;tutup&quot;</span>, berkas)
-    <span class="k-kunci">defer</span> <span class="k-fn">wok</span>(<span class="k-str">&quot;simpan&quot;</span>)
-    berkas = <span class="k-str">&quot;lain.txt&quot;</span>
-    <span class="k-fn">wok</span>(<span class="k-str">&quot;kerja dengan&quot;</span>, berkas)
+<figure class="kode" data-jalan><figcaption><span>defer.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">work</span>() {
+    <span class="k-kunci">var</span> file = <span class="k-str">&quot;report.txt&quot;</span>
+    <span class="k-kunci">defer</span> <span class="k-fn">wok</span>(<span class="k-str">&quot;close&quot;</span>, file)
+    <span class="k-kunci">defer</span> <span class="k-fn">wok</span>(<span class="k-str">&quot;save&quot;</span>)
+    file = <span class="k-str">&quot;other.txt&quot;</span>
+    <span class="k-fn">wok</span>(<span class="k-str">&quot;working with&quot;</span>, file)
 }
-<span class="k-fn">proses</span>()</code></pre><pre class="keluaran"><code>kerja dengan lain.txt
-simpan
-tutup laporan.txt</code></pre></figure>
+<span class="k-fn">work</span>()</code></pre><pre class="keluaran"><code>working with other.txt
+save
+close report.txt</code></pre></figure>
 </article>
 <nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="nilai.html"><small>Previous</small><strong>Values and types</strong></a><a class="ke-kanan" href="fungsi.html"><small>Next</small><strong>Functions and closures</strong></a></nav>
 <footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
@@ -569,7 +569,7 @@ tutup laporan.txt</code></pre></figure>
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

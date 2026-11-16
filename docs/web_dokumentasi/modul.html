@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -463,42 +463,42 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p class="ringkas">Splitting a program into several files, and using the std/ library.</p>
 <h2 id="one-file-one-module"><a class="jangkar" href="#one-file-one-module">One file, one module</a></h2>
 <p>Every <code>.jrg</code> file is a module. Another file uses it through <code>import</code>, and calls what is inside with the <code>name::</code> prefix.</p>
-<figure class="kode"><figcaption><span>geometri.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> geometri
+<figure class="kode"><figcaption><span>geometry.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> geometry
 
 <span class="k-kunci">pub</span> <span class="k-kunci">const</span> <span class="k-tipe">PI</span> = <span class="k-ang">3.14159</span>
 
-<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">luas_lingkaran</span>(r: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">circle_area</span>(r: <span class="k-tipe">float</span>) -&gt; <span class="k-tipe">float</span> {
     <span class="k-kunci">return</span> <span class="k-tipe">PI</span> * r * r
 }
 
-<span class="k-kunci">fn</span> <span class="k-fn">_bantu</span>() { <span class="k-kunci">return</span> <span class="k-ang">1</span> }
+<span class="k-kunci">fn</span> <span class="k-fn">_helper</span>() { <span class="k-kunci">return</span> <span class="k-ang">1</span> }
 
-<span class="k-kunci">pub</span> <span class="k-kunci">struct</span> <span class="k-tipe">Titik</span> { <span class="k-kunci">pub</span> x: <span class="k-tipe">float</span>, <span class="k-kunci">pub</span> y: <span class="k-tipe">float</span> }
+<span class="k-kunci">pub</span> <span class="k-kunci">struct</span> <span class="k-tipe">Point</span> { <span class="k-kunci">pub</span> x: <span class="k-tipe">float</span>, <span class="k-kunci">pub</span> y: <span class="k-tipe">float</span> }
 
-<span class="k-kunci">impl</span> <span class="k-tipe">Titik</span> {
-    <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">jarak</span>(<span class="k-kunci">self</span>, lain: <span class="k-tipe">Titik</span>) -&gt; <span class="k-tipe">float</span> {
-        <span class="k-kunci">return</span> <span class="k-ns">math</span>::<span class="k-fn">sqrt</span>((<span class="k-kunci">self</span>.x - lain.x) ** <span class="k-ang">2.0</span> + (<span class="k-kunci">self</span>.y - lain.y) ** <span class="k-ang">2.0</span>)
+<span class="k-kunci">impl</span> <span class="k-tipe">Point</span> {
+    <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">distance</span>(<span class="k-kunci">self</span>, other: <span class="k-tipe">Point</span>) -&gt; <span class="k-tipe">float</span> {
+        <span class="k-kunci">return</span> <span class="k-ns">math</span>::<span class="k-fn">sqrt</span>((<span class="k-kunci">self</span>.x - other.x) ** <span class="k-ang">2.0</span> + (<span class="k-kunci">self</span>.y - other.y) ** <span class="k-ang">2.0</span>)
     }
 }</code></pre></figure>
 <figure class="kode"><figcaption><span>main.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> main
 
-<span class="k-kunci">import</span> <span class="k-str">&quot;geometri&quot;</span>
-<span class="k-kunci">import</span> <span class="k-str">&quot;geometri&quot;</span> <span class="k-kunci">as</span> g
+<span class="k-kunci">import</span> <span class="k-str">&quot;geometry&quot;</span>
+<span class="k-kunci">import</span> <span class="k-str">&quot;geometry&quot;</span> <span class="k-kunci">as</span> g
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
-    <span class="k-fn">wok</span>(<span class="k-ns">geometri</span>::<span class="k-fn">luas_lingkaran</span>(<span class="k-ang">2.0</span>))
-    <span class="k-kunci">let</span> a = <span class="k-ns">g</span>::<span class="k-tipe">Titik</span> { x: <span class="k-ang">0.0</span>, y: <span class="k-ang">0.0</span> }
-    <span class="k-kunci">let</span> b = <span class="k-ns">geometri</span>::<span class="k-tipe">Titik</span> { x: <span class="k-ang">3.0</span>, y: <span class="k-ang">4.0</span> }
-    <span class="k-fn">wok</span>(a.<span class="k-fn">jarak</span>(b), <span class="k-ns">g</span>::<span class="k-tipe">PI</span>)
+    <span class="k-fn">wok</span>(<span class="k-ns">geometry</span>::<span class="k-fn">circle_area</span>(<span class="k-ang">2.0</span>))
+    <span class="k-kunci">let</span> a = <span class="k-ns">g</span>::<span class="k-tipe">Point</span> { x: <span class="k-ang">0.0</span>, y: <span class="k-ang">0.0</span> }
+    <span class="k-kunci">let</span> b = <span class="k-ns">geometry</span>::<span class="k-tipe">Point</span> { x: <span class="k-ang">3.0</span>, y: <span class="k-ang">4.0</span> }
+    <span class="k-fn">wok</span>(a.<span class="k-fn">distance</span>(b), <span class="k-ns">g</span>::<span class="k-tipe">PI</span>)
 }</code></pre></figure>
 <figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc main.jrg
 12.56636
 5.0 3.14159</code></pre></figure>
 <h2 id="what-is-visible-from-outside"><a class="jangkar" href="#what-is-visible-from-outside">What is visible from outside</a></h2>
-<ul><li>What an importer can use: functions, top-level <code>const</code>/<code>let</code>, structs, enums with their variants, and the methods of types the module owns.</li><li>A name starting with <code>_</code> is private. <code>geometri::_bantu()</code> is refused with a message that says why.</li><li>A top-level <code>var</code> stays with its module. If its value has to be read from outside, provide a reader function.</li><li>A file only sees the modules it imports itself. Modules imported by another module are not visible.</li></ul>
+<ul><li>What an importer can use: functions, top-level <code>const</code>/<code>let</code>, structs, enums with their variants, and the methods of types the module owns.</li><li>A name starting with <code>_</code> is private. <code>geometry::_helper()</code> is refused with a message that says why.</li><li>A top-level <code>var</code> stays with its module. If its value has to be read from outside, provide a reader function.</li><li>A file only sees the modules it imports itself. Modules imported by another module are not visible.</li></ul>
 <p>A file is one module however many times it is imported, under whatever alias.</p>
 <h2 id="where-import-looks"><a class="jangkar" href="#where-import-looks">Where import looks</a></h2>
-<p><code>import &quot;geometri&quot;</code> looks for <code>geometri.jrg</code> in the importing file's folder, then in the project's dependency folders (see <a href="jrgm.html">jrgm</a>), then in folders added with <code>jrgc -I folder</code>. Nested paths work too: <code>import &quot;alat/teks&quot;</code> loads <code>alat/teks.jrg</code> as the module <code>teks</code>.</p>
+<p><code>import &quot;geometry&quot;</code> looks for <code>geometry.jrg</code> in the importing file's folder, then in the project's dependency folders (see <a href="jrgm.html">jrgm</a>), then in folders added with <code>jrgc -I folder</code>. Nested paths work too: <code>import &quot;tools/text&quot;</code> loads <code>tools/text.jrg</code> as the module <code>text</code>.</p>
 <h2 id="the-std-library"><a class="jangkar" href="#the-std-library">The std/ library</a></h2>
 <p>The standard library modules are written in JRG and embedded in <code>jrgc</code>, so they work anywhere without installing anything.</p>
 <figure class="kode" data-jalan><figcaption><span>std.jrg</span></figcaption><pre><code><span class="k-kunci">import</span> <span class="k-str">&quot;std/set&quot;</span>
@@ -507,13 +507,13 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <span class="k-kunci">let</span> s = <span class="k-ns">set</span>::<span class="k-fn">from</span>([<span class="k-ang">3</span>, <span class="k-ang">1</span>, <span class="k-ang">3</span>, <span class="k-ang">2</span>])
 <span class="k-fn">wok</span>(s.<span class="k-fn">len</span>(), s.<span class="k-fn">has</span>(<span class="k-ang">3</span>))
 
-<span class="k-kunci">let</span> baris = <span class="k-ns">csv</span>::<span class="k-fn">parse</span>(<span class="k-str">&quot;nama,kota\n\&quot;Ani, S.Kom\&quot;,Bandung&quot;</span>)
-<span class="k-fn">wok</span>(baris[<span class="k-ang">1</span>][<span class="k-ang">0</span>])</code></pre><pre class="keluaran"><code>3 true
-Ani, S.Kom</code></pre></figure>
+<span class="k-kunci">let</span> rows = <span class="k-ns">csv</span>::<span class="k-fn">parse</span>(<span class="k-str">&quot;name,city\n\&quot;Ani, PhD\&quot;,Bandung&quot;</span>)
+<span class="k-fn">wok</span>(rows[<span class="k-ang">1</span>][<span class="k-ang">0</span>])</code></pre><pre class="keluaran"><code>3 true
+Ani, PhD</code></pre></figure>
 <p>The list of modules is in the <a href="pustaka.html#modul-std">Built-in library</a>.</p>
 <h2 id="shadowing-built-in-names"><a class="jangkar" href="#shadowing-built-in-names">Shadowing built-in names</a></h2>
 <p>When a program has a function with the same name as a built-in, the program's wins. <code>::name</code> always points at the language's built-in.</p>
-<figure class="kode" data-jalan><figcaption><span>bayang.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">len</span>(a, b, c) { <span class="k-kunci">return</span> a + b + c }
+<figure class="kode" data-jalan><figcaption><span>shadow.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">len</span>(a, b, c) { <span class="k-kunci">return</span> a + b + c }
 
 <span class="k-fn">wok</span>(<span class="k-fn">len</span>(<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>), ::<span class="k-fn">len</span>(<span class="k-str">&quot;abc&quot;</span>))</code></pre><pre class="keluaran"><code>6 3</code></pre></figure>
 </article>
@@ -526,7 +526,7 @@ Ani, S.Kom</code></pre></figure>
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

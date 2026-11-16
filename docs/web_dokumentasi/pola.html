@@ -444,7 +444,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
@@ -463,76 +463,76 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p class="ringkas">Taking values apart and choosing a branch by their shape.</p>
 <h2 id="match"><a class="jangkar" href="#match">match</a></h2>
 <p><code>match</code> tries each arm from the top and runs the first one that matches. <code>_</code> matches anything.</p>
-<figure class="kode" data-jalan><figcaption><span>match.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">jelaskan</span>(x) {
+<figure class="kode" data-jalan><figcaption><span>match.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">describe</span>(x) {
     <span class="k-kunci">return</span> <span class="k-kunci">match</span> x {
-        <span class="k-ang">0</span> =&gt; <span class="k-str">&quot;nol&quot;</span>,
-        n @ <span class="k-ang">1</span>..=<span class="k-ang">9</span> =&gt; <span class="k-str">&quot;satu digit: &quot;</span> + <span class="k-fn">str</span>(n),
-        n <span class="k-kunci">if</span> n &lt; <span class="k-ang">0</span> =&gt; <span class="k-str">&quot;negatif&quot;</span>,
-        _ =&gt; <span class="k-str">&quot;besar&quot;</span>,
+        <span class="k-ang">0</span> =&gt; <span class="k-str">&quot;zero&quot;</span>,
+        n @ <span class="k-ang">1</span>..=<span class="k-ang">9</span> =&gt; <span class="k-str">&quot;one digit: &quot;</span> + <span class="k-fn">str</span>(n),
+        n <span class="k-kunci">if</span> n &lt; <span class="k-ang">0</span> =&gt; <span class="k-str">&quot;negative&quot;</span>,
+        _ =&gt; <span class="k-str">&quot;big&quot;</span>,
     }
 }
-<span class="k-fn">wok</span>(<span class="k-fn">jelaskan</span>(<span class="k-ang">0</span>), <span class="k-fn">jelaskan</span>(<span class="k-ang">7</span>), <span class="k-fn">jelaskan</span>(-<span class="k-ang">3</span>), <span class="k-fn">jelaskan</span>(<span class="k-ang">42</span>))</code></pre><pre class="keluaran"><code>nol satu digit: 7 negatif besar</code></pre></figure>
-<div class="tabel"><table><thead><tr><th>Pattern</th><th>Matches</th></tr></thead><tbody><tr><td><code>0</code>, <code>&quot;teks&quot;</code>, <code>&#x27;a&#x27;</code>, <code>true</code></td><td>exactly that value</td></tr><tr><td><code>1..=9</code>, <code>&#x27;a&#x27;..=&#x27;z&#x27;</code></td><td>a value inside the range</td></tr><tr><td><code>a | b</code></td><td>either of them</td></tr><tr><td><code>n</code></td><td>anything, binding it to <code>n</code></td></tr><tr><td><code>n @ pattern</code></td><td><code>pattern</code>, binding the whole value to <code>n</code></td></tr><tr><td><code>pattern if condition</code></td><td><code>pattern</code>, when <code>condition</code> is true</td></tr><tr><td><code>(a, b)</code></td><td>a two-element tuple</td></tr><tr><td><code>[a, b]</code>, <code>[]</code>, <code>[head, ...rest]</code>, <code>[a, ..., z]</code></td><td>an array of that shape</td></tr><tr><td><code>Titik { x, y: 0 }</code></td><td>a struct whose field <code>y</code> is 0</td></tr><tr><td><code>Bentuk::Lingkaran(r)</code>, <code>Some(v)</code>, <code>Err(e)</code></td><td>an enum variant, unpacking its contents</td></tr></tbody></table></div>
+<span class="k-fn">wok</span>(<span class="k-fn">describe</span>(<span class="k-ang">0</span>), <span class="k-fn">describe</span>(<span class="k-ang">7</span>), <span class="k-fn">describe</span>(-<span class="k-ang">3</span>), <span class="k-fn">describe</span>(<span class="k-ang">42</span>))</code></pre><pre class="keluaran"><code>zero one digit: 7 negative big</code></pre></figure>
+<div class="tabel"><table><thead><tr><th>Pattern</th><th>Matches</th></tr></thead><tbody><tr><td><code>0</code>, <code>&quot;teks&quot;</code>, <code>&#x27;a&#x27;</code>, <code>true</code></td><td>exactly that value</td></tr><tr><td><code>1..=9</code>, <code>&#x27;a&#x27;..=&#x27;z&#x27;</code></td><td>a value inside the range</td></tr><tr><td><code>a | b</code></td><td>either of them</td></tr><tr><td><code>n</code></td><td>anything, binding it to <code>n</code></td></tr><tr><td><code>n @ pattern</code></td><td><code>pattern</code>, binding the whole value to <code>n</code></td></tr><tr><td><code>pattern if condition</code></td><td><code>pattern</code>, when <code>condition</code> is true</td></tr><tr><td><code>(a, b)</code></td><td>a two-element tuple</td></tr><tr><td><code>[a, b]</code>, <code>[]</code>, <code>[head, ...rest]</code>, <code>[a, ..., z]</code></td><td>an array of that shape</td></tr><tr><td><code>Point { x, y: 0 }</code></td><td>a struct whose field <code>y</code> is 0</td></tr><tr><td><code>Shape::Circle(r)</code>, <code>Some(v)</code>, <code>Err(e)</code></td><td>an enum variant, unpacking its contents</td></tr></tbody></table></div>
 <h2 id="array-patterns"><a class="jangkar" href="#array-patterns">Array patterns</a></h2>
-<figure class="kode" data-jalan><figcaption><span>pola-array.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bentuk</span>(a) {
+<figure class="kode" data-jalan><figcaption><span>array-patterns.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">shape</span>(a) {
     <span class="k-kunci">return</span> <span class="k-kunci">match</span> a {
-        [] =&gt; <span class="k-str">&quot;kosong&quot;</span>,
-        [x] =&gt; <span class="k-str">&quot;satu: &quot;</span> + <span class="k-fn">str</span>(x),
-        [pertama, ..., terakhir] =&gt; <span class="k-fn">str</span>(pertama) + <span class="k-str">&quot; sampai &quot;</span> + <span class="k-fn">str</span>(terakhir),
+        [] =&gt; <span class="k-str">&quot;empty&quot;</span>,
+        [x] =&gt; <span class="k-str">&quot;one: &quot;</span> + <span class="k-fn">str</span>(x),
+        [first, ..., last] =&gt; <span class="k-fn">str</span>(first) + <span class="k-str">&quot; to &quot;</span> + <span class="k-fn">str</span>(last),
     }
 }
-<span class="k-fn">wok</span>(<span class="k-fn">bentuk</span>([]))
-<span class="k-fn">wok</span>(<span class="k-fn">bentuk</span>([<span class="k-ang">5</span>]))
-<span class="k-fn">wok</span>(<span class="k-fn">bentuk</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>, <span class="k-ang">4</span>]))</code></pre><pre class="keluaran"><code>kosong
-satu: 5
-1 sampai 4</code></pre></figure>
+<span class="k-fn">wok</span>(<span class="k-fn">shape</span>([]))
+<span class="k-fn">wok</span>(<span class="k-fn">shape</span>([<span class="k-ang">5</span>]))
+<span class="k-fn">wok</span>(<span class="k-fn">shape</span>([<span class="k-ang">1</span>, <span class="k-ang">2</span>, <span class="k-ang">3</span>, <span class="k-ang">4</span>]))</code></pre><pre class="keluaran"><code>empty
+one: 5
+1 to 4</code></pre></figure>
 <h2 id="patterns-in-let-and-for"><a class="jangkar" href="#patterns-in-let-and-for">Patterns in let and for</a></h2>
 <p>Patterns also work in <code>let</code>, in a <code>for</code> header, and in function parameters.</p>
-<figure class="kode" data-jalan><figcaption><span>bongkar.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> (a, b) = (<span class="k-ang">1</span>, <span class="k-ang">2</span>)
-<span class="k-kunci">let</span> [p, q, ...sisa] = [<span class="k-ang">10</span>, <span class="k-ang">20</span>, <span class="k-ang">30</span>, <span class="k-ang">40</span>]
-<span class="k-fn">wok</span>(a, b, p, q, sisa)
+<figure class="kode" data-jalan><figcaption><span>unpack.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> (a, b) = (<span class="k-ang">1</span>, <span class="k-ang">2</span>)
+<span class="k-kunci">let</span> [p, q, ...rest] = [<span class="k-ang">10</span>, <span class="k-ang">20</span>, <span class="k-ang">30</span>, <span class="k-ang">40</span>]
+<span class="k-fn">wok</span>(a, b, p, q, rest)
 
-<span class="k-kunci">let</span> nilai = [(<span class="k-str">&quot;Ani&quot;</span>, <span class="k-ang">90</span>), (<span class="k-str">&quot;Budi&quot;</span>, <span class="k-ang">75</span>)]
-<span class="k-kunci">for</span> _, (nama, skor) <span class="k-kunci">in</span> nilai {
-    <span class="k-fn">wok</span>(nama, skor &gt;= <span class="k-ang">80</span> $ <span class="k-str">&quot;A&quot;</span> : <span class="k-str">&quot;B&quot;</span>)
+<span class="k-kunci">let</span> scores = [(<span class="k-str">&quot;Ani&quot;</span>, <span class="k-ang">90</span>), (<span class="k-str">&quot;Budi&quot;</span>, <span class="k-ang">75</span>)]
+<span class="k-kunci">for</span> _, (name, score) <span class="k-kunci">in</span> scores {
+    <span class="k-fn">wok</span>(name, score &gt;= <span class="k-ang">80</span> $ <span class="k-str">&quot;A&quot;</span> : <span class="k-str">&quot;B&quot;</span>)
 }
 
-<span class="k-kunci">struct</span> <span class="k-tipe">Titik</span> { <span class="k-kunci">pub</span> x: <span class="k-tipe">int</span>, <span class="k-kunci">pub</span> y: <span class="k-tipe">int</span> }
-<span class="k-kunci">let</span> <span class="k-tipe">Titik</span> { x, y } = <span class="k-tipe">Titik</span> { x: <span class="k-ang">3</span>, y: <span class="k-ang">4</span> }
+<span class="k-kunci">struct</span> <span class="k-tipe">Point</span> { <span class="k-kunci">pub</span> x: <span class="k-tipe">int</span>, <span class="k-kunci">pub</span> y: <span class="k-tipe">int</span> }
+<span class="k-kunci">let</span> <span class="k-tipe">Point</span> { x, y } = <span class="k-tipe">Point</span> { x: <span class="k-ang">3</span>, y: <span class="k-ang">4</span> }
 <span class="k-fn">wok</span>(x * y)</code></pre><pre class="keluaran"><code>1 2 10 20 [30, 40]
 Ani A
 Budi B
 12</code></pre></figure>
 <h2 id="let-else"><a class="jangkar" href="#let-else">let … else</a></h2>
 <p>When the pattern might not match, <code>let pattern = value else { … }</code> runs the <code>else</code> block. That block must leave the flow (<code>return</code>, <code>break</code>, or <code>continue</code>), so after that line the names are guaranteed to be bound.</p>
-<figure class="kode" data-jalan><figcaption><span>let-else.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">harga</span>(menu, nama) {
-    <span class="k-kunci">let</span> <span class="k-fn">Some</span>(h) = <span class="k-ns">dict</span>::<span class="k-fn">get</span>(menu, nama) <span class="k-kunci">else</span> {
-        <span class="k-kunci">return</span> <span class="k-str">&quot;tidak ada &quot;</span> + nama
+<figure class="kode" data-jalan><figcaption><span>let-else.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">price</span>(menu, name) {
+    <span class="k-kunci">let</span> <span class="k-fn">Some</span>(p) = <span class="k-ns">dict</span>::<span class="k-fn">get</span>(menu, name) <span class="k-kunci">else</span> {
+        <span class="k-kunci">return</span> <span class="k-str">&quot;no &quot;</span> + name
     }
-    <span class="k-kunci">return</span> nama + <span class="k-str">&quot; Rp&quot;</span> + <span class="k-fn">str</span>(h)
+    <span class="k-kunci">return</span> name + <span class="k-str">&quot; $&quot;</span> + <span class="k-fn">str</span>(p)
 }
 
-<span class="k-kunci">let</span> menu = {<span class="k-str">&quot;bakso&quot;</span>: <span class="k-ang">15000</span>, <span class="k-str">&quot;soto&quot;</span>: <span class="k-ang">12000</span>}
-<span class="k-fn">wok</span>(<span class="k-fn">harga</span>(menu, <span class="k-str">&quot;soto&quot;</span>))
-<span class="k-fn">wok</span>(<span class="k-fn">harga</span>(menu, <span class="k-str">&quot;rendang&quot;</span>))</code></pre><pre class="keluaran"><code>soto Rp12000
-tidak ada rendang</code></pre></figure>
+<span class="k-kunci">let</span> menu = {<span class="k-str">&quot;noodles&quot;</span>: <span class="k-ang">6</span>, <span class="k-str">&quot;soup&quot;</span>: <span class="k-ang">5</span>}
+<span class="k-fn">wok</span>(<span class="k-fn">price</span>(menu, <span class="k-str">&quot;soup&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-fn">price</span>(menu, <span class="k-str">&quot;pizza&quot;</span>))</code></pre><pre class="keluaran"><code>soup $5
+no pizza</code></pre></figure>
 <h2 id="bagian"><a class="jangkar" href="#bagian">??</a></h2>
 <p><code>a ?? b</code> opens an <code>Option</code>: its contents when <code>Some</code>, <code>b</code> when <code>None</code>. The right side is only evaluated when needed.</p>
-<figure class="kode" data-jalan><figcaption><span>cadangan.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> warna = {<span class="k-str">&quot;langit&quot;</span>: <span class="k-str">&quot;biru&quot;</span>}
-<span class="k-fn">wok</span>(<span class="k-ns">dict</span>::<span class="k-fn">get</span>(warna, <span class="k-str">&quot;langit&quot;</span>) ?? <span class="k-str">&quot;?&quot;</span>, <span class="k-ns">dict</span>::<span class="k-fn">get</span>(warna, <span class="k-str">&quot;rumput&quot;</span>) ?? <span class="k-str">&quot;?&quot;</span>)
-<span class="k-fn">wok</span>([<span class="k-ang">3</span>, <span class="k-ang">9</span>, <span class="k-ang">4</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">5</span>) ?? <span class="k-ang">0</span>, [<span class="k-ang">1</span>, <span class="k-ang">2</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">5</span>) ?? <span class="k-ang">0</span>)</code></pre><pre class="keluaran"><code>biru ?
+<figure class="kode" data-jalan><figcaption><span>fallback.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> colors = {<span class="k-str">&quot;sky&quot;</span>: <span class="k-str">&quot;blue&quot;</span>}
+<span class="k-fn">wok</span>(<span class="k-ns">dict</span>::<span class="k-fn">get</span>(colors, <span class="k-str">&quot;sky&quot;</span>) ?? <span class="k-str">&quot;?&quot;</span>, <span class="k-ns">dict</span>::<span class="k-fn">get</span>(colors, <span class="k-str">&quot;grass&quot;</span>) ?? <span class="k-str">&quot;?&quot;</span>)
+<span class="k-fn">wok</span>([<span class="k-ang">3</span>, <span class="k-ang">9</span>, <span class="k-ang">4</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">5</span>) ?? <span class="k-ang">0</span>, [<span class="k-ang">1</span>, <span class="k-ang">2</span>].<span class="k-fn">find</span>(|x| x &gt; <span class="k-ang">5</span>) ?? <span class="k-ang">0</span>)</code></pre><pre class="keluaran"><code>blue ?
 9 0</code></pre></figure>
 <h2 id="bare-variants"><a class="jangkar" href="#bare-variants">Bare variants</a></h2>
 <p>In the file that declares an enum, its variants may be written without the type name, as long as no other enum in that file has a variant with the same name.</p>
-<figure class="kode" data-jalan><figcaption><span>telanjang.jrg</span></figcaption><pre><code><span class="k-kunci">enum</span> <span class="k-tipe">Lampu</span> { <span class="k-tipe">Merah</span>, <span class="k-tipe">Kuning</span>, <span class="k-tipe">Hijau</span> }
+<figure class="kode" data-jalan><figcaption><span>bare.jrg</span></figcaption><pre><code><span class="k-kunci">enum</span> <span class="k-tipe">Light</span> { <span class="k-tipe">Red</span>, <span class="k-tipe">Yellow</span>, <span class="k-tipe">Green</span> }
 
-<span class="k-kunci">fn</span> <span class="k-fn">boleh_jalan</span>(l) {
+<span class="k-kunci">fn</span> <span class="k-fn">may_go</span>(l) {
     <span class="k-kunci">return</span> <span class="k-kunci">match</span> l {
-        <span class="k-tipe">Hijau</span> =&gt; <span class="k-kunci">true</span>,
+        <span class="k-tipe">Green</span> =&gt; <span class="k-kunci">true</span>,
         _ =&gt; <span class="k-kunci">false</span>,
     }
 }
-<span class="k-fn">wok</span>(<span class="k-fn">boleh_jalan</span>(<span class="k-tipe">Hijau</span>), <span class="k-fn">boleh_jalan</span>(<span class="k-ns">Lampu</span>::<span class="k-tipe">Merah</span>))</code></pre><pre class="keluaran"><code>true false</code></pre></figure>
+<span class="k-fn">wok</span>(<span class="k-fn">may_go</span>(<span class="k-tipe">Green</span>), <span class="k-fn">may_go</span>(<span class="k-ns">Light</span>::<span class="k-tipe">Red</span>))</code></pre><pre class="keluaran"><code>true false</code></pre></figure>
 </article>
 <nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="tipe.html"><small>Previous</small><strong>Structs, enums, traits</strong></a><a class="ke-kanan" href="galat.html"><small>Next</small><strong>Option and Result</strong></a></nav>
 <footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
@@ -543,7 +543,7 @@ tidak ada rendang</code></pre></figure>
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/cari.js?v=15c39b4883"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>
