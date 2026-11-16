@@ -27,7 +27,7 @@ fn opcode_dicakup(op: OpCode) -> bool {
         | Add | Sub | Mul | Div | Mod | Lt | Le | Gt | Ge | Eq | Ne | BitAnd | BitOr | BitXor | AndNot | BitNot
         | Shl | Shr | Neg | Not | KeBool | Dup | Swap | SlideDown | Pop | StoreLocal | SimpanBuang
         | Jump | JumpFalse | JumpTrue | JumpFalseKeep | JumpTrueKeep
-        | MakeIterRentang | IterAda | IterMaju | IterVar | Return | Call | LoadGlobal)
+        | MakeIterRentang | IterAda | IterMaju | IterVar | Return | Call | LoadGlobal | IndeksLokal | GetIndex | TulisIndexLokal)
 }
 
 struct Pembangun<'a> {
@@ -529,7 +529,7 @@ impl Pembangun<'_> {
     fn pembantu(&mut self, b: Blok, ip: usize, isi: &[Option<Nilai>], pb: Pb, args: Vec<Arg>, hasil: bool, uji: Option<Uji>) -> Option<Nilai> {
         let gagal = uji.map(|u| (u, Jaga { keadaan: self.keadaan_di(ip, isi), spek: false, puncak_vm: false }));
         let h = hasil.then(|| self.j.nilai_baru(Tipe::I));
-        self.dorong(b, Inst::Pembantu { pb, args, hasil: h, gagal });
+        self.dorong(b, Inst::Pembantu { pb, args, hasil: h, gagal, keluar: None });
         h
     }
 
@@ -767,6 +767,30 @@ impl Pembangun<'_> {
                     self.biner(b, Biner::ITambah, awal, idx, self.jaga(ip, isi, false))
                 };
                 isi.push(Some(v));
+            }
+            OpCode::IndeksLokal | OpCode::GetIndex => {
+                // `a[i]` atas larik lokal (atau salinan maya lokal): elemen bulat/pecahan dari `lambat::baca*`;
+                // jenis lain = deopt spekulasi.
+                let (lokal, tujuan) = match s.get(t.wrapping_sub(2)) {
+                    Some(Jenis::Salinan(l)) if ins.op == OpCode::GetIndex => (*l as usize, t - 2),
+                    _ if ins.op == OpCode::IndeksLokal => (a, t - 1),
+                    _ => return Err("GetIndex asli bukan atas salinan".into()),
+                };
+                let i = Self::ambil(isi, t - 1)?;
+                let pecahan = self.r.spek[ip] == Some(Jenis::Pecahan);
+                let k = self.j.nilai_baru(if pecahan { Tipe::F } else { Tipe::I });
+                let gagal = Some((Uji::BukanNol, Jaga { keadaan: self.keadaan_di(ip, isi), spek: true, puncak_vm: false }));
+                let pb = if pecahan { Pb::BacaPecahan } else { Pb::Baca };
+                self.dorong(b, Inst::Pembantu { pb, args: vec![Arg::I64(lokal as i64), Arg::Isi(i), Arg::Wadah], hasil: None, gagal, keluar: Some(k) });
+                isi.truncate(tujuan);
+                isi.push(Some(k));
+            }
+            OpCode::TulisIndexLokal => {
+                let (v, i) = (Self::ambil(isi, t - 2)?, Self::ambil(isi, t - 1)?);
+                let gagal = Some((Uji::BukanNol, Jaga { keadaan: self.keadaan_di(ip, isi), spek: true, puncak_vm: false }));
+                let args = vec![Arg::I64(a as i64), Arg::Isi(i), Arg::Isi(v), Arg::I32(s[t - 2].kode() as i32)];
+                self.dorong(b, Inst::Pembantu { pb: Pb::Tulis, args, hasil: None, gagal, keluar: None });
+                isi.truncate(t - 2);
             }
             OpCode::Return => {
                 let v = Self::ambil(isi, t - 1)?;

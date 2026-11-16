@@ -86,7 +86,7 @@ pub fn turunkan(
         keluar_ringan_nilai, panjang, panjang_lokal,
         pb: [(Pb::Field, il.field), (Pb::Pola, il.pola), (Pb::PolaLokal, il.pola_lokal), (Pb::Payload, il.payload),
             (Pb::PayloadLokal, il.payload_lokal), (Pb::MuatGlobal, il.muat_global), (Pb::SimpanGlobal, il.simpan_global),
-            (Pb::Indeks, il.indeks)].into_iter().map(|(p, id)| (p, m.declare_func_in_func(id, b.func))).collect(),
+            (Pb::Indeks, il.indeks), (Pb::Baca, impor.baca), (Pb::BacaPecahan, il.baca_pecahan), (Pb::Tulis, impor.tulis)].into_iter().map(|(p, id)| (p, m.declare_func_in_func(id, b.func))).collect(),
     };
     let wadah = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 8, 3));
     let titip = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 72, 3));
@@ -451,12 +451,13 @@ impl Penurun<'_, '_> {
                 let v = self.b.ins().stack_load(self.ptr, types::I64, self.wadah, 0);
                 self.tetapkan(*hasil, v);
             }
-            Inst::Pembantu { pb, args, hasil, gagal } => {
+            Inst::Pembantu { pb, args, hasil, gagal, keluar } => {
                 let f = self.lb.pb.iter().find(|(p, _)| p == pb).expect("pembantu terdaftar").1;
                 let argv: Vec<Value> = args.iter().map(|a| match a {
                     Arg::I64(v) => self.i64c(*v),
                     Arg::I32(v) => self.b.ins().iconst(types::I32, *v as i64),
                     Arg::Isi(n) => self.bit(*n),
+                    Arg::Wadah => self.b.ins().stack_addr(self.ptr, self.wadah, 0),
                 }).collect();
                 let c = self.b.ins().call(f, &argv);
                 let st = self.b.inst_results(c)[0];
@@ -468,6 +469,11 @@ impl Penurun<'_, '_> {
                     self.jaga(cond, j);
                 }
                 if let Some(h) = hasil { let v = self.b.ins().uextend(types::I64, st); self.tetapkan(*h, v); }
+                if let Some(k) = keluar {
+                    let v = self.b.ins().stack_load(self.ptr, types::I64, self.wadah, 0);
+                    let v = if self.j.tipe(*k) == Tipe::F { self.b.ins().bitcast(types::F64, MemFlagsData::new(), v) } else { v };
+                    self.tetapkan(*k, v);
+                }
             }
             Inst::Maju { slot, jaga } => {
                 let p = self.i64c(*slot as i64);

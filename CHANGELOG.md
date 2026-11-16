@@ -22,6 +22,10 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Baru
 
+- **`http::tenggat(detik)`**: tenggat total tiap permintaan klien HTTP (bawaan mati), supaya server yang menetes
+  jawabannya tidak bisa menahan pemanggil tanpa batas.
+- **`wasm::batas_langkah(h, n)`**: `wasm::panggil` berhenti dengan `Err` sesudah `n` instruksi (bawaan tanpa batas),
+  supaya modul yang tidak dipercaya tidak bisa menggantung pemanggilnya.
 - **`dok::password_needs_rehash(hash, putaran?)`**: `true` kalau hash sandi dibuat dengan putaran lain dari bawaan
   (600000), supaya hash lama diringkas ulang sesudah login berhasil.
 

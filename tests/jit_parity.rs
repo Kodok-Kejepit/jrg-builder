@@ -3906,3 +3906,44 @@ fn jir_pembantu_sama_dengan_vm() {
     assert!(["Field [", "PolaLokal [", "PayloadLokal [", "MuatGlobal [", "Indeks ["].iter().all(|k| r.stderr.contains(k)),
         "tidak lewat JIR:\n{}", r.stderr);
 }
+
+/// JIR-1i (langkah 93): elemen larik lokal (`IndeksLokal`, `GetIndex` atas salinan maya, `TulisIndexLokal`) lewat
+/// `lambat::baca`/`baca_pecahan`/`tulis` berjaga spekulasi; elemen berganti jenis dan indeks di luar batas.
+const JIR_LARIK: &str = r#"fn urut(n: int) {
+    var a = [0; 64]
+    var f = [0.0; 8]
+    for i in 0..n {
+        a[i % 64] = (i * 7919) % 101
+        f[i % 8] = f[i % 8] + 0.5
+    }
+    var t = 0
+    for i in 0..64 { t = t + a[i] }
+    var g = 0.0
+    for i in 0..8 { g = g + f[i] }
+    return [t, a[3], g]
+}
+fn main() {
+    wok(urut(1000))
+    // Elemen berganti jenis: spekulasi gagal, VM melanjutkan.
+    var b = [1, 2, 3]
+    for i in 0..300 { b[i % 3] = b[i % 3] + 1 }
+    b[1] = "x"
+    var s = ""
+    for i in 0..3 { s = s + str(b[i]) }
+    wok(s)
+    // Indeks di luar batas: galat dari VM.
+    wok(urut(10)[0], b[7])
+}
+"#;
+
+#[test]
+fn jir_larik_sama_dengan_vm() {
+    let v = jalankan(JIR_LARIK, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout.lines().count() == 2, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..]] {
+        let j = jalankan(JIR_LARIK, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let r = jalankan(JIR_LARIK, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir")]);
+    assert!(r.stderr.contains("  Baca "), "baca larik tidak lewat JIR:\n{}", r.stderr);
+}

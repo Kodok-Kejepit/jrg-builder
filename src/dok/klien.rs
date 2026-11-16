@@ -4,8 +4,8 @@
 
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream, ToSocketAddrs};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::time::{Duration, Instant};
 
 use super::tls::Tls;
 
@@ -37,23 +37,50 @@ pub fn urai_url(url: &str) -> Result<Url, String> {
     Ok(Url { https, host, port, jalur })
 }
 
-pub enum Sambungan {
-    Polos(TcpStream),
-    Tls(Box<Tls>),
+pub struct Sambungan {
+    isi: Isi,
+    /// Salinan soketnya, untuk memasang batas tunggu tiap baca/tulis (juga di bawah TLS).
+    soket: TcpStream,
+    /// Akhir tenggat `http::tenggat`, kalau dipasang.
+    akhir: Option<Instant>,
+}
+
+enum Isi { Polos(TcpStream), Tls(Box<Tls>) }
+
+/// Tenggat total satu permintaan klien dalam detik (`http::tenggat`); 0 = tanpa. Batas 30 detik per `read` saja
+/// membiarkan server yang menetes satu byte tiap 29 detik menahan pemanggilnya selama ia mau (Fase antrean B).
+static TENGGAT: AtomicU64 = AtomicU64::new(0);
+
+/// `http::tenggat(detik)`: berlaku untuk permintaan sesudahnya, sejak sambungannya dibuka.
+pub fn atur_tenggat(detik: u64) { TENGGAT.store(detik, Ordering::SeqCst) }
+
+impl Sambungan {
+    fn tunggu(&self, tulis: bool) -> std::io::Result<()> {
+        let Some(akhir) = self.akhir else { return Ok(()) };
+        let sisa = akhir.saturating_duration_since(Instant::now());
+        if sisa.is_zero() {
+            return Err(std::io::Error::other(format!(
+                "tenggat `http::tenggat` {} detik habis", TENGGAT.load(Ordering::SeqCst))));
+        }
+        let d = Some(sisa.min(Duration::from_secs(30)));
+        if tulis { self.soket.set_write_timeout(d) } else { self.soket.set_read_timeout(d) }
+    }
 }
 
 impl Read for Sambungan {
     fn read(&mut self, b: &mut [u8]) -> std::io::Result<usize> {
-        match self { Sambungan::Polos(s) => s.read(b), Sambungan::Tls(t) => t.read(b) }
+        self.tunggu(false)?;
+        match &mut self.isi { Isi::Polos(s) => s.read(b), Isi::Tls(t) => t.read(b) }
     }
 }
 
 impl Write for Sambungan {
     fn write(&mut self, b: &[u8]) -> std::io::Result<usize> {
-        match self { Sambungan::Polos(s) => s.write(b), Sambungan::Tls(t) => t.write(b) }
+        self.tunggu(true)?;
+        match &mut self.isi { Isi::Polos(s) => s.write(b), Isi::Tls(t) => t.write(b) }
     }
     fn flush(&mut self) -> std::io::Result<()> {
-        match self { Sambungan::Polos(s) => s.flush(), Sambungan::Tls(t) => t.flush() }
+        match &mut self.isi { Isi::Polos(s) => s.flush(), Isi::Tls(t) => t.flush() }
     }
 }
 
@@ -101,6 +128,7 @@ fn internal_v4(a: Ipv4Addr) -> Option<&'static str> {
 /// Nama diurai SEKALI dan yang disambungi alamat yang diperiksa itu juga — dua kali mengurai bisa menjawab
 /// dua alamat (DNS rebinding). Satu alamat internal di antara jawabannya cukup untuk menolak semuanya.
 pub fn sambung(u: &Url) -> Result<Sambungan, String> {
+    let batas_akhir = match TENGGAT.load(Ordering::SeqCst) { 0 => None, d => Some(Instant::now() + Duration::from_secs(d)) };
     let alamat = format!("{}:{}", u.host, u.port);
     let gagal = |e: &std::io::Error| format!("tidak bisa tersambung ke {}: {}", alamat, crate::host::galat_io(e));
     let daftar: Vec<SocketAddr> = alamat.to_socket_addrs().map_err(|e| gagal(&e))?.collect();
@@ -123,7 +151,9 @@ pub fn sambung(u: &Url) -> Result<Sambungan, String> {
     let tcp = tcp.ok_or_else(|| gagal(&akhir))?;
     tcp.set_read_timeout(Some(Duration::from_secs(30))).ok();
     tcp.set_write_timeout(Some(Duration::from_secs(30))).ok();
-    if u.https { Ok(Sambungan::Tls(Box::new(Tls::sambung(tcp, &u.host)?))) } else { Ok(Sambungan::Polos(tcp)) }
+    let soket = tcp.try_clone().map_err(|e| gagal(&e))?;
+    let isi = if u.https { Isi::Tls(Box::new(Tls::sambung(tcp, &u.host)?)) } else { Isi::Polos(tcp) };
+    Ok(Sambungan { isi, soket, akhir: batas_akhir })
 }
 
 fn kepala_host(u: &Url) -> String {

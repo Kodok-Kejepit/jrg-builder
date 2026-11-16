@@ -5700,6 +5700,42 @@ fn proses_keluaran_opsi_di_dua_mesin() {
     }
 }
 
+/// `http::tenggat(detik)`: server yang menetes satu byte per detik dihentikan sesudah tenggatnya (antrean B), dulu
+/// cuma batas 30 detik per bacaan yang tidak pernah tercapai.
+#[test]
+fn tenggat_klien_http_di_dua_mesin() {
+    use std::io::{Read, Write};
+    let l = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = l.local_addr().unwrap().port();
+    std::thread::spawn(move || {
+        for s in l.incoming().flatten() {
+            std::thread::spawn(move || {
+                let mut s = s;
+                let mut b = [0u8; 1024];
+                let _ = s.read(&mut b);
+                let _ = s.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\n");
+                while s.write_all(b"x").is_ok() { std::thread::sleep(std::time::Duration::from_millis(500)); }
+            });
+        }
+    });
+    let dir = crate::bersama::dir_unik("jrg-tenggat");
+    std::fs::create_dir_all(&dir).unwrap();
+    let berkas = dir.join("t.jrg");
+    std::fs::write(&berkas, format!("package main\npub fn main() {{\n    http::tenggat(2)\n    let t0 = time::now_ms()\n    \
+        match http::get(\"http://127.0.0.1:{}/\") {{ Ok(r) => wok(\"diterima\"), Err(e) => wok(e) }}\n    \
+        wok(time::now_ms() - t0 < 6000)\n    http::tenggat(-1)\n}}\n", port)).unwrap();
+    for vm in [false, true] {
+        let mut c = Command::new(jrgc());
+        c.arg(&berkas).env("JRG_SOPAN", "1");
+        if vm { c.arg("--vm"); }
+        let o = c.output().unwrap();
+        let k = String::from_utf8_lossy(&o.stdout).to_string() + &String::from_utf8_lossy(&o.stderr);
+        assert!(k.contains("tenggat `http::tenggat` 2 detik habis") && k.contains("\ntrue\n"), "vm={}: {}", vm, k);
+        assert!(k.contains("http::tenggat: -1 detik di luar 0..86400"), "vm={}: {}", vm, k);
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// `dok::tcp_recv_all` atas pihak seberang yang tidak pernah menutup berhenti di 256 MiB (Fase AMAN-69).
 #[test]
 fn tcp_recv_all_berbatas_di_dua_mesin() {
