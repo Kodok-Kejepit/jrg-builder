@@ -93,7 +93,9 @@ pub fn turunkan(
         keluar_ringan_nilai, panjang, panjang_lokal,
         pb: [(Pb::Field, il.field), (Pb::Pola, il.pola), (Pb::PolaLokal, il.pola_lokal), (Pb::Payload, il.payload),
             (Pb::PayloadLokal, il.payload_lokal), (Pb::MuatGlobal, il.muat_global), (Pb::SimpanGlobal, il.simpan_global),
-            (Pb::Indeks, il.indeks), (Pb::Baca, impor.baca), (Pb::BacaPecahan, il.baca_pecahan), (Pb::Tulis, impor.tulis)].into_iter().map(|(p, id)| (p, m.declare_func_in_func(id, b.func))).collect(),
+            (Pb::Indeks, il.indeks), (Pb::Baca, impor.baca), (Pb::BacaPecahan, il.baca_pecahan), (Pb::Tulis, impor.tulis),
+            (Pb::JenisSama, il.jenis_sama), (Pb::PayloadJenisSama, il.payload_jenis_sama), (Pb::PayloadPanjang, il.payload_panjang),
+            (Pb::Karakter, il.karakter), (Pb::KarakterLokal, il.karakter_lokal)].into_iter().map(|(p, id)| (p, m.declare_func_in_func(id, b.func))).collect(),
         tulis_lebar: m.declare_func_in_func(il.tulis_lebar, b.func), buka_lebar: m.declare_func_in_func(il.buka_lebar, b.func),
     };
     let wadah = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 8, 3));
@@ -595,10 +597,14 @@ impl Penurun<'_, '_> {
                     let cond = match uji {
                         Uji::BukanNol => st,
                         Uji::Sama(k) => self.b.ins().icmp_imm_u(IntCC::Equal, st, *k),
+                        Uji::Negatif => self.b.ins().icmp_imm_s(IntCC::SignedLessThan, st, 0),
                     };
                     self.jaga(cond, j);
                 }
-                if let Some(h) = hasil { let v = self.b.ins().uextend(types::I64, st); self.tetapkan(*h, v); }
+                if let Some(h) = hasil {
+                    let v = if self.b.func.dfg.value_type(st) == types::I64 { st } else { self.b.ins().uextend(types::I64, st) };
+                    self.tetapkan(*h, v);
+                }
                 if let Some(k) = keluar {
                     let v = self.b.ins().stack_load(self.ptr, types::I64, self.wadah, 0);
                     let v = if self.j.tipe(*k) == Tipe::F { self.b.ins().bitcast(types::F64, MemFlagsData::new(), v) } else { v };

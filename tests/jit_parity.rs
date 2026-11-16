@@ -3999,3 +3999,69 @@ fn jir_lebar_sama_dengan_vm() {
     let r = jalankan(JIR_LEBAR, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir")]);
     assert!(r.stderr.contains("LGeserKanan") && r.stderr.contains("KeLU"), "bulat 128 bit tidak lewat JIR:\n{}", r.stderr);
 }
+
+/// JIR-1k (langkah 95): cara gabungan `TipeLipat`/`TipeSama`/`PayloadSama`/`PayloadPanjang`, `Jenis::Rune` dan
+/// `str::char_at` (`KarakterLokal`/`Karakter`, −1 = deopt) di JIR.
+const JIR_JENIS: &str = r#"enum Bentuk { Titik, Garis(int), Kotak(int, int), Nama(string) }
+fn nilai(b: Bentuk) {
+    match b {
+        Bentuk::Titik => 0,
+        Bentuk::Garis(p) => p,
+        Bentuk::Kotak(a, c) => a * c,
+        Bentuk::Nama(s) => len(s),
+    }
+}
+fn jenis(x) {
+    if typeof(x) == "int" { return x }
+    if typeof(x) == "float" { return int(x) }
+    if typeof(x) == "string" { return len(x) }
+    return -1
+}
+fn huruf(s: string) {
+    var v = 0
+    for i in 0..len(s) {
+        let c = str::char_at(s, i)
+        if c == 'a' { v = v + 10 } else { v = v + int(c) % 7 }
+    }
+    return v
+}
+fn main() {
+    var t = 0
+    let daftar = [Bentuk::Titik, Bentuk::Garis(3), Bentuk::Kotak(2, 5), Bentuk::Nama("halo")]
+    for i in 0..400 { t = t + nilai(daftar[i % 4]) }
+    var u = 0
+    let campur = [1, 2.5, "abc", true]
+    for i in 0..400 { u = u + jenis(campur[i % 4]) }
+    wok(t, u, huruf("banana jaya raya"))
+}
+"#;
+
+/// Bulat 128 bit yang disimpan ke lokal milik VM: ditulis ke stack VM dulu (dulu lokalnya jadi `nil`).
+const JIR_SIMPAN_LEBAR: &str = r#"fn fnv(h: uint, s: str) -> uint {
+    var acc: uint = h
+    for i in 0..len(s) {
+        acc = math::wrap_mul(acc ^ (str::char_at(s, i) as uint), 1099511628211)
+    }
+    return acc
+}
+
+fn main() {
+    var hash: uint = 1469598103934665603
+    for r in 0..30 { hash = fnv(hash, "abcdefgh") }
+    wok(hash)
+}
+"#;
+
+#[test]
+fn jir_jenis_sama_dengan_vm() {
+    for (nama, prog) in [("jenis", JIR_JENIS), ("simpan lebar", JIR_SIMPAN_LEBAR)] {
+        let v = jalankan(prog, &["--vm"], &[]);
+        assert!(v.sukses, "{nama}: {}{}", v.stdout, v.stderr);
+        for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..]] {
+            let j = jalankan(prog, &["--jit"], env);
+            assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{nama} {env:?}");
+        }
+    }
+    let r = jalankan(JIR_JENIS, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir")]);
+    assert!(r.stderr.contains("PayloadJenisSama") && r.stderr.contains("KarakterLokal"), "cara gabungan tidak lewat JIR:\n{}", r.stderr);
+}

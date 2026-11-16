@@ -173,7 +173,7 @@ pub enum Inst {
 
 /// Pembantu `lambat` yang dipanggil lewat `Inst::Pembantu`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Pb { Field, Pola, PolaLokal, Payload, PayloadLokal, MuatGlobal, SimpanGlobal, Indeks, Baca, BacaPecahan, Tulis }
+pub enum Pb { Field, Pola, PolaLokal, Payload, PayloadLokal, MuatGlobal, SimpanGlobal, Indeks, Baca, BacaPecahan, Tulis, JenisSama, PayloadJenisSama, PayloadPanjang, Karakter, KarakterLokal }
 
 /// Argumen `Inst::Pembantu`: konstanta 64/32 bit atau isi native (bit `i64`).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -181,7 +181,7 @@ pub enum Arg { I64(i64), I32(i32), Isi(Nilai), Wadah }
 
 /// Status pembantu yang berarti gagal (deopt).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Uji { BukanNol, Sama(i64) }
+pub enum Uji { BukanNol, Sama(i64), Negatif }
 
 /// Status `Return` native (`super::turun::BERHASIL*`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

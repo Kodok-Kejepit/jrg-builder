@@ -174,6 +174,20 @@ impl Codegen {
 
     pub(crate) fn nilai_bawaan(&mut self, nama: &str, harap: Option<&JrgType>, span: Span) -> Option<Result<Val, String>> {
         let closure = self.closure_bawaan(nama, span, None)?;
+        // Harapan yang hasilnya lain dari tanda tangan bawaannya (`[len, typeof]`: elemen kedua diharap
+        // `fn(..) -> int`) tidak dipakai. Dulu badan closure dipaksa ke hasil itu dan galatnya lahir tanpa situs
+        // ("string sebagai int"); sekarang tipe aslinya ditolak di situs pemakai seperti fungsi milik program.
+        let hasil_tertulis = match &closure {
+            Expr::Closure { ret: Some(TypeExpr::Named(nt)), .. } => match nt.name.as_str() {
+                "bool" => Some(JrgType::Bool), "int" => Some(JrgType::I64), "float" => Some(JrgType::F64),
+                "string" => Some(JrgType::Str), _ => None,
+            },
+            _ => None,
+        };
+        let harap = match (harap, &hasil_tertulis) {
+            (Some(JrgType::Fn(_, r)), Some(t)) if **r != *t => None,
+            (h, _) => h,
+        };
         self.closure_bernama = Some("<native fn>".to_string());
         let r = self.codegen_expr(&closure, harap);
         self.closure_bernama = None;

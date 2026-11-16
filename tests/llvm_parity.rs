@@ -779,6 +779,11 @@ include!("bersama/paritas_llvm.rs");
 // ───────────────────────────────────────────
 
 const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
+    // Larik nilai fungsi berbeda tipe hasil: dulu ditolak tanpa lokasi dengan "string sebagai int" (pembungkus
+    // bawaan dipaksa ke hasil elemen pertama); sekarang di situs pemakai, menyebut tipe fungsinya.
+    ("larik fungsi bawaan berbeda tipe hasil",
+     "package main\npub fn main() {\n let hs = [len, typeof]\n wok(hs[0](\"abc\"))\n}",
+     "`fn(nilai bertag) -> string` sebagai `fn(nilai bertag) -> int`"),
     // Fase AMAN-43: acuan menjawab struct ber-field tambahan; dulu kalimat pertamanya "tipe `unit`
     // tidak punya method `y`" dan kalimat yang benar menunjuk `<lapis>`, bukan panggilan pemakai.
     ("json::merge atas struct ditolak di situs panggil",
