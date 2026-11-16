@@ -3567,3 +3567,87 @@ fn sesi_hof_sama_dengan_vm() {
         assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
     }
 }
+
+const JIR: (&str, &str) = ("JRG_JIT_JIR", "paksa");
+
+/// JIR-1 (`src/jit/jir/`, langkah 85): seluruh `PARITAS` di mode stres dengan JIR dipaksa untuk unit yang dicakupnya.
+#[test]
+fn paritas_lewat_jir() {
+    let mut gagal = Vec::new();
+    for (nama, src) in PARITAS {
+        let i = jalankan(src, &[], &[]);
+        let j = jit_sama(src, &i, &[STRES, JIR]);
+        if i.sukses != j.sukses || i.stdout != j.stdout {
+            gagal.push(format!("  {nama}\n     interpreter ({}): {:?}\n     jir stres   ({}): {:?}",
+                i.sukses, i.stdout, j.sukses, j.stdout));
+        }
+    }
+    assert!(gagal.is_empty(), "{} kasus PARITAS beda lewat JIR:\n{}", gagal.len(), gagal.join("\n"));
+}
+
+/// JIR-1 benar-benar dipakai: loop dan cabang bulat, jaga luapan yang deopt lalu VM menghitung di 128 bit, geseran
+/// yang membuang bit, dan pembagi nol (kalimat dan jejak dari VM).
+const JIR_DASAR: &str = r#"fn jumlah(n: int) -> int {
+    var t = 0
+    for i in 0..n { if i % 3 == 0 { t = t + i * 2 } else { t = t - 1 } }
+    return t
+}
+fn geser(x: int, k: int) -> int { return (x << k) >> 1 }
+fn bagi(a: int, b: int) -> int { return a / b + a % b }
+fn main() {
+    var x = 0
+    for k in 0..300 { x = x + jumlah(k) }
+    wok(x, geser(3, 4), bagi(17, 5))
+    // Luapan 64 bit di tengah loop: deopt, lalu VM menghitung di 128 bit.
+    var y = 1
+    for k in 0..70 { y = y * 2 + jumlah(3) }
+    wok(y)
+    // Geseran yang membuang bit dan pembagi nol: deopt, VM yang melapor.
+    wok(geser(1, 62))
+    wok(bagi(1, 0))
+}
+"#;
+
+#[test]
+fn jir_sama_dengan_vm() {
+    let v = jalankan(JIR_DASAR, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout.lines().count() == 3, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..]] {
+        let j = jalankan(JIR_DASAR, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let r = jalankan(JIR_DASAR, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "ringkas")]);
+    assert!(r.stderr.contains("[jit] jir: "), "JIR tidak dipakai:\n{}", r.stderr);
+}
+
+/// JIR-1b (langkah 86): panggilan langsung ke callee bulat (rekursi dalam, `ULANG` dan deopt di dalam callee) dan
+/// intrinsik `int`/`uint`/`float` atas bulat.
+const JIR_PANGGIL: &str = r#"fn fib(n: int) -> int { if n < 2 { return n } return fib(n - 1) + fib(n - 2) }
+fn rata(n: int) -> float {
+    var s = 0.0
+    var i = 0
+    while i < n { s = s + (i as float) * 0.5; i = i + 1 }
+    return s / 2.0
+}
+fn jumlah_u(n: int) -> int { var t = 0  for i in 0..n { t = t + int(i as uint) } return t }
+fn dalam(n: int) -> int { if n == 0 { return 0 } return 1 + dalam(n - 1) }
+fn main() {
+    wok(fib(24), rata(1000), jumlah_u(500))
+    wok(dalam(5000))
+    var x = 0
+    for k in 0..40 { x = x + fib(k % 20) }
+    wok(x)
+}
+"#;
+
+#[test]
+fn jir_panggil_sama_dengan_vm() {
+    let v = jalankan(JIR_PANGGIL, &["--vm"], &[]);
+    assert!(v.sukses && v.stdout.lines().count() == 3, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..]] {
+        let j = jalankan(JIR_PANGGIL, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let r = jalankan(JIR_PANGGIL, &["--jit"], &[JIR, ("JRG_JIT_LOG", "jir")]);
+    assert!(r.stderr.contains("[jit] jir fib:\nb0") && r.stderr.contains("= panggil #"), "fib tidak lewat JIR:\n{}", r.stderr);
+}

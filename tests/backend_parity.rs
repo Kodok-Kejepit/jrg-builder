@@ -5700,6 +5700,33 @@ fn proses_keluaran_opsi_di_dua_mesin() {
     }
 }
 
+/// `dok::tcp_recv_all` atas pihak seberang yang tidak pernah menutup berhenti di 256 MiB (Fase AMAN-69).
+#[test]
+fn tcp_recv_all_berbatas_di_dua_mesin() {
+    use std::io::Write;
+    let l = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = l.local_addr().unwrap().port();
+    std::thread::spawn(move || {
+        for s in l.incoming().flatten() {
+            std::thread::spawn(move || { let mut s = s; let nol = vec![0u8; 1 << 16]; while s.write_all(&nol).is_ok() {} });
+        }
+    });
+    let dir = crate::bersama::dir_unik("jrg-recv-all");
+    std::fs::create_dir_all(&dir).unwrap();
+    let berkas = dir.join("t.jrg");
+    std::fs::write(&berkas, format!("package main\npub fn main() {{\n    let c = dok::tcp_connect(\"127.0.0.1\", {})\
+        .unwrap()\n    match dok::tcp_recv_all(c) {{ Ok(v) => wok(\"diterima\", len(v)), Err(e) => wok(e) }}\n}}\n", port)).unwrap();
+    for vm in [false, true] {
+        let mut c = Command::new(jrgc());
+        c.arg(&berkas).env("JRG_SOPAN", "1");
+        if vm { c.arg("--vm"); }
+        let o = c.output().unwrap();
+        let k = String::from_utf8_lossy(&o.stdout).to_string() + &String::from_utf8_lossy(&o.stderr);
+        assert!(k.contains("lebih dari 256 MiB tanpa menutup sambungan"), "vm={}: {}", vm, k);
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// `tok()` atas masukan tanpa baris baru gagal berkalimat sesudah 256 MiB (Fase AMAN-68): dulu `jrgc` mati SIGABRT.
 #[test]
 fn baris_masukan_berbatas_di_dua_mesin() {

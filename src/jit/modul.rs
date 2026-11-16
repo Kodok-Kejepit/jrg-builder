@@ -346,7 +346,18 @@ pub fn kompilasi(
         let impor = turun::Impor {
             catat: mj.catat, undi: mj.undi, baca: mj.baca, tulis: mj.tulis, fid: fid0 + i as u32, lambat: &mj.lambat, ringan: &ringan,
         };
-        turun::turunkan(&mut mj.m, &mut ctx.func, &mut mj.fctx, h, r, &callee, &langsung, &impor);
+        // JIR (`JRG_JIT_JIR=paksa`) untuk unit di cakupannya, selain itu penurun langsung.
+        let jir = super::jir::aktif().then(|| super::jir::bangun::bangun(h, r, impor.undi.is_some()));
+        if std::env::var("JRG_JIT_LOG").is_ok_and(|v| v == "jir") {
+            match &jir { Some(Ok(fj)) => eprintln!("[jit] jir {}:\n{fj}", h.name), Some(Err(e)) => eprintln!("[jit] jir {}: {e}", h.name), None => {} }
+        }
+        match jir {
+            Some(Ok(fj)) => {
+                super::jir::turun::turunkan(&mut mj.m, &mut ctx.func, &mut mj.fctx, &fj, &impor, &callee);
+                super::jir::UNIT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            }
+            _ => turun::turunkan(&mut mj.m, &mut ctx.func, &mut mj.fctx, h, r, &callee, &langsung, &impor),
+        }
         let diri = id_baru[i].as_u32();
         if ctx.inline(Sisip { badan: &mj.badan, diri }).is_err() { utuh = false; break; }
         if k.2 == layak::KEMBALI_BULAT && ctx.func.dfg.num_insts() <= SISIP_MAKS {
