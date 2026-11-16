@@ -15,6 +15,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   sama dengan badan HTTP.
 - **`proses::jalankan` dan `proses::keluaran` menghentikan program yang keluarannya melewati 256 MiB** dan menjawab
   `Err` (dulu `jrgc` mati kehabisan memori); penampung `proses::mulai` yang penuh menunggu dibaca.
+- **Klien `http::` menolak jawaban yang terpotong** (badan lebih pendek dari `Content-Length`) dan `Content-Length`
+  yang tidak sah atau berbeda-beda; byte sesudah badan dibuang. HTTPS menuntut paling sedikit TLS 1.2.
 - **`wokwok::` menolak hasil broadcast dan `matmul` di atas 256 MiB**, seperti pembangun lariknya — dulu dua larik
   kecil bisa meminta puluhan GB dan mematikan prosesnya.
 

@@ -137,7 +137,35 @@ pub fn minta(metode: &str, url: &str, badan: &[u8], kepala: &[(String, String)],
     periksa_permintaan(&u, metode, kepala, agen)?;
     let mut s = sambung(&u)?;
     kirim(&mut s, &u, metode, badan, kepala, agen)?;
-    baca_berbatas(&mut s, &u.host, MAKS_JAWABAN)
+    let jawab = baca_berbatas(&mut s, &u.host, MAKS_JAWABAN)?;
+    bingkai(jawab, metode, &u.host)
+}
+
+/// Jawaban dipotong sesuai pembingkaiannya (RFC 9112 §6.3). Dulu `Content-Length` tidak dibaca: sambungan yang
+/// putus di tengah (atau dipotong penyerang di TLS, yang penutupan tanpa `close_notify`-nya dianggap selesai)
+/// menjawab badan yang lebih pendek tanpa suara, dan byte sesudah badannya ikut tertempel (Fase AMAN-61).
+fn bingkai(mut jawab: Vec<u8>, metode: &str, host: &str) -> Result<Vec<u8>, String> {
+    let Some(p) = jawab.windows(4).position(|w| w == b"\r\n\r\n") else { return Ok(jawab) };
+    let kepala = String::from_utf8_lossy(&jawab[..p]).to_string();
+    let status: u16 = kepala.split_whitespace().nth(1).and_then(|s| s.parse().ok()).unwrap_or(0);
+    let awal = p + 4;
+    if metode.eq_ignore_ascii_case("HEAD") || (100..200).contains(&status) || status == 204 || status == 304 {
+        jawab.truncate(awal);
+        return Ok(jawab);
+    }
+    let nilai = |nama: &str| kepala.lines().skip(1).filter_map(|l| l.split_once(':'))
+        .filter(|(k, _)| k.trim().eq_ignore_ascii_case(nama)).map(|(_, v)| v.trim().to_string()).collect::<Vec<_>>();
+    if nilai("transfer-encoding").iter().any(|v| v.to_ascii_lowercase().contains("chunked")) { return Ok(jawab); }
+    let panjang = nilai("content-length");
+    let Some(pertama) = panjang.first() else { return Ok(jawab) };
+    let n: u64 = match pertama.parse() {
+        Ok(n) if pertama.bytes().all(|b| b.is_ascii_digit()) && panjang.iter().all(|v| v == pertama) => n,
+        _ => return Err(format!("jawaban dari {} membawa Content-Length yang tidak sah atau berbeda-beda: {:?}", host, panjang)),
+    };
+    let ada = (jawab.len() - awal) as u64;
+    if ada < n { return Err(format!("jawaban dari {} terpotong: badannya {} dari {} byte", host, ada, n)); }
+    jawab.truncate(awal + n as usize);
+    Ok(jawab)
 }
 
 /// Jawaban yang disimpan di memori berbatas; yang lebih besar diunduh ke berkas (`http::unduh`).
@@ -326,6 +354,21 @@ pub fn unduh(url: &str, berkas: &str, agen: &str) -> Result<HasilUnduh, String> 
 #[cfg(test)]
 mod tes {
     use super::*;
+
+    #[test]
+    fn jawaban_dibingkai_menurut_content_length() {
+        let j = |t: &str| t.as_bytes().to_vec();
+        let ok = |t: &str, m: &str| String::from_utf8(bingkai(j(t), m, "h").unwrap()).unwrap();
+        assert!(ok("HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nokSISIP", "GET").ends_with("\r\n\r\nok"));
+        assert!(bingkai(j("HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nok"), "GET", "h").unwrap_err().contains("terpotong"));
+        assert!(bingkai(j("HTTP/1.1 200 OK\r\nContent-Length: 2\r\nContent-Length: 3\r\n\r\nok!"), "GET", "h").is_err());
+        assert!(bingkai(j("HTTP/1.1 200 OK\r\nContent-Length: +2\r\n\r\nok"), "GET", "h").is_err());
+        assert!(ok("HTTP/1.1 200 OK\r\nContent-Length: 2\r\nContent-Length: 2\r\n\r\nok", "GET").ends_with("ok"));
+        assert!(ok("HTTP/1.1 200 OK\r\nContent-Length: 99\r\n\r\n", "HEAD").ends_with("\r\n\r\n"));
+        assert!(ok("HTTP/1.1 304 Not Modified\r\nContent-Length: 99\r\n\r\n", "GET").ends_with("\r\n\r\n"));
+        assert!(ok("HTTP/1.1 200 OK\r\n\r\nsampai tutup", "GET").ends_with("sampai tutup"));
+        assert!(ok("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nContent-Length: 1\r\n\r\n2\r\nok\r\n0\r\n\r\n", "GET").contains("2\r\nok"));
+    }
 
     #[test]
     fn permintaan_tidak_bisa_disisipi() {
