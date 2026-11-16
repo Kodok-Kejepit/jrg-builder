@@ -26,6 +26,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   perbandingan berurutan — `match_dispatch` 710 → 580 ms, setara C.
 - **`--emit-llvm`: `str::char_at` di dalam loop tidak lagi memeriksa ulang jumlah karakter tiap putaran** —
   `string_ops` 123 → 109 ms (C 100).
+- **`--emit-llvm`: `let r = arr::pop(a)` lalu `a = r[0]` tidak lagi menyalin larik** — 160 ribu pop 9 ms (dulu kehabisan
+  memori di 20 ribu).
 
 ### Diperbaiki
 

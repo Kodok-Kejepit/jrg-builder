@@ -3855,3 +3855,54 @@ fn jir_langsung_sama_dengan_vm() {
     let r = jalankan(JIR_LANGSUNG, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir")]);
     assert!(r.stderr.contains("langsung #") && r.stderr.contains("= panjang"), "tidak lewat JIR:\n{}", r.stderr);
 }
+
+/// JIR-1h (langkah 92): `Inst::Pembantu` untuk field nilai VM, pola dan payload enum (atas nilai VM dan salinan lokal),
+/// global, indeks wadah milik VM; tepi atas salinan maya (dimuat dari lokal asalnya di stub).
+const JIR_PEMBANTU: &str = r#"package main
+struct Titik { pub x: int, pub nama: string }
+enum Bentuk { Kotak(int), Lingkar(float), Kosong }
+var HITUNG = 0
+fn luas(b) -> float {
+    match b {
+        Bentuk::Kotak(s) => (s * s) as float,
+        Bentuk::Lingkar(r) => 3.0 * r * r,
+        Bentuk::Kosong => 0.0,
+    }
+}
+fn jalan(n: int) {
+    var t = 0
+    var nama = ""
+    let ps = [Titik { x: 1, nama: "a" }, Titik { x: 2, nama: "b" }]
+    let d = {"k": 5}
+    for i in 0..n {
+        let p = ps[i % 2]
+        t = t + p.x + d["k"]
+        nama = p.nama
+        HITUNG = HITUNG + 1
+    }
+    return [t, len(nama), HITUNG]
+}
+fn main() {
+    var s = 0.0
+    for i in 0..300 {
+        let b = if i % 3 == 0 { Bentuk::Kotak(i) } else if i % 3 == 1 { Bentuk::Lingkar(1.5) } else { Bentuk::Kosong }
+        s = s + luas(b)
+    }
+    wok(s, jalan(200))
+    // Field yang tidak ada: galat dari VM sesudah deopt.
+    wok(jalan(2)[0], Titik { x: 1, nama: "z" }.y)
+}
+"#;
+
+#[test]
+fn jir_pembantu_sama_dengan_vm() {
+    let v = jalankan(JIR_PEMBANTU, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout.lines().count() == 1, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..]] {
+        let j = jalankan(JIR_PEMBANTU, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let r = jalankan(JIR_PEMBANTU, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir")]);
+    assert!(["Field [", "PolaLokal [", "PayloadLokal [", "MuatGlobal [", "Indeks ["].iter().all(|k| r.stderr.contains(k)),
+        "tidak lewat JIR:\n{}", r.stderr);
+}

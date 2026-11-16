@@ -148,7 +148,21 @@ pub enum Inst {
     /// Panjang nilai VM di posisi `pos` (`lambat::panjang`, posisinya dilepas) atau lokal `lokal`
     /// (`lambat::panjang_lokal`, `Cara::PanjangLokal`); galat = deopt, VM yang melapor.
     Panjang { hasil: Nilai, pos: usize, lokal: bool, jaga: Jaga },
+    /// Pembantu `pb` atas `args`; statusnya yang lolos `gagal` = deopt; `hasil` = statusnya sebagai bulat (0/1).
+    Pembantu { pb: Pb, args: Vec<Arg>, hasil: Option<Nilai>, gagal: Option<(Uji, Jaga)> },
 }
+
+/// Pembantu `lambat` yang dipanggil lewat `Inst::Pembantu`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Pb { Field, Pola, PolaLokal, Payload, PayloadLokal, MuatGlobal, SimpanGlobal, Indeks }
+
+/// Argumen `Inst::Pembantu`: konstanta 64/32 bit atau isi native (bit `i64`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Arg { I64(i64), I32(i32), Isi(Nilai) }
+
+/// Status pembantu yang berarti gagal (deopt).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Uji { BukanNol, Sama(i64) }
 
 /// Status `Return` native (`super::turun::BERHASIL*`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -260,6 +274,8 @@ impl fmt::Display for Fungsi {
                     Inst::CekMetode { pos, jaga: j, .. } => writeln!(f, "  cek-metode {pos}{}", jaga(&Some(j.clone())))?,
                     Inst::IterAda { hasil, slot, .. } => writeln!(f, "  {hasil} = iter-ada {slot}")?,
                     Inst::Maju { slot, .. } => writeln!(f, "  maju {slot}")?,
+                    Inst::Pembantu { pb, args, hasil, gagal } => writeln!(f, "  {}{pb:?} {args:?}{}",
+                        hasil.map_or(String::new(), |h| format!("{h} = ")), gagal.as_ref().map_or(String::new(), |(u, _)| format!(" gagal {u:?}")))?,
                     Inst::Panjang { hasil, pos, lokal, .. } => writeln!(f, "  {hasil} = panjang {}{pos}", if *lokal { "lokal " } else { "" })?,
                     Inst::Langsung { n, ip, args, hasil, .. } => writeln!(f, "  {}langsung #{n} @{ip} args {args:?}",
                         hasil.as_ref().map_or(String::new(), |(h, k, _)| format!("{h} (kode {k}) = ")))?,

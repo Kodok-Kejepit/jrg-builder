@@ -82,6 +82,11 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
                 Inst::Bangun { isi, .. } => for (_, v) in isi { pakai(*v, &ada)?; },
                 Inst::Salin { .. } | Inst::Tukar { .. } => {}
                 Inst::CekMetode { jaga: j, .. } | Inst::Maju { jaga: j, .. } => jaga(j, &ada)?,
+                Inst::Pembantu { args, hasil, gagal, .. } => {
+                    for a in args { if let super::Arg::Isi(v) = a { pakai(*v, &ada)?; } }
+                    if let Some((_, j)) = gagal { jaga(j, &ada)?; }
+                    if let Some(h) = hasil { definisi(*h, &mut ada)?; tipe(*h, Tipe::I)?; }
+                }
                 Inst::Panjang { hasil, jaga: j, .. } => { jaga(j, &ada)?; definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
                 Inst::Langsung { isi, args, basi, hasil, .. } => {
                     for (_, v) in isi.iter().chain(args) { pakai(*v, &ada)?; }

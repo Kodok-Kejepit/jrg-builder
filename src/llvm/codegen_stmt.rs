@@ -65,6 +65,7 @@ impl Codegen {
             let mut lepas = Vec::new();
             for (i, s) in block.stmts.iter().enumerate() {
                 let calon = super::codegen_lepas::calon_lepas(s, &block.stmts[i + 1..], block.tail.as_deref());
+                cg.tandai_pop_pindah(&block.stmts, i, block.tail.as_deref());
                 cg.codegen_stmt(s)?;
                 if cg.terminated { return Ok(()); }
                 cg.catat_lepas(calon, &mut lepas);
@@ -136,6 +137,9 @@ impl Codegen {
     }
 
     pub(crate) fn codegen_let(&mut self, l: &LetStmt) -> Result<(), String> {
+        if let Some(a) = self.pop_pindah.take() {
+            if self.coba_pop_berbagi(l, &a)? { return Ok(()); }
+        }
         let expected = match &l.ty {
             Some(te) => Some(self.resolve_type_pub(te)?),
             // Tabel yang sama yang membawa tipe `var a = []` juga membawa
@@ -399,6 +403,7 @@ impl Codegen {
         }
         if self.coba_tumbuh_di_tempat(a)? { return Ok(()); }
         if self.coba_pop_di_tempat(a)? { return Ok(()); }
+        if self.coba_tugas_pop_pindah(a)? { return Ok(()); }
         if self.coba_tumbuh_jalur(a)? { return Ok(()); }
         if self.coba_panggil_milik(a)? { return Ok(()); }
         self.arg_pindah = self.argumen_dipindahkan(a);

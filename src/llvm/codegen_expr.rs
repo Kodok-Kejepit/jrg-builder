@@ -127,7 +127,8 @@ impl Codegen {
         // Fungsi bernama di blok diangkat seperti di badan fungsi (`codegen_stmt_block`).
         self.hoist_fn_bersarang(block);
         let r = (|cg: &mut Self| {
-            for stmt in &block.stmts {
+            for (i, stmt) in block.stmts.iter().enumerate() {
+                cg.tandai_pop_pindah(&block.stmts, i, block.tail.as_deref());
                 cg.codegen_stmt(stmt)?;
                 if cg.is_terminated() { break; }
             }

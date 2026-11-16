@@ -1,6 +1,51 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const PARITAS_LLVM: &[(&str, &str)] = &[
+    // #1053: pop berbagi penyangga hanya kalau `a` ditimpa tepat sesudahnya; `r[0]` yang dibaca lagi sesudah `a`
+    // diubah tetap nilai lama, parameter pinjaman tidak tersentuh, bentuk method `d.pop()` sama.
+    ("pop dua pernyataan berbagi penyangga", r#"package main
+fn kuras(a: []int) -> int {
+    var b = a
+    var n = 0
+    while len(b) > 0 {
+        let r = arr::pop(b)
+        b = r[0]
+        n += 1
+    }
+    return n
+}
+fn pinjam(a: []int) -> []int {
+    var x = a
+    let r = arr::pop(x)
+    x = r[0]
+    x = arr::push(x, 99)
+    return x
+}
+pub fn main() {
+    var a = [1, 2, 3, 4]
+    let r = arr::pop(a)
+    a = r[0]
+    a[0] = 9
+    wok(a, r[0], r[1])
+    var c = [5, 6, 7]
+    let q = arr::pop(c)
+    c = q[0]
+    c = arr::push(c, 70)
+    wok(c, q[1])
+    var d = [1, 2, 3]
+    let s = d.pop()
+    d = s[0]
+    d[1] = 42
+    wok(d, s[1])
+    let asli = [10, 20, 30]
+    wok(kuras(asli), asli)
+    wok(pinjam(asli), asli)
+    var e = [1, 2]
+    let t = arr::pop(e)
+    e = []
+    wok(e, t)
+}
+"#),
     // `str::char_at` diturunkan di tempat dengan memo jumlah karakter per fungsi: teks Unicode, indeks negatif,
     // teks yang berganti di tengah loop (memo lama tidak boleh terpakai untuk teks lain sepanjang sama).
     ("str::char_at di tempat dengan memo lokal", r#"package main

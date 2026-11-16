@@ -6,7 +6,7 @@ use cranelift_codegen::ir::{condcodes::{FloatCC, IntCC}, types, Block, FuncRef, 
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_module::{FuncId, Module};
 
-use super::{Akhir, Banding, Biner, Fungsi, Hasil, Inst, Jaga, Keadaan, Nilai, Tipe, Unar};
+use super::{Akhir, Arg, Banding, Biner, Fungsi, Hasil, Inst, Jaga, Keadaan, Nilai, Pb, Tipe, Uji, Unar};
 use crate::jit::turun::{Impor, BERHASIL, BERHASIL_BOOL, BERHASIL_NILAI, BERHASIL_PECAHAN, BERHASIL_UNIT, DEOPT, GAGAL, GAGAL_SPEK, KEDALAMAN_MAKS, PUNCAK_VM, ULANG};
 
 /// Pembantu nilai VM (`lambat`) yang dipanggil JIR.
@@ -17,6 +17,8 @@ struct Pembantu {
     salin: FuncRef, tukar: FuncRef, cek_metode: FuncRef, iter_ada: FuncRef, maju: FuncRef,
     masuk: FuncRef, masuk_ringan: FuncRef, keluar: FuncRef, keluar_ringan: FuncRef, keluar_ringan_angka: FuncRef,
     keluar_ringan_nilai: FuncRef, panjang: FuncRef, panjang_lokal: FuncRef,
+    /// `Inst::Pembantu`, menurut `Pb`.
+    pb: Vec<(Pb, FuncRef)>,
 }
 
 struct Penurun<'a, 'b> {
@@ -82,6 +84,9 @@ pub fn turunkan(
         muat, ambil, simpan, buang, benar, taruh, langkah, buka, bawaan, biner, tambah_nilai, muat_upval, simpan_upval, teks_bulat, pindah, cabang, tulis_vm, bangun,
         salin, tukar, cek_metode, iter_ada, maju, masuk, masuk_ringan, keluar: keluar_f, keluar_ringan, keluar_ringan_angka,
         keluar_ringan_nilai, panjang, panjang_lokal,
+        pb: [(Pb::Field, il.field), (Pb::Pola, il.pola), (Pb::PolaLokal, il.pola_lokal), (Pb::Payload, il.payload),
+            (Pb::PayloadLokal, il.payload_lokal), (Pb::MuatGlobal, il.muat_global), (Pb::SimpanGlobal, il.simpan_global),
+            (Pb::Indeks, il.indeks)].into_iter().map(|(p, id)| (p, m.declare_func_in_func(id, b.func))).collect(),
     };
     let wadah = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 8, 3));
     let titip = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 72, 3));
@@ -445,6 +450,24 @@ impl Penurun<'_, '_> {
                 self.jaga(st, jaga);
                 let v = self.b.ins().stack_load(self.ptr, types::I64, self.wadah, 0);
                 self.tetapkan(*hasil, v);
+            }
+            Inst::Pembantu { pb, args, hasil, gagal } => {
+                let f = self.lb.pb.iter().find(|(p, _)| p == pb).expect("pembantu terdaftar").1;
+                let argv: Vec<Value> = args.iter().map(|a| match a {
+                    Arg::I64(v) => self.i64c(*v),
+                    Arg::I32(v) => self.b.ins().iconst(types::I32, *v as i64),
+                    Arg::Isi(n) => self.bit(*n),
+                }).collect();
+                let c = self.b.ins().call(f, &argv);
+                let st = self.b.inst_results(c)[0];
+                if let Some((uji, j)) = gagal {
+                    let cond = match uji {
+                        Uji::BukanNol => st,
+                        Uji::Sama(k) => self.b.ins().icmp_imm_u(IntCC::Equal, st, *k),
+                    };
+                    self.jaga(cond, j);
+                }
+                if let Some(h) = hasil { let v = self.b.ins().uextend(types::I64, st); self.tetapkan(*h, v); }
             }
             Inst::Maju { slot, jaga } => {
                 let p = self.i64c(*slot as i64);

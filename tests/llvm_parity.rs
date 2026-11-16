@@ -602,6 +602,8 @@ const BIAYA_LLVM: &[(&str, &str, &str, usize, f64)] = &[
     ("q = q.push(x)", "struct Q { pub xs: []int }\nimpl Q { pub fn push(self, x: int) -> Q { self.xs += [x]\n return self } }\n",
      "var q = Q { xs: [] }\n var i = 0\n while i < N { q = q.push(i)\n i += 1 }\n wok(len(q.xs))", 200_000, 24.0),
     ("s = s + \"x\" melewati satu chunk arena", "", "var s = \"\"\n var i = 0\n while i < N { s = s + \"x\"\n i += 1 }\n wok(len(s))", 500_000, 24.0),
+    // #1053: `let r = arr::pop(a); a = r[0]` berbagi penyangga — dulu disalin tiap pop dan 20 ribu pop habis 4 GB.
+    ("let r = arr::pop(a); a = r[0]", "", "var a = arr::fill(1, N)\n var s = 0\n while len(a) > 0 {\n let r = arr::pop(a)\n a = r[0]\n s += 1 }\n wok(s)", 100_000, 24.0),
     // Fase AMAN-34 (#918): `x = [.., x, ..]` memindahkan `x` — dulu disalin utuh tiap langkah (20 ribu langkah 3 GB).
     ("a = [a, x] membungkus dirinya", "", "var a = []\n var i = 0\n while i < N { a = [a, i]\n i += 1 }\n wok(len(a))", 50_000, 24.0),
     // Fase AMAN-35 (#922): rune ditempel lewat penyangga stack — dulu tiap rune teks arena baru, `s` disalin.

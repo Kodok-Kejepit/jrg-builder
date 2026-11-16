@@ -2,7 +2,7 @@
 //! dan `bool` (plus `nil`/`()` tanpa isi), tanpa panggilan, tanpa posisi milik VM, tanpa tepi yang mengubah jenis.
 //! Di luar itu `Err(alasan)`, dan unitnya diturunkan penurun langsung.
 
-use super::{Akhir, Banding, Biner, Blok, DataBlok, Fungsi, Hasil, Inst, Jaga, Keadaan, Nilai, Tipe, Unar};
+use super::{Akhir, Arg, Banding, Biner, Blok, DataBlok, Fungsi, Hasil, Inst, Jaga, Keadaan, Nilai, Pb, Tipe, Uji, Unar};
 use crate::jit::layak::{Cara, Jenis, Rencana, KEMBALI_BULAT};
 use crate::vm::opcode::OpCode;
 use crate::vm::value::VmFunction;
@@ -85,7 +85,8 @@ fn periksa_cakupan(f: &VmFunction, r: &Rencana) -> Result<(), String> {
             Cara::Konstanta | Cara::Muat | Cara::Ambil | Cara::Simpan | Cara::Buang | Cara::Benar | Cara::KembaliNilai
             | Cara::KembaliUnit | Cara::Langkah { .. } | Cara::Bawaan | Cara::Biner | Cara::MuatUpval | Cara::SimpanUpval
             | Cara::TeksBulat | Cara::Geser | Cara::Cabang { .. } | Cara::Bangun(_) | Cara::Salinan | Cara::Salin | Cara::Tukar
-            | Cara::Metode(_) | Cara::IterAda | Cara::Maju | Cara::Langsung(_) | Cara::Panjang | Cara::PanjangLokal(_) => {}
+            | Cara::Metode(_) | Cara::IterAda | Cara::Maju | Cara::Langsung(_) | Cara::Panjang | Cara::PanjangLokal(_)
+            | Cara::Field | Cara::Pola | Cara::Payload | Cara::MuatGlobal | Cara::SimpanGlobal | Cara::Indeks => {}
             c => return Err(format!("{c:?} di ip {ip}")),
         }
         // `Return` cuma untuk titik masuk yang boleh kembali native.
@@ -362,7 +363,7 @@ impl Pembangun<'_> {
             }
             Cara::Salinan => match ins.op {
                 // Salinan atau konstanta maya: cuma jenisnya yang berpindah.
-                OpCode::LoadLocal | OpCode::LokalHitung => isi.push(None),
+                OpCode::LoadLocal | OpCode::LokalHitung | OpCode::Const => isi.push(None),
                 OpCode::StoreLocal => isi[a] = None,
                 OpCode::SimpanBuang => { isi[a] = None; isi.pop(); }
                 op => return Err(format!("Cara::Salinan atas {op:?}")),
@@ -407,6 +408,53 @@ impl Pembangun<'_> {
                 self.dorong(b, Inst::Panjang { hasil: h, pos, lokal, jaga });
                 isi.truncate(t - hapus);
                 isi.push(Some(h));
+            }
+            Cara::Field => {
+                let args = vec![Arg::I64(t as i64 - 1), Arg::I64(&self.f.chunk.names[a] as *const String as i64),
+                    Arg::I32((ins.op == OpCode::GetFieldPrivat) as i32)];
+                self.pembantu(b, ip, isi, Pb::Field, args, false, Some(Uji::BukanNol));
+                self.buka_hasil(b, ip, isi)?;
+            }
+            Cara::Pola => {
+                let situs = crate::jit::lambat::SitusPola::bocor(&self.f.chunk.constants[a]) as *const _ as i64;
+                let (pb, args) = match s[t - 1] {
+                    Jenis::Salinan(l) => (Pb::PolaLokal, vec![Arg::I64(l as i64), Arg::I64(situs)]),
+                    _ => (Pb::Pola, vec![Arg::I64(t as i64 - 1), Arg::I64(situs)]),
+                };
+                // 0/1 = cocok tidaknya; 2 = jumlah sub-pola salah, VM yang melaporkannya.
+                let h = self.pembantu(b, ip, isi, pb, args, true, Some(Uji::Sama(2)));
+                isi[t - 1] = h;
+            }
+            Cara::Payload => {
+                let (pb, args) = match s[t - 1] {
+                    Jenis::Salinan(l) => (Pb::PayloadLokal, vec![Arg::I64(l as i64), Arg::I64(t as i64 - 1)]),
+                    _ => (Pb::Payload, vec![Arg::I64(t as i64 - 1)]),
+                };
+                self.pembantu(b, ip, isi, pb, args, false, Some(Uji::BukanNol));
+                isi[t - 1] = None;
+                self.buka_hasil(b, ip, isi)?;
+            }
+            Cara::MuatGlobal => {
+                let args = vec![Arg::I64(&self.f.chunk.names[a] as *const String as i64), Arg::I64(t as i64)];
+                self.pembantu(b, ip, isi, Pb::MuatGlobal, args, false, Some(Uji::BukanNol));
+                isi.push(None);
+                self.buka_hasil(b, ip, isi)?;
+            }
+            Cara::SimpanGlobal => {
+                let j = s[t - 1];
+                let v = if j.skalar() { Arg::Isi(Self::ambil(isi, t - 1)?) } else { Arg::I64(0) };
+                let args = vec![Arg::I64(&self.f.chunk.names[a] as *const String as i64), Arg::I64(t as i64 - 1), v, Arg::I32(j.kode() as i32)];
+                self.pembantu(b, ip, isi, Pb::SimpanGlobal, args, false, Some(Uji::BukanNol));
+            }
+            Cara::Indeks => {
+                let j = s[t - 1];
+                let v = if j.skalar() { Arg::Isi(Self::ambil(isi, t - 1)?) } else { Arg::I64(0) };
+                let args = vec![Arg::I64(t as i64 - 2), v, Arg::I32(j.kode() as i32)];
+                self.pembantu(b, ip, isi, Pb::Indeks, args, false, Some(Uji::BukanNol));
+                if j.di_vm() { self.dorong(b, Inst::Buang { pos: t - 1 }); }
+                isi.truncate(t - 1);
+                isi[t - 2] = None;
+                self.buka_hasil(b, ip, isi)?;
             }
             Cara::Salin => { self.dorong(b, Inst::Salin { dari: t - 1, ke: t }); isi.push(None); }
             Cara::Tukar => {
@@ -476,6 +524,15 @@ impl Pembangun<'_> {
         Ok(None)
     }
 
+    /// `Inst::Pembantu` dengan jaga di `ip` (keadaan sebelum instruksinya); `hasil` = statusnya jadi nilai bulat.
+    #[allow(clippy::too_many_arguments)]
+    fn pembantu(&mut self, b: Blok, ip: usize, isi: &[Option<Nilai>], pb: Pb, args: Vec<Arg>, hasil: bool, uji: Option<Uji>) -> Option<Nilai> {
+        let gagal = uji.map(|u| (u, Jaga { keadaan: self.keadaan_di(ip, isi), spek: false, puncak_vm: false }));
+        let h = hasil.then(|| self.j.nilai_baru(Tipe::I));
+        self.dorong(b, Inst::Pembantu { pb, args, hasil: h, gagal });
+        h
+    }
+
     /// Alamat `Rencana::keadaan[ip]` (dibaca `lambat::langkah`/`bawaan`; rencana hidup selama kodenya).
     fn jenis_ip(&self, ip: usize) -> i64 { self.keadaan(ip).as_ptr() as i64 }
 
@@ -538,7 +595,8 @@ impl Pembangun<'_> {
                     let k = j.konstanta().expect("baru diperiksa") as usize;
                     self.dorong(stub, Inst::Taruh { pos: i, alamat: &self.f.chunk.constants[k] as *const _ as i64 });
                 }
-                Jenis::Lebar | Jenis::Salinan(_) => return Err(format!("tepi {dari}->{ke} atas {:?}", asal[i])),
+                Jenis::Salinan(l) => self.dorong(stub, Inst::Muat { lokal: l as usize, ke: i, pindah: false }),
+                Jenis::Lebar => return Err(format!("tepi {dari}->{ke} atas {:?}", asal[i])),
                 j => {
                     let nilai = if j.skalar() { Some(isi_s[i].ok_or("isi tepi native hilang")?) } else { None };
                     self.dorong(stub, Inst::TulisVm { pos: i, nilai, kode: j.kode() as i32 });
