@@ -40,8 +40,8 @@ bantu = { path = "../bantu" }
 
 | Perintah | Gunanya |
 |---|---|
-| `jrgm run [--vm] [--watch]` | jalankan proyek; `--watch` mengulang tiap ada yang berubah |
-| `jrgm test [--filter kata] [--vm]` | jalankan tes di `tests/*.jrg` |
+| `jrgm run [--vm \| --jit] [--watch]` | jalankan proyek; `--jit` lewat VM yang mengompilasi bagian panas, `--watch` mengulang tiap ada yang berubah |
+| `jrgm test [--filter kata] [--vm \| --jit]` | jalankan tes di `tests/*.jrg` |
 | `jrgm build` | periksa semua berkas proyek dan dependensinya |
 | `jrgm check` | periksa titik masuk saja |
 | `jrgm fmt [--check]` | rapikan spasi dan indentasi tiap berkas |

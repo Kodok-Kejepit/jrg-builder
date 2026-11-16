@@ -8,17 +8,44 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Memutus
 
-- **`dok::serve` menjawab 400 untuk permintaan HTTP/1.1 tanpa kepala `Host`** (RFC 9112); HTTP/1.0 tetap boleh.
-- **`wokwok::` menolak hasil broadcast dan `matmul` di atas 256 MiB**, seperti pembangun lariknya — dulu dua larik
-  kecil bisa meminta puluhan GB dan mematikan prosesnya.
 - **`json::stringify`, `json::pretty` dan `dok::json_encode` menolak pegangan pustaka** (`Ptr`, `Future`, `DokDb`, …),
   seperti `Mutex` — dulu tertulis `{"id":1}`.
+- **`wokwok::` menolak hasil broadcast dan `matmul` di atas 256 MiB**, seperti pembangun lariknya — dulu dua larik
+  kecil bisa meminta puluhan GB dan mematikan prosesnya.
+
+### Baru
+
+- **`jrgm run --jit`, `jrgm exec --jit` dan `jrgm test --jit`**: proyek bisa dijalankan dan diuji lewat mesin keempat
+  (VM yang mengompilasi bagian panas jadi kode mesin), sama dengan `jrgc --jit`; `--watch` ikut meneruskannya.
+
+### Kinerja
+
+- **`--jit` menghitung method berumus di tempat**: `x = x.m(dt)` dengan `m` yang membangun `Self` dari rumus pecahan
+  atas field-nya tidak lagi memanggil method dan membangun struct baru — field dibaca, dihitung di register, lalu
+  ditulis ke struct yang sama; method yang cuma mengembalikan rumus pecahan atas field-nya (`rec.score()`) juga
+  dihitung di tempat. `struct_particles` 12,9 → 3,3 s, `mixed_report` 2,2 → 1,4 s.
+
+### Diperbaiki
+
+- **`jrgm siapkan android` melewati entri katalog yang nama berkas atau foldernya bukan nama polos** (`..`, `/`).
+
+## [0.5.0] — 2026-11-16
+
+### Memutus
+
+- **`dok::serve` menjawab 400 untuk permintaan HTTP/1.1 tanpa kepala `Host`** (RFC 9112); HTTP/1.0 tetap boleh.
 - **`dok::serve` melepas klien yang tidak membaca jawabannya**: tenggat tulis 30 detik ditambah 1 detik per 16 KiB.
 
 ### Baru
 
 - **`jrgc --periksa` (dan `jrgm lint`) melaporkan method dan field yang tidak ada** atas `let x = T { .. }`, dengan
   kalimat yang sama seperti saat baris itu dijalankan.
+
+### Kinerja
+
+- **`--jit` lebih cepat di teks, bilangan di atas 64 bit, dan closure** (jam penuh lawan 0.4.0):
+  `numeric_kernel` 0,62 → 0,47 s, `string_ops` 0,66 → 0,61 s, `mixed_report` 2,18 → 2,10 s. `teks + teks`,
+  `str(n)`, geser konstan atas bilangan 128 bit, dan closure pendek yang membaca tangkapan tidak lagi lewat jalur umum.
 
 ### Diperbaiki
 
