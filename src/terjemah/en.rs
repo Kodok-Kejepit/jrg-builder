@@ -2321,7 +2321,7 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
     ("exception dari Java (pesannya sendiri tidak bisa dibaca)",
      "an exception from Java (its own message cannot be read)"),
     (" — kelas ini milik `kotlin-stdlib.jar`. Tambahkan jar itu ke classpath waktu `jvm::mulai`, mis. `-Djava.class.path=kelas:/path/ke/kotlin-stdlib.jar`",
-     " — this class belongs to `kotlin-stdlib.jar`. Add that jar to the classpath at `jvm::mulai`, e.g. `-Djava.class.path=classes:/path/to/kotlin-stdlib.jar`"),
+     " — this class belongs to `kotlin-stdlib.jar`. Add that jar to the classpath at `jvm::mulai`, e.g. `-Djava.class.path=out:/path/to/kotlin-stdlib.jar`"),
     (" — ini fungsi `suspend`. Fungsi suspend butuh mesin coroutine Kotlin dan tidak bisa dipanggil langsung; bungkus dulu dengan fungsi biasa (`runBlocking {}`) di sisi Kotlin",
      " — this is a `suspend` function. Suspend functions need Kotlin's coroutine machinery and cannot be called directly; wrap it in an ordinary function (`runBlocking {}`) on the Kotlin side first"),
     ("tipe argumen `{}` belum didukung — yang bisa: Z B C S I J F D, objek `Lpaket/Kelas;`, dan array `[T`",
