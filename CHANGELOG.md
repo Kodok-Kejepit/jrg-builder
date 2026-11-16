@@ -14,6 +14,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   huruf, angka, `_`, `-`** (dengan jalur folder di depannya).
 - **Dependensi git `jrgm` cuma lewat https, http, ssh, git dan berkas lokal**: URL `<nama>::...` dulu memanggil
   `git-remote-<nama>` dari PATH.
+- **`tok()` gagal berkalimat untuk baris masukan di atas 256 MiB** (dulu `jrgc` mati kehabisan memori), dan di
+  `--emit-llvm` menolak masukan bukan UTF-8 seperti dua mesin lain (dulu teks kosong).
 - **Klien `http::` menolak jawaban yang terpotong** (badan lebih pendek dari `Content-Length`) dan `Content-Length`
   yang tidak sah atau berbeda-beda; byte sesudah badan dibuang. HTTPS menuntut paling sedikit TLS 1.2.
 

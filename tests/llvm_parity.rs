@@ -67,6 +67,37 @@ fn jalankan_llvm(src: &str) -> Hasil {
     }
 }
 
+/// `tok()` atas masukan bukan UTF-8 gagal dengan kalimat yang sama di tiga mesin (Fase AMAN-68): LLVM dulu
+/// menjawab teks kosong tanpa suara.
+#[test]
+fn tok_bukan_utf8_sama_di_tiga_mesin() {
+    if !ada_clang() { eprintln!("lewati: clang tidak ada"); return; }
+    use std::io::Write;
+    let dir = dir_uji("tok");
+    let file = dir.join("t.jrg");
+    std::fs::write(&file, "package main\npub fn main() {\n    wok(tok())\n    wok(tok())\n}\n").unwrap();
+    let bin = dir.join("t.bin");
+    let o = Command::new(jrgc()).arg(&file).arg("--emit-llvm").arg("-o").arg(&bin).arg("--no-run")
+        .env("JRG_SOPAN", "1").output().unwrap();
+    assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
+    let jalan = |mut c: Command| {
+        let mut anak = c.env("JRG_SOPAN", "1").stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped()).spawn().unwrap();
+        anak.stdin.take().unwrap().write_all(b"halo\nx\xffy\n").unwrap();
+        let o = anak.wait_with_output().unwrap();
+        (o.status.code(), String::from_utf8_lossy(&o.stdout).to_string(), String::from_utf8_lossy(&o.stderr).to_string())
+    };
+    let mut ci = Command::new(jrgc());
+    ci.arg(&file);
+    let mut cv = Command::new(jrgc());
+    cv.arg(&file).arg("--vm");
+    for (nama, (kode, keluar, galat)) in [("interp", jalan(ci)), ("vm", jalan(cv)), ("llvm", jalan(Command::new(&bin)))] {
+        assert_eq!((kode, keluar.as_str()), (Some(1), "halo\n"), "{}: {}", nama, galat);
+        assert!(galat.contains("tok: masukan bukan teks UTF-8 yang sah"), "{}: {}", nama, galat);
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// Jalankan lewat `--vm`. Hanya dipakai sapuan tiga-mesin di bawah.
 fn jalankan_vm(src: &str) -> Hasil {
     let dir = dir_uji("vm");

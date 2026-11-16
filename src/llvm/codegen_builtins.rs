@@ -617,7 +617,16 @@ impl Codegen {
         self.emit(format!("store i64 0, ptr {}", outl));
         let okr = self.fresh("tokok.");
         self.emit(format!("{} = call i32 @jrg_read_line(ptr {}, ptr {})", okr, outp, outl));
-        let _ = okr;
+        // Masukan bukan UTF-8 dulu diam-diam jadi teks kosong di sini, sementara acuannya gagal (Fase AMAN-68).
+        for (kode, pesan) in [(2, crate::host::PESAN_MASUKAN_BUKAN_UTF8.to_string()), (3, crate::host::pesan_baris_kepanjangan())] {
+            let c = self.fresh("tokc.");
+            self.emit(format!("{} = icmp eq i32 {}, {}", c, okr, kode));
+            let (gagal, lanjut) = (self.fresh_label("tok_gagal."), self.fresh_label("tok_lanjut."));
+            self.terminate(format!("br i1 {}, label %{}, label %{}", c, gagal, lanjut));
+            self.start_block(gagal);
+            self.panik(&format!("tok: {}", pesan));
+            self.start_block(lanjut);
+        }
         self.join_str(&outp, &outl)
     }
 

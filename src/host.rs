@@ -83,6 +83,11 @@ mod imp {
                 }
                 baris.extend(q.drain(..));
             }
+            // Masukan tanpa baris baru (`/dev/zero`, berkas biner lewat pipa) dulu ditampung sampai alokasinya gagal
+            // dan prosesnya mati SIGABRT (Fase AMAN-68).
+            if baris.len() as u64 > crate::host::MAKS_BACA_UTUH {
+                return Err(io::Error::other(crate::host::pesan_baris_kepanjangan()));
+            }
             match tarik(&mut kunci) {
                 Ok(0) => break,
                 Ok(_) => {}
@@ -97,7 +102,7 @@ mod imp {
         // Sama dengan `BufRead::read_line`: byte yang bukan UTF-8 adalah galat, dan
         // `buf` tidak disentuh.
         let teks = String::from_utf8(baris).map_err(|_| io::Error::new(
-            io::ErrorKind::InvalidData, "stream did not contain valid UTF-8"))?;
+            io::ErrorKind::InvalidData, crate::host::PESAN_MASUKAN_BUKAN_UTF8))?;
         buf.push_str(&teks);
         Ok(teks.len())
     }
@@ -199,6 +204,12 @@ pub fn skrip_tanpa_penafsir(prog: &std::path::Path) -> Option<String> {
 /// Batas satu bacaan berkas utuh — angka yang sama dengan jawaban `http::` dan bom `gzip::`. Kalimatnya
 /// sama dengan lapis LLVM (`-100002`): `/dev/zero`, FIFO tanpa ujung atau jalur dari luar dulu memakan RAM mesin.
 pub const MAKS_BACA_UTUH: u64 = 256 << 20;
+
+/// Kalimat `tok()` di tiga mesin; LLVM menyisipkannya saat kompilasi (runtime-nya cuma menjawab kode).
+pub const PESAN_MASUKAN_BUKAN_UTF8: &str = "masukan bukan teks UTF-8 yang sah";
+pub fn pesan_baris_kepanjangan() -> String {
+    format!("satu baris masukan lebih dari {} MiB tanpa baris baru — yang dialirkan bukan teks berbaris?", MAKS_BACA_UTUH >> 20)
+}
 pub const PESAN_BACA_UTUH: &str = "isinya lebih dari 256 MiB, batas satu bacaan utuh \
     (berkas raksasa atau perangkat tanpa ujung seperti /dev/zero tidak dibaca ke memori)";
 

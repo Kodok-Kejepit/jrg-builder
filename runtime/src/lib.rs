@@ -1654,9 +1654,8 @@ fn read_byte() -> Option<u8> {
     }
 }
 
-/// Reads one line from stdin (trailing `\n`/`\r\n` stripped), mirroring
-/// the interpreter's `tok()`. Returns 0 on EOF/error (out-params
-/// untouched), 1 on success.
+/// Satu baris stdin tanpa `\n`/`\r\n`, seperti `tok()` acuan. 0 = EOF (keluaran tidak disentuh), 1 = berhasil,
+/// 2 = bukan UTF-8, 3 = lebih dari 256 MiB tanpa baris baru; kalimat 2 dan 3 disisipkan codegen (Fase AMAN-68).
 #[no_mangle]
 pub extern "C" fn jrg_read_line(out_ptr: *mut *const u8, out_len: *mut i64) -> i32 {
     let mut bytes: Vec<u8> = Vec::new();
@@ -1666,6 +1665,7 @@ pub extern "C" fn jrg_read_line(out_ptr: *mut *const u8, out_len: *mut i64) -> i
         if b == b'\n' {
             break;
         }
+        if bytes.len() >= 256 << 20 { return 3; }
         bytes.push(b);
     }
     if !saw_any {
@@ -1679,7 +1679,7 @@ pub extern "C" fn jrg_read_line(out_ptr: *mut *const u8, out_len: *mut i64) -> i
             unsafe { emit_string(line, out_ptr, out_len) };
             1
         }
-        Err(_) => 0,
+        Err(_) => 2,
     }
 }
 

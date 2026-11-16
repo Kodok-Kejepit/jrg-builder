@@ -5700,6 +5700,26 @@ fn proses_keluaran_opsi_di_dua_mesin() {
     }
 }
 
+/// `tok()` atas masukan tanpa baris baru gagal berkalimat sesudah 256 MiB (Fase AMAN-68): dulu `jrgc` mati SIGABRT.
+#[test]
+fn baris_masukan_berbatas_di_dua_mesin() {
+    if !cfg!(unix) { return; }
+    let dir = crate::bersama::dir_unik("jrg-tok-batas");
+    std::fs::create_dir_all(&dir).unwrap();
+    let berkas = dir.join("t.jrg");
+    std::fs::write(&berkas, "package main\npub fn main() {\n    wok(\"mulai\")\n    let s = tok()\n    wok(len(s))\n}\n").unwrap();
+    for vm in [false, true] {
+        let mut c = Command::new(jrgc());
+        c.arg(&berkas).env("JRG_SOPAN", "1").stdin(std::fs::File::open("/dev/zero").unwrap());
+        if vm { c.arg("--vm"); }
+        let o = c.output().unwrap();
+        let k = String::from_utf8_lossy(&o.stdout).to_string() + &String::from_utf8_lossy(&o.stderr);
+        assert_eq!(o.status.code(), Some(1), "vm={}: {}", vm, k);
+        assert!(k.starts_with("mulai\n") && k.contains("tok: satu baris masukan lebih dari 256 MiB"), "vm={}: {}", vm, k);
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// Keluaran anak di atas 256 MiB menghentikan programnya dengan `Err` (Fase AMAN-59): dulu `jrgc` mati SIGABRT.
 #[test]
 fn keluaran_proses_berbatas_di_dua_mesin() {
