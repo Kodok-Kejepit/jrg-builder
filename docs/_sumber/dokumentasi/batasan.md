@@ -17,9 +17,9 @@ ringkas: Kekurangan JRG 0.6.0 yang sudah diketahui.
 Interpreter dan VM menjalankan seluruh bahasa. Backend LLVM menjalankan semua berkas konformans, dan menolak (dengan
 alasannya) beberapa bentuk:
 
-- sebar di pemanggilan (`f(...v)`) dan argumen bernama (`f(a: 1)`);
-- konstruktor varian sebagai nilai (`let f = Some`);
-- mewarisi struct generik;
+- sebar (`f(...v)`) dan argumen bernama (`f(a: 1)`) ke closure yang dipegang variabel atau parameter (ke fungsi
+  bernama sudah jalan);
+- memanggil fungsi yang disimpan sebagai nilai bertag (misalnya di dalam array campuran);
 - sebagian modul `std/` yang ditulis sangat dinamis;
 - bilangan bulat di atas 64 bit.
 

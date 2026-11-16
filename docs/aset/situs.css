@@ -89,7 +89,7 @@ code, kbd, pre { font-family: var(--mono); }
 .versi { font: 12px var(--mono); color: var(--tinta-3); border: 1px solid var(--garis);
   padding: 1px 8px; border-radius: 99px; }
 .kepala-kanan { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.tombol-ikon, .tombol-cari {
+.tombol-ikon, .tombol-cari, .tombol-bahasa {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px;
   border: 1px solid var(--garis); background: var(--panel); color: var(--tinta-2);
   border-radius: 8px; cursor: pointer; font: inherit; font-size: 14px; text-decoration: none;
@@ -97,7 +97,8 @@ code, kbd, pre { font-family: var(--mono); }
 .tombol-ikon { width: 36px; padding: 0; }
 .tombol-cari { padding: 0 10px; min-width: 150px; justify-content: flex-start; }
 .tombol-cari kbd { margin-left: auto; font-size: 11px; border: 1px solid var(--garis); border-radius: 4px; padding: 0 5px; }
-.tombol-ikon:hover, .tombol-cari:hover { border-color: var(--aksen); color: var(--tinta); }
+.tombol-bahasa { min-width: 36px; padding: 0 8px; font-size: 13px; font-weight: 600; letter-spacing: .03em; }
+.tombol-ikon:hover, .tombol-cari:hover, .tombol-bahasa:hover { border-color: var(--aksen); color: var(--tinta); }
 .kepala svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8;
   stroke-linecap: round; stroke-linejoin: round; }
 .tombol-menu { display: none; }

@@ -1,19 +1,22 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JawaRustGo++ (JRG) — bahasa pemrograman</title>
-<meta name="description" content="JawaRustGo++ (JRG): bahasa pemrograman dengan pesan galat berbahasa Indonesia, tiga mesin eksekusi, dan kelas matematika dari nol.">
+<title>JawaRustGo++ (JRG) — a programming language</title>
+<meta name="description" content="JawaRustGo++ (JRG): a programming language with four execution engines (a fifth, WebAssembly, is being built), diagnostics that teach, and a math course from zero.">
 <link rel="canonical" href="https://jrg-lang.org/">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
-<meta property="og:locale" content="id_ID">
-<meta property="og:title" content="JawaRustGo++ (JRG) — bahasa pemrograman">
-<meta property="og:description" content="JawaRustGo++ (JRG): bahasa pemrograman dengan pesan galat berbahasa Indonesia, tiga mesin eksekusi, dan kelas matematika dari nol.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="JawaRustGo++ (JRG) — a programming language">
+<meta property="og:description" content="JawaRustGo++ (JRG): a programming language with four execution engines (a fifth, WebAssembly, is being built), diagnostics that teach, and a math course from zero.">
 <meta property="og:url" content="https://jrg-lang.org/">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "JawaRustGo++", "alternateName": ["JRG", "JawaRustGo++ (JRG)", "bahasa pemrograman JRG"], "url": "https://jrg-lang.org/", "inLanguage": "id"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "JawaRustGo++", "alternateName": ["JRG", "JawaRustGo++ (JRG)", "bahasa pemrograman JRG"], "url": "https://jrg-lang.org/", "inLanguage": "en"}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "ComputerLanguage", "name": "JawaRustGo++", "alternateName": "JRG", "url": "https://jrg-lang.org/", "sameAs": ["https://github.com/Kodok-Kejepit/jrg"], "creator": {"@type": "Person", "name": "Muhamad Surya Widianto", "url": "https://jrg-lang.org/profil.html", "sameAs": ["https://github.com/Kodok-Kejepit", "https://freease.cloud", "https://www.linkedin.com/in/muhamad-surya-widianto-3567ab40a"]}}</script>
 <link rel="icon" type="image/png" sizes="96x96" href="aset/favicon-96.png?v=59ebaf4767">
 <link rel="icon" type="image/png" sizes="128x128" href="aset/favicon.png?v=82b4aee258">
@@ -110,7 +113,7 @@ code, kbd, pre { font-family: var(--mono); }
 .versi { font: 12px var(--mono); color: var(--tinta-3); border: 1px solid var(--garis);
   padding: 1px 8px; border-radius: 99px; }
 .kepala-kanan { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.tombol-ikon, .tombol-cari {
+.tombol-ikon, .tombol-cari, .tombol-bahasa {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px;
   border: 1px solid var(--garis); background: var(--panel); color: var(--tinta-2);
   border-radius: 8px; cursor: pointer; font: inherit; font-size: 14px; text-decoration: none;
@@ -118,7 +121,8 @@ code, kbd, pre { font-family: var(--mono); }
 .tombol-ikon { width: 36px; padding: 0; }
 .tombol-cari { padding: 0 10px; min-width: 150px; justify-content: flex-start; }
 .tombol-cari kbd { margin-left: auto; font-size: 11px; border: 1px solid var(--garis); border-radius: 4px; padding: 0 5px; }
-.tombol-ikon:hover, .tombol-cari:hover { border-color: var(--aksen); color: var(--tinta); }
+.tombol-bahasa { min-width: 36px; padding: 0 8px; font-size: 13px; font-weight: 600; letter-spacing: .03em; }
+.tombol-ikon:hover, .tombol-cari:hover, .tombol-bahasa:hover { border-color: var(--aksen); color: var(--tinta); }
 .kepala svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8;
   stroke-linecap: round; stroke-linejoin: round; }
 .tombol-menu { display: none; }
@@ -439,37 +443,38 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body data-situs="beranda">
-<a class="lewati" href="#isi">Lewati ke isi</a>
+<a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
   <a class="merek" href="index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Situs"><a href="web_dokumentasi/index.html">Dokumentasi</a><a href="matematika_x_jrg/index.html">Matematika × JRG</a><a href="profil.html">Profil</a></nav>
+  <nav class="situs" aria-label="Site"><a href="web_dokumentasi/index.html">Docs</a><a href="matematika_x_jrg/index.html">Matematika × JRG</a><a href="profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
-    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="id/index.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
   </div>
 </header>
 <main id="isi" class="beranda">
 <section class="pahlawan">
   <div>
     <span class="label-versi">JRG 0.6.0</span>
-    <h1 class="judul-gambar"><img class="terang-saja" src="aset/hero.webp?v=f2d26285d2" fetchpriority="high" alt="JRG++, bahasa pemrograman Indonesia" width="550" height="142"><img class="gelap-saja" src="aset/hero-gelap.webp?v=75081e4aab" fetchpriority="high" alt="JRG++, bahasa pemrograman Indonesia" width="550" height="142"></h1>
-    <ul class="ciri-kecil" aria-label="Ciri JRG">
-      <li>Galat berbahasa Indonesia</li>
-      <li>Empat mesin, satu hasil</li>
-      <li>Tanpa pengumpul sampah</li>
-      <li>871 fungsi bawaan</li>
-      <li>FFI ke 12 bahasa</li>
-      <li>Sampai ke Android</li>
+    <h1 class="judul-gambar"><img class="terang-saja" src="aset/hero.webp?v=f2d26285d2" fetchpriority="high" alt="JRG++, a programming language from Indonesia" width="550" height="142"><img class="gelap-saja" src="aset/hero-gelap.webp?v=75081e4aab" fetchpriority="high" alt="JRG++, a programming language from Indonesia" width="550" height="142"></h1>
+    <ul class="ciri-kecil" aria-label="JRG at a glance">
+      <li>Diagnostics that teach</li>
+      <li>Four engines, one answer</li>
+      <li>No garbage collector</li>
+      <li>871 built-in functions</li>
+      <li>FFI to 12 languages</li>
+      <li>Ships to Android</li>
     </ul>
-    <p class="lead">JawaRustGo++ (JRG) adalah bahasa pemrograman dengan pesan galat berbahasa Indonesia. Ditulis dengan Rust,
-    bentuk kodenya mirip Rust dan Go. Satu program bisa dijalankan lewat interpreter, mesin virtual, atau dikompilasi
-    jadi program native, dan hasilnya sama.</p>
+    <p class="lead">JawaRustGo++ (JRG) is a programming language whose error messages explain where the problem is and how
+    to get out of it. It is written in Rust, and its code looks like Rust and Go. One program runs through an
+    interpreter, a virtual machine, a JIT, or compiles to a native program, and the answer is the same everywhere.</p>
     <div class="baris-tombol">
-      <a class="tombol" href="web_dokumentasi/pasang.html">Pasang JRG</a>
-      <a class="tombol biasa" href="web_dokumentasi/tur.html">Tur singkat</a>
-      <a class="tombol biasa" href="matematika_x_jrg/index.html">Belajar dari nol</a>
+      <a class="tombol" href="web_dokumentasi/pasang.html">Install JRG</a>
+      <a class="tombol biasa" href="web_dokumentasi/tur.html">Quick tour</a>
+      <a class="tombol biasa" href="matematika_x_jrg/index.html">Learn from zero</a>
     </div>
   </div>
   <div>
@@ -493,25 +498,25 @@ rata-rata kelas: 85</code></pre></figure>
 </section>
 
 <section class="bagian-beranda">
-  <h2>Dua pintu masuk</h2>
-  <p>Pilih sesuai kebutuhan. Bilah di atas tiap halaman memindahkanmu antara keduanya.</p>
+  <h2>Two ways in</h2>
+  <p>Pick the one you need. The bar at the top of every page moves you between them.</p>
   <div class="kartu-kartu">
     <a class="kartu" href="web_dokumentasi/index.html">
-      <h3>Dokumentasi</h3>
-      <p>Rujukan bahasa untuk yang sudah biasa memprogram: sintaks, tipe, pustaka, perkakas, FFI, dan cara kerja mesinnya.</p>
-      <span class="lanjut">Buka dokumentasi →</span>
+      <h3>Documentation</h3>
+      <p>The language reference for people who already program: syntax, types, the library, tools, FFI, and how the engines work.</p>
+      <span class="lanjut">Open the docs →</span>
     </a>
     <a class="kartu" href="matematika_x_jrg/index.html">
       <h3>Matematika × JRG</h3>
-      <p>Kelas dari nol untuk yang belum pernah memprogram. 12 bab dasar JRG dan 20 bab matematika, lengkap dengan kuis dan kode yang bisa dijalankan di sini.</p>
-      <span class="lanjut">Mulai belajar →</span>
+      <p>A course from zero for people who have never programmed: 12 chapters of JRG basics and 20 chapters of math, with quizzes and code you can run right here. The course is in Indonesian.</p>
+      <span class="lanjut">Start learning →</span>
     </a>
   </div>
 </section>
 
 <section class="bagian-beranda">
-  <h2>Galat yang bisa dibaca</h2>
-  <p>Pesannya menyebut letak masalah, apa yang salah, dan jalan keluarnya.</p>
+  <h2>Errors you can read</h2>
+  <p>A message names where the problem is, what went wrong, and the way out.</p>
 <figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ jrgc harga.jrg
 kepentok di baris 2 waktu jalan. keterangannya di bawah.
 error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2, atau -1..-3 kalau mau hitung dari belakang)
@@ -519,28 +524,31 @@ error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2,
   |
 2 | wok(harga[3])
   |     ^^^^^^^^</code></pre></figure>
+  <p>Messages are in Indonesian today ("index [3] is out of bounds — this array holds 3 elements; valid indices are
+  0..2, or -1..-3 counting from the end"). English messages are being written, and the language will be chosen
+  with <code>jrgm language en</code>.</p>
 </section>
 
 <section class="bagian-beranda">
-  <h2>Isi kotaknya</h2>
-  <p>Yang kamu dapat sesudah memasang JRG.</p>
+  <h2>What is in the box</h2>
+  <p>What you get once JRG is installed.</p>
   <div class="ciri">
-    <div><h3>Empat mesin</h3><p>Interpreter untuk coba-coba, VM bytecode (<code>--vm</code>) yang lebih cepat, JIT (<code>--jit</code>) yang mengompilasi bagian panas saat jalan, dan kompilasi native lewat LLVM (<code>--emit-llvm</code>).</p></div>
-    <div><h3>871 fungsi bawaan</h3><p>Teks, koleksi, berkas, waktu, JSON, regex, HTTP, SQLite, kanvas, suara, dan numerik. Cari dengan <code>jrgc --cari</code>.</p></div>
-    <div><h3>Pustaka std/</h3><p>37 modul (set, antrean, heap, CSV, uang, tabel…) plus mesin game 2D, semuanya ditulis dalam JRG.</p></div>
-    <div><h3>Bahasa lain</h3><p>Panggil C, C++, Rust, Go, Python, JavaScript, PHP, Lua, Java, Kotlin, .NET, dan WebAssembly.</p></div>
-    <div><h3>Proyek dan paket</h3><p><code>jrgm</code> membuat proyek, mengurus dependensi lewat git, menjalankan tes, merapikan, dan memeriksa kode.</p></div>
-    <div><h3>Sampai ke HP</h3><p>Bungkus program jadi APK Android dengan <code>jrgm apk</code>. Ada juga JRG IDE yang jalan di HP.</p></div>
+    <div><h3>Four engines, a fifth on the way</h3><p>An interpreter for trying things out, a faster bytecode VM (<code>--vm</code>), a JIT (<code>--jit</code>) that compiles hot code while it runs, and native compilation through LLVM (<code>--emit-llvm</code>). A fifth engine, WebAssembly, is being built so JRG programs run on the web.</p></div>
+    <div><h3>871 built-in functions</h3><p>Text, collections, files, time, JSON, regex, HTTP, SQLite, canvas, sound, and numerics. Search them with <code>jrgc --cari</code>.</p></div>
+    <div><h3>The std/ library</h3><p>37 modules (set, queue, heap, CSV, money, tables…) plus a 2D game engine, all written in JRG.</p></div>
+    <div><h3>Other languages</h3><p>Call C, C++, Rust, Go, Python, JavaScript, PHP, Lua, Java, Kotlin, .NET, and WebAssembly.</p></div>
+    <div><h3>Projects and packages</h3><p><code>jrgm</code> creates projects, manages dependencies through git, runs tests, formats, and checks code.</p></div>
+    <div><h3>All the way to your phone</h3><p>Package a program as an Android APK with <code>jrgm apk</code>. There is also JRG IDE, which runs on the phone.</p></div>
   </div>
 </section>
 
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="web_dokumentasi/pasang.html">Pasang</a> · <a href="web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="web_dokumentasi/pasang.html">Install</a> · <a href="web_dokumentasi/rilis.html">Release notes</a> · <a href="profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a></span></footer>
 </main>
-<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
-  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
+  <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="aset/cari.js?v=e6f371141c"></script>
-<script defer src="aset/situs.js?v=e91e44ad63"></script>
+<script defer src="aset/cari.js?v=011e8de6c1"></script>
+<script defer src="aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Web dan data — Dokumentasi JRG</title>
-<meta name="description" content="Server HTTP, template, cookie dan sesi, WebSocket, klien HTTP, dan SQLite.">
+<title>Web and data — JRG docs</title>
+<meta name="description" content="An HTTP server, templates, cookies and sessions, WebSocket, an HTTP client, and SQLite.">
 <link rel="canonical" href="https://jrg-lang.org/web_dokumentasi/web.html">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/web_dokumentasi/web.html">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/web_dokumentasi/web.html">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/web_dokumentasi/web.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
-<meta property="og:locale" content="id_ID">
-<meta property="og:title" content="Web dan data — Dokumentasi JRG">
-<meta property="og:description" content="Server HTTP, template, cookie dan sesi, WebSocket, klien HTTP, dan SQLite.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Web and data — JRG docs">
+<meta property="og:description" content="An HTTP server, templates, cookies and sessions, WebSocket, an HTTP client, and SQLite.">
 <meta property="og:url" content="https://jrg-lang.org/web_dokumentasi/web.html">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
@@ -108,7 +111,7 @@ code, kbd, pre { font-family: var(--mono); }
 .versi { font: 12px var(--mono); color: var(--tinta-3); border: 1px solid var(--garis);
   padding: 1px 8px; border-radius: 99px; }
 .kepala-kanan { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.tombol-ikon, .tombol-cari {
+.tombol-ikon, .tombol-cari, .tombol-bahasa {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px;
   border: 1px solid var(--garis); background: var(--panel); color: var(--tinta-2);
   border-radius: 8px; cursor: pointer; font: inherit; font-size: 14px; text-decoration: none;
@@ -116,7 +119,8 @@ code, kbd, pre { font-family: var(--mono); }
 .tombol-ikon { width: 36px; padding: 0; }
 .tombol-cari { padding: 0 10px; min-width: 150px; justify-content: flex-start; }
 .tombol-cari kbd { margin-left: auto; font-size: 11px; border: 1px solid var(--garis); border-radius: 4px; padding: 0 5px; }
-.tombol-ikon:hover, .tombol-cari:hover { border-color: var(--aksen); color: var(--tinta); }
+.tombol-bahasa { min-width: 36px; padding: 0 8px; font-size: 13px; font-weight: 600; letter-spacing: .03em; }
+.tombol-ikon:hover, .tombol-cari:hover, .tombol-bahasa:hover { border-color: var(--aksen); color: var(--tinta); }
 .kepala svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8;
   stroke-linecap: round; stroke-linejoin: round; }
 .tombol-menu { display: none; }
@@ -437,26 +441,27 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body data-situs="dok">
-<a class="lewati" href="#isi">Lewati ke isi</a>
+<a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
-  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
-    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="../id/web_dokumentasi/web.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
   </div>
 </header>
 <div class="tata">
-<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a class="aktif" aria-current="page" href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Empat mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<aside class="sisi" aria-label="Documentation navigation"><nav><p class="sisi-grup">Start</p><ul><li><a href="index.html">Introduction</a></li><li><a href="pasang.html">Install</a></li><li><a href="tur.html">Quick tour</a></li></ul><p class="sisi-grup">Language</p><ul><li><a href="nilai.html">Values and types</a></li><li><a href="kendali.html">Control flow</a></li><li><a href="fungsi.html">Functions and closures</a></li><li><a href="tipe.html">Structs, enums, traits</a></li><li><a href="pola.html">Patterns</a></li><li><a href="galat.html">Option and Result</a></li><li><a href="modul.html">Modules</a></li><li><a href="konkuren.html">Concurrency</a></li></ul><p class="sisi-grup">Library</p><ul><li><a href="pustaka.html">Built-in library</a></li><li><a class="aktif" aria-current="page" href="web.html">Web and data</a></li><li><a href="grafis.html">Canvas, sound, numerics</a></li><li><a href="game.html">Game engine</a></li><li><a href="ffi.html">Other languages</a></li></ul><p class="sisi-grup">Tools</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor and IDE</a></li><li><a href="android.html">Android apps</a></li></ul><p class="sisi-grup">Under the hood</p><ul><li><a href="mesin.html">Four engines</a></li><li><a href="memori.html">Memory model</a></li><li><a href="diagnostik.html">Diagnostics</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Not done yet</a></li><li><a href="rilis.html">Release notes</a></li></ul></nav></aside>
 <main id="isi" class="isi">
 <article class="artikel">
-<p class="rel">Pustaka</p>
-<h1>Web dan data</h1>
-<p class="ringkas">Server HTTP, template, cookie dan sesi, WebSocket, klien HTTP, dan SQLite.</p>
-<p>Semua yang dibutuhkan aplikasi web ada di namespace <code>dok::</code> dan <code>http::</code>, tanpa pustaka tambahan.</p>
-<h2 id="server"><a class="jangkar" href="#server">Server</a></h2>
+<p class="rel">Library</p>
+<h1>Web and data</h1>
+<p class="ringkas">An HTTP server, templates, cookies and sessions, WebSocket, an HTTP client, and SQLite.</p>
+<p>Everything a web application needs is in the <code>dok::</code> and <code>http::</code> namespaces, with no extra library.</p>
+<h2 id="the-server"><a class="jangkar" href="#the-server">The server</a></h2>
 <figure class="kode"><figcaption><span>server.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> main
 
 <span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
@@ -477,12 +482,12 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 halo, Ani
 $ curl &quot;localhost:8080/api/kuadrat?n=12&quot;
 {&quot;kuadrat&quot;:144,&quot;n&quot;:12}</code></pre></figure>
-<p><code>dok::serve</code> memblokir dan menangani tiap koneksi di thread-nya sendiri. Argumen ketiga mengatur alamat. Bawaannya <code>&quot;127.0.0.1&quot;</code>, jadi cuma bisa diakses dari mesin sendiri (atau lewat proxy seperti Caddy/nginx di mesin yang sama); tulis <code>&quot;0.0.0.0&quot;</code> untuk membukanya ke jaringan.</p>
-<p><code>dok::router_static</code> tidak menyajikan berkas atau folder yang namanya diawali titik (<code>.env</code>, <code>.git/</code>, <code>.htpasswd</code>) — dijawab 404 seperti berkas yang tidak ada, supaya rahasia yang kebetulan ikut di folder publik tidak bocor. Pengecualiannya <code>.well-known/</code>, yang memang publik (mis. tantangan sertifikat ACME).</p>
-<div class="tabel"><table><thead><tr><th>Request (<code>req</code>)</th><th>Isi</th></tr></thead><tbody><tr><td><code>method</code>, <code>path</code></td><td><code>&quot;GET&quot;</code>, <code>&quot;/sapa/Ani&quot;</code></td></tr><tr><td><code>params</code></td><td>bagian <code>:nama</code> dari pola rute, dibaca <code>req.params.nama</code></td></tr><tr><td><code>query</code></td><td>pasangan dari <code>?a=1&amp;b=2</code>; ambil dengan <code>dok::query_get(req.query, &quot;a&quot;)</code></td></tr><tr><td><code>headers</code></td><td>ambil dengan <code>dok::header_get(req.headers, &quot;Content-Type&quot;)</code></td></tr><tr><td><code>body</code>, <code>body_bytes</code></td><td>badan sebagai teks; kalau bukan teks UTF-8, <code>body</code> bernilai <code>nil</code> dan isinya di <code>body_bytes</code></td></tr><tr><td><code>remote_addr</code></td><td>alamat soket peminta, <code>&quot;127.0.0.1:51234&quot;</code> — kepala <code>X-Forwarded-For</code> ditulis klien sendiri, jadi untuk pembatas laju atau log pakai ini, kecuali di belakang proxy milikmu</td></tr></tbody></table></div>
-<p>Handler boleh mengembalikan teks (jadi <code>200 text/plain</code>), hasil <code>dok::text</code>, <code>dok::html</code>, <code>dok::json_response</code>, <code>dok::redirect</code>, <code>dok::response(kode, isi)</code>, <code>dok::binary(byte)</code>, atau <code>Result</code> (<code>Err</code> jadi 500).</p>
+<p><code>dok::serve</code> blocks and handles each connection in its own thread. The third argument sets the address. The default is <code>&quot;127.0.0.1&quot;</code>, so it is only reachable from the same machine (or through a proxy such as Caddy/nginx on that machine); write <code>&quot;0.0.0.0&quot;</code> to open it to the network.</p>
+<p><code>dok::router_static</code> does not serve files or folders whose name starts with a dot (<code>.env</code>, <code>.git/</code>, <code>.htpasswd</code>): they get a 404 like a missing file, so a secret that ended up in the public folder does not leak. The exception is <code>.well-known/</code>, which is public on purpose (for example ACME certificate challenges). Files are streamed from disk.</p>
+<div class="tabel"><table><thead><tr><th>Request (<code>req</code>)</th><th>Contents</th></tr></thead><tbody><tr><td><code>method</code>, <code>path</code></td><td><code>&quot;GET&quot;</code>, <code>&quot;/sapa/Ani&quot;</code></td></tr><tr><td><code>params</code></td><td>the <code>:name</code> parts of the route pattern, read as <code>req.params.nama</code></td></tr><tr><td><code>query</code></td><td>the pairs from <code>?a=1&amp;b=2</code>; read with <code>dok::query_get(req.query, &quot;a&quot;)</code></td></tr><tr><td><code>headers</code></td><td>read with <code>dok::header_get(req.headers, &quot;Content-Type&quot;)</code></td></tr><tr><td><code>body</code>, <code>body_bytes</code></td><td>the body as text; if it is not UTF-8 text, <code>body</code> is <code>nil</code> and the bytes are in <code>body_bytes</code></td></tr><tr><td><code>remote_addr</code></td><td>the requester's socket address, <code>&quot;127.0.0.1:51234&quot;</code> — the <code>X-Forwarded-For</code> header is written by the client itself, so use this for rate limits and logs, unless you are behind your own proxy</td></tr></tbody></table></div>
+<p>A handler may return text (which becomes <code>200 text/plain</code>), the result of <code>dok::text</code>, <code>dok::html</code>, <code>dok::json_response</code>, <code>dok::redirect</code>, <code>dok::response(code, body)</code>, <code>dok::binary(bytes)</code>, or a <code>Result</code> (an <code>Err</code> becomes a 500).</p>
 <h3 id="middleware"><a class="jangkar" href="#middleware">Middleware</a></h3>
-<p><code>dok::router_use</code> berjalan sebelum rute dicari; mengembalikan <code>nil</code> berarti lanjut, mengembalikan respons berarti berhenti di situ. <code>dok::router_after</code> berjalan sesudah handler dan boleh mengubah responsnya.</p>
+<p><code>dok::router_use</code> runs before the route is looked up; returning <code>nil</code> means continue, returning a response means stop there. <code>dok::router_after</code> runs after the handler and may change its response.</p>
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">dok</span>::<span class="k-fn">router_use</span>(r, |req| {
     <span class="k-kunci">if</span> <span class="k-ns">str</span>::<span class="k-fn">starts_with</span>(req.path, <span class="k-str">&quot;/admin&quot;</span>) &amp;&amp; <span class="k-ns">dok</span>::<span class="k-fn">cookie_get</span>(req, <span class="k-str">&quot;sesi&quot;</span>).<span class="k-fn">is_none</span>() {
         <span class="k-kunci">return</span> <span class="k-ns">dok</span>::<span class="k-fn">response</span>(<span class="k-ang">401</span>, <span class="k-str">&quot;perlu masuk dulu&quot;</span>)
@@ -490,14 +495,14 @@ $ curl &quot;localhost:8080/api/kuadrat?n=12&quot;
     <span class="k-kunci">return</span> <span class="k-kunci">nil</span>
 })
 <span class="k-ns">dok</span>::<span class="k-fn">router_after</span>(r, |req, resp| <span class="k-ns">dok</span>::<span class="k-fn">header_set</span>(resp, <span class="k-str">&quot;X-Frame-Options&quot;</span>, <span class="k-str">&quot;DENY&quot;</span>))</code></pre></figure>
-<h2 id="template"><a class="jangkar" href="#template">Template</a></h2>
-<p><code>dok::render</code> mengisi <code>{{ nama }}</code> dan meloloskan HTML-nya, jadi isian dari pengguna aman ditampilkan. <code>{{&amp; nama }}</code> menyisipkan apa adanya. Ada juga <code>{{#if}}…{{else}}…{{/if}}</code> dan <code>{{#each}}…{{/each}}</code>.</p>
+<h2 id="templates"><a class="jangkar" href="#templates">Templates</a></h2>
+<p><code>dok::render</code> fills in <code>{{ name }}</code> and escapes its HTML, so user input is safe to display. <code>{{&amp; name }}</code> inserts it as is. There are also <code>{{#if}}…{{else}}…{{/if}}</code> and <code>{{#each}}…{{/each}}</code>.</p>
 <figure class="kode" data-jalan><figcaption><span>template.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> t = <span class="k-str">&quot;&lt;h1&gt;Halo {{nama}}&lt;/h1&gt;&lt;ul&gt;{{#each item}}&lt;li&gt;{{@index}}. {{.}}&lt;/li&gt;{{/each}}&lt;/ul&gt;&quot;</span>
 <span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">render</span>(t, {<span class="k-str">&quot;nama&quot;</span>: <span class="k-str">&quot;&lt;Ani&gt;&quot;</span>, <span class="k-str">&quot;item&quot;</span>: [<span class="k-str">&quot;kopi&quot;</span>, <span class="k-str">&quot;teh&quot;</span>]}) {
     <span class="k-fn">Ok</span>(html) =&gt; <span class="k-fn">wok</span>(html),
     <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;gagal:&quot;</span>, e),
 }</code></pre><pre class="keluaran"><code>&lt;h1&gt;Halo &amp;lt;Ani&amp;gt;&lt;/h1&gt;&lt;ul&gt;&lt;li&gt;0. kopi&lt;/li&gt;&lt;li&gt;1. teh&lt;/li&gt;&lt;/ul&gt;</code></pre></figure>
-<p>Pelolosan HTML cuma melindungi teks dan nilai atribut berkutip, jadi <code>dok::render</code> membaca di mana sebuah <code>{{ nama }}</code> duduk. Nilai di atribut URL (<code>href</code>, <code>src</code>, <code>action</code>, …) yang berskema selain <code>http</code>, <code>https</code>, <code>mailto</code>, <code>tel</code> diganti <code>#jrg-url-ditolak</code>. Nilai di dalam <code>&lt;script&gt;</code>/<code>&lt;style&gt;</code>, di atribut <code>on*</code>/<code>style</code>, di atribut tanpa tanda kutip, atau di tempat nama atribut adalah <code>Err</code>: taruh datanya di atribut <code>data-*</code> yang berkutip.</p>
+<p>HTML escaping only protects text and quoted attribute values, so <code>dok::render</code> reads where a <code>{{ name }}</code> sits. A value in a URL attribute (<code>href</code>, <code>src</code>, <code>action</code>, …) whose scheme is not <code>http</code>, <code>https</code>, <code>mailto</code>, or <code>tel</code> is replaced with <code>#jrg-url-ditolak</code>. A value inside <code>&lt;script&gt;</code>/<code>&lt;style&gt;</code>, in an <code>on*</code>/<code>style</code> attribute, in an unquoted attribute, or in the position of an attribute name is an <code>Err</code>: put the data in a quoted <code>data-*</code> attribute.</p>
 <figure class="kode" data-jalan><figcaption><span>konteks.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> d = {<span class="k-str">&quot;u&quot;</span>: <span class="k-str">&quot;javascript:alert(1)&quot;</span>, <span class="k-str">&quot;nama&quot;</span>: <span class="k-str">&quot;Ani&quot;</span>}
 <span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">render</span>(<span class="k-str">&quot;&lt;a href=\&quot;{{u}}\&quot;&gt;{{nama}}&lt;/a&gt;&quot;</span>, d).<span class="k-fn">unwrap</span>())
 <span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">render</span>(<span class="k-str">&quot;&lt;p title={{nama}}&gt;&quot;</span>, d) {
@@ -505,8 +510,8 @@ $ curl &quot;localhost:8080/api/kuadrat?n=12&quot;
     <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;ditolak:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">contains</span>(e, <span class="k-str">&quot;tanpa tanda kutip&quot;</span>)),
 }</code></pre><pre class="keluaran"><code>&lt;a href=&quot;#jrg-url-ditolak&quot;&gt;Ani&lt;/a&gt;
 ditolak: true</code></pre></figure>
-<p><code>dok::render_file(berkas, data)</code> membaca templatnya dari berkas.</p>
-<h2 id="cookie-sesi-dan-sandi"><a class="jangkar" href="#cookie-sesi-dan-sandi">Cookie, sesi, dan sandi</a></h2>
+<p><code>dok::render_file(file, data)</code> reads the template from a file.</p>
+<h2 id="cookies-sessions-and-passwords"><a class="jangkar" href="#cookies-sessions-and-passwords">Cookies, sessions, and passwords</a></h2>
 <figure class="kode" data-jalan><figcaption><span>sesi.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> <span class="k-tipe">KUNCI</span> = <span class="k-str">&quot;kunci-sesi-yang-panjang-dan-acak&quot;</span>
 
 <span class="k-kunci">let</span> cookie = <span class="k-ns">dok</span>::<span class="k-fn">session_encode</span>({<span class="k-str">&quot;user&quot;</span>: <span class="k-str">&quot;budi&quot;</span>}, <span class="k-tipe">KUNCI</span>)
@@ -518,18 +523,18 @@ ditolak: true</code></pre></figure>
 <span class="k-kunci">let</span> simpanan = <span class="k-ns">dok</span>::<span class="k-fn">password_hash</span>(<span class="k-str">&quot;sandi123&quot;</span>)
 <span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">password_verify</span>(<span class="k-str">&quot;sandi123&quot;</span>, simpanan), <span class="k-ns">dok</span>::<span class="k-fn">password_verify</span>(<span class="k-str">&quot;tebakan&quot;</span>, simpanan))</code></pre><pre class="keluaran"><code>masuk sebagai budi
 true false</code></pre></figure>
-<ul><li>Sesi <strong>ditandatangani</strong>, tidak dienkripsi: isinya bisa dibaca siapa pun, tapi tidak bisa diubah tanpa kuncinya. Simpan kuncinya di variabel lingkungan, bukan di kode.</li><li>Sesi membawa <strong>cap waktu</strong> yang ikut ditandatangani: <code>dok::session_decode</code> menolak sesi yang lebih tua dari 14 hari, atau dari argumen ketiga dalam detik (<code>dok::session_decode(cookie, KUNCI, 3600)</code> = satu jam). Cookie curian tidak berlaku selamanya.</li><li><code>password_hash</code> memakai PBKDF2-HMAC-SHA256 dengan garam acak per sandi.</li><li><code>dok::cookie_set(resp, nama, nilai, opsi)</code> memasang cookie dengan <code>HttpOnly</code> dan <code>SameSite=Lax</code> secara bawaan; <code>dok::cookie_get(req, nama)</code> membacanya.</li></ul>
-<h3 id="token-csrf"><a class="jangkar" href="#token-csrf">Token CSRF</a></h3>
-<p>Formulir yang mengubah sesuatu (<code>POST</code>, <code>PUT</code>, <code>DELETE</code>) membawa token yang dibuat server untuk sesi itu. Situs lain bisa membuat peramban korban mengirim formulir, tapi tidak bisa membaca tokennya.</p>
+<ul><li>A session is <strong>signed</strong>, not encrypted: anyone can read it, but nobody can change it without the key. Keep the key in an environment variable, not in the code.</li><li>A session carries a signed <strong>timestamp</strong>: <code>dok::session_decode</code> refuses a session older than 14 days, or than the third argument in seconds (<code>dok::session_decode(cookie, KUNCI, 3600)</code> = one hour). A stolen cookie does not last forever.</li><li><code>password_hash</code> uses PBKDF2-HMAC-SHA256 with a random salt per password. <code>dok::password_needs_rehash(hash)</code> says when a stored hash was made with other settings, so it can be re-hashed after a successful login.</li><li><code>dok::cookie_set(resp, name, value, options)</code> sets a cookie with <code>HttpOnly</code> and <code>SameSite=Lax</code> by default; <code>dok::cookie_get(req, name)</code> reads it.</li></ul>
+<h3 id="csrf-tokens"><a class="jangkar" href="#csrf-tokens">CSRF tokens</a></h3>
+<p>A form that changes something (<code>POST</code>, <code>PUT</code>, <code>DELETE</code>) carries a token the server made for that session. Another site can make the victim's browser submit a form, but cannot read the token.</p>
 <figure class="kode" data-jalan><figcaption><span>csrf.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> <span class="k-tipe">RAHASIA</span> = <span class="k-str">&quot;rahasia-csrf-yang-panjangnya-32b&quot;</span>
 
 <span class="k-kunci">let</span> token = <span class="k-ns">dok</span>::<span class="k-fn">csrf_token</span>(<span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-ani&quot;</span>)
 <span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">csrf_verify</span>(token, <span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-ani&quot;</span>))
 <span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">csrf_verify</span>(token, <span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-budi&quot;</span>))</code></pre><pre class="keluaran"><code>true
 false</code></pre></figure>
-<ul><li>Argumen ketiganya, <strong>ikatan</strong>, adalah id sesi: token sesi lain ditolak, jadi penyerang tidak bisa memakai token dari sesinya sendiri. Ikatan kosong ditolak.</li><li>Token berumur 12 jam; argumen keempat <code>csrf_verify</code> mengubahnya (dalam detik).</li><li>Rahasianya paling sedikit 32 byte. Taruh tokennya di <code>&lt;input type=&quot;hidden&quot;&gt;</code> lewat <code>dok::render</code>, dan periksa sebelum mengerjakan permintaan.</li></ul>
+<ul><li>The third argument, the <strong>binding</strong>, is the session id: another session's token is refused, so an attacker cannot use a token from their own session. An empty binding is refused.</li><li>A token lives 12 hours; the fourth argument of <code>csrf_verify</code> changes that (in seconds).</li><li>The secret is at least 32 bytes. Put the token in an <code>&lt;input type=&quot;hidden&quot;&gt;</code> through <code>dok::render</code>, and check it before doing the request.</li></ul>
 <h2 id="websocket"><a class="jangkar" href="#websocket">WebSocket</a></h2>
-<p>Rute WebSocket hidup di router yang sama dengan rute HTTP biasa.</p>
+<p>WebSocket routes live on the same router as ordinary HTTP routes.</p>
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">dok</span>::<span class="k-fn">router_ws</span>(r, <span class="k-str">&quot;/gema&quot;</span>, |koneksi, req| {
     <span class="k-kunci">while</span> <span class="k-kunci">true</span> {
         <span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">ws_recv</span>(koneksi) {
@@ -538,8 +543,8 @@ false</code></pre></figure>
         }
     }
 })</code></pre></figure>
-<p><code>ws_recv</code> menunggu pesan berikutnya dan menjawab <code>None</code> saat koneksinya ditutup. Pesan biner datang sebagai array byte. Permintaan dari peramban yang <code>Origin</code>-nya berhost lain dari <code>Host</code> dijawab 403 (port boleh beda), supaya halaman dari situs lain tidak bisa membuka WebSocket atas nama pengunjung.</p>
-<h2 id="klien-http"><a class="jangkar" href="#klien-http">Klien HTTP</a></h2>
+<p><code>ws_recv</code> waits for the next message and answers <code>None</code> when the connection closes. A binary message arrives as a byte array. A request from a browser whose <code>Origin</code> names a different host from <code>Host</code> gets a 403 (the port may differ), so a page on another site cannot open a WebSocket on the visitor's behalf. A client that stays silent is asked with a <code>ping</code> and released if it does not answer.</p>
+<h2 id="the-http-client"><a class="jangkar" href="#the-http-client">The HTTP client</a></h2>
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">match</span> <span class="k-ns">http</span>::<span class="k-fn">get</span>(<span class="k-str">&quot;https://api.github.com/repos/Kodok-Kejepit/jrg&quot;</span>) {
     <span class="k-fn">Ok</span>(r) =&gt; <span class="k-fn">wok</span>(r.status, <span class="k-ns">json</span>::<span class="k-fn">parse</span>(r.body)[<span class="k-str">&quot;stargazers_count&quot;</span>]),
     <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;gagal:&quot;</span>, e),
@@ -547,14 +552,14 @@ false</code></pre></figure>
 
 <span class="k-ns">http</span>::<span class="k-fn">post</span>(<span class="k-str">&quot;https://contoh.org/api&quot;</span>, <span class="k-ns">json</span>::<span class="k-fn">stringify</span>({<span class="k-str">&quot;a&quot;</span>: <span class="k-ang">1</span>}), <span class="k-str">&quot;application/json&quot;</span>)
 <span class="k-ns">http</span>::<span class="k-fn">unduh</span>(<span class="k-str">&quot;https://contoh.org/besar.zip&quot;</span>, <span class="k-str">&quot;besar.zip&quot;</span>)</code></pre></figure>
-<p><code>http::get</code>, <code>post</code>, <code>put</code>, <code>delete</code>, dan <code>request</code> menjawab <code>Result</code> berisi <code>status</code>, <code>headers</code>, <code>body</code>, dan <code>ok</code>. HTTPS memakai libssl milik sistem. <code>http::unduh</code> menulis langsung ke berkas, jadi aman untuk unduhan besar, dan tidak mengikuti pengalihan dari <code>https://</code> ke <code>http://</code>.</p>
-<p>Kalau URL-nya datang dari pemakai (pratinjau tautan, webhook, pengunduh gambar), nyalakan penjaga SSRF sekali di awal:</p>
+<p><code>http::get</code>, <code>post</code>, <code>put</code>, <code>delete</code>, and <code>request</code> answer a <code>Result</code> holding <code>status</code>, <code>headers</code>, <code>body</code>, and <code>ok</code>. HTTPS uses the system's libssl and needs TLS 1.2 or newer. <code>http::unduh</code> writes straight to a file, so it is safe for large downloads, and it does not follow a redirect from <code>https://</code> to <code>http://</code>. <code>http::tenggat(seconds)</code> sets a total deadline per request, so a server that trickles its answer cannot hold the caller forever.</p>
+<p>If the URL comes from a user (link previews, webhooks, image downloaders), turn on the SSRF guard once at the start:</p>
 <figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">http</span>::<span class="k-fn">hanya_publik</span>(<span class="k-kunci">true</span>)
-<span class="k-ns">http</span>::<span class="k-fn">get</span>(<span class="k-str">&quot;http://169.254.169.254/latest/meta-data/&quot;</span>)   <span class="k-kom">// Err: alamat link-local, metadata awan</span></code></pre></figure>
-<p>Sesudahnya alamat loopback, privat, link-local dan metadata awan ditolak. Yang diperiksa alamat hasil DNS yang benar-benar disambungi, juga di tiap pengalihan, jadi nama yang menunjuk <code>127.0.0.1</code> tidak lolos.</p>
+<span class="k-ns">http</span>::<span class="k-fn">get</span>(<span class="k-str">&quot;http://169.254.169.254/latest/meta-data/&quot;</span>)   <span class="k-kom">// Err: link-local address, cloud metadata</span></code></pre></figure>
+<p>After that, loopback, private, link-local, and cloud-metadata addresses are refused. What is checked is the address DNS returned and that is actually connected to, on every redirect too, so a name pointing at <code>127.0.0.1</code> does not get through.</p>
 <h2 id="sqlite"><a class="jangkar" href="#sqlite">SQLite</a></h2>
-<p>Driver SQLite dimuat dari <code>libsqlite3</code> milik sistem. <code>dok::db_tersedia()</code> memberi tahu apakah pustakanya ada.</p>
-<figure class="kode"><figcaption><span>sqlite.jrg</span><span class="lokal" title="Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban">jalankan dengan jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> db = <span class="k-ns">dok</span>::<span class="k-fn">db_open</span>(<span class="k-str">&quot;:memory:&quot;</span>)?
+<p>The SQLite driver is loaded from the system's <code>libsqlite3</code>. <code>dok::db_tersedia()</code> tells whether the library is there.</p>
+<figure class="kode"><figcaption><span>sqlite.jrg</span><span class="lokal" title="Needs threads, files, the network, or a system library the browser does not have">run with jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> db = <span class="k-ns">dok</span>::<span class="k-fn">db_open</span>(<span class="k-str">&quot;:memory:&quot;</span>)?
 <span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;CREATE TABLE murid(id INTEGER PRIMARY KEY, nama TEXT, nilai REAL)&quot;</span>)?
 <span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;INSERT INTO murid(nama, nilai) VALUES (?, ?)&quot;</span>, [<span class="k-str">&quot;budi&quot;</span>, <span class="k-ang">8.5</span>])?
 <span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;INSERT INTO murid(nama, nilai) VALUES (?, ?)&quot;</span>, [<span class="k-str">&quot;ani&quot;</span>, <span class="k-ang">9.25</span>])?
@@ -568,20 +573,20 @@ false</code></pre></figure>
 <span class="k-ns">dok</span>::<span class="k-fn">db_close</span>(db)</code></pre><pre class="keluaran"><code>ani 9.25
 budi 8.5
 []</code></pre></figure>
-<p>Nilai selalu diikat lewat <code>?</code>, jadi teks dari pengguna tidak pernah dibaca sebagai perintah SQL. Satu baris hasil adalah dict, dan kolomnya dibaca dengan namanya.</p>
-<h2 id="jaringan-tingkat-rendah"><a class="jangkar" href="#jaringan-tingkat-rendah">Jaringan tingkat rendah</a></h2>
-<p><code>dok::tcp_listen</code>, <code>tcp_accept</code>, <code>tcp_connect</code>, <code>tcp_send</code>, <code>tcp_recv_line</code> untuk TCP, dan <code>dok::udp_bind</code>, <code>udp_send_to</code>, <code>udp_recv_from</code> untuk UDP. <code>dok::log_info</code> dan kawan-kawannya mencetak log bertingkat, dengan warna di terminal.</p>
+<p>Values are always bound through <code>?</code>, so text from a user is never read as an SQL command. Each result row is a dict, and its columns are read by name.</p>
+<h2 id="low-level-networking"><a class="jangkar" href="#low-level-networking">Low-level networking</a></h2>
+<p><code>dok::tcp_listen</code>, <code>tcp_accept</code>, <code>tcp_connect</code>, <code>tcp_send</code>, <code>tcp_recv_line</code> for TCP, and <code>dok::udp_bind</code>, <code>udp_send_to</code>, <code>udp_recv_from</code> for UDP. <code>dok::log_info</code> and friends print levelled logs, coloured in a terminal.</p>
 </article>
-<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="pustaka.html"><small>Sebelumnya</small><strong>Pustaka bawaan</strong></a><a class="ke-kanan" href="grafis.html"><small>Berikutnya</small><strong>Kanvas, suara, numerik</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+<nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="pustaka.html"><small>Previous</small><strong>Built-in library</strong></a><a class="ke-kanan" href="grafis.html"><small>Next</small><strong>Canvas, sound, numerics</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a></span></footer>
 </main>
-<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#server">Server</a></li><li><a href="#template">Template</a></li><li><a href="#cookie-sesi-dan-sandi">Cookie, sesi, dan sandi</a></li><li><a href="#websocket">WebSocket</a></li><li><a href="#klien-http">Klien HTTP</a></li><li><a href="#sqlite">SQLite</a></li><li><a href="#jaringan-tingkat-rendah">Jaringan tingkat rendah</a></li></ol></nav>
+<nav class="di-halaman" aria-label="On this page"><p>On this page</p><ol><li><a href="#the-server">The server</a></li><li><a href="#templates">Templates</a></li><li><a href="#cookies-sessions-and-passwords">Cookies, sessions, and passwords</a></li><li><a href="#websocket">WebSocket</a></li><li><a href="#the-http-client">The HTTP client</a></li><li><a href="#sqlite">SQLite</a></li><li><a href="#low-level-networking">Low-level networking</a></li></ol></nav>
 </div>
-<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
-  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
+  <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=e6f371141c"></script>
-<script defer src="../aset/situs.js?v=e91e44ad63"></script>
+<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

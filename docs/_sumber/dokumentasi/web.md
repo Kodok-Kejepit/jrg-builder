@@ -187,7 +187,8 @@ http::unduh("https://contoh.org/besar.zip", "besar.zip")
 
 `http::get`, `post`, `put`, `delete`, dan `request` menjawab `Result` berisi `status`, `headers`, `body`, dan `ok`.
 HTTPS memakai libssl milik sistem. `http::unduh` menulis langsung ke berkas, jadi aman untuk unduhan besar, dan tidak
-mengikuti pengalihan dari `https://` ke `http://`.
+mengikuti pengalihan dari `https://` ke `http://`. `http::tenggat(detik)` memasang tenggat total tiap permintaan, jadi
+server yang menetes jawabannya tidak bisa menahan pemanggil tanpa batas.
 
 Kalau URL-nya datang dari pemakai (pratinjau tautan, webhook, pengunduh gambar), nyalakan penjaga SSRF sekali di awal:
 

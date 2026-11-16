@@ -1,0 +1,92 @@
+<section class="pahlawan">
+  <div>
+    <span class="label-versi">JRG {VERSI}</span>
+    <h1 class="judul-gambar"><img class="terang-saja" src="aset/hero.webp" fetchpriority="high" alt="JRG++, a programming language from Indonesia" width="550" height="142"><img class="gelap-saja" src="aset/hero-gelap.webp" fetchpriority="high" alt="JRG++, a programming language from Indonesia" width="550" height="142"></h1>
+    <ul class="ciri-kecil" aria-label="JRG at a glance">
+      <li>Diagnostics that teach</li>
+      <li>Four engines, one answer</li>
+      <li>No garbage collector</li>
+      <li>{BUILTIN} built-in functions</li>
+      <li>FFI to 12 languages</li>
+      <li>Ships to Android</li>
+    </ul>
+    <p class="lead">JawaRustGo++ (JRG) is a programming language whose error messages explain where the problem is and how
+    to get out of it. It is written in Rust, and its code looks like Rust and Go. One program runs through an
+    interpreter, a virtual machine, a JIT, or compiles to a native program, and the answer is the same everywhere.</p>
+    <div class="baris-tombol">
+      <a class="tombol" href="web_dokumentasi/pasang.html">Install JRG</a>
+      <a class="tombol biasa" href="web_dokumentasi/tur.html">Quick tour</a>
+      <a class="tombol biasa" href="matematika_x_jrg/index.html">Learn from zero</a>
+    </div>
+  </div>
+  <div>
+```jrg rapor.jrg
+struct Murid { pub nama: string, pub nilai: int }
+
+pub fn main() {
+    let kelas = [
+        Murid { nama: "Ani", nilai: 92 },
+        Murid { nama: "Budi", nilai: 78 },
+        Murid { nama: "Citra", nilai: 85 },
+    ]
+    for _, m in kelas.filter(|m| m.nilai >= 80) {
+        wok("""${m.nama} lulus dengan ${m.nilai}""")
+    }
+    let rata = arr::sum(kelas.map(|m| m.nilai)) / len(kelas)
+    wok("rata-rata kelas:", rata)
+}
+```
+```keluaran
+Ani lulus dengan 92
+Citra lulus dengan 85
+rata-rata kelas: 85
+```
+  </div>
+</section>
+
+<section class="bagian-beranda">
+  <h2>Two ways in</h2>
+  <p>Pick the one you need. The bar at the top of every page moves you between them.</p>
+  <div class="kartu-kartu">
+    <a class="kartu" href="web_dokumentasi/index.html">
+      <h3>Documentation</h3>
+      <p>The language reference for people who already program: syntax, types, the library, tools, FFI, and how the engines work.</p>
+      <span class="lanjut">Open the docs →</span>
+    </a>
+    <a class="kartu" href="matematika_x_jrg/index.html">
+      <h3>Matematika × JRG</h3>
+      <p>A course from zero for people who have never programmed: 12 chapters of JRG basics and 20 chapters of math, with quizzes and code you can run right here. The course is in Indonesian.</p>
+      <span class="lanjut">Start learning →</span>
+    </a>
+  </div>
+</section>
+
+<section class="bagian-beranda">
+  <h2>Errors you can read</h2>
+  <p>A message names where the problem is, what went wrong, and the way out.</p>
+```sh
+$ jrgc harga.jrg
+kepentok di baris 2 waktu jalan. keterangannya di bawah.
+error: index [3] di luar batas — array ini isinya 3 elemen (index valid: 0..2, atau -1..-3 kalau mau hitung dari belakang)
+ --> harga.jrg:2:5
+  |
+2 | wok(harga[3])
+  |     ^^^^^^^^
+```
+  <p>Messages are in Indonesian today ("index [3] is out of bounds — this array holds 3 elements; valid indices are
+  0..2, or -1..-3 counting from the end"). English messages are being written, and the language will be chosen
+  with <code>jrgm language en</code>.</p>
+</section>
+
+<section class="bagian-beranda">
+  <h2>What is in the box</h2>
+  <p>What you get once JRG is installed.</p>
+  <div class="ciri">
+    <div><h3>Four engines, a fifth on the way</h3><p>An interpreter for trying things out, a faster bytecode VM (<code>--vm</code>), a JIT (<code>--jit</code>) that compiles hot code while it runs, and native compilation through LLVM (<code>--emit-llvm</code>). A fifth engine, WebAssembly, is being built so JRG programs run on the web.</p></div>
+    <div><h3>{BUILTIN} built-in functions</h3><p>Text, collections, files, time, JSON, regex, HTTP, SQLite, canvas, sound, and numerics. Search them with <code>jrgc --cari</code>.</p></div>
+    <div><h3>The std/ library</h3><p>37 modules (set, queue, heap, CSV, money, tables…) plus a 2D game engine, all written in JRG.</p></div>
+    <div><h3>Other languages</h3><p>Call C, C++, Rust, Go, Python, JavaScript, PHP, Lua, Java, Kotlin, .NET, and WebAssembly.</p></div>
+    <div><h3>Projects and packages</h3><p><code>jrgm</code> creates projects, manages dependencies through git, runs tests, formats, and checks code.</p></div>
+    <div><h3>All the way to your phone</h3><p>Package a program as an Android APK with <code>jrgm apk</code>. There is also JRG IDE, which runs on the phone.</p></div>
+  </div>
+</section>

@@ -375,7 +375,7 @@ fn lanjut_jika(b: &mut FunctionBuilder, benar: Value, lambat: Block) {
 
 /// Tembolok penyimpanan larik lokal di satu wilayah (`ok`, penunjuk data, panjang; `true` = sudah ditetapkan
 /// sebelumnya di wilayah ini). `ok` 0 dari jalur lambat situs mana pun yang menyentuhnya.
-type TemboLarik = (Variable, Variable, Variable, bool);
+pub(super) type TemboLarik = (Variable, Variable, Variable, bool);
 
 /// Alamat elemen `a[i]` atas lokal `rel` lewat tata letak yang ditemukan (aturan `norm_indeks`); tiap pemeriksaan
 /// yang gagal lompat ke `lambat`. Cuma penyimpanan milik tunggal (hitungan kuat 1, lemah mentah 1) — yang tidak
@@ -427,7 +427,7 @@ fn elemen_sebaris(
 }
 
 /// Tembolok penyimpanan lokal `a` di wilayah ini: yang sudah ada (`true`), atau tiga variabel baru.
-fn tembolok_larik(b: &mut FunctionBuilder, larik_tb: &mut Vec<(usize, Variable, Variable, Variable)>, a: usize) -> TemboLarik {
+pub(super) fn tembolok_larik(b: &mut FunctionBuilder, larik_tb: &mut Vec<(usize, Variable, Variable, Variable)>, a: usize) -> TemboLarik {
     if let Some(&(_, ok, d, n)) = larik_tb.iter().find(|(l, ..)| *l == a) { return (ok, d, n, true); }
     let (ok, d, n) = (b.declare_var(types::I64), b.declare_var(types::I64), b.declare_var(types::I64));
     larik_tb.push((a, ok, d, n));
@@ -435,7 +435,7 @@ fn tembolok_larik(b: &mut FunctionBuilder, larik_tb: &mut Vec<(usize, Variable, 
 }
 
 /// Jalur lambat sebuah situs: penyimpanannya tidak lagi pasti untuk akses berikutnya di wilayah ini.
-fn larik_tak_pasti(b: &mut FunctionBuilder, (ok, d, n, _): TemboLarik) {
+pub(super) fn larik_tak_pasti(b: &mut FunctionBuilder, (ok, d, n, _): TemboLarik) {
     let nol = b.ins().iconst(types::I64, 0);
     b.def_var(ok, nol);
     b.def_var(d, nol);
@@ -475,7 +475,7 @@ fn periksa_larik(
 
 /// `a[i]` sebaris (`elemen_sebaris`): bit `i64` elemennya kalau jenisnya yang dispekulasikan, selain itu `lambat`.
 #[allow(clippy::too_many_arguments)]
-fn baca_sebaris(
+pub(super) fn baca_sebaris(
     b: &mut FunctionBuilder, tl: &super::tata_letak::TataLetak, vm_p: Value, basis: Value, rel: usize, i: Value,
     pecahan: bool, lambat: Block, tb: Option<TemboLarik>,
 ) -> Value {
@@ -501,7 +501,7 @@ fn baca_sebaris(
 /// `a[i] = v` sebaris untuk `v` bulat (1), bool (2) atau pecahan (5): elemen lama harus `Nil`/`Bool`/`Int`/`Float`
 /// (tidak memegang apa pun yang perlu dilepas), lalu tag dan isinya ditimpa di tempat; selain itu `lambat`.
 #[allow(clippy::too_many_arguments)]
-fn tulis_sebaris(
+pub(super) fn tulis_sebaris(
     b: &mut FunctionBuilder, tl: &super::tata_letak::TataLetak, vm_p: Value, basis: Value, rel: usize, i: Value,
     v: Value, kode: i64, lambat: Block, tb: Option<TemboLarik>,
 ) {

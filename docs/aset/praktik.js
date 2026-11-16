@@ -64,11 +64,15 @@
   }
 
   function kalimatSebab(h) {
-    if (h.sebab === 'waktu') return 'Dihentikan: program jalan lebih dari ' + (BATAS_MS / 1000) +
-      ' detik. Mungkin ada perulangan yang tidak pernah berhenti.';
-    if (h.sebab === 'rekursi' || (h.sebab && h.sebab.indexOf('out of bounds') >= 0))
-      return 'Rekursinya terlalu dalam untuk mesin di peramban (beberapa ratus lapis; jrgc di komputer sampai 10000).';
-    if (h.sebab) return 'Mesin di peramban berhenti tidak wajar (' + h.sebab + ').';
+    const en = document.documentElement.lang === 'en';
+    if (h.sebab === 'waktu') return en
+      ? 'Stopped: the program ran for more than ' + (BATAS_MS / 1000) + ' seconds. Maybe a loop never ends.'
+      : 'Dihentikan: program jalan lebih dari ' + (BATAS_MS / 1000) + ' detik. Mungkin ada perulangan yang tidak pernah berhenti.';
+    if (h.sebab === 'rekursi' || (h.sebab && h.sebab.indexOf('out of bounds') >= 0)) return en
+      ? 'The recursion is too deep for the in-browser engine (a few hundred levels; jrgc on a computer goes much deeper).'
+      : 'Rekursinya terlalu dalam untuk mesin di peramban (beberapa ratus lapis; jrgc di komputer sampai 10000).';
+    if (h.sebab) return en ? 'The in-browser engine stopped abnormally (' + h.sebab + ').'
+      : 'Mesin di peramban berhenti tidak wajar (' + h.sebab + ').';
     return null;
   }
 

@@ -1,6 +1,6 @@
 ---
 judul: Empat mesin
-ringkas: Interpreter, VM bytecode, JIT, dan backend LLVM, serta cara keempatnya dijaga tetap sama.
+ringkas: Interpreter, VM bytecode, JIT, dan backend LLVM, cara keempatnya dijaga tetap sama, dan mesin kelima yang menyusul.
 ---
 Keempat mesin memakai bagian depan yang sama (pemindai dan pengurai), jadi sintaks dan pesan galat sintaksnya
 identik. Bedanya ada di cara program dijalankan.
@@ -65,3 +65,13 @@ Yang perlu diketahui:
   Kebuntuan dilaporkan, tidak menggantung.
 - Fitur yang belum didukung ditolak saat kompilasi dengan alasannya, tidak pernah menghasilkan program yang salah.
   Daftarnya di [Yang belum jadi](batasan.html#backend-llvm).
+
+## WebAssembly (mesin kelima, sedang dibuat)
+
+Mesin kelima sedang dibuat: ia mengompilasi program JRG jadi modul WebAssembly, jadi program yang sama jalan di
+peramban atau di Node tanpa membawa interpreter. Jalurnya lewat LLVM IR yang sama dengan backend native, dengan
+sasaran `wasm32`, jadi arti, optimisasi, dan tabel ujinya ikut: tiap program di tabel interpreter = LLVM sekaligus
+jadi pemeriksa paritas WebAssembly. Mesin ini belum masuk rilis.
+
+Ini berbeda dengan mesin [Praktik](../index.html) di situs ini, yang menjalankan *interpreter* JRG yang dikompilasi ke
+WebAssembly, dan dengan `wasm::`, yang menjalankan modul `.wasm` *buatan orang lain* dari JRG.

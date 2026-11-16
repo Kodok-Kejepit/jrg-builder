@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web dan data — Dokumentasi JRG</title>
+<meta name="description" content="Server HTTP, template, cookie dan sesi, WebSocket, klien HTTP, dan SQLite.">
+<link rel="canonical" href="https://jrg-lang.org/id/web_dokumentasi/web.html">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/web_dokumentasi/web.html">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/web_dokumentasi/web.html">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/web_dokumentasi/web.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JawaRustGo++ (JRG)">
+<meta property="og:locale" content="id_ID">
+<meta property="og:title" content="Web dan data — Dokumentasi JRG">
+<meta property="og:description" content="Server HTTP, template, cookie dan sesi, WebSocket, klien HTTP, dan SQLite.">
+<meta property="og:url" content="https://jrg-lang.org/id/web_dokumentasi/web.html">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" sizes="96x96" href="../../aset/favicon-96.png?v=59ebaf4767">
+<link rel="icon" type="image/png" sizes="128x128" href="../../aset/favicon.png?v=82b4aee258">
+<link rel="apple-touch-icon" href="../../aset/favicon.png?v=82b4aee258">
+<meta property="og:image" content="https://jrg-lang.org/aset/banner.jpg">
+<style>/* Tema bersama situs JawaRustGo++: dokumentasi, Matematika x JRG, dan beranda. */
+:root {
+  --latar-hero: url("../../aset/latar.webp?v=2cc154641d");
+  --kertas: #f4efe4;
+  --panel: #fbf8f1;
+  --panel-2: #ece4d4;
+  --garis: rgba(41, 38, 33, .14);
+  --tinta: #27241f;
+  --tinta-2: #5d584e;
+  --tinta-3: #6b665b;
+  --aksen: #a94f28;
+  --aksen-kuat: #7d3519;
+  --aksen-lembut: rgba(169, 79, 40, .10);
+  --hijau: #3f7a4a;
+  --merah: #b23a2b;
+  --kode-bg: #23221e;
+  --kode-teks: #ece5d6;
+  --kode-redup: #9d978b;
+  --k-kunci: #e48a5a;
+  --k-str: #a9c48a;
+  --k-ang: #d8b56a;
+  --k-tipe: #8fb8d6;
+  --k-ns: #c9a4dc;
+  --k-fn: #f0d9a8;
+  --k-kom: #77716a;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --kepala-t: 56px;
+  --sisi-l: 264px;
+  color-scheme: light;
+}
+:root[data-tema="gelap"] {
+  --latar-hero: url("../../aset/latar-gelap.webp?v=c7c02e335b");
+  --kertas: #1a1815;
+  --panel: #221f1b;
+  --panel-2: #2c2823;
+  --garis: rgba(236, 229, 214, .12);
+  --tinta: #ece5d6;
+  --tinta-2: #b9b1a3;
+  --tinta-3: #9a9486;
+  --aksen: #e0885c;
+  --aksen-kuat: #f2a67f;
+  --aksen-lembut: rgba(224, 136, 92, .13);
+  --hijau: #7dbb88;
+  --merah: #ec7b6b;
+  --kode-bg: #12110f;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="terang"]) {
+    --latar-hero: url("../../aset/latar-gelap.webp?v=c7c02e335b");
+    --kertas: #1a1815; --panel: #221f1b; --panel-2: #2c2823; --garis: rgba(236, 229, 214, .12);
+    --tinta: #ece5d6; --tinta-2: #b9b1a3; --tinta-3: #9a9486; --aksen: #e0885c; --aksen-kuat: #f2a67f;
+    --aksen-lembut: rgba(224, 136, 92, .13); --hijau: #7dbb88; --merah: #ec7b6b; --kode-bg: #12110f;
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: calc(var(--kepala-t) + 16px); -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--kertas); color: var(--tinta);
+  font: 16px/1.7 var(--sans); padding-top: var(--kepala-t);
+}
+a { color: var(--aksen-kuat); text-underline-offset: 2px; }
+img, svg { max-width: 100%; }
+code, kbd, pre { font-family: var(--mono); }
+:focus-visible { outline: 2px solid var(--aksen); outline-offset: 2px; }
+.lewati { position: absolute; left: 12px; top: -60px; z-index: 300; background: var(--aksen); color: #fff;
+  padding: 8px 14px; border-radius: 6px; }
+.lewati:focus { top: 10px; }
+
+/* ── kepala ─────────────────────────────────────────────────────────── */
+.kepala {
+  position: fixed; inset: 0 0 auto 0; height: var(--kepala-t); z-index: 100;
+  display: flex; align-items: center; gap: 14px; padding: 0 16px;
+  background: color-mix(in srgb, var(--kertas) 92%, transparent);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--garis);
+}
+.merek { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--tinta);
+  font-family: var(--serif); font-weight: 600; font-size: 18px; white-space: nowrap; }
+.merek img { display: block; height: 34px; width: auto; }
+.situs { display: flex; gap: 2px; margin-left: 8px; }
+.situs a { padding: 6px 12px; border-radius: 6px; color: var(--tinta-2); text-decoration: none;
+  font-size: 14px; white-space: nowrap; }
+.situs a:hover { background: var(--aksen-lembut); color: var(--tinta); }
+.situs a.aktif { color: var(--aksen-kuat); background: var(--aksen-lembut); font-weight: 600; }
+.versi { font: 12px var(--mono); color: var(--tinta-3); border: 1px solid var(--garis);
+  padding: 1px 8px; border-radius: 99px; }
+.kepala-kanan { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.tombol-ikon, .tombol-cari, .tombol-bahasa {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px;
+  border: 1px solid var(--garis); background: var(--panel); color: var(--tinta-2);
+  border-radius: 8px; cursor: pointer; font: inherit; font-size: 14px; text-decoration: none;
+}
+.tombol-ikon { width: 36px; padding: 0; }
+.tombol-cari { padding: 0 10px; min-width: 150px; justify-content: flex-start; }
+.tombol-cari kbd { margin-left: auto; font-size: 11px; border: 1px solid var(--garis); border-radius: 4px; padding: 0 5px; }
+.tombol-bahasa { min-width: 36px; padding: 0 8px; font-size: 13px; font-weight: 600; letter-spacing: .03em; }
+.tombol-ikon:hover, .tombol-cari:hover, .tombol-bahasa:hover { border-color: var(--aksen); color: var(--tinta); }
+.kepala svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round; }
+.tombol-menu { display: none; }
+
+/* ── tata letak ─────────────────────────────────────────────────────── */
+.tata { display: grid; grid-template-columns: var(--sisi-l) minmax(0, 1fr) 220px; min-height: calc(100vh - var(--kepala-t)); }
+.sisi {
+  position: sticky; top: var(--kepala-t); height: calc(100vh - var(--kepala-t)); overflow-y: auto;
+  border-right: 1px solid var(--garis); padding: 20px 14px 40px; font-size: 14.5px;
+}
+.sisi ul { list-style: none; margin: 0 0 14px; padding: 0; }
+.sisi a { display: block; padding: 5px 10px; border-radius: 6px; color: var(--tinta-2); text-decoration: none; line-height: 1.4; }
+.sisi a:hover { background: var(--aksen-lembut); color: var(--tinta); }
+.sisi a.aktif { background: var(--aksen-lembut); color: var(--aksen-kuat); font-weight: 600; }
+.sisi a.selesai::after { content: "✓"; float: right; color: var(--hijau); font-weight: 700; }
+.sisi-grup { margin: 16px 10px 6px; font: 600 11px/1.2 var(--mono); letter-spacing: .12em;
+  text-transform: uppercase; color: var(--tinta-3); }
+.sisi-grup:first-child { margin-top: 4px; }
+.isi { min-width: 0; padding: 40px 48px 32px; }
+.artikel { max-width: 760px; margin: 0 auto; }
+.di-halaman { position: sticky; top: calc(var(--kepala-t) + 32px); align-self: start; padding: 0 16px; font-size: 13.5px;
+  max-height: calc(100vh - var(--kepala-t) - 48px); overflow-y: auto; }
+.di-halaman p { margin: 0 0 8px; font: 600 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--tinta-3); }
+.di-halaman ol { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--garis); }
+.di-halaman a { display: block; padding: 3px 12px; margin-left: -1px; color: var(--tinta-2); text-decoration: none;
+  border-left: 2px solid transparent; line-height: 1.4; }
+.di-halaman a:hover { color: var(--tinta); }
+.di-halaman a.aktif { color: var(--aksen-kuat); border-left-color: var(--aksen); }
+body[data-situs="mtk"] .tata { grid-template-columns: var(--sisi-l) minmax(0, 1fr); }
+
+/* ── tipografi artikel ──────────────────────────────────────────────── */
+.rel { margin: 0 0 6px; font: 600 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--aksen-kuat); }
+.artikel h1 { font: 600 clamp(30px, 4vw, 40px)/1.15 var(--serif); letter-spacing: -.01em; margin: 0 0 12px; }
+.ringkas { font-size: 18.5px; color: var(--tinta-2); margin: 0 0 28px; }
+.artikel h2 { font: 600 25px/1.3 var(--serif); margin: 44px 0 12px; padding-top: 4px; }
+.artikel h3 { font: 600 18.5px/1.35 var(--sans); margin: 30px 0 8px; }
+.artikel h2 .jangkar, .artikel h3 .jangkar { color: inherit; text-decoration: none; }
+.artikel h2 .jangkar:hover::after, .artikel h3 .jangkar:hover::after { content: " #"; color: var(--tinta-3); }
+.artikel p, .artikel li { color: var(--tinta); }
+.artikel ul, .artikel ol { padding-left: 22px; }
+.artikel li { margin: 4px 0; }
+.artikel :not(pre) > code { font-size: .88em; background: var(--aksen-lembut); color: var(--aksen-kuat);
+  padding: .1em .38em; border-radius: 4px; overflow-wrap: anywhere; }
+.artikel strong { font-weight: 650; }
+.artikel hr { border: 0; border-top: 1px solid var(--garis); margin: 32px 0; }
+.lencana { display: inline-block; vertical-align: middle; margin-right: 10px; font: 600 10.5px var(--mono);
+  letter-spacing: .1em; text-transform: uppercase; color: var(--aksen-kuat); background: var(--aksen-lembut);
+  padding: 3px 8px; border-radius: 4px; }
+
+/* ── kode ───────────────────────────────────────────────────────────── */
+.kode { margin: 18px 0 22px; background: var(--kode-bg); border-radius: 10px; overflow: hidden;
+  color: var(--kode-teks); border: 1px solid rgba(0, 0, 0, .2); }
+.kode figcaption { display: flex; align-items: center; gap: 8px; padding: 7px 10px 7px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, .07); font: 12px var(--mono); color: var(--kode-redup); }
+.kode figcaption .alat { margin-left: auto; display: flex; gap: 6px; }
+.kode figcaption button { font: 600 11.5px var(--mono); color: var(--kode-teks); background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .12); border-radius: 5px; padding: 3px 9px; cursor: pointer; }
+.kode figcaption button:hover { background: rgba(255, 255, 255, .13); }
+.kode figcaption button.utama { background: var(--aksen); border-color: var(--aksen); color: #fff; }
+.kode pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-size: 13.5px; line-height: 1.65; tab-size: 4; }
+.kode textarea { display: block; width: 100%; margin: 0; padding: 14px 16px; border: 0; resize: vertical;
+  background: transparent; color: var(--kode-teks); font: 13.5px/1.65 var(--mono); tab-size: 4; outline: none; min-height: 120px; }
+.kode .keluaran { border-top: 1px dashed rgba(255, 255, 255, .14); color: #cfc8b9; background: rgba(0, 0, 0, .18); }
+.kode .keluaran::before { content: "keluaran"; display: block; font-size: 10.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--kode-redup); margin-bottom: 4px; }
+.kode .keluaran .galat { color: #f19a8a; }
+.kode .keluaran.berjalan::before { content: "menjalankan…"; }
+.k-kunci { color: var(--k-kunci); } .k-str { color: var(--k-str); } .k-ang { color: var(--k-ang); }
+.k-tipe { color: var(--k-tipe); } .k-ns { color: var(--k-ns); } .k-fn { color: var(--k-fn); } .k-kom { color: var(--k-kom); font-style: italic; }
+
+/* ── tabel, catatan ─────────────────────────────────────────────────── */
+.tabel { overflow-x: auto; margin: 18px 0 24px; border: 1px solid var(--garis); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--garis); vertical-align: top; }
+th { background: var(--panel-2); font-weight: 600; font-size: 13.5px; }
+tbody tr:last-child td { border-bottom: 0; }
+td code { white-space: nowrap; }
+.catatan { margin: 20px 0; padding: 12px 16px; border-left: 3px solid var(--aksen); background: var(--aksen-lembut);
+  border-radius: 0 8px 8px 0; }
+.catatan p { margin: 0; }
+.catatan > div > :first-child { margin-top: 0; } .catatan > div > :last-child { margin-bottom: 0; }
+.catatan-judul { font-weight: 650; margin-bottom: 4px !important; color: var(--aksen-kuat); }
+.catatan-warn, .catatan-bug { border-left-color: var(--merah); background: color-mix(in srgb, var(--merah) 9%, transparent); }
+.catatan-warn .catatan-judul, .catatan-bug .catatan-judul { color: var(--merah); }
+
+/* ── langkah dan kaki ───────────────────────────────────────────────── */
+.langkah { max-width: 760px; margin: 56px auto 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.langkah a { display: flex; flex-direction: column; padding: 12px 16px; border: 1px solid var(--garis);
+  border-radius: 10px; text-decoration: none; color: var(--tinta); background: var(--panel); min-width: 0; }
+.langkah a:hover { border-color: var(--aksen); }
+.langkah small { font: 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--tinta-3); }
+.langkah strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ke-kanan { text-align: right; grid-column: 2; }
+.kaki { max-width: 760px; margin: 40px auto 0; padding: 20px 0 8px; border-top: 1px solid var(--garis);
+  display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; font-size: 13px; color: var(--tinta-3); }
+.kaki a { color: var(--tinta-2); }
+
+/* ── cari ───────────────────────────────────────────────────────────── */
+.dialog-cari { position: fixed; inset: 0; z-index: 400; background: rgba(20, 18, 15, .45);
+  display: flex; justify-content: center; align-items: flex-start; padding: 10vh 16px 16px; }
+.dialog-cari[hidden] { display: none; }
+.kotak-cari { width: min(640px, 100%); background: var(--panel); border: 1px solid var(--garis); border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .25); overflow: hidden; }
+.kotak-cari input { width: 100%; border: 0; border-bottom: 1px solid var(--garis); background: transparent;
+  color: var(--tinta); font: 17px var(--sans); padding: 16px 18px; outline: none; }
+.hasil-cari { list-style: none; margin: 0; padding: 6px; max-height: 60vh; overflow-y: auto; }
+.hasil-cari a { display: block; padding: 9px 12px; border-radius: 8px; text-decoration: none; color: var(--tinta); }
+.hasil-cari a small { display: block; color: var(--tinta-3); font-size: 12.5px; }
+.hasil-cari li.pilih a, .hasil-cari a:hover { background: var(--aksen-lembut); }
+.hasil-cari .kosong { padding: 14px; color: var(--tinta-3); }
+
+/* ── kelas matematika ───────────────────────────────────────────────── */
+.progres { margin: 0 10px 8px; }
+.progres-batang { height: 6px; background: var(--panel-2); border-radius: 99px; overflow: hidden; }
+.progres-batang div { height: 100%; width: 0; background: var(--hijau); transition: width .3s; }
+.progres p { margin: 6px 0 0; font-size: 12.5px; color: var(--tinta-3); }
+.rumus { margin: 18px 0; padding: 14px 18px; background: var(--panel); border: 1px solid var(--garis); border-radius: 10px; }
+.rumus-persamaan { font: 600 18px/1.5 var(--serif); margin: 6px 0; }
+.rumus-langkah { color: var(--tinta-2); padding-left: 14px; border-left: 2px solid var(--garis); margin: 4px 0; }
+.rumus span, .rumus-langkah span { color: var(--aksen-kuat); font-weight: 600; }
+.daftar-bentuk { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin: 18px 0; }
+.bentuk { padding: 12px 14px; border: 1px solid var(--garis); background: var(--panel); border-radius: 10px; }
+.bentuk b { display: block; font-weight: 600; }
+.bentuk span { font-family: var(--mono); font-size: 13.5px; color: var(--aksen-kuat); }
+.batang-persen { position: relative; height: 34px; margin: 18px 0; background: var(--panel-2); border-radius: 8px; overflow: hidden; }
+.batang-persen div { height: 100%; background: var(--aksen); opacity: .8; }
+.batang-persen span { position: absolute; inset: 0; display: flex; align-items: center; padding-left: 12px; font: 600 13.5px var(--mono); color: var(--tinta); }
+.latihan { margin: 22px 0; border: 1px solid var(--garis); border-radius: 10px; background: var(--panel); }
+.latihan summary { cursor: pointer; padding: 12px 16px; font-weight: 600; }
+.latihan > div { padding: 0 16px 14px; }
+.latihan .math-box { margin-top: 12px; padding: 10px 14px; border-left: 3px solid var(--hijau); background: var(--panel-2); border-radius: 0 8px 8px 0; }
+.latihan .math-step span, .mentah .math-step span { font-weight: 600; }
+.kuis { margin: 26px 0; padding: 16px 18px; border: 1px solid var(--garis); border-radius: 12px; background: var(--panel); }
+.kuis-label { margin: 0; font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--tinta-3); }
+.kuis-tanya { margin: 4px 0 12px; font-weight: 600; }
+.kuis-pilihan { display: grid; gap: 8px; }
+.kuis-pilihan button { display: flex; gap: 10px; align-items: baseline; text-align: left; width: 100%; padding: 9px 12px;
+  border: 1px solid var(--garis); border-radius: 8px; background: var(--kertas); color: var(--tinta); font: inherit; cursor: pointer; }
+.kuis-pilihan button span { font: 600 12.5px var(--mono); color: var(--tinta-3); }
+.kuis-pilihan button:hover:not(:disabled) { border-color: var(--aksen); }
+.kuis-pilihan button.benar { border-color: var(--hijau); background: color-mix(in srgb, var(--hijau) 12%, transparent); }
+.kuis-pilihan button.salah { border-color: var(--merah); background: color-mix(in srgb, var(--merah) 10%, transparent); }
+.kuis-pilihan button:disabled { cursor: default; }
+.kuis-umpan { margin: 12px 0 0; padding: 8px 12px; border-radius: 8px; font-size: 15px; }
+.kuis-umpan.benar { background: color-mix(in srgb, var(--hijau) 12%, transparent); }
+.kuis-umpan.salah { background: color-mix(in srgb, var(--merah) 10%, transparent); }
+.tombol { display: inline-block; padding: 10px 18px; border-radius: 8px; border: 1px solid var(--aksen); background: var(--aksen);
+  color: #fff; font: 600 15px var(--sans); text-decoration: none; cursor: pointer; }
+.tombol:hover { background: var(--aksen-kuat); border-color: var(--aksen-kuat); color: #fff; }
+.tombol.biasa { background: transparent; color: var(--tinta); border-color: var(--garis); }
+.tombol.biasa:hover { border-color: var(--aksen); color: var(--aksen-kuat); }
+.tombol:disabled { opacity: .6; cursor: default; }
+.mentah { margin: 18px 0; }
+.nl-wrap { overflow-x: auto; padding: 12px 0; }
+.nl-inner { display: flex; min-width: 520px; border-top: 2px solid var(--tinta-2); }
+.nl-tick { flex: 1; text-align: center; position: relative; padding-top: 8px; }
+.nl-tick::before { content: ""; position: absolute; top: -7px; left: 50%; height: 12px; border-left: 2px solid var(--tinta-2); }
+.nl-n { font: 13px var(--mono); }
+.nl-n.neg { color: var(--merah); } .nl-n.pos { color: var(--hijau); } .nl-n.zero { font-weight: 700; }
+.nl-bar, .nl-t { display: none; }
+.pembuka { margin: 8px 0 32px; padding: 18px 20px; border: 1px solid var(--garis); border-radius: 12px; background: var(--panel); }
+.pembuka p { margin: 0 0 10px; }
+.pembuka .baris-tombol { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.angka-kelas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 0; }
+.angka-kelas div { padding: 10px 12px; border: 1px solid var(--garis); border-radius: 8px; background: var(--kertas); }
+.angka-kelas b { display: block; font: 600 24px/1.1 var(--serif); color: var(--aksen-kuat); }
+.angka-kelas span { font-size: 12.5px; color: var(--tinta-3); }
+
+/* ── beranda ────────────────────────────────────────────────────────── */
+.beranda { max-width: 1120px; margin: 0 auto; padding: 56px 32px 32px; }
+.beranda .kaki { max-width: none; }
+.pahlawan { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: 44px; align-items: center; }
+.pahlawan > div { min-width: 0; }
+.pahlawan h1 { font: 600 clamp(30px, 3.6vw, 42px)/1.12 var(--serif); letter-spacing: -.02em; margin: 0; }
+.pahlawan h1 em { color: var(--aksen); }
+.pahlawan .lead { font-size: 18.5px; color: var(--tinta-2); margin: 20px 0 0; max-width: 54ch; }
+.pahlawan .baris-tombol { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.pahlawan .kode { margin: 0; box-shadow: 0 24px 60px rgba(49, 40, 29, .18); }
+.label-versi { display: inline-block; margin-bottom: 18px; font: 600 12px var(--mono); letter-spacing: .08em;
+  color: var(--aksen-kuat); background: var(--aksen-lembut); padding: 4px 10px; border-radius: 99px; }
+.pasang-cepat { margin: 56px 0 0; }
+.bagian-beranda { margin-top: 64px; }
+.bagian-beranda > h2 { font: 600 28px/1.25 var(--serif); margin: 0 0 6px; }
+.bagian-beranda > p { color: var(--tinta-2); margin: 0 0 24px; }
+.kartu-kartu { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+.kartu { display: flex; flex-direction: column; padding: 22px 24px; border: 1px solid var(--garis); border-radius: 12px;
+  background: var(--panel); text-decoration: none; color: var(--tinta); }
+a.kartu:hover { border-color: var(--aksen); }
+.kartu h3 { font: 600 21px/1.3 var(--serif); margin: 0 0 6px; }
+.kartu p { margin: 0; color: var(--tinta-2); font-size: 15px; }
+.kartu .lanjut { margin-top: auto; padding-top: 14px; font: 600 13px var(--mono); color: var(--aksen-kuat); }
+.ciri { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px 36px; }
+.ciri h3 { font: 600 17px var(--sans); margin: 0 0 4px; }
+.ciri p { margin: 0; color: var(--tinta-2); font-size: 15px; }
+.ciri code { font-size: .88em; background: var(--aksen-lembut); padding: .1em .35em; border-radius: 4px; }
+
+/* ── layar sempit ───────────────────────────────────────────────────── */
+@media (max-width: 1180px) {
+  .tata { grid-template-columns: var(--sisi-l) minmax(0, 1fr); }
+  .di-halaman { display: none; }
+}
+@media (max-width: 860px) {
+  .tombol-menu { display: inline-flex; }
+  .tata, body[data-situs="mtk"] .tata { display: block; }
+  .sisi { position: fixed; z-index: 90; top: var(--kepala-t); left: 0; width: min(300px, 86vw); background: var(--kertas);
+    transform: translateX(-102%); transition: transform .2s; box-shadow: 0 0 40px rgba(0, 0, 0, .2); }
+  body.sisi-buka .sisi { transform: none; }
+  .isi { padding: 28px 16px 24px; }
+  .situs { display: none; }
+  .tombol-cari { min-width: 0; }
+  .tombol-cari span, .tombol-cari kbd { display: none; }
+  .tombol-cari { width: 36px; padding: 0; justify-content: center; }
+  .pahlawan { grid-template-columns: 1fr; gap: 32px; }
+  .beranda { padding: 32px 16px; }
+  .angka-kelas { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .versi { display: none; }
+  .merek span { font-size: 16px; }
+  .langkah { grid-template-columns: 1fr; }
+  .ke-kanan { grid-column: 1; text-align: left; }
+  .artikel h2 { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media print {
+  .kepala, .sisi, .di-halaman, .langkah, .kode figcaption .alat { display: none !important; }
+  body { padding: 0; } .tata { display: block; }
+}
+
+/* ── markup di isi kelas ────────────────────────────────────────────── */
+.frac-vis { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center;
+  font-size: .85em; line-height: 1.1; margin: 0 .15em; }
+.frac-n { border-bottom: 1.5px solid currentColor; padding: 0 .2em; }
+.frac-d { padding: 0 .2em; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 13px; font-weight: 600;
+  background: var(--panel-2); }
+.badge.bgg { background: color-mix(in srgb, var(--hijau) 18%, transparent); color: var(--hijau); }
+.badge.bgr { background: color-mix(in srgb, var(--merah) 15%, transparent); color: var(--merah); }
+.badge.bgo { background: var(--aksen-lembut); color: var(--aksen-kuat); }
+.badge.bgb { background: color-mix(in srgb, var(--k-tipe) 22%, transparent); color: var(--tinta); }
+.nl-n.zer { font-weight: 700; }
+.kode figcaption .lokal { font-size: 11px; color: var(--kode-redup); border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 99px; padding: 1px 8px; }
+
+/* ── logo terang dan gelap ──────────────────────────────────────────── */
+.gelap-saja { display: none !important; }
+:root[data-tema="gelap"] .terang-saja { display: none !important; }
+:root[data-tema="gelap"] .gelap-saja { display: block !important; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="terang"]) .terang-saja { display: none !important; }
+  :root:not([data-tema="terang"]) .gelap-saja { display: block !important; }
+}
+.judul-gambar { margin: 0; line-height: 0; }
+.judul-gambar img { width: 100%; max-width: 560px; height: auto; }
+.kaki-merek { display: flex; align-items: center; gap: 12px; }
+.kaki-merek img { height: 40px; width: auto; }
+
+/* ── tombol di layar sempit: satu per baris, selebar kolom ─────────── */
+@media (max-width: 560px) {
+  .baris-tombol { flex-direction: column; align-items: stretch; }
+  .baris-tombol .tombol { width: 100%; text-align: center; padding: 13px 18px; }
+  .kaki { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── latar hero dan ciri singkat di beranda ─────────────────────────── */
+body[data-situs="beranda"] { overflow-x: clip; }
+.pahlawan { position: relative; isolation: isolate; }
+.pahlawan::before { content: ""; position: absolute; z-index: -1; pointer-events: none;
+  top: -56px; bottom: -48px; left: calc(50% - 50vw); right: calc(50% - 50vw);
+  background: var(--latar-hero) center / cover no-repeat; opacity: .45; }
+@media (max-width: 860px) {
+  .pahlawan::before { background-size: 1100px auto; background-position: center top; opacity: .35; }
+}
+.ciri-kecil { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; }
+.ciri-kecil li { font-size: 13px; font-weight: 600; color: var(--aksen-kuat); background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--aksen) 30%, transparent); padding: 4px 11px; border-radius: 99px; }
+@media (max-width: 560px) {
+  .ciri-kecil { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ciri-kecil li { display: flex; align-items: center; justify-content: center; text-align: center;
+    min-height: 44px; padding: 6px 8px; font-size: 12.5px; line-height: 1.3; border-radius: 10px; }
+}
+
+/* ── halaman profil ─────────────────────────────────────────────────── */
+body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--kepala-t) 0 0 0; z-index: -1;
+  pointer-events: none; background: var(--latar-hero) center / cover no-repeat; opacity: .4; }
+.profil { max-width: 880px; margin: 0 auto; padding: 56px 32px 32px; }
+.profil .kaki { max-width: none; }
+.profil-kepala { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 32px; align-items: center;
+  padding: 28px; border: 1px solid var(--garis); border-radius: 16px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent); }
+.profil-foto { width: 168px; height: 168px; border-radius: 50%; display: block;
+  box-shadow: 0 0 0 4px var(--panel), 0 0 0 5px var(--garis), 0 18px 40px rgba(30, 20, 10, .25); }
+.profil-kepala h1 { font: 600 clamp(28px, 4vw, 38px)/1.15 var(--serif); margin: 0 0 8px; }
+.profil-peran { margin: 0; color: var(--tinta-2); }
+.profil-tempat { margin: 6px 0 0; font-size: 14px; color: var(--tinta-3); }
+.profil-kepala .baris-tombol { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.profil-bagian { margin-top: 40px; }
+.profil-bagian h2 { font: 600 24px/1.3 var(--serif); margin: 0 0 12px; }
+.profil-bagian p { margin: 0 0 12px; }
+.profil-proyek { margin-top: 4px; }
+.profil-proyek code { font-size: .88em; background: var(--aksen-lembut); padding: .1em .35em; border-radius: 4px; }
+.profil-minat { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.profil-minat li, .profil-garis li { padding: 14px 16px; border: 1px solid var(--garis); border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent); }
+.profil-minat b, .profil-garis b { display: block; font-weight: 650; }
+.profil-minat span, .profil-garis span { color: var(--tinta-2); font-size: 15px; }
+.profil-garis { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.profil-garis li { border-left: 3px solid var(--aksen); }
+.profil-kontak { padding-left: 20px; }
+@media (max-width: 680px) {
+  .profil { padding: 28px 16px 24px; }
+  .profil-kepala { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 24px 18px; gap: 18px; }
+  .profil-foto { width: 140px; height: 140px; }
+  .profil-kepala .baris-tombol { justify-content: center; }
+  .profil-minat { grid-template-columns: 1fr; }
+}
+</style>
+<script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
+</head>
+<body data-situs="dok">
+<a class="lewati" href="#isi">Lewati ke isi</a>
+<header class="kepala">
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
+  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <span class="versi">v0.6.0</span>
+  <div class="kepala-kanan">
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="../../web_dokumentasi/web.html" hreflang="en" lang="en" aria-label="English">EN</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+  </div>
+</header>
+<div class="tata">
+<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a class="aktif" aria-current="page" href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Empat mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<main id="isi" class="isi">
+<article class="artikel">
+<p class="rel">Pustaka</p>
+<h1>Web dan data</h1>
+<p class="ringkas">Server HTTP, template, cookie dan sesi, WebSocket, klien HTTP, dan SQLite.</p>
+<p>Semua yang dibutuhkan aplikasi web ada di namespace <code>dok::</code> dan <code>http::</code>, tanpa pustaka tambahan.</p>
+<h2 id="server"><a class="jangkar" href="#server">Server</a></h2>
+<figure class="kode"><figcaption><span>server.jrg</span></figcaption><pre><code><span class="k-kunci">package</span> main
+
+<span class="k-kunci">pub</span> <span class="k-kunci">fn</span> <span class="k-fn">main</span>() {
+    <span class="k-kunci">let</span> r = <span class="k-ns">dok</span>::<span class="k-fn">router_new</span>()
+
+    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">html</span>(<span class="k-str">&quot;&lt;h1&gt;Halo dari JRG&lt;/h1&gt;&quot;</span>))
+    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/sapa/:nama&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">text</span>(<span class="k-str">&quot;halo, &quot;</span> + req.params.nama))
+    <span class="k-ns">dok</span>::<span class="k-fn">router_get</span>(r, <span class="k-str">&quot;/api/kuadrat&quot;</span>, |req| {
+        <span class="k-kunci">let</span> n = <span class="k-tipe">int</span>(<span class="k-ns">dok</span>::<span class="k-fn">query_get</span>(req.query, <span class="k-str">&quot;n&quot;</span>) ?? <span class="k-str">&quot;0&quot;</span>)
+        <span class="k-kunci">return</span> <span class="k-ns">dok</span>::<span class="k-fn">json_response</span>({<span class="k-str">&quot;n&quot;</span>: n, <span class="k-str">&quot;kuadrat&quot;</span>: n * n})
+    })
+    <span class="k-ns">dok</span>::<span class="k-fn">router_post</span>(r, <span class="k-str">&quot;/gema&quot;</span>, |req| <span class="k-ns">dok</span>::<span class="k-fn">text</span>(req.body))
+    <span class="k-ns">dok</span>::<span class="k-fn">router_static</span>(r, <span class="k-str">&quot;/aset&quot;</span>, <span class="k-str">&quot;./publik&quot;</span>)
+
+    <span class="k-ns">dok</span>::<span class="k-fn">serve</span>(r, <span class="k-ang">8080</span>)
+}</code></pre></figure>
+<figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>$ curl localhost:8080/sapa/Ani
+halo, Ani
+$ curl &quot;localhost:8080/api/kuadrat?n=12&quot;
+{&quot;kuadrat&quot;:144,&quot;n&quot;:12}</code></pre></figure>
+<p><code>dok::serve</code> memblokir dan menangani tiap koneksi di thread-nya sendiri. Argumen ketiga mengatur alamat. Bawaannya <code>&quot;127.0.0.1&quot;</code>, jadi cuma bisa diakses dari mesin sendiri (atau lewat proxy seperti Caddy/nginx di mesin yang sama); tulis <code>&quot;0.0.0.0&quot;</code> untuk membukanya ke jaringan.</p>
+<p><code>dok::router_static</code> tidak menyajikan berkas atau folder yang namanya diawali titik (<code>.env</code>, <code>.git/</code>, <code>.htpasswd</code>) — dijawab 404 seperti berkas yang tidak ada, supaya rahasia yang kebetulan ikut di folder publik tidak bocor. Pengecualiannya <code>.well-known/</code>, yang memang publik (mis. tantangan sertifikat ACME).</p>
+<div class="tabel"><table><thead><tr><th>Request (<code>req</code>)</th><th>Isi</th></tr></thead><tbody><tr><td><code>method</code>, <code>path</code></td><td><code>&quot;GET&quot;</code>, <code>&quot;/sapa/Ani&quot;</code></td></tr><tr><td><code>params</code></td><td>bagian <code>:nama</code> dari pola rute, dibaca <code>req.params.nama</code></td></tr><tr><td><code>query</code></td><td>pasangan dari <code>?a=1&amp;b=2</code>; ambil dengan <code>dok::query_get(req.query, &quot;a&quot;)</code></td></tr><tr><td><code>headers</code></td><td>ambil dengan <code>dok::header_get(req.headers, &quot;Content-Type&quot;)</code></td></tr><tr><td><code>body</code>, <code>body_bytes</code></td><td>badan sebagai teks; kalau bukan teks UTF-8, <code>body</code> bernilai <code>nil</code> dan isinya di <code>body_bytes</code></td></tr><tr><td><code>remote_addr</code></td><td>alamat soket peminta, <code>&quot;127.0.0.1:51234&quot;</code> — kepala <code>X-Forwarded-For</code> ditulis klien sendiri, jadi untuk pembatas laju atau log pakai ini, kecuali di belakang proxy milikmu</td></tr></tbody></table></div>
+<p>Handler boleh mengembalikan teks (jadi <code>200 text/plain</code>), hasil <code>dok::text</code>, <code>dok::html</code>, <code>dok::json_response</code>, <code>dok::redirect</code>, <code>dok::response(kode, isi)</code>, <code>dok::binary(byte)</code>, atau <code>Result</code> (<code>Err</code> jadi 500).</p>
+<h3 id="middleware"><a class="jangkar" href="#middleware">Middleware</a></h3>
+<p><code>dok::router_use</code> berjalan sebelum rute dicari; mengembalikan <code>nil</code> berarti lanjut, mengembalikan respons berarti berhenti di situ. <code>dok::router_after</code> berjalan sesudah handler dan boleh mengubah responsnya.</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">dok</span>::<span class="k-fn">router_use</span>(r, |req| {
+    <span class="k-kunci">if</span> <span class="k-ns">str</span>::<span class="k-fn">starts_with</span>(req.path, <span class="k-str">&quot;/admin&quot;</span>) &amp;&amp; <span class="k-ns">dok</span>::<span class="k-fn">cookie_get</span>(req, <span class="k-str">&quot;sesi&quot;</span>).<span class="k-fn">is_none</span>() {
+        <span class="k-kunci">return</span> <span class="k-ns">dok</span>::<span class="k-fn">response</span>(<span class="k-ang">401</span>, <span class="k-str">&quot;perlu masuk dulu&quot;</span>)
+    }
+    <span class="k-kunci">return</span> <span class="k-kunci">nil</span>
+})
+<span class="k-ns">dok</span>::<span class="k-fn">router_after</span>(r, |req, resp| <span class="k-ns">dok</span>::<span class="k-fn">header_set</span>(resp, <span class="k-str">&quot;X-Frame-Options&quot;</span>, <span class="k-str">&quot;DENY&quot;</span>))</code></pre></figure>
+<h2 id="template"><a class="jangkar" href="#template">Template</a></h2>
+<p><code>dok::render</code> mengisi <code>{{ nama }}</code> dan meloloskan HTML-nya, jadi isian dari pengguna aman ditampilkan. <code>{{&amp; nama }}</code> menyisipkan apa adanya. Ada juga <code>{{#if}}…{{else}}…{{/if}}</code> dan <code>{{#each}}…{{/each}}</code>.</p>
+<figure class="kode" data-jalan><figcaption><span>template.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> t = <span class="k-str">&quot;&lt;h1&gt;Halo {{nama}}&lt;/h1&gt;&lt;ul&gt;{{#each item}}&lt;li&gt;{{@index}}. {{.}}&lt;/li&gt;{{/each}}&lt;/ul&gt;&quot;</span>
+<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">render</span>(t, {<span class="k-str">&quot;nama&quot;</span>: <span class="k-str">&quot;&lt;Ani&gt;&quot;</span>, <span class="k-str">&quot;item&quot;</span>: [<span class="k-str">&quot;kopi&quot;</span>, <span class="k-str">&quot;teh&quot;</span>]}) {
+    <span class="k-fn">Ok</span>(html) =&gt; <span class="k-fn">wok</span>(html),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;gagal:&quot;</span>, e),
+}</code></pre><pre class="keluaran"><code>&lt;h1&gt;Halo &amp;lt;Ani&amp;gt;&lt;/h1&gt;&lt;ul&gt;&lt;li&gt;0. kopi&lt;/li&gt;&lt;li&gt;1. teh&lt;/li&gt;&lt;/ul&gt;</code></pre></figure>
+<p>Pelolosan HTML cuma melindungi teks dan nilai atribut berkutip, jadi <code>dok::render</code> membaca di mana sebuah <code>{{ nama }}</code> duduk. Nilai di atribut URL (<code>href</code>, <code>src</code>, <code>action</code>, …) yang berskema selain <code>http</code>, <code>https</code>, <code>mailto</code>, <code>tel</code> diganti <code>#jrg-url-ditolak</code>. Nilai di dalam <code>&lt;script&gt;</code>/<code>&lt;style&gt;</code>, di atribut <code>on*</code>/<code>style</code>, di atribut tanpa tanda kutip, atau di tempat nama atribut adalah <code>Err</code>: taruh datanya di atribut <code>data-*</code> yang berkutip.</p>
+<figure class="kode" data-jalan><figcaption><span>konteks.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> d = {<span class="k-str">&quot;u&quot;</span>: <span class="k-str">&quot;javascript:alert(1)&quot;</span>, <span class="k-str">&quot;nama&quot;</span>: <span class="k-str">&quot;Ani&quot;</span>}
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">render</span>(<span class="k-str">&quot;&lt;a href=\&quot;{{u}}\&quot;&gt;{{nama}}&lt;/a&gt;&quot;</span>, d).<span class="k-fn">unwrap</span>())
+<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">render</span>(<span class="k-str">&quot;&lt;p title={{nama}}&gt;&quot;</span>, d) {
+    <span class="k-fn">Ok</span>(html) =&gt; <span class="k-fn">wok</span>(html),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;ditolak:&quot;</span>, <span class="k-ns">str</span>::<span class="k-fn">contains</span>(e, <span class="k-str">&quot;tanpa tanda kutip&quot;</span>)),
+}</code></pre><pre class="keluaran"><code>&lt;a href=&quot;#jrg-url-ditolak&quot;&gt;Ani&lt;/a&gt;
+ditolak: true</code></pre></figure>
+<p><code>dok::render_file(berkas, data)</code> membaca templatnya dari berkas.</p>
+<h2 id="cookie-sesi-dan-sandi"><a class="jangkar" href="#cookie-sesi-dan-sandi">Cookie, sesi, dan sandi</a></h2>
+<figure class="kode" data-jalan><figcaption><span>sesi.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> <span class="k-tipe">KUNCI</span> = <span class="k-str">&quot;kunci-sesi-yang-panjang-dan-acak&quot;</span>
+
+<span class="k-kunci">let</span> cookie = <span class="k-ns">dok</span>::<span class="k-fn">session_encode</span>({<span class="k-str">&quot;user&quot;</span>: <span class="k-str">&quot;budi&quot;</span>}, <span class="k-tipe">KUNCI</span>)
+<span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">session_decode</span>(cookie, <span class="k-tipe">KUNCI</span>) {
+    <span class="k-fn">Ok</span>(d) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;masuk sebagai&quot;</span>, d.user),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;ditolak:&quot;</span>, e),
+}
+
+<span class="k-kunci">let</span> simpanan = <span class="k-ns">dok</span>::<span class="k-fn">password_hash</span>(<span class="k-str">&quot;sandi123&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">password_verify</span>(<span class="k-str">&quot;sandi123&quot;</span>, simpanan), <span class="k-ns">dok</span>::<span class="k-fn">password_verify</span>(<span class="k-str">&quot;tebakan&quot;</span>, simpanan))</code></pre><pre class="keluaran"><code>masuk sebagai budi
+true false</code></pre></figure>
+<ul><li>Sesi <strong>ditandatangani</strong>, tidak dienkripsi: isinya bisa dibaca siapa pun, tapi tidak bisa diubah tanpa kuncinya. Simpan kuncinya di variabel lingkungan, bukan di kode.</li><li>Sesi membawa <strong>cap waktu</strong> yang ikut ditandatangani: <code>dok::session_decode</code> menolak sesi yang lebih tua dari 14 hari, atau dari argumen ketiga dalam detik (<code>dok::session_decode(cookie, KUNCI, 3600)</code> = satu jam). Cookie curian tidak berlaku selamanya.</li><li><code>password_hash</code> memakai PBKDF2-HMAC-SHA256 dengan garam acak per sandi.</li><li><code>dok::cookie_set(resp, nama, nilai, opsi)</code> memasang cookie dengan <code>HttpOnly</code> dan <code>SameSite=Lax</code> secara bawaan; <code>dok::cookie_get(req, nama)</code> membacanya.</li></ul>
+<h3 id="token-csrf"><a class="jangkar" href="#token-csrf">Token CSRF</a></h3>
+<p>Formulir yang mengubah sesuatu (<code>POST</code>, <code>PUT</code>, <code>DELETE</code>) membawa token yang dibuat server untuk sesi itu. Situs lain bisa membuat peramban korban mengirim formulir, tapi tidak bisa membaca tokennya.</p>
+<figure class="kode" data-jalan><figcaption><span>csrf.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> <span class="k-tipe">RAHASIA</span> = <span class="k-str">&quot;rahasia-csrf-yang-panjangnya-32b&quot;</span>
+
+<span class="k-kunci">let</span> token = <span class="k-ns">dok</span>::<span class="k-fn">csrf_token</span>(<span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-ani&quot;</span>)
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">csrf_verify</span>(token, <span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-ani&quot;</span>))
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">csrf_verify</span>(token, <span class="k-tipe">RAHASIA</span>, <span class="k-str">&quot;sesi-budi&quot;</span>))</code></pre><pre class="keluaran"><code>true
+false</code></pre></figure>
+<ul><li>Argumen ketiganya, <strong>ikatan</strong>, adalah id sesi: token sesi lain ditolak, jadi penyerang tidak bisa memakai token dari sesinya sendiri. Ikatan kosong ditolak.</li><li>Token berumur 12 jam; argumen keempat <code>csrf_verify</code> mengubahnya (dalam detik).</li><li>Rahasianya paling sedikit 32 byte. Taruh tokennya di <code>&lt;input type=&quot;hidden&quot;&gt;</code> lewat <code>dok::render</code>, dan periksa sebelum mengerjakan permintaan.</li></ul>
+<h2 id="websocket"><a class="jangkar" href="#websocket">WebSocket</a></h2>
+<p>Rute WebSocket hidup di router yang sama dengan rute HTTP biasa.</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">dok</span>::<span class="k-fn">router_ws</span>(r, <span class="k-str">&quot;/gema&quot;</span>, |koneksi, req| {
+    <span class="k-kunci">while</span> <span class="k-kunci">true</span> {
+        <span class="k-kunci">match</span> <span class="k-ns">dok</span>::<span class="k-fn">ws_recv</span>(koneksi) {
+            <span class="k-fn">Some</span>(pesan) =&gt; <span class="k-ns">dok</span>::<span class="k-fn">ws_send</span>(koneksi, <span class="k-str">&quot;gema: &quot;</span> + pesan),
+            <span class="k-tipe">None</span> =&gt; { <span class="k-kunci">break</span> }
+        }
+    }
+})</code></pre></figure>
+<p><code>ws_recv</code> menunggu pesan berikutnya dan menjawab <code>None</code> saat koneksinya ditutup. Pesan biner datang sebagai array byte. Permintaan dari peramban yang <code>Origin</code>-nya berhost lain dari <code>Host</code> dijawab 403 (port boleh beda), supaya halaman dari situs lain tidak bisa membuka WebSocket atas nama pengunjung.</p>
+<h2 id="klien-http"><a class="jangkar" href="#klien-http">Klien HTTP</a></h2>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-kunci">match</span> <span class="k-ns">http</span>::<span class="k-fn">get</span>(<span class="k-str">&quot;https://api.github.com/repos/Kodok-Kejepit/jrg&quot;</span>) {
+    <span class="k-fn">Ok</span>(r) =&gt; <span class="k-fn">wok</span>(r.status, <span class="k-ns">json</span>::<span class="k-fn">parse</span>(r.body)[<span class="k-str">&quot;stargazers_count&quot;</span>]),
+    <span class="k-fn">Err</span>(e) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;gagal:&quot;</span>, e),
+}
+
+<span class="k-ns">http</span>::<span class="k-fn">post</span>(<span class="k-str">&quot;https://contoh.org/api&quot;</span>, <span class="k-ns">json</span>::<span class="k-fn">stringify</span>({<span class="k-str">&quot;a&quot;</span>: <span class="k-ang">1</span>}), <span class="k-str">&quot;application/json&quot;</span>)
+<span class="k-ns">http</span>::<span class="k-fn">unduh</span>(<span class="k-str">&quot;https://contoh.org/besar.zip&quot;</span>, <span class="k-str">&quot;besar.zip&quot;</span>)</code></pre></figure>
+<p><code>http::get</code>, <code>post</code>, <code>put</code>, <code>delete</code>, dan <code>request</code> menjawab <code>Result</code> berisi <code>status</code>, <code>headers</code>, <code>body</code>, dan <code>ok</code>. HTTPS memakai libssl milik sistem. <code>http::unduh</code> menulis langsung ke berkas, jadi aman untuk unduhan besar, dan tidak mengikuti pengalihan dari <code>https://</code> ke <code>http://</code>. <code>http::tenggat(detik)</code> memasang tenggat total tiap permintaan, jadi server yang menetes jawabannya tidak bisa menahan pemanggil tanpa batas.</p>
+<p>Kalau URL-nya datang dari pemakai (pratinjau tautan, webhook, pengunduh gambar), nyalakan penjaga SSRF sekali di awal:</p>
+<figure class="kode"><figcaption><span>jrg</span></figcaption><pre><code><span class="k-ns">http</span>::<span class="k-fn">hanya_publik</span>(<span class="k-kunci">true</span>)
+<span class="k-ns">http</span>::<span class="k-fn">get</span>(<span class="k-str">&quot;http://169.254.169.254/latest/meta-data/&quot;</span>)   <span class="k-kom">// Err: alamat link-local, metadata awan</span></code></pre></figure>
+<p>Sesudahnya alamat loopback, privat, link-local dan metadata awan ditolak. Yang diperiksa alamat hasil DNS yang benar-benar disambungi, juga di tiap pengalihan, jadi nama yang menunjuk <code>127.0.0.1</code> tidak lolos.</p>
+<h2 id="sqlite"><a class="jangkar" href="#sqlite">SQLite</a></h2>
+<p>Driver SQLite dimuat dari <code>libsqlite3</code> milik sistem. <code>dok::db_tersedia()</code> memberi tahu apakah pustakanya ada.</p>
+<figure class="kode"><figcaption><span>sqlite.jrg</span><span class="lokal" title="Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban">jalankan dengan jrgc</span></figcaption><pre><code><span class="k-kunci">let</span> db = <span class="k-ns">dok</span>::<span class="k-fn">db_open</span>(<span class="k-str">&quot;:memory:&quot;</span>)?
+<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;CREATE TABLE murid(id INTEGER PRIMARY KEY, nama TEXT, nilai REAL)&quot;</span>)?
+<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;INSERT INTO murid(nama, nilai) VALUES (?, ?)&quot;</span>, [<span class="k-str">&quot;budi&quot;</span>, <span class="k-ang">8.5</span>])?
+<span class="k-ns">dok</span>::<span class="k-fn">db_exec</span>(db, <span class="k-str">&quot;INSERT INTO murid(nama, nilai) VALUES (?, ?)&quot;</span>, [<span class="k-str">&quot;ani&quot;</span>, <span class="k-ang">9.25</span>])?
+
+<span class="k-kunci">for</span> _, m <span class="k-kunci">in</span> <span class="k-ns">dok</span>::<span class="k-fn">db_query</span>(db, <span class="k-str">&quot;SELECT nama, nilai FROM murid ORDER BY nilai DESC&quot;</span>)? {
+    <span class="k-fn">wok</span>(m.nama, m.nilai)
+}
+
+<span class="k-kunci">let</span> jahat = <span class="k-str">&quot;budi&#x27;; DROP TABLE murid; --&quot;</span>
+<span class="k-fn">wok</span>(<span class="k-ns">dok</span>::<span class="k-fn">db_query</span>(db, <span class="k-str">&quot;SELECT * FROM murid WHERE nama = ?&quot;</span>, [jahat])?)
+<span class="k-ns">dok</span>::<span class="k-fn">db_close</span>(db)</code></pre><pre class="keluaran"><code>ani 9.25
+budi 8.5
+[]</code></pre></figure>
+<p>Nilai selalu diikat lewat <code>?</code>, jadi teks dari pengguna tidak pernah dibaca sebagai perintah SQL. Satu baris hasil adalah dict, dan kolomnya dibaca dengan namanya.</p>
+<h2 id="jaringan-tingkat-rendah"><a class="jangkar" href="#jaringan-tingkat-rendah">Jaringan tingkat rendah</a></h2>
+<p><code>dok::tcp_listen</code>, <code>tcp_accept</code>, <code>tcp_connect</code>, <code>tcp_send</code>, <code>tcp_recv_line</code> untuk TCP, dan <code>dok::udp_bind</code>, <code>udp_send_to</code>, <code>udp_recv_from</code> untuk UDP. <code>dok::log_info</code> dan kawan-kawannya mencetak log bertingkat, dengan warna di terminal.</p>
+</article>
+<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="pustaka.html"><small>Sebelumnya</small><strong>Pustaka bawaan</strong></a><a class="ke-kanan" href="grafis.html"><small>Berikutnya</small><strong>Kanvas, suara, numerik</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+</main>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#server">Server</a></li><li><a href="#template">Template</a></li><li><a href="#cookie-sesi-dan-sandi">Cookie, sesi, dan sandi</a></li><li><a href="#websocket">WebSocket</a></li><li><a href="#klien-http">Klien HTTP</a></li><li><a href="#sqlite">SQLite</a></li><li><a href="#jaringan-tingkat-rendah">Jaringan tingkat rendah</a></li></ol></nav>
+</div>
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
+  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+  <ol class="hasil-cari"></ol>
+</div></div>
+<script defer src="../../aset/cari-id.js?v=5f93a322d5"></script>
+<script defer src="../../aset/situs.js?v=2fc59264e1"></script>
+</body>
+</html>

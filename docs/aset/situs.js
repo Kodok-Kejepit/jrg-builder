@@ -1,6 +1,9 @@
 // Perilaku bersama: tema, menu samping, pencarian, dan tombol di blok kode.
 (function () {
   const akar = document.documentElement;
+  // Teks antarmuka mengikuti bahasa halaman (`<html lang>`): situs Inggris di akar, Indonesia di `/id/`.
+  const EN = akar.lang === 'en';
+  function T(id, en) { return EN ? en : id; }
   const naik = ((document.currentScript && document.currentScript.getAttribute('src')) || '').replace(/aset\/situs\.js(\?.*)?$/, '');
 
   function simpan(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* mode privat */ } }
@@ -61,9 +64,9 @@
     const semua = window.JRG_CARI || [];
     let hasil = kata.length ? semua.map(function (e) { return [skor(e, kata), e]; }).filter(function (x) { return x[0] > 0; })
       .sort(function (a, b) { return b[0] - a[0]; }).slice(0, 30).map(function (x) { return x[1]; })
-      : semua.filter(function (e) { return e.g === 'Dokumentasi'; }).slice(0, 12);
+      : semua.filter(function (e) { return e.g === T('Dokumentasi', 'Docs'); }).slice(0, 12);
     pilih = 0;
-    if (!hasil.length) { daftar.innerHTML = '<li class="kosong">Tidak ada yang cocok.</li>'; return; }
+    if (!hasil.length) { daftar.innerHTML = '<li class="kosong">' + T('Tidak ada yang cocok.', 'No matches.') + '</li>'; return; }
     daftar.innerHTML = hasil.map(function (e, i) {
       return '<li' + (i === 0 ? ' class="pilih"' : '') + '><a href="' + naik + e.u + '">' + esc(e.j) +
         '<small>' + esc(e.g) + (e.k ? ' · ' + esc(e.k) : '') + '</small></a></li>';
@@ -93,8 +96,8 @@
   // ── blok kode: Salin, Jalankan, Ubah ──
   function salin(teks, tombol) {
     const beres = function (ok) {
-      tombol.textContent = ok ? 'Tersalin' : 'Gagal';
-      setTimeout(function () { tombol.textContent = 'Salin'; }, 1400);
+      tombol.textContent = ok ? T('Tersalin', 'Copied') : T('Gagal', 'Failed');
+      setTimeout(function () { tombol.textContent = T('Salin', 'Copy'); }, 1400);
     };
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(teks).then(function () { beres(true); }, function () { beres(false); });
@@ -117,7 +120,7 @@
       const s = document.createElement('script');
       s.src = naik + 'aset/praktik.js';
       s.onload = function () { ok(window.JRG_PRAKTIK); };
-      s.onerror = function () { muatPraktik = null; gagal(new Error('praktik.js tidak bisa dimuat')); };
+      s.onerror = function () { muatPraktik = null; gagal(new Error(T('praktik.js tidak bisa dimuat', 'praktik.js could not be loaded'))); };
       document.head.appendChild(s);
     });
     return muatPraktik;
@@ -150,13 +153,13 @@
         }
         const sebab = p.kalimatSebab(h);
         if (sebab) { const s = document.createElement('span'); s.className = 'galat'; s.textContent = '\n' + sebab; kode.appendChild(s); }
-        if (h.terpotong) kode.appendChild(document.createTextNode('\n[keluaran dipotong]'));
-        if (!kode.textContent.trim()) kode.textContent = '(tidak ada keluaran)';
+        if (h.terpotong) kode.appendChild(document.createTextNode(T('\n[keluaran dipotong]', '\n[output truncated]')));
+        if (!kode.textContent.trim()) kode.textContent = T('(tidak ada keluaran)', '(no output)');
       }, function (e) {
         kode.innerHTML = '';
         const s = document.createElement('span');
         s.className = 'galat';
-        s.textContent = 'Tidak bisa memuat mesin JRG: ' + e.message;
+        s.textContent = T('Tidak bisa memuat mesin JRG: ', 'Could not load the JRG engine: ') + e.message;
         kode.appendChild(s);
       }).then(function () { out.classList.remove('berjalan'); tombol.disabled = false; });
   }
@@ -194,10 +197,10 @@
       alat.appendChild(t);
       return t;
     };
-    b('Salin', 'salin').addEventListener('click', function () { salin(sumberDari(fig), this); });
+    b(T('Salin', 'Copy'), 'salin').addEventListener('click', function () { salin(sumberDari(fig), this); });
     if (fig.hasAttribute('data-jalan')) {
-      b('Ubah', 'ubah').addEventListener('click', function () { ubah(fig, this); });
-      b('Jalankan', 'jalan', true).addEventListener('click', function () { jalankan(fig, this); });
+      b(T('Ubah', 'Edit'), 'ubah').addEventListener('click', function () { ubah(fig, this); });
+      b(T('Jalankan', 'Run'), 'jalan', true).addEventListener('click', function () { jalankan(fig, this); });
     }
     cap.appendChild(alat);
   });

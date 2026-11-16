@@ -23,6 +23,7 @@ sugeng rawuh, Nusantara!
 
 - **Empat mesin.** Interpreter (bawaan), VM bytecode (`--vm`), JIT yang mengompilasi bagian panas saat jalan (`--jit`),
   dan kompilasi native lewat LLVM (`--emit-llvm`). Program yang sama memberi keluaran yang sama di keempatnya.
+  Mesin kelima, WebAssembly, sedang dibuat supaya program JRG jalan di web.
 - **Nilai tidak pernah berbagi.** Menyalin, mengoper, dan mengembalikan nilai selalu menghasilkan salinan, jadi tidak
   ada pengumpul sampah dan tidak ada perubahan dari jauh yang mengejutkan.
 - **Galat yang bisa dibaca.** Tiap galat menyebut berkas, baris, kolom, potongan kodenya, dan biasanya jalan keluarnya.

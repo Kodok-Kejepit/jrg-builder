@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kendali alur — Dokumentasi JRG</title>
-<meta name="description" content="Percabangan, perulangan, dan cara keluar dari keduanya.">
+<title>Control flow — JRG docs</title>
+<meta name="description" content="Branches, loops, and how to leave both.">
 <link rel="canonical" href="https://jrg-lang.org/web_dokumentasi/kendali.html">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/web_dokumentasi/kendali.html">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/web_dokumentasi/kendali.html">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/web_dokumentasi/kendali.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
-<meta property="og:locale" content="id_ID">
-<meta property="og:title" content="Kendali alur — Dokumentasi JRG">
-<meta property="og:description" content="Percabangan, perulangan, dan cara keluar dari keduanya.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Control flow — JRG docs">
+<meta property="og:description" content="Branches, loops, and how to leave both.">
 <meta property="og:url" content="https://jrg-lang.org/web_dokumentasi/kendali.html">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
@@ -108,7 +111,7 @@ code, kbd, pre { font-family: var(--mono); }
 .versi { font: 12px var(--mono); color: var(--tinta-3); border: 1px solid var(--garis);
   padding: 1px 8px; border-radius: 99px; }
 .kepala-kanan { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.tombol-ikon, .tombol-cari {
+.tombol-ikon, .tombol-cari, .tombol-bahasa {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px;
   border: 1px solid var(--garis); background: var(--panel); color: var(--tinta-2);
   border-radius: 8px; cursor: pointer; font: inherit; font-size: 14px; text-decoration: none;
@@ -116,7 +119,8 @@ code, kbd, pre { font-family: var(--mono); }
 .tombol-ikon { width: 36px; padding: 0; }
 .tombol-cari { padding: 0 10px; min-width: 150px; justify-content: flex-start; }
 .tombol-cari kbd { margin-left: auto; font-size: 11px; border: 1px solid var(--garis); border-radius: 4px; padding: 0 5px; }
-.tombol-ikon:hover, .tombol-cari:hover { border-color: var(--aksen); color: var(--tinta); }
+.tombol-bahasa { min-width: 36px; padding: 0 8px; font-size: 13px; font-weight: 600; letter-spacing: .03em; }
+.tombol-ikon:hover, .tombol-cari:hover, .tombol-bahasa:hover { border-color: var(--aksen); color: var(--tinta); }
 .kepala svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8;
   stroke-linecap: round; stroke-linejoin: round; }
 .tombol-menu { display: none; }
@@ -437,26 +441,27 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body data-situs="dok">
-<a class="lewati" href="#isi">Lewati ke isi</a>
+<a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
-  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
-    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="../id/web_dokumentasi/kendali.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
   </div>
 </header>
 <div class="tata">
-<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a class="aktif" aria-current="page" href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Empat mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<aside class="sisi" aria-label="Documentation navigation"><nav><p class="sisi-grup">Start</p><ul><li><a href="index.html">Introduction</a></li><li><a href="pasang.html">Install</a></li><li><a href="tur.html">Quick tour</a></li></ul><p class="sisi-grup">Language</p><ul><li><a href="nilai.html">Values and types</a></li><li><a class="aktif" aria-current="page" href="kendali.html">Control flow</a></li><li><a href="fungsi.html">Functions and closures</a></li><li><a href="tipe.html">Structs, enums, traits</a></li><li><a href="pola.html">Patterns</a></li><li><a href="galat.html">Option and Result</a></li><li><a href="modul.html">Modules</a></li><li><a href="konkuren.html">Concurrency</a></li></ul><p class="sisi-grup">Library</p><ul><li><a href="pustaka.html">Built-in library</a></li><li><a href="web.html">Web and data</a></li><li><a href="grafis.html">Canvas, sound, numerics</a></li><li><a href="game.html">Game engine</a></li><li><a href="ffi.html">Other languages</a></li></ul><p class="sisi-grup">Tools</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor and IDE</a></li><li><a href="android.html">Android apps</a></li></ul><p class="sisi-grup">Under the hood</p><ul><li><a href="mesin.html">Four engines</a></li><li><a href="memori.html">Memory model</a></li><li><a href="diagnostik.html">Diagnostics</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Not done yet</a></li><li><a href="rilis.html">Release notes</a></li></ul></nav></aside>
 <main id="isi" class="isi">
 <article class="artikel">
-<p class="rel">Bahasa</p>
-<h1>Kendali alur</h1>
-<p class="ringkas">Percabangan, perulangan, dan cara keluar dari keduanya.</p>
-<h2 id="if-dan-else"><a class="jangkar" href="#if-dan-else">if dan else</a></h2>
-<p>Kondisinya tanpa kurung, badannya selalu berkurung kurawal. <code>if</code> juga bisa dipakai sebagai nilai.</p>
+<p class="rel">Language</p>
+<h1>Control flow</h1>
+<p class="ringkas">Branches, loops, and how to leave both.</p>
+<h2 id="if-and-else"><a class="jangkar" href="#if-and-else">if and else</a></h2>
+<p>The condition has no parentheses, and the body always has braces. <code>if</code> can also be used as a value.</p>
 <figure class="kode" data-jalan><figcaption><span>if.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> n = <span class="k-ang">7</span>
 <span class="k-kunci">if</span> n % <span class="k-ang">2</span> == <span class="k-ang">0</span> {
     <span class="k-fn">wok</span>(<span class="k-str">&quot;genap&quot;</span>)
@@ -470,12 +475,12 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <span class="k-fn">wok</span>(jenis)</code></pre><pre class="keluaran"><code>ganjil dan besar
 besar</code></pre></figure>
 <h2 id="ternary"><a class="jangkar" href="#ternary">Ternary</a></h2>
-<p>Bentuk pendeknya <code>kondisi $ jika_benar : jika_salah</code>. Pembukanya <code>$</code>, bukan <code>?</code>, karena <code>?</code> dipakai untuk meneruskan galat (lihat <a href="galat.html">Option dan Result</a>).</p>
+<p>The short form is <code>condition $ if_true : if_false</code>. It opens with <code>$</code>, not <code>?</code>, because <code>?</code> is used to propagate errors (see <a href="galat.html">Option and Result</a>).</p>
 <figure class="kode" data-jalan><figcaption><span>ternary.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> nilai = <span class="k-ang">72</span>
 <span class="k-fn">wok</span>(nilai &gt;= <span class="k-ang">75</span> $ <span class="k-str">&quot;lulus&quot;</span> : <span class="k-str">&quot;remedial&quot;</span>)</code></pre><pre class="keluaran"><code>remedial</code></pre></figure>
 <h2 id="for"><a class="jangkar" href="#for">for</a></h2>
-<p><code>for</code> punya dua bentuk, dan bedanya penting:</p>
-<ul><li><code>for i, x in koleksi</code>: <code>i</code> indeksnya, <code>x</code> nilainya. Pakai <code>_</code> untuk yang tidak dipakai.</li><li><code>for i in koleksi</code>: <strong>satu nama selalu berarti indeks</strong>, termasuk untuk rentang.</li></ul>
+<p><code>for</code> has two forms, and the difference matters:</p>
+<ul><li><code>for i, x in collection</code>: <code>i</code> is the index, <code>x</code> the value. Use <code>_</code> for the one you do not need.</li><li><code>for i in collection</code>: <strong>a single name always means the index</strong>, ranges included.</li></ul>
 <figure class="kode" data-jalan><figcaption><span>for.jrg</span></figcaption><pre><code><span class="k-kunci">let</span> buah = [<span class="k-str">&quot;apel&quot;</span>, <span class="k-str">&quot;jeruk&quot;</span>]
 <span class="k-kunci">for</span> i, b <span class="k-kunci">in</span> buah {
     <span class="k-fn">wok</span>(i, b)
@@ -495,16 +500,16 @@ besar</code></pre></figure>
 1 jeruk
 [5, 6, 7]
 [0, 1, 2]</code></pre></figure>
-<p>Baris terakhir berisi <code>[0, 1, 2]</code>, bukan <code>[5, 6, 7]</code>: dengan satu nama, <code>i</code> adalah indeks ke-0, ke-1, dan ke-2 dari rentang itu. Kalau yang kamu mau nilainya, tulis <code>for _, i in 5..8</code>.</p>
-<p><code>a..b</code> tidak memuat <code>b</code>, <code>a..=b</code> memuat. Bentuk dua nama juga berlaku untuk teks (indeks dan karakternya) dan dict (kunci dan nilainya). Bentuk gaya C juga ada:</p>
+<p>The last line holds <code>[0, 1, 2]</code>, not <code>[5, 6, 7]</code>: with one name, <code>i</code> is the 0th, 1st, and 2nd index of that range. If you want the values, write <code>for _, i in 5..8</code>.</p>
+<p><code>a..b</code> excludes <code>b</code>, <code>a..=b</code> includes it. The two-name form also works on text (index and character) and dicts (key and value). A C-style form exists too:</p>
 <figure class="kode" data-jalan><figcaption><span>for-c.jrg</span></figcaption><pre><code><span class="k-kunci">for</span> i := <span class="k-ang">0</span>; i &lt; <span class="k-ang">10</span>; i += <span class="k-ang">3</span> {
     <span class="k-fn">wok</span>(i)
 }</code></pre><pre class="keluaran"><code>0
 3
 6
 9</code></pre></figure>
-<p>Rentang di kepala <code>for</code> tidak pernah dijadikan array, jadi <code>for _, i in 0..1000000000</code> tidak memakan memori.</p>
-<h2 id="while-dan-loop"><a class="jangkar" href="#while-dan-loop">while dan loop</a></h2>
+<p>A range in a <code>for</code> header is never turned into an array, so <code>for _, i in 0..1000000000</code> uses no memory.</p>
+<h2 id="while-and-loop"><a class="jangkar" href="#while-and-loop">while and loop</a></h2>
 <figure class="kode" data-jalan><figcaption><span>while.jrg</span></figcaption><pre><code><span class="k-kunci">var</span> n = <span class="k-ang">27</span>
 <span class="k-kunci">var</span> langkah = <span class="k-ang">0</span>
 <span class="k-kunci">while</span> n != <span class="k-ang">1</span> {
@@ -520,8 +525,8 @@ besar</code></pre></figure>
 }
 <span class="k-fn">wok</span>(tebakan)</code></pre><pre class="keluaran"><code>Collatz 27: 111 langkah
 8</code></pre></figure>
-<h2 id="break-dan-continue-berlabel"><a class="jangkar" href="#break-dan-continue-berlabel">break dan continue berlabel</a></h2>
-<p><code>break</code> dan <code>continue</code> mengenai perulangan terdekat. Untuk keluar dari perulangan luar, beri label yang diawali tanda petik tunggal.</p>
+<h2 id="labeled-break-and-continue"><a class="jangkar" href="#labeled-break-and-continue">Labeled break and continue</a></h2>
+<p><code>break</code> and <code>continue</code> apply to the nearest loop. To leave an outer loop, give it a label that starts with a single quote.</p>
 <figure class="kode" data-jalan><figcaption><span>label.jrg</span></figcaption><pre><code>&#x27;cari: <span class="k-kunci">for</span> _, i <span class="k-kunci">in</span> <span class="k-ang">1</span>..<span class="k-ang">10</span> {
     <span class="k-kunci">for</span> _, j <span class="k-kunci">in</span> <span class="k-ang">1</span>..<span class="k-ang">10</span> {
         <span class="k-kunci">if</span> i * j == <span class="k-ang">42</span> {
@@ -531,7 +536,7 @@ besar</code></pre></figure>
     }
 }</code></pre><pre class="keluaran"><code>ketemu: 6 7</code></pre></figure>
 <h2 id="match"><a class="jangkar" href="#match">match</a></h2>
-<p><code>match</code> mencocokkan sebuah nilai dengan pola dan menjalankan cabang pertama yang cocok. Ia juga sebuah ekspresi.</p>
+<p><code>match</code> matches a value against patterns and runs the first arm that matches. It is also an expression.</p>
 <figure class="kode" data-jalan><figcaption><span>match.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">hari</span>(n) {
     <span class="k-kunci">return</span> <span class="k-kunci">match</span> n {
         <span class="k-ang">0</span> | <span class="k-ang">6</span> =&gt; <span class="k-str">&quot;akhir pekan&quot;</span>,
@@ -540,9 +545,9 @@ besar</code></pre></figure>
     }
 }
 <span class="k-fn">wok</span>(<span class="k-fn">hari</span>(<span class="k-ang">0</span>), <span class="k-fn">hari</span>(<span class="k-ang">3</span>), <span class="k-fn">hari</span>(<span class="k-ang">9</span>))</code></pre><pre class="keluaran"><code>akhir pekan hari kerja bukan hari</code></pre></figure>
-<p>Pola lengkapnya (tuple, array, struct, enum, penjaga <code>if</code>, pengikat <code>@</code>) ada di <a href="pola.html">Pola</a>.</p>
+<p>The full set of patterns (tuples, arrays, structs, enums, <code>if</code> guards, <code>@</code> bindings) is in <a href="pola.html">Patterns</a>.</p>
 <h2 id="defer"><a class="jangkar" href="#defer">defer</a></h2>
-<p><code>defer</code> menunda sebuah panggilan sampai fungsinya selesai, termasuk kalau fungsinya berhenti karena galat. Yang didaftarkan terakhir jalan duluan, dan argumennya dibekukan saat baris <code>defer</code> dibaca.</p>
+<p><code>defer</code> delays a call until the function finishes, including when the function stops because of an error. The last one registered runs first, and its arguments are frozen when the <code>defer</code> line is read.</p>
 <figure class="kode" data-jalan><figcaption><span>defer.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">proses</span>() {
     <span class="k-kunci">var</span> berkas = <span class="k-str">&quot;laporan.txt&quot;</span>
     <span class="k-kunci">defer</span> <span class="k-fn">wok</span>(<span class="k-str">&quot;tutup&quot;</span>, berkas)
@@ -554,16 +559,16 @@ besar</code></pre></figure>
 simpan
 tutup laporan.txt</code></pre></figure>
 </article>
-<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="nilai.html"><small>Sebelumnya</small><strong>Nilai dan tipe</strong></a><a class="ke-kanan" href="fungsi.html"><small>Berikutnya</small><strong>Fungsi dan closure</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+<nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="nilai.html"><small>Previous</small><strong>Values and types</strong></a><a class="ke-kanan" href="fungsi.html"><small>Next</small><strong>Functions and closures</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a></span></footer>
 </main>
-<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#if-dan-else">if dan else</a></li><li><a href="#ternary">Ternary</a></li><li><a href="#for">for</a></li><li><a href="#while-dan-loop">while dan loop</a></li><li><a href="#break-dan-continue-berlabel">break dan continue berlabel</a></li><li><a href="#match">match</a></li><li><a href="#defer">defer</a></li></ol></nav>
+<nav class="di-halaman" aria-label="On this page"><p>On this page</p><ol><li><a href="#if-and-else">if and else</a></li><li><a href="#ternary">Ternary</a></li><li><a href="#for">for</a></li><li><a href="#while-and-loop">while and loop</a></li><li><a href="#labeled-break-and-continue">Labeled break and continue</a></li><li><a href="#match">match</a></li><li><a href="#defer">defer</a></li></ol></nav>
 </div>
-<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
-  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
+  <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=e6f371141c"></script>
-<script defer src="../aset/situs.js?v=e91e44ad63"></script>
+<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

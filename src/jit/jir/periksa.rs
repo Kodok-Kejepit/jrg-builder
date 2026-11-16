@@ -100,6 +100,7 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
                     tipe(*hasil, if matches!(op, OpL::Cmp(_) | OpL::Bagi | OpL::Sisa) { Tipe::I } else { Tipe::L })?;
                 }
                 Inst::Sempit { hasil, a, jaga: j } => { pakai(*a, &ada)?; tipe(*a, Tipe::L)?; jaga(j, &ada)?; definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
+                Inst::Sebar { jaga: j, .. } => jaga(j, &ada)?,
                 Inst::TulisLebar { nilai, .. } => { pakai(*nilai, &ada)?; tipe(*nilai, Tipe::L)?; }
                 Inst::BukaLebar { hasil, jaga: j, .. } => { jaga(j, &ada)?; definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::L)?; }
                 Inst::Pembantu { args, hasil, gagal, keluar, .. } => {

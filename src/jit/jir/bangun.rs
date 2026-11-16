@@ -28,7 +28,8 @@ fn opcode_dicakup(op: OpCode) -> bool {
         | Add | Sub | Mul | Div | Mod | Lt | Le | Gt | Ge | Eq | Ne | BitAnd | BitOr | BitXor | AndNot | BitNot
         | Shl | Shr | Neg | Not | KeBool | Dup | Swap | SlideDown | Pop | StoreLocal | SimpanBuang
         | Jump | JumpFalse | JumpTrue | JumpFalseKeep | JumpTrueKeep
-        | MakeIterRentang | IterAda | IterMaju | IterVar | Return | Call | LoadGlobal | IndeksLokal | GetIndex | TulisIndexLokal)
+        | MakeIterRentang | IterAda | IterMaju | IterVar | Return | Call | LoadGlobal | IndeksLokal | GetIndex | TulisIndexLokal
+        | TumbuhIndexLokal | PeriksaArgMetode)
 }
 
 struct Pembangun<'a> {
@@ -88,7 +89,7 @@ fn periksa_cakupan(f: &VmFunction, r: &Rencana) -> Result<(), String> {
             | Cara::TeksBulat | Cara::Geser | Cara::Cabang { .. } | Cara::Bangun(_) | Cara::Salinan | Cara::Salin | Cara::Tukar
             | Cara::Metode(_) | Cara::IterAda | Cara::Maju | Cara::Langsung(_) | Cara::Panjang | Cara::PanjangLokal(_)
             | Cara::Field | Cara::Pola | Cara::Payload | Cara::MuatGlobal | Cara::SimpanGlobal | Cara::Indeks
-            | Cara::TipeLipat(_) | Cara::TipeSama(_) | Cara::PayloadSama(..) | Cara::PayloadPanjang(_) => {}
+            | Cara::TipeLipat(_) | Cara::TipeSama(_) | Cara::PayloadSama(..) | Cara::PayloadPanjang(_) | Cara::Sebar => {}
             c => return Err(format!("{c:?} di ip {ip}")),
         }
         // `Return` cuma untuk titik masuk yang boleh kembali native.
@@ -314,6 +315,11 @@ impl Pembangun<'_> {
                 return Ok(Some(Akhir::KembaliNilai { pos: t - 1 }));
             }
             Cara::KembaliUnit => return Ok(Some(Akhir::KembaliUnit)),
+            Cara::Sebar => {
+                let pulang = self.r.kembali == crate::jit::layak::KEMBALI_SKALAR && !self.r.ada_defer;
+                let jaga = Jaga { keadaan: self.keadaan_di(ip, isi), spek: false, puncak_vm: false };
+                self.dorong(b, Inst::Sebar { pos: t - 1, pulang, jaga });
+            }
             // `Typeof; Const; Eq` (dan `AmbilPayload` di depannya, atau `Len` sesudah `AmbilPayload`) jadi satu: hasilnya
             // di puncak, lanjut di `ip + lebar` (seperti penurun langsung).
             Cara::TipeLipat(ya) => {
@@ -772,6 +778,10 @@ impl Pembangun<'_> {
                 self.dorong(b, Inst::Unar { hasil: h, op, a: x, jaga });
                 isi[t - 1] = Some(h);
             }
+            // `a[i] = a[i] + x` atas angka native (`layak`): indeksnya cuma dibuang, lanjut ke `Add` biasa.
+            OpCode::TumbuhIndexLokal => { isi.pop(); }
+            // Method pemakai yang sudah diketahui (`Cara::Metode`): tidak ada yang diperiksa.
+            OpCode::PeriksaArgMetode => {}
             OpCode::Dup => { let v = *isi.last().ok_or("stack kosong")?; isi.push(v); }
             OpCode::Swap => isi.swap(t - 2, t - 1),
             OpCode::SlideDown => { let v = isi[t - 1]; isi[t - a - 1] = v; isi.truncate(t - a); }

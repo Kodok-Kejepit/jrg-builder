@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Diagnostik — Dokumentasi JRG</title>
-<meta name="description" content="Bentuk pesan galat JRG, nadanya, dan cara memakainya dari editor atau CI.">
+<title>Diagnostics — JRG docs</title>
+<meta name="description" content="The shape of JRG&#x27;s error messages, their tone, and how to use them from an editor or CI.">
 <link rel="canonical" href="https://jrg-lang.org/web_dokumentasi/diagnostik.html">
+<link rel="alternate" hreflang="en" href="https://jrg-lang.org/web_dokumentasi/diagnostik.html">
+<link rel="alternate" hreflang="id" href="https://jrg-lang.org/id/web_dokumentasi/diagnostik.html">
+<link rel="alternate" hreflang="x-default" href="https://jrg-lang.org/web_dokumentasi/diagnostik.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
-<meta property="og:locale" content="id_ID">
-<meta property="og:title" content="Diagnostik — Dokumentasi JRG">
-<meta property="og:description" content="Bentuk pesan galat JRG, nadanya, dan cara memakainya dari editor atau CI.">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Diagnostics — JRG docs">
+<meta property="og:description" content="The shape of JRG&#x27;s error messages, their tone, and how to use them from an editor or CI.">
 <meta property="og:url" content="https://jrg-lang.org/web_dokumentasi/diagnostik.html">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
@@ -108,7 +111,7 @@ code, kbd, pre { font-family: var(--mono); }
 .versi { font: 12px var(--mono); color: var(--tinta-3); border: 1px solid var(--garis);
   padding: 1px 8px; border-radius: 99px; }
 .kepala-kanan { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.tombol-ikon, .tombol-cari {
+.tombol-ikon, .tombol-cari, .tombol-bahasa {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px;
   border: 1px solid var(--garis); background: var(--panel); color: var(--tinta-2);
   border-radius: 8px; cursor: pointer; font: inherit; font-size: 14px; text-decoration: none;
@@ -116,7 +119,8 @@ code, kbd, pre { font-family: var(--mono); }
 .tombol-ikon { width: 36px; padding: 0; }
 .tombol-cari { padding: 0 10px; min-width: 150px; justify-content: flex-start; }
 .tombol-cari kbd { margin-left: auto; font-size: 11px; border: 1px solid var(--garis); border-radius: 4px; padding: 0 5px; }
-.tombol-ikon:hover, .tombol-cari:hover { border-color: var(--aksen); color: var(--tinta); }
+.tombol-bahasa { min-width: 36px; padding: 0 8px; font-size: 13px; font-weight: 600; letter-spacing: .03em; }
+.tombol-ikon:hover, .tombol-cari:hover, .tombol-bahasa:hover { border-color: var(--aksen); color: var(--tinta); }
 .kepala svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8;
   stroke-linecap: round; stroke-linejoin: round; }
 .tombol-menu { display: none; }
@@ -437,25 +441,26 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body data-situs="dok">
-<a class="lewati" href="#isi">Lewati ke isi</a>
+<a class="lewati" href="#isi">Skip to content</a>
 <header class="kepala">
-  <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
-  <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
+  <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
+  <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profile</a></nav>
   <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
-    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
-    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+    <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
+    <a class="tombol-bahasa" href="../id/web_dokumentasi/diagnostik.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
+    <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Toggle light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a class="tombol-ikon" href="https://github.com/Kodok-Kejepit/jrg" aria-label="Source code on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
   </div>
 </header>
 <div class="tata">
-<aside class="sisi" aria-label="Navigasi dokumentasi"><nav><p class="sisi-grup">Mulai</p><ul><li><a href="index.html">Pengantar</a></li><li><a href="pasang.html">Pasang</a></li><li><a href="tur.html">Tur singkat</a></li></ul><p class="sisi-grup">Bahasa</p><ul><li><a href="nilai.html">Nilai dan tipe</a></li><li><a href="kendali.html">Kendali alur</a></li><li><a href="fungsi.html">Fungsi dan closure</a></li><li><a href="tipe.html">Struct, enum, trait</a></li><li><a href="pola.html">Pola</a></li><li><a href="galat.html">Option dan Result</a></li><li><a href="modul.html">Modul</a></li><li><a href="konkuren.html">Konkurensi</a></li></ul><p class="sisi-grup">Pustaka</p><ul><li><a href="pustaka.html">Pustaka bawaan</a></li><li><a href="web.html">Web dan data</a></li><li><a href="grafis.html">Kanvas, suara, numerik</a></li><li><a href="game.html">Mesin game</a></li><li><a href="ffi.html">Bahasa lain</a></li></ul><p class="sisi-grup">Perkakas</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor dan IDE</a></li><li><a href="android.html">Aplikasi Android</a></li></ul><p class="sisi-grup">Di balik layar</p><ul><li><a href="mesin.html">Empat mesin</a></li><li><a href="memori.html">Model memori</a></li><li><a class="aktif" aria-current="page" href="diagnostik.html">Diagnostik</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Yang belum jadi</a></li><li><a href="rilis.html">Catatan rilis</a></li></ul></nav></aside>
+<aside class="sisi" aria-label="Documentation navigation"><nav><p class="sisi-grup">Start</p><ul><li><a href="index.html">Introduction</a></li><li><a href="pasang.html">Install</a></li><li><a href="tur.html">Quick tour</a></li></ul><p class="sisi-grup">Language</p><ul><li><a href="nilai.html">Values and types</a></li><li><a href="kendali.html">Control flow</a></li><li><a href="fungsi.html">Functions and closures</a></li><li><a href="tipe.html">Structs, enums, traits</a></li><li><a href="pola.html">Patterns</a></li><li><a href="galat.html">Option and Result</a></li><li><a href="modul.html">Modules</a></li><li><a href="konkuren.html">Concurrency</a></li></ul><p class="sisi-grup">Library</p><ul><li><a href="pustaka.html">Built-in library</a></li><li><a href="web.html">Web and data</a></li><li><a href="grafis.html">Canvas, sound, numerics</a></li><li><a href="game.html">Game engine</a></li><li><a href="ffi.html">Other languages</a></li></ul><p class="sisi-grup">Tools</p><ul><li><a href="jrgc.html">jrgc</a></li><li><a href="jrgm.html">jrgm</a></li><li><a href="editor.html">Editor and IDE</a></li><li><a href="android.html">Android apps</a></li></ul><p class="sisi-grup">Under the hood</p><ul><li><a href="mesin.html">Four engines</a></li><li><a href="memori.html">Memory model</a></li><li><a class="aktif" aria-current="page" href="diagnostik.html">Diagnostics</a></li><li><a href="benchmark.html">Benchmark</a></li><li><a href="batasan.html">Not done yet</a></li><li><a href="rilis.html">Release notes</a></li></ul></nav></aside>
 <main id="isi" class="isi">
 <article class="artikel">
-<p class="rel">Di balik layar</p>
-<h1>Diagnostik</h1>
-<p class="ringkas">Bentuk pesan galat JRG, nadanya, dan cara memakainya dari editor atau CI.</p>
-<h2 id="bentuk-pesan"><a class="jangkar" href="#bentuk-pesan">Bentuk pesan</a></h2>
+<p class="rel">Under the hood</p>
+<h1>Diagnostics</h1>
+<p class="ringkas">The shape of JRG's error messages, their tone, and how to use them from an editor or CI.</p>
+<h2 id="the-shape-of-a-message"><a class="jangkar" href="#the-shape-of-a-message">The shape of a message</a></h2>
 <figure class="kode"><figcaption><span>teks</span></figcaption><pre><code>berhenti di baris 3. gw tunjukin apa yang salah, di bawah.
 error: variabel `jumlas` belum dikenal — maksudnya `jumlah`? kalau bukan, cek lagi penulisannya atau jangan-jangan lupa `let jumlas = ...` dulu
  --&gt; hitung.jrg:3:9
@@ -463,30 +468,31 @@ error: variabel `jumlas` belum dikenal — maksudnya `jumlah`? kalau bukan, cek 
 3 |     wok(jumlas)
   |         ^^^^^^
   |</code></pre></figure>
-<ol><li><strong>Sapaan</strong>, satu baris di atas. Kalimatnya berganti-ganti; <code>--sopan</code> membuangnya.</li><li><strong>Apa yang salah</strong>, dengan nama yang kamu tulis dan, kalau ada, saran ejaannya.</li><li><strong>Letaknya</strong>: berkas, baris, dan kolom.</li><li><strong>Potongan kode</strong> dengan <code>^</code> di bagian yang bermasalah.</li><li><strong><code>bantuan:</code></strong> berisi jalan keluar, dan <strong><code>catatan:</code></strong> konteks tambahan, kalau ada.</li><li><strong><code>jejak:</code></strong> untuk galat saat jalan: dari mana fungsi yang gagal itu dipanggil.</li></ol>
-<p>Pesan menyebut <strong>tipe</strong> nilai, bukan isinya. Salah memakai array berisi tiga angka atau tiga ribu angka menghasilkan pesan yang sama pendeknya.</p>
-<h2 id="nada"><a class="jangkar" href="#nada">Nada</a></h2>
-<p>Galat pertama kali selalu disampaikan dengan nada serius. Kalau galat yang sama muncul lagi, sapaannya berganti sesuai nada yang dipilih, dan pada pengulangan ketujuh ditambah satu baris bantuan, karena pesan yang sama berulang tujuh kali berarti penjelasannya belum sampai.</p>
+<ol><li><strong>A greeting</strong>, one line at the top. The wording varies; <code>--sopan</code> drops it.</li><li><strong>What is wrong</strong>, with the name you wrote and, when there is one, a spelling suggestion.</li><li><strong>Where</strong>: file, line, and column.</li><li><strong>A code excerpt</strong> with <code>^</code> under the part at fault.</li><li><strong><code>bantuan:</code></strong> (help) gives the way out, and <strong><code>catatan:</code></strong> (note) extra context, when there is any.</li><li><strong><code>jejak:</code></strong> (trace) for run-time errors: where the failing function was called from.</li></ol>
+<p>Messages are in Indonesian today. English messages are on the way, chosen once with <code>jrgm language en</code>.</p>
+<p>A message names a value's <strong>type</strong>, not its contents. Misusing an array of three numbers or of three thousand gives an equally short message.</p>
+<h2 id="tone"><a class="jangkar" href="#tone">Tone</a></h2>
+<p>The first time an error appears it is always delivered seriously. When the same error comes back, the greeting changes according to the chosen tone, and at the seventh repetition a help line is added, because the same message seven times means the explanation has not landed yet.</p>
 <figure class="kode"><figcaption><span>terminal</span></figcaption><pre><code>jrgc f.jrg --nada hangat    <span class="k-kom"> # sopan | galak (bawaan) | judes | hangat | cool | lawak</span>
 JRG_NADA=cool jrgc f.jrg
 jrgc f.jrg --sopan          <span class="k-kom"> # tanpa sapaan sama sekali</span></code></pre></figure>
-<p>Nada cuma mengubah baris sapaan. Badan pesannya selalu sama, jadi tidak ada informasi yang hilang di nada mana pun. Variasi kalimatnya ditentukan dari jenis galat dan jumlah pengulangannya, bukan diacak, jadi keluaran untuk masukan yang sama selalu sama.</p>
-<h2 id="untuk-editor-dan-ci"><a class="jangkar" href="#untuk-editor-dan-ci">Untuk editor dan CI</a></h2>
-<ul><li>Di luar terminal (dialirkan ke berkas atau program lain) tidak ada warna dan garis pemisah, dan penghitung pengulangan tidak disimpan di antara jalannya program.</li><li><code>--sopan</code> atau <code>JRG_SOPAN=1</code> membuang sapaan, cocok untuk membandingkan keluaran.</li><li><code>JRG_GALAT_KE=galat.txt</code> menulis tiap galat juga ke berkas, satu baris per galat: <code>berkas&lt;TAB&gt;baris&lt;TAB&gt;kolom&lt;TAB&gt;pesan</code>.</li><li><code>jrgc --lsp</code> mengirim galat dan peringatan ke editor sambil kamu mengetik.</li></ul>
-<h2 id="tidak-ada-hasil-yang-salah-diam-diam"><a class="jangkar" href="#tidak-ada-hasil-yang-salah-diam-diam">Tidak ada hasil yang salah diam-diam</a></h2>
-<p>Aturan dasarnya: sesuatu yang tidak bisa dihitung dengan benar menghasilkan galat, bukan <code>0</code>, <code>nil</code>, atau nilai kosong yang tampak masuk akal. Beberapa contohnya:</p>
-<div class="tabel"><table><thead><tr><th>Kasus</th><th>Di JRG</th></tr></thead><tbody><tr><td>indeks di luar batas</td><td>galat, tidak pernah dijepit</td></tr><tr><td><code>int</code> meluap</td><td>galat, tidak membungkus</td></tr><tr><td><code>300 as u8</code>, <code>int(&quot;abc&quot;)</code></td><td>galat</td></tr><tr><td>mencari yang tidak ada</td><td><code>Option::None</code>, tidak pernah <code>-1</code></td></tr><tr><td><code>x = 5</code> atas nama yang belum ada</td><td>galat, tidak membuat variabel baru</td></tr><tr><td>fungsi bawaan dengan argumen kurang atau lebih</td><td>galat, dengan tanda tangannya</td></tr><tr><td><code>Err</code> yang keluar dari <code>main</code></td><td>dilaporkan, kode keluar 1</td></tr></tbody></table></div>
+<p>Tone only changes the greeting line. The body of the message is always the same, so no information is lost in any tone. The wording is derived from the kind of error and how often it repeated, not rolled at random, so the same input always gives the same output.</p>
+<h2 id="for-editors-and-ci"><a class="jangkar" href="#for-editors-and-ci">For editors and CI</a></h2>
+<ul><li>Outside a terminal (piped to a file or another program) there is no colour and no separator line, and the repetition counter is not kept between runs.</li><li><code>--sopan</code> or <code>JRG_SOPAN=1</code> drops the greeting, which suits comparing output.</li><li><code>JRG_GALAT_KE=galat.txt</code> also writes each error to a file, one line per error: <code>file&lt;TAB&gt;line&lt;TAB&gt;column&lt;TAB&gt;message</code>.</li><li><code>jrgc --lsp</code> sends errors and warnings to the editor as you type.</li></ul>
+<h2 id="no-silent-wrong-results"><a class="jangkar" href="#no-silent-wrong-results">No silent wrong results</a></h2>
+<p>The ground rule: anything that cannot be computed correctly gives an error, not a <code>0</code>, a <code>nil</code>, or a plausible-looking empty value. Some examples:</p>
+<div class="tabel"><table><thead><tr><th>Case</th><th>In JRG</th></tr></thead><tbody><tr><td>index out of range</td><td>an error, never clamped</td></tr><tr><td><code>int</code> overflow</td><td>an error, never wraps</td></tr><tr><td><code>300 as u8</code>, <code>int(&quot;abc&quot;)</code></td><td>an error</td></tr><tr><td>searching for something that is not there</td><td><code>Option::None</code>, never <code>-1</code></td></tr><tr><td><code>x = 5</code> on a name that does not exist</td><td>an error, no new variable is created</td></tr><tr><td>a built-in called with too few or too many arguments</td><td>an error, showing its signature</td></tr><tr><td>an <code>Err</code> leaving <code>main</code></td><td>reported, exit code 1</td></tr></tbody></table></div>
 </article>
-<nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="memori.html"><small>Sebelumnya</small><strong>Model memori</strong></a><a class="ke-kanan" href="benchmark.html"><small>Berikutnya</small><strong>Benchmark</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+<nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="memori.html"><small>Previous</small><strong>Memory model</strong></a><a class="ke-kanan" href="benchmark.html"><small>Next</small><strong>Benchmark</strong></a></nav>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a></span></footer>
 </main>
-<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#bentuk-pesan">Bentuk pesan</a></li><li><a href="#nada">Nada</a></li><li><a href="#untuk-editor-dan-ci">Untuk editor dan CI</a></li><li><a href="#tidak-ada-hasil-yang-salah-diam-diam">Tidak ada hasil yang salah diam-diam</a></li></ol></nav>
+<nav class="di-halaman" aria-label="On this page"><p>On this page</p><ol><li><a href="#the-shape-of-a-message">The shape of a message</a></li><li><a href="#tone">Tone</a></li><li><a href="#for-editors-and-ci">For editors and CI</a></li><li><a href="#no-silent-wrong-results">No silent wrong results</a></li></ol></nav>
 </div>
-<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
-  <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
+<div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
+  <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=e6f371141c"></script>
-<script defer src="../aset/situs.js?v=e91e44ad63"></script>
+<script defer src="../aset/cari.js?v=011e8de6c1"></script>
+<script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

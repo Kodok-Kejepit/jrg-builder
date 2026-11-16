@@ -142,6 +142,9 @@ pub enum Inst {
     TulisLebar { pos: usize, nilai: Nilai },
     /// Posisi `pos` milik VM dibuka jadi 128 bit (`lambat::buka_lebar`); bukan bulat = deopt `jaga`.
     BukaLebar { hasil: Nilai, pos: usize, jaga: Jaga },
+    /// `?` atas nilai milik VM di `pos` (`lambat::sebar`): `Ok`/`Some` dibuka di tempat; `Err`/`None` kembali dengan
+    /// nilai itu kalau `pulang`, selain itu (dan bukan `Result`/`Option`) deopt `jaga` — VM yang menjalankannya.
+    Sebar { pos: usize, pulang: bool, jaga: Jaga },
     /// Literal atas `n` posisi teratas (`lambat::bangun`, situs `SitusBangun` di alamat `situs`), hasilnya milik VM
     /// di posisi `t - n`. Tumpahan seperti `Langkah`.
     Bangun { situs: i64, jenis: i64, t: usize, n: usize, isi: Vec<(usize, Nilai)>, taruh: Vec<(usize, i64)> },
@@ -268,6 +271,7 @@ impl fmt::Display for Fungsi {
                         writeln!(f, "  {hasil} = L{op:?} {a}, {b}{}{}", jaga(j), jaga(jaga_muat).replace("jaga", "jaga-muat"))?,
                     Inst::Sempit { hasil, a, jaga: j } => writeln!(f, "  {hasil} = sempit {a}{}", jaga(&Some(j.clone())))?,
                     Inst::TulisLebar { pos, nilai } => writeln!(f, "  tulis-lebar {nilai} -> {pos}")?,
+                    Inst::Sebar { pos, pulang, jaga: j } => writeln!(f, "  sebar {pos}{}{}", if *pulang { " pulang" } else { "" }, jaga(&Some(j.clone())))?,
                     Inst::BukaLebar { hasil, pos, jaga: j } => writeln!(f, "  {hasil} = buka-lebar {pos}{}", jaga(&Some(j.clone())))?,
                     Inst::Biner { hasil, op, a, b, jaga: j } => writeln!(f, "  {hasil} = {op:?} {a}, {b}{}", jaga(j))?,
                     Inst::Unar { hasil, op, a, jaga: j } => writeln!(f, "  {hasil} = {op:?} {a}{}", jaga(j))?,
