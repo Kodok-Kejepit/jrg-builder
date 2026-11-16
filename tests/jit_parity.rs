@@ -3947,3 +3947,55 @@ fn jir_larik_sama_dengan_vm() {
     let r = jalankan(JIR_LARIK, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir")]);
     assert!(r.stderr.contains("  Baca "), "baca larik tidak lewat JIR:\n{}", r.stderr);
 }
+
+/// JIR-1j (langkah 94): bulat 128 bit (`Jenis::Lebar`) di register JIR — konstanta, `+ - *` berjaga luapan, banding,
+/// bagi/sisa berspekulasi 64 bit, operasi bit, geser (tetap dan berjaga), `math::wrap_*`, `int` atasnya, bulat yang
+/// bertemu `Lebar` di titik temu, kembali sebagai milik VM, dan luapan 128 bit yang dilaporkan VM.
+const JIR_LEBAR: &str = r#"fn hash(n: int) {
+    var h = 1469598103934665603
+    for i in 0..n {
+        h = math::wrap_mul(h ^ (i & 255), 1099511628211)
+    }
+    return h % 1000003
+}
+fn besar(n: int) {
+    var x = 9223372036854775807
+    var s = 0
+    for i in 0..n {
+        x = x + 1
+        if x > 9223372036854775900 { s = s + 1 }
+        s = s + (x % 7)
+    }
+    return s
+}
+fn geser(n: int) {
+    var v = 18446744073709551615
+    var c = 0
+    for i in 0..n {
+        let w = (v >> 3) & 255
+        c = c + int(w)
+        v = (v << 1) ^ i
+        v = v & 18446744073709551615
+    }
+    return c
+}
+fn main() {
+    wok(hash(500), besar(300), geser(400))
+    // Luapan 128 bit: galat dari VM.
+    var m = 170141183460469231731687303715884105000
+    for i in 0..1000 { m = m + 1 }
+    wok(m)
+}
+"#;
+
+#[test]
+fn jir_lebar_sama_dengan_vm() {
+    let v = jalankan(JIR_LEBAR, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout.lines().count() == 1, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..]] {
+        let j = jalankan(JIR_LEBAR, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let r = jalankan(JIR_LEBAR, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir")]);
+    assert!(r.stderr.contains("LGeserKanan") && r.stderr.contains("KeLU"), "bulat 128 bit tidak lewat JIR:\n{}", r.stderr);
+}

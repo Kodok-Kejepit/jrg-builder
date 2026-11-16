@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 
-use super::{Akhir, Biner, Blok, Fungsi, Inst, Jaga, Nilai, Tipe, Unar};
+use super::{Akhir, Biner, Blok, Fungsi, Inst, Jaga, Nilai, OpL, Tipe, Unar};
 
 pub fn periksa(f: &Fungsi) -> Result<(), String> {
     let mut sekali: HashSet<Nilai> = HashSet::new();
@@ -22,6 +22,10 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
         };
         let tipe = |v: Nilai, t: Tipe| -> Result<(), String> {
             if f.tipe(v) == t { Ok(()) } else { Err(format!("b{bi}: {v} bertipe {:?}, diharapkan {t:?}", f.tipe(v))) }
+        };
+        // Pembantu dan stack VM cuma menerima kata 64 bit; `Lebar` lewat `TulisLebar`/tumpahan.
+        let bukan_l = |v: Nilai| -> Result<(), String> {
+            if f.tipe(v) == Tipe::L { Err(format!("b{bi}: {v} bertipe 128 bit di tempat 64 bit")) } else { Ok(()) }
         };
         let jaga = |j: &Jaga, ada: &HashSet<Nilai>| -> Result<(), String> {
             for v in j.keadaan.isi.iter().flatten() { pakai(*v, ada)?; }
@@ -51,6 +55,9 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
                     let (masuk, keluar) = match op {
                         Unar::FNeg => (Tipe::F, Tipe::F),
                         Unar::KeF => (Tipe::I, Tipe::F),
+                        Unar::KeL | Unar::KeLU => (Tipe::I, Tipe::L),
+                        Unar::BukanBitL => (Tipe::L, Tipe::L),
+                        Unar::KeBoolL | Unar::Rendah => (Tipe::L, Tipe::I),
                         _ => (Tipe::I, Tipe::I),
                     };
                     tipe(*a, masuk)?;
@@ -67,7 +74,7 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
                 Inst::JagaJika { kondisi, jaga: j } => { pakai(*kondisi, &ada)?; tipe(*kondisi, Tipe::I)?; jaga(j, &ada)?; }
                 Inst::Undi { hasil } => { definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
                 Inst::Muat { .. } | Inst::Buang { .. } | Inst::Taruh { .. } => {}
-                Inst::Simpan { nilai, .. } => if let Some(v) = nilai { pakai(*v, &ada)?; },
+                Inst::Simpan { nilai, .. } => if let Some(v) = nilai { pakai(*v, &ada)?; bukan_l(*v)?; },
                 Inst::Benar { hasil, .. } => { definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
                 Inst::Langkah { isi, .. } => for (_, v) in isi { pakai(*v, &ada)?; },
                 Inst::Buka { hasil, jaga: j, .. } => { jaga(j, &ada)?; definisi(*hasil, &mut ada)?; }
@@ -82,8 +89,21 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
                 Inst::Bangun { isi, .. } => for (_, v) in isi { pakai(*v, &ada)?; },
                 Inst::Salin { .. } | Inst::Tukar { .. } => {}
                 Inst::CekMetode { jaga: j, .. } | Inst::Maju { jaga: j, .. } => jaga(j, &ada)?,
+                Inst::KonstL { hasil, .. } => { definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::L)?; }
+                Inst::BinerL { hasil, op, a, b: y, jaga: j, jaga_muat } => {
+                    pakai(*a, &ada)?;
+                    pakai(*y, &ada)?;
+                    for g in [j, jaga_muat].into_iter().flatten() { jaga(g, &ada)?; }
+                    tipe(*a, Tipe::L)?;
+                    tipe(*y, if matches!(op, OpL::GeserKiri | OpL::GeserKanan) { Tipe::I } else { Tipe::L })?;
+                    definisi(*hasil, &mut ada)?;
+                    tipe(*hasil, if matches!(op, OpL::Cmp(_) | OpL::Bagi | OpL::Sisa) { Tipe::I } else { Tipe::L })?;
+                }
+                Inst::Sempit { hasil, a, jaga: j } => { pakai(*a, &ada)?; tipe(*a, Tipe::L)?; jaga(j, &ada)?; definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
+                Inst::TulisLebar { nilai, .. } => { pakai(*nilai, &ada)?; tipe(*nilai, Tipe::L)?; }
+                Inst::BukaLebar { hasil, jaga: j, .. } => { jaga(j, &ada)?; definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::L)?; }
                 Inst::Pembantu { args, hasil, gagal, keluar, .. } => {
-                    for a in args { if let super::Arg::Isi(v) = a { pakai(*v, &ada)?; } }
+                    for a in args { if let super::Arg::Isi(v) = a { pakai(*v, &ada)?; bukan_l(*v)?; } }
                     if let Some((_, j)) = gagal { jaga(j, &ada)?; }
                     if let Some(h) = hasil { definisi(*h, &mut ada)?; tipe(*h, Tipe::I)?; }
                     if let Some(k) = keluar { definisi(*k, &mut ada)?; }
@@ -91,12 +111,13 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
                 Inst::Panjang { hasil, jaga: j, .. } => { jaga(j, &ada)?; definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
                 Inst::Langsung { isi, args, basi, hasil, .. } => {
                     for (_, v) in isi.iter().chain(args) { pakai(*v, &ada)?; }
+                    for (_, v) in args { bukan_l(*v)?; }
                     for v in basi.isi.iter().flatten() { pakai(*v, &ada)?; }
                     if let Some((h, _, j)) = hasil { jaga(j, &ada)?; definisi(*h, &mut ada)?; }
                 }
                 Inst::IterAda { hasil, jaga: j, .. } => { jaga(j, &ada)?; definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
-                Inst::TulisVm { nilai, .. } => if let Some(v) = nilai { pakai(*v, &ada)?; },
-                Inst::SimpanUpval { nilai, jaga: j, .. } => { if let Some(v) = nilai { pakai(*v, &ada)?; } jaga(j, &ada)?; }
+                Inst::TulisVm { nilai, .. } => if let Some(v) = nilai { pakai(*v, &ada)?; bukan_l(*v)?; },
+                Inst::SimpanUpval { nilai, jaga: j, .. } => { if let Some(v) = nilai { pakai(*v, &ada)?; bukan_l(*v)?; } jaga(j, &ada)?; }
                 Inst::Panggil { hasil, args, di, sesudah, .. } => {
                     for a in args { pakai(*a, &ada)?; tipe(*a, Tipe::I)?; }
                     for v in di.isi.iter().chain(&sesudah.isi).flatten() { pakai(*v, &ada)?; }

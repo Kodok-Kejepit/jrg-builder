@@ -16,9 +16,13 @@ pub struct Nilai(pub u32);
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Blok(pub u32);
 
-/// Tipe nilai: bulat 64 bit (juga `bool` sebagai 0/1) atau pecahan.
+/// Tipe nilai: bulat 64 bit (juga `bool` sebagai 0/1), pecahan, atau bulat 128 bit (`Jenis::Lebar`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Tipe { I, F }
+pub enum Tipe { I, F, L }
+
+/// Operasi atas bulat 128 bit. Banding, bagi dan sisa menghasilkan bulat 64 bit; geser kanan/kiri: operand kedua 64 bit.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OpL { Tambah, Kurang, Kali, Dan, Atau, Xor, DanBukan, GeserKiri, GeserKanan, Cmp(Banding), Bagi, Sisa }
 
 /// Perbandingan.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -55,6 +59,10 @@ pub enum Unar {
     KeBool,
     /// Bulat ke pecahan, seperti `i128 as f64` acuan untuk nilai 64 bit.
     KeF,
+    /// Bulat 64 bit ke 128 bit, bertanda / tak bertanda (`math::wrap_*` menjawab 0 sampai 2^64-1).
+    KeL, KeLU,
+    /// `~` atas 128 bit; kebenaran 128 bit (bukan nol, hasil 64 bit); 64 bit bawahnya.
+    BukanBitL, KeBoolL, Rendah,
 }
 
 /// Keadaan bingkai VM di titik deopt: instruksi tempat VM melanjutkan dan isi native tiap posisi stack (`None` =
@@ -124,6 +132,16 @@ pub enum Inst {
     /// Isi native (atau `nil`/`()` tanpa isi) berkode jenis `kode` ditulis ke stack VM di posisi `pos`
     /// (`lambat::tulis_vm`): tepi ke titik temu yang posisinya dilebarkan jadi milik VM.
     TulisVm { pos: usize, nilai: Option<Nilai>, kode: i32 },
+    KonstL { hasil: Nilai, nilai: i128 },
+    /// `jaga` = luapan 128 bit (tambah/kurang) atau pembagi 0/-1; `jaga_muat` = operand bagi/sisa di luar 64 bit
+    /// (spekulasi); geser dengan geseran tetap 1–63 tanpa jaga.
+    BinerL { hasil: Nilai, op: OpL, a: Nilai, b: Nilai, jaga: Option<Jaga>, jaga_muat: Option<Jaga> },
+    /// 128 bit ke 64 bit yang dispekulasikan muat; tidak muat = deopt `jaga`.
+    Sempit { hasil: Nilai, a: Nilai, jaga: Jaga },
+    /// Isi 128 bit ke stack VM di posisi `pos` (`lambat::tulis_lebar`).
+    TulisLebar { pos: usize, nilai: Nilai },
+    /// Posisi `pos` milik VM dibuka jadi 128 bit (`lambat::buka_lebar`); bukan bulat = deopt `jaga`.
+    BukaLebar { hasil: Nilai, pos: usize, jaga: Jaga },
     /// Literal atas `n` posisi teratas (`lambat::bangun`, situs `SitusBangun` di alamat `situs`), hasilnya milik VM
     /// di posisi `t - n`. Tumpahan seperti `Langkah`.
     Bangun { situs: i64, jenis: i64, t: usize, n: usize, isi: Vec<(usize, Nilai)>, taruh: Vec<(usize, i64)> },
@@ -245,6 +263,12 @@ impl fmt::Display for Fungsi {
                 match ins {
                     Inst::KonstI { hasil, nilai } => writeln!(f, "  {hasil} = {nilai}")?,
                     Inst::KonstF { hasil, nilai } => writeln!(f, "  {hasil} = {nilai:?}")?,
+                    Inst::KonstL { hasil, nilai } => writeln!(f, "  {hasil} = {nilai}i128")?,
+                    Inst::BinerL { hasil, op, a, b, jaga: j, jaga_muat } =>
+                        writeln!(f, "  {hasil} = L{op:?} {a}, {b}{}{}", jaga(j), jaga(jaga_muat).replace("jaga", "jaga-muat"))?,
+                    Inst::Sempit { hasil, a, jaga: j } => writeln!(f, "  {hasil} = sempit {a}{}", jaga(&Some(j.clone())))?,
+                    Inst::TulisLebar { pos, nilai } => writeln!(f, "  tulis-lebar {nilai} -> {pos}")?,
+                    Inst::BukaLebar { hasil, pos, jaga: j } => writeln!(f, "  {hasil} = buka-lebar {pos}{}", jaga(&Some(j.clone())))?,
                     Inst::Biner { hasil, op, a, b, jaga: j } => writeln!(f, "  {hasil} = {op:?} {a}, {b}{}", jaga(j))?,
                     Inst::Unar { hasil, op, a, jaga: j } => writeln!(f, "  {hasil} = {op:?} {a}{}", jaga(j))?,
                     Inst::Pilih { hasil, jika, ya, tidak } => writeln!(f, "  {hasil} = pilih {jika} ? {ya} : {tidak}")?,

@@ -22,6 +22,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Baru
 
+- **Pembaca berkas bertahap `fs::open`, `fs::read_line`, `fs::read_chunk`, `fs::close`**: untuk berkas di atas 256 MiB
+  yang ditolak `fs::read`.
 - **`http::tenggat(detik)`**: tenggat total tiap permintaan klien HTTP (bawaan mati), supaya server yang menetes
   jawabannya tidak bisa menahan pemanggil tanpa batas.
 - **`wasm::batas_langkah(h, n)`**: `wasm::panggil` berhenti dengan `Err` sesudah `n` instruksi (bawaan tanpa batas),

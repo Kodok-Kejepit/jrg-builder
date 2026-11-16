@@ -6,7 +6,7 @@ use cranelift_codegen::ir::{condcodes::{FloatCC, IntCC}, types, Block, FuncRef, 
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_module::{FuncId, Module};
 
-use super::{Akhir, Arg, Banding, Biner, Fungsi, Hasil, Inst, Jaga, Keadaan, Nilai, Pb, Tipe, Uji, Unar};
+use super::{Akhir, Arg, Banding, Biner, Fungsi, Hasil, Inst, Jaga, Keadaan, Nilai, OpL, Pb, Tipe, Uji, Unar};
 use crate::jit::turun::{Impor, BERHASIL, BERHASIL_BOOL, BERHASIL_NILAI, BERHASIL_PECAHAN, BERHASIL_UNIT, DEOPT, GAGAL, GAGAL_SPEK, KEDALAMAN_MAKS, PUNCAK_VM, ULANG};
 
 /// Pembantu nilai VM (`lambat`) yang dipanggil JIR.
@@ -19,6 +19,7 @@ struct Pembantu {
     keluar_ringan_nilai: FuncRef, panjang: FuncRef, panjang_lokal: FuncRef,
     /// `Inst::Pembantu`, menurut `Pb`.
     pb: Vec<(Pb, FuncRef)>,
+    tulis_lebar: FuncRef, buka_lebar: FuncRef,
 }
 
 struct Penurun<'a, 'b> {
@@ -45,9 +46,15 @@ struct Penurun<'a, 'b> {
     /// Callee `Rencana::langsung` dan apakah ia ringan (`layak::ringan`).
     langsung: Vec<FuncRef>,
     ringan: Vec<bool>,
+    /// Dua kata (`lambat::buka_lebar`).
+    wadah16: StackSlot,
+    /// Bulat konstanta yang sudah diturunkan (geseran tetap 128 bit).
+    konst: std::collections::HashMap<u32, i64>,
 }
 
-fn tipe_clif(t: Tipe) -> Type { if t == Tipe::I { types::I64 } else { types::F64 } }
+fn tipe_clif(t: Tipe) -> Type {
+    match t { Tipe::I => types::I64, Tipe::F => types::F64, Tipe::L => types::I128 }
+}
 
 pub fn turunkan(
     m: &mut impl Module, fungsi: &mut cranelift_codegen::ir::Function, fctx: &mut FunctionBuilderContext,
@@ -87,15 +94,17 @@ pub fn turunkan(
         pb: [(Pb::Field, il.field), (Pb::Pola, il.pola), (Pb::PolaLokal, il.pola_lokal), (Pb::Payload, il.payload),
             (Pb::PayloadLokal, il.payload_lokal), (Pb::MuatGlobal, il.muat_global), (Pb::SimpanGlobal, il.simpan_global),
             (Pb::Indeks, il.indeks), (Pb::Baca, impor.baca), (Pb::BacaPecahan, il.baca_pecahan), (Pb::Tulis, impor.tulis)].into_iter().map(|(p, id)| (p, m.declare_func_in_func(id, b.func))).collect(),
+        tulis_lebar: m.declare_func_in_func(il.tulis_lebar, b.func), buka_lebar: m.declare_func_in_func(il.buka_lebar, b.func),
     };
     let wadah = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 8, 3));
     let titip = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 72, 3));
+    let wadah16 = b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 16, 3));
     let langsung: Vec<FuncRef> = id_langsung.iter().map(|i| m.declare_func_in_func(*i, b.func)).collect();
     let ringan = impor.ringan.to_vec();
     let kedalaman1 = b.ins().iadd_imm_s(kedalaman, 1);
     let mut p = Penurun {
         b, j, nilai: vec![None; j.tipe.len()], slot, catat, undi, fid: impor.fid as i64, ptr, keluar, register, callee, kedalaman1,
-        lb, wadah, titip, langsung, ringan,
+        lb, wadah, titip, langsung, ringan, wadah16, konst: Default::default(),
     };
     // Kedalaman native dijaga di pintu masuk; parameter dimuat dari register atau penyangga argumen.
     let dalam = p.b.create_block();
@@ -107,8 +116,21 @@ pub fn turunkan(
     p.b.switch_to_block(blok[0]);
     let fl = MemFlagsData::trusted();
     for (k, pos) in j.posisi_masuk.iter().enumerate() {
-        let v = if register { parameter[*pos] } else { p.b.ins().load(types::I64, fl, args, (*pos * 8) as i32) };
         let par = j.blok[0].params[k];
+        // `Lebar` dibaca dari stack VM (isinya di sana); yang bukan bulat lagi = ULANG, belum ada yang berubah.
+        if j.tipe(par) == Tipe::L {
+            let st = p.buka_lebar_ke(*pos);
+            let (ulang, terus) = (p.b.create_block(), p.b.create_block());
+            p.b.set_cold_block(ulang);
+            p.b.ins().brif(st, ulang, &[], terus, &[]);
+            p.b.switch_to_block(ulang);
+            p.pulang_status(ULANG);
+            p.b.switch_to_block(terus);
+            let v = p.lebar_dari_wadah();
+            p.nilai[par.0 as usize] = Some(v);
+            continue;
+        }
+        let v = if register { parameter[*pos] } else { p.b.ins().load(types::I64, fl, args, (*pos * 8) as i32) };
         let v = if j.tipe(par) == Tipe::F { p.b.ins().bitcast(types::F64, MemFlagsData::new(), v) } else { v };
         p.nilai[par.0 as usize] = Some(v);
     }
@@ -164,6 +186,82 @@ impl Penurun<'_, '_> {
 
     fn i64c(&mut self, v: i64) -> Value { self.b.ins().iconst(types::I64, v) }
 
+    fn tulis_lebar(&mut self, pos: usize, n: Nilai) {
+        let v = self.v(n);
+        let (lo, hi) = self.b.ins().isplit(v);
+        let p = self.i64c(pos as i64);
+        self.b.ins().call(self.lb.tulis_lebar, &[p, lo, hi]);
+    }
+
+    /// `lambat::buka_lebar` atas posisi `pos` ke `wadah16`: statusnya (bukan 0 = bukan bulat).
+    fn buka_lebar_ke(&mut self, pos: usize) -> Value {
+        let (p, w) = (self.i64c(pos as i64), self.b.ins().stack_addr(self.ptr, self.wadah16, 0));
+        let c = self.b.ins().call(self.lb.buka_lebar, &[p, w]);
+        self.b.inst_results(c)[0]
+    }
+
+    fn lebar_dari_wadah(&mut self) -> Value {
+        let lo = self.b.ins().stack_load(self.ptr, types::I64, self.wadah16, 0);
+        let hi = self.b.ins().stack_load(self.ptr, types::I64, self.wadah16, 8);
+        self.b.ins().iconcat(lo, hi)
+    }
+
+    fn nol128(&mut self) -> Value { let z = self.i64c(0); self.b.ins().sextend(types::I128, z) }
+
+    fn biner_l(&mut self, op: OpL, a: Nilai, y: Nilai, jaga: Option<&Jaga>, jaga_muat: Option<&Jaga>) -> Value {
+        let (x, yv) = (self.v(a), self.v(y));
+        match op {
+            OpL::Tambah | OpL::Kurang => {
+                let h = if op == OpL::Tambah { self.b.ins().iadd(x, yv) } else { self.b.ins().isub(x, yv) };
+                if let Some(j) = jaga {
+                    // Luapan 128 bit: tanda operand sama tapi tanda hasil berbeda.
+                    let (a1, a2) = if op == OpL::Tambah { (self.b.ins().bxor(x, h), self.b.ins().bxor(yv, h)) }
+                        else { (self.b.ins().bxor(x, yv), self.b.ins().bxor(x, h)) };
+                    let m = self.b.ins().band(a1, a2);
+                    let z = self.nol128();
+                    let luap = self.b.ins().icmp(IntCC::SignedLessThan, m, z);
+                    self.jaga(luap, j);
+                }
+                h
+            }
+            OpL::Kali => self.b.ins().imul(x, yv),
+            OpL::Dan => self.b.ins().band(x, yv),
+            OpL::Atau => self.b.ins().bor(x, yv),
+            OpL::Xor => self.b.ins().bxor(x, yv),
+            OpL::DanBukan => self.b.ins().band_not(x, yv),
+            OpL::Cmp(c) => { let h = self.b.ins().icmp(Self::banding_i(c), x, yv); self.b.ins().uextend(types::I64, h) }
+            OpL::Bagi | OpL::Sisa => {
+                let (x64, y64) = (self.b.ins().ireduce(types::I64, x), self.b.ins().ireduce(types::I64, yv));
+                let (xe, ye) = (self.b.ins().sextend(types::I128, x64), self.b.ins().sextend(types::I128, y64));
+                let (bx, by) = (self.b.ins().icmp(IntCC::NotEqual, xe, x), self.b.ins().icmp(IntCC::NotEqual, ye, yv));
+                let tak_muat = self.b.ins().bor(bx, by);
+                self.jaga(tak_muat, jaga_muat.expect("bagi 128 bit dijaga"));
+                let nol = self.b.ins().icmp_imm_s(IntCC::Equal, y64, 0);
+                let min1 = self.b.ins().icmp_imm_s(IntCC::Equal, y64, -1);
+                let tolak = self.b.ins().bor(nol, min1);
+                self.jaga(tolak, jaga.expect("bagi 128 bit dijaga"));
+                if op == OpL::Sisa { self.b.ins().srem(x64, y64) } else { self.b.ins().sdiv(x64, y64) }
+            }
+            OpL::GeserKiri | OpL::GeserKanan => {
+                // Geseran tetap 1–63: dua geser 64 bit atas belahannya (langkah 76), tanpa jaga.
+                if let Some(kk @ 1..=63) = self.konst.get(&y.0).copied() {
+                    let (lo, hi) = self.b.ins().isplit(x);
+                    let (nlo, nhi) = if op == OpL::GeserKiri {
+                        let (a1, a2) = (self.b.ins().ishl_imm_u(hi, kk), self.b.ins().ushr_imm_u(lo, 64 - kk));
+                        (self.b.ins().ishl_imm_u(lo, kk), self.b.ins().bor(a1, a2))
+                    } else {
+                        let (a1, a2) = (self.b.ins().ushr_imm_u(lo, kk), self.b.ins().ishl_imm_u(hi, 64 - kk));
+                        (self.b.ins().bor(a1, a2), self.b.ins().sshr_imm_u(hi, kk))
+                    };
+                    return self.b.ins().iconcat(nlo, nhi);
+                }
+                let salah = self.b.ins().icmp_imm_u(IntCC::UnsignedGreaterThan, yv, 127);
+                self.jaga(salah, jaga.expect("geser 128 bit dijaga"));
+                if op == OpL::GeserKiri { self.b.ins().ishl(x, yv) } else { self.b.ins().sshr(x, yv) }
+            }
+        }
+    }
+
     /// Posisi `pos` milik VM dibuka jadi angka berkode `kode` (`lambat::buka`); jenis lain = deopt `jaga`. Nilainya
     /// bertipe nilai `n`.
     fn buka_nilai(&mut self, pos: usize, kode: i32, jaga: &Jaga, n: Nilai) -> Value {
@@ -180,6 +278,8 @@ impl Penurun<'_, '_> {
     /// Isi native ke slot rekaman dan posisi maya ke stack VM, sebelum pembantu yang membaca stack VM.
     fn tumpah(&mut self, isi: &[(usize, Nilai)], taruh: &[(usize, i64)]) {
         for (pos, n) in isi {
+            // `Lebar` ditulis ke stack VM; pembantu membacanya dari sana.
+            if self.j.tipe(*n) == Tipe::L { self.tulis_lebar(*pos, *n); continue; }
             let v = self.bit(*n);
             self.b.ins().stack_store(self.ptr, v, self.slot, (*pos * 8) as i32);
         }
@@ -216,6 +316,8 @@ impl Penurun<'_, '_> {
     fn deopt(&mut self, k: &Keadaan, bendera: i64) {
         for (i, isi) in k.isi.iter().enumerate() {
             let Some(n) = isi else { continue };
+            // `Lebar` langsung ke stack VM; `deopt::pulihkan` membacanya dari sana.
+            if self.j.tipe(*n) == Tipe::L { self.tulis_lebar(i, *n); continue; }
             let v = self.v(*n);
             let v = if self.j.tipe(*n) == Tipe::F { self.b.ins().bitcast(types::I64, MemFlagsData::new(), v) } else { v };
             self.b.ins().stack_store(self.ptr, v, self.slot, (i * 8) as i32);
@@ -251,7 +353,35 @@ impl Penurun<'_, '_> {
 
     fn inst(&mut self, ins: &Inst) {
         match ins {
-            Inst::KonstI { hasil, nilai } => { let v = self.b.ins().iconst(types::I64, *nilai); self.tetapkan(*hasil, v); }
+            Inst::KonstI { hasil, nilai } => {
+                let v = self.b.ins().iconst(types::I64, *nilai);
+                self.konst.insert(hasil.0, *nilai);
+                self.tetapkan(*hasil, v);
+            }
+            Inst::KonstL { hasil, nilai } => {
+                let (lo, hi) = (self.i64c(*nilai as i64), self.i64c((*nilai >> 64) as i64));
+                let v = self.b.ins().iconcat(lo, hi);
+                self.tetapkan(*hasil, v);
+            }
+            Inst::BinerL { hasil, op, a, b: y, jaga, jaga_muat } => {
+                let v = self.biner_l(*op, *a, *y, jaga.as_ref(), jaga_muat.as_ref());
+                self.tetapkan(*hasil, v);
+            }
+            Inst::Sempit { hasil, a, jaga } => {
+                let x = self.v(*a);
+                let lo = self.b.ins().ireduce(types::I64, x);
+                let balik = self.b.ins().sextend(types::I128, lo);
+                let lepas = self.b.ins().icmp(IntCC::NotEqual, balik, x);
+                self.jaga(lepas, jaga);
+                self.tetapkan(*hasil, lo);
+            }
+            Inst::TulisLebar { pos, nilai } => self.tulis_lebar(*pos, *nilai),
+            Inst::BukaLebar { hasil, pos, jaga } => {
+                let st = self.buka_lebar_ke(*pos);
+                self.jaga(st, jaga);
+                let v = self.lebar_dari_wadah();
+                self.tetapkan(*hasil, v);
+            }
             Inst::KonstF { hasil, nilai } => { let v = self.b.ins().f64const(*nilai); self.tetapkan(*hasil, v); }
             Inst::Biner { hasil, op, a, b: y, jaga } => { let v = self.biner(*op, *a, *y, jaga.as_ref()); self.tetapkan(*hasil, v); }
             Inst::Unar { hasil, op, a, jaga } => { let v = self.unar(*op, *a, jaga.as_ref()); self.tetapkan(*hasil, v); }
@@ -606,6 +736,15 @@ impl Penurun<'_, '_> {
             Unar::IBukanBit => self.b.ins().bnot(x),
             Unar::KeBool => { let c = self.b.ins().icmp_imm_s(IntCC::NotEqual, x, 0); self.b.ins().uextend(types::I64, c) }
             Unar::KeF => self.b.ins().fcvt_from_sint(types::F64, x),
+            Unar::KeL => self.b.ins().sextend(types::I128, x),
+            Unar::KeLU => self.b.ins().uextend(types::I128, x),
+            Unar::BukanBitL => self.b.ins().bnot(x),
+            Unar::KeBoolL => {
+                let z = self.nol128();
+                let c = self.b.ins().icmp(IntCC::NotEqual, x, z);
+                self.b.ins().uextend(types::I64, c)
+            }
+            Unar::Rendah => self.b.ins().ireduce(types::I64, x),
         }
     }
 }

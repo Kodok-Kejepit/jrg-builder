@@ -2,6 +2,25 @@
 // dibaca `backend_parity.rs` dan `llvm_parity.rs` lewat `include!`, jadi satu tabel dua tes.
 
 const PARITAS: &[(&str, &str)] = &[
+    // Pembaca berkas bertahap: baris `\r\n`, baris akhir tanpa `\n`, potongan, `None`/kosong di ujung, galatnya.
+    ("fs::open dan pembaca bertahap", r#"package main
+pub fn main() {
+    let p = fs::join(fs::temp_dir(), "jrg-bertahap-" + str(proses::pid()) + ".txt")
+    fs::write(p, "satu\r\ndua\ntiga")
+    let n = fs::open(p)
+    var baris = []
+    loop {
+        match fs::read_line(n) { Some(b) => { baris = arr::push(baris, b) }, None => { break } }
+    }
+    wok(baris, fs::read_line(n))
+    fs::close(n)
+    let m = fs::open(p)
+    wok(fs::read_chunk(m, 4), fs::read_chunk(m, 100), fs::read_chunk(m, 3))
+    fs::close(m)
+    fs::delete(p)
+    wok(typeof(m))
+}
+"#),
     // `dok::password_needs_rehash`: putaran tersimpan dibanding sasaran (bawaan 600000); hash rusak juga `true`.
     ("dok::password_needs_rehash", "package main\npub fn main() {\n let lama = dok::password_hash(\"s\", 1000)\n \
      wok(dok::password_needs_rehash(lama), dok::password_needs_rehash(lama, 1000), dok::password_needs_rehash(lama, 2000))\n \
