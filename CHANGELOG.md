@@ -12,6 +12,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   `Err` (dulu `jrgc` mati kehabisan memori); penampung `proses::mulai` yang penuh menunggu dibaca.
 - **`jrgm new` menolak folder yang sudah ada** (dulu `src/main.jrg` di dalamnya ditimpa templat) **dan nama di luar
   huruf, angka, `_`, `-`** (dengan jalur folder di depannya).
+- **Dependensi git `jrgm` cuma lewat https, http, ssh, git dan berkas lokal**: URL `<nama>::...` dulu memanggil
+  `git-remote-<nama>` dari PATH.
 - **Klien `http::` menolak jawaban yang terpotong** (badan lebih pendek dari `Content-Length`) dan `Content-Length`
   yang tidak sah atau berbeda-beda; byte sesudah badan dibuang. HTTPS menuntut paling sedikit TLS 1.2.
 

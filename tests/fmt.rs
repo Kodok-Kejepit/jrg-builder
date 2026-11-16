@@ -2905,6 +2905,33 @@ fn dependensi_git_publish_add_update() {
     let _ = std::fs::remove_dir_all(&akar);
 }
 
+/// URL `<nama>::` memanggil `git-remote-<nama>` dari PATH; jrgm cuma membolehkan https/http/ssh/git/file, apa pun
+/// konfigurasi git pemakainya (Fase AMAN-63).
+#[test]
+#[cfg(unix)]
+fn transport_git_asing_tidak_dijalankan() {
+    use std::os::unix::fs::PermissionsExt;
+    let akar = std::env::temp_dir().join(format!("jrg_dep_transport_{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&akar);
+    std::fs::create_dir_all(akar.join("bin")).unwrap();
+    let jejak = akar.join("dijalankan");
+    let helper = akar.join("bin/git-remote-jrgjahat");
+    std::fs::write(&helper, format!("#!/bin/sh\ntouch {}\nexit 1\n", jejak.display())).unwrap();
+    std::fs::set_permissions(&helper, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let jalan = |dir: &Path, args: &[&str]| {
+        let path = format!("{}:{}", akar.join("bin").display(), std::env::var("PATH").unwrap_or_default());
+        let o = Command::new(jrgm()).args(args).current_dir(dir).env("JRGM_TEMBOLOK", akar.join("tembolok"))
+            .env("JRG_SOPAN", "1").env("PATH", path).env("GIT_CONFIG_COUNT", "1")
+            .env("GIT_CONFIG_KEY_0", "protocol.allow").env("GIT_CONFIG_VALUE_0", "always").output().unwrap();
+        (o.status.success(), String::from_utf8_lossy(&o.stdout).to_string() + &String::from_utf8_lossy(&o.stderr))
+    };
+    assert!(jalan(&akar, &["new", "app"]).0);
+    let (ok, t) = jalan(&akar.join("app"), &["add", "x", "--git", "jrgjahat::apa-saja"]);
+    assert!(!ok, "{}", t);
+    assert!(!jejak.exists(), "git-remote-jrgjahat dijalankan: {}", t);
+    let _ = std::fs::remove_dir_all(&akar);
+}
+
 /// Fase AMAN-2: url/rev yang git baca sebagai opsi, nama yang jadi jalur, `jrgm.lock` yang diracun,
 /// nama paket yang lain dari yang diminta, dan path keluar dari salinan paket git — semuanya ditolak.
 #[test]

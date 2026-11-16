@@ -87,11 +87,16 @@ fn sidik(s: &str) -> String {
     format!("{:016x}", h)
 }
 
+/// Cuma transport ini yang boleh dipakai git untuk dependensi. URL datang dari `jrgm.toml` proyek orang lain:
+/// `ext::` menjalankan perintah dan `<nama>::` memanggil `git-remote-<nama>` dari PATH, dan yang menutupnya cuma
+/// konfigurasi git pemakai (Fase AMAN-63).
+const PROTOKOL_GIT: &str = "https:http:ssh:git:file";
+
 /// Jalankan git; keluarannya (stdout) kalau sukses, kalimat galat bersebab kalau tidak.
 fn git(args: &[&str], dir: Option<&Path>) -> Result<String, String> {
     let mut c = Command::new("git");
     if let Some(d) = dir { c.current_dir(d); }
-    c.args(args).env("GIT_TERMINAL_PROMPT", "0").stdin(Stdio::null());
+    c.args(args).env("GIT_TERMINAL_PROMPT", "0").env("GIT_ALLOW_PROTOCOL", PROTOKOL_GIT).stdin(Stdio::null());
     let out = c.output().map_err(|e| if e.kind() == std::io::ErrorKind::NotFound {
         "dependensi git butuh `git`, dan perintahnya tidak ada\n  bantuan: `sudo apt install git` (Termux: `pkg install git`)".to_string()
     } else { format!("git: {}", crate::host::galat_io(&e)) })?;
@@ -108,7 +113,8 @@ fn cermin(url: &str, segarkan: bool) -> Result<PathBuf, String> {
         let _ = std::fs::remove_dir_all(&db);
         let judul = format!("mengambil {}", url);
         let mut c = Command::new("git");
-        c.args(["-c", "protocol.ext.allow=never", "clone", "--bare", "--quiet", "--", url, &db_s]).env("GIT_TERMINAL_PROMPT", "0").stdin(Stdio::null());
+        c.args(["-c", "protocol.ext.allow=never", "clone", "--bare", "--quiet", "--", url, &db_s]).env("GIT_TERMINAL_PROMPT", "0")
+            .env("GIT_ALLOW_PROTOCOL", PROTOKOL_GIT).stdin(Stdio::null());
         let out = crate::putar::jalankan(&mut c, &judul).map_err(|e| format!("git: {}", crate::host::galat_io(&e)))?;
         if !out.status.success() {
             return Err(format!("tidak bisa mengambil `{}`: {}", url, String::from_utf8_lossy(&out.stderr).trim()));
