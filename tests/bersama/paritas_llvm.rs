@@ -1,6 +1,33 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const PARITAS_LLVM: &[(&str, &str)] = &[
+    // `str::char_at` diturunkan di tempat dengan memo jumlah karakter per fungsi: teks Unicode, indeks negatif,
+    // teks yang berganti di tengah loop (memo lama tidak boleh terpakai untuk teks lain sepanjang sama).
+    ("str::char_at di tempat dengan memo lokal", r#"package main
+fn kode(s: string) -> int {
+    var n = 0
+    for i in 0..len(s) { n = n * 31 + (str::char_at(s, i) as int) % 1000 }
+    return n
+}
+pub fn main() {
+    wok(kode("halo"), kode("日本語"), kode("ab日c"))
+    var t = ["abc", "xyz", "日本x", "aé", "éa"]
+    var keluar = []
+    for _, s in t {
+        keluar = arr::push(keluar, str::char_at(s, 0))
+        keluar = arr::push(keluar, str::char_at(s, -1))
+        keluar = arr::push(keluar, str::char_at(s, len(s) - 1))
+    }
+    wok(keluar)
+    var s = "aaaa"
+    var acc = ""
+    for i in 0..4 {
+        acc = acc + str(str::char_at(s, i))
+        s = i % 2 == 0 $ "bbbb" : "日日日日"
+    }
+    wok(acc)
+}
+"#),
     // `match` bulat berlengan literal/rentang diturunkan jadi satu `switch` LLVM: nilai kembar milik lengan pertama,
     // rentang tertutup dan terbuka, alternatif, lengan yang tak pernah tercapai, literal negatif (jalur lama).
     ("match bulat lewat switch", r#"package main

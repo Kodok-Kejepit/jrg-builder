@@ -23,6 +23,7 @@ impl Codegen {
         self.finished_blocks.clear();
         self.cur_lines.clear();
         self.entry_allocas.clear();
+        self.memo_teks_lokal = None;
         self.cur_label = "entry".to_string();
         self.terminated = false;
         self.loop_stack.clear();

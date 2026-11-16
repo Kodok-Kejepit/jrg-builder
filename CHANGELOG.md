@@ -24,6 +24,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 - **`--emit-llvm`: `match` atas bilangan bulat berlengan literal dan rentang jadi satu lompatan bertabel**, bukan
   perbandingan berurutan — `match_dispatch` 710 → 580 ms, setara C.
+- **`--emit-llvm`: `str::char_at` di dalam loop tidak lagi memeriksa ulang jumlah karakter tiap putaran** —
+  `string_ops` 123 → 109 ms (C 100).
 
 ### Diperbaiki
 

@@ -346,7 +346,8 @@ void jrg_sort_f64_ketat(double *p, int64_t n, const char *pesan, int64_t pl) {
 }
 
 // Gagal dengan `pola`; bita 1 dan 2 di dalamnya diganti bilangan `a` dan `b`.
-static void jrg_panik_pola(const char *pola, int64_t pl, int64_t a, int64_t b) {
+// Juga dipanggil IR (`str::char_at` yang diturunkan langsung).
+void jrg_panik_pola(const char *pola, int64_t pl, int64_t a, int64_t b) {
     char pesan[512];
     int64_t n = 0;
     for (int64_t i = 0; i < pl && n < 440; i++) {

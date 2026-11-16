@@ -1128,6 +1128,46 @@ impl Codegen {
     /// Jumlah karakter teks `(sptr, slen)`: memo runtime dibaca langsung di IR, runtime dipanggil cuma kalau
     /// memonya teks lain. Teks ASCII ⇔ jumlah karakter = panjang bita.
     pub(crate) fn jumlah_karakter(&mut self, sptr: &str, slen: &str) -> String {
+        // Memo lokal fungsi dulu: di loop `char_at(s, i)` memo global dibaca dan dibandingkan ulang tiap karakter,
+        // karena jalur lambatnya memanggil runtime yang bisa mengubahnya (`string_ops`); yang lokal jadi register.
+        // Aman dengan alasan memo global: teks tidak diubah di tempat dan arena tidak memakai ulang alamat.
+        let ada = |m: &(String, String, String), baris: &[String]| baris.iter().any(|l| l.starts_with(&format!("  {} =", m.0)));
+        let (lp, ll, ln) = match self.memo_teks_lokal.clone() {
+            Some(m) if ada(&m, &self.entry_allocas) => m,
+            _ => {
+                let m = (self.alloca_raw("tmlp.", "ptr", None), self.alloca_raw("tmll.", "i64", None), self.alloca_raw("tmln.", "i64", None));
+                self.entry_allocas.push(format!("  store ptr null, ptr {}", m.0));
+                self.entry_allocas.push(format!("  store i64 -1, ptr {}", m.1));
+                self.memo_teks_lokal = Some(m.clone());
+                m
+            }
+        };
+        let (xp, xl, xn) = (self.fresh("tlp."), self.fresh("tll."), self.fresh("tln."));
+        self.emit(format!("{} = load ptr, ptr {}", xp, lp));
+        self.emit(format!("{} = load i64, ptr {}", xl, ll));
+        self.emit(format!("{} = load i64, ptr {}", xn, ln));
+        let (d1, d2, dsama) = (self.fresh("tlc."), self.fresh("tlc."), self.fresh("tlc."));
+        self.emit(format!("{} = icmp eq ptr {}, {}", d1, xp, sptr));
+        self.emit(format!("{} = icmp eq i64 {}, {}", d2, xl, slen));
+        self.emit(format!("{} = and i1 {}, {}", dsama, d1, d2));
+        let (lkena, lmeleset, lusai) = (self.fresh_label("tl.kena."), self.fresh_label("tl.meleset."), self.fresh_label("tl.usai."));
+        self.terminate(format!("br i1 {}, label %{}, label %{}", dsama, lkena, lmeleset));
+        self.start_block(lkena.clone());
+        self.terminate(format!("br label %{}", lusai));
+        self.start_block(lmeleset);
+        let n_global = self.jumlah_karakter_global(sptr, slen);
+        self.emit(format!("store ptr {}, ptr {}", sptr, lp));
+        self.emit(format!("store i64 {}, ptr {}", slen, ll));
+        self.emit(format!("store i64 {}, ptr {}", n_global, ln));
+        let asal = self.cur_label.clone();
+        self.terminate(format!("br label %{}", lusai));
+        self.start_block(lusai);
+        let n = self.fresh("tljk.");
+        self.emit(format!("{} = phi i64 [ {}, %{} ], [ {}, %{} ]", n, xn, lkena, n_global, asal));
+        n
+    }
+
+    fn jumlah_karakter_global(&mut self, sptr: &str, slen: &str) -> String {
         self.ensure_extern("declare i64 @jrg_str_char_count(ptr, i64)", "jrg_str_char_count");
         self.ensure_extern("@jrg_teks_memo_p = external global ptr\n@jrg_teks_memo_l = external global i64\n\
             @jrg_teks_memo_n = external global i64", "global.teks_memo");
@@ -1151,6 +1191,30 @@ impl Codegen {
         let n = self.fresh("tmjk.");
         self.emit(format!("{} = phi i64 [ {}, %{} ], [ {}, %{} ]", n, mn, kena, n1, meleset));
         n
+    }
+
+    /// `str::char_at(s, i)` dengan kalimat gagal milik lapis (`str_char_at`), lalu jalur `s[i]`.
+    pub(crate) fn char_at_langsung(&mut self, sv: &Val, iv: &Val) -> Result<Val, String> {
+        let (sptr, slen) = self.split_str(sv);
+        let n = self.jumlah_karakter(&sptr, &slen);
+        let (neg, tambah, ix) = (self.fresh("cang."), self.fresh("caplus."), self.fresh("caix."));
+        self.emit(format!("{} = icmp slt i64 {}, 0", neg, iv.text));
+        self.emit(format!("{} = add i64 {}, {}", tambah, iv.text, n));
+        self.emit(format!("{} = select i1 {}, i64 {}, i64 {}", ix, neg, tambah, iv.text));
+        let (c1, c2, luar) = (self.fresh("calo."), self.fresh("cahi."), self.fresh("caluar."));
+        self.emit(format!("{} = icmp slt i64 {}, 0", c1, ix));
+        self.emit(format!("{} = icmp sge i64 {}, {}", c2, ix, n));
+        self.emit(format!("{} = or i1 {}, {}", luar, c1, c2));
+        let (gagal, lanjut) = (self.fresh_label("ca.gagal."), self.fresh_label("ca.lanjut."));
+        self.terminate(format!("br i1 {}, label %{}, label %{}, !prof !0", luar, gagal, lanjut));
+        self.start_block(gagal);
+        self.ensure_extern("declare void @jrg_panik_pola(ptr, i64, i64, i64) cold nounwind noreturn", "jrg_panik_pola");
+        let pola = self.intern_string("str::char_at: index \u{1} di luar batas (panjang \u{2})");
+        let (pp, pl) = self.split_str(&pola);
+        self.emit(format!("call void @jrg_panik_pola(ptr {}, i64 {}, i64 {}, i64 {})", pp, pl, iv.text, n));
+        self.terminate("unreachable".to_string());
+        self.start_block(lanjut);
+        self.karakter_string(sv, &Val { text: ix, ty: JrgType::I64 })
     }
 
     /// `s[i]` — karakter ke-`i` sebuah string, sebagai `rune`.

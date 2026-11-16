@@ -319,6 +319,14 @@ impl Codegen {
                     }
                 }
             }
+            // `str::char_at(teks, int)` diturunkan di tempat: lewat lapis, memo jumlah karakternya milik fungsi lapis
+            // yang lahir kosong tiap panggilan, jadi loop `char_at(s, i)` membaca memo global per karakter.
+            if ns == "str" && item == "char_at" && args.len() == 2
+                && self.peek_expr_type(&args[0]) == Some(JrgType::Str) && self.peek_expr_type(&args[1]) == Some(JrgType::I64) {
+                let s = self.codegen_expr(&args[0], Some(&JrgType::Str))?;
+                let i = self.codegen_expr(&args[1], Some(&JrgType::I64))?;
+                return self.char_at_langsung(&s, &i);
+            }
             let pertama = args.first().and_then(|a| self.peek_expr_type(a));
             if let Some(kunci) = self.kunci_lapis_menurut(ns, item, pertama.as_ref()) {
                 // `rune` di `str::` adalah teks satu karakter, seperti acuan: `::str(r)` sebelum masuk lapis.
