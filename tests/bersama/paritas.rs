@@ -2,6 +2,12 @@
 // dibaca `backend_parity.rs` dan `llvm_parity.rs` lewat `include!`, jadi satu tabel dua tes.
 
 const PARITAS: &[(&str, &str)] = &[
+    // `dok::password_needs_rehash`: putaran tersimpan dibanding sasaran (bawaan 600000); hash rusak juga `true`.
+    ("dok::password_needs_rehash", "package main\npub fn main() {\n let lama = dok::password_hash(\"s\", 1000)\n \
+     wok(dok::password_needs_rehash(lama), dok::password_needs_rehash(lama, 1000), dok::password_needs_rehash(lama, 2000))\n \
+     wok(dok::password_needs_rehash(\"pbkdf2$sha256$600000$a$b\"), dok::password_needs_rehash(\"bukan-hash\"), \
+     dok::password_needs_rehash(\"pbkdf2$sha256$x$a$b\"))\n \
+     wok(dok::password_verify(\"s\", lama))\n}\n"),
     // Fase J4 (#976): `f.floor` atas bilangan dulu `<native fn>` di `--vm`; acuan dan LLVM membacanya sebagai nilai.
     ("method math:: atas bilangan tanpa kurung", "package main\npub fn main() { let f = 2.5\n let i = -3\n wok(f.floor, i.abs, f.round, (1.0).is_finite)\n wok(f.floor + 1.0) }"),
     // Fase REGEX-LINEAR (#841): `^.*x$` atas `abx` dulu `false` di dua mesin; `a+?` dibaca rakus.

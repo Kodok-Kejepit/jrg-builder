@@ -1618,8 +1618,11 @@ impl Codegen {
         }
         if item == "join" && args.len() == 2 {
             return Some((|| {
+                // Harapan `[]string` cuma untuk `[]` kosong: dulu ia memaksa `[1, 2]` jadi teks dan menolaknya sebelum
+                // sampai ke jalur lapis di bawah (`str::join([1, 2], "-")` jalan di acuan).
                 let harap = JrgType::Slice(Box::new(JrgType::Str));
-                let a = self.codegen_expr(&args[0], Some(&harap))?;
+                let kosong = matches!(&args[0], Expr::Array { elems, .. } if elems.is_empty());
+                let a = self.codegen_expr(&args[0], kosong.then_some(&harap))?;
                 // Nilai bertag: tagnya harus array (diperiksa saat jalan), elemennya ditampilkan lapis.
                 let a = match a.ty {
                     JrgType::Any => self.buka_terperiksa(&a, &JrgType::Slice(Box::new(JrgType::Any))).unwrap_or(a),

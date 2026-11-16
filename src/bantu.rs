@@ -308,6 +308,8 @@ pub const DOKUMEN: &[Info] = &[
            ringkas: "Pengalihan ke `tujuan` hanya kalau jalur lokal (`/..`), selain itu ke `cadangan` — penangkal pengalihan terbuka." },
     Info { nama: "dok::password_hash", tanda_tangan: "dok::password_hash(sandi, putaran?) -> string",
            ringkas: "PBKDF2-HMAC-SHA256 dengan salt acak; `putaran` bawaannya 600000 (OWASP) dan ikut tersimpan di hasilnya." },
+    Info { nama: "dok::password_needs_rehash", tanda_tangan: "dok::password_needs_rehash(hash, putaran?) -> bool",
+           ringkas: "`true` kalau hash dari `password_hash` dibuat dengan putaran lain (bawaan 600000): ringkas ulang sesudah login berhasil." },
     Info { nama: "dok::password_verify", tanda_tangan: "dok::password_verify(sandi, hash) -> bool",
            ringkas: "Cocokkan sandi dengan hash dari `password_hash`." },
     Info { nama: "dok::render", tanda_tangan: "dok::render(template, data) -> Result",

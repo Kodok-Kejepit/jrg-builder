@@ -1,6 +1,19 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const PARITAS_LLVM: &[(&str, &str)] = &[
+    // `str::join` atas larik bukan teks jalan seperti `arr::join` (dulu ditolak LLVM saat kompilasi: literal `[1, 2]`
+    // dipaksa ke `[]string` sebelum sampai ke jalur lapis); larik kosong tetap bertipe teks.
+    ("str::join atas larik bukan teks", r#"package main
+pub fn main() {
+    wok(str::join([1, 2], "-"))
+    let a = [1.5, 2.25]
+    wok(str::join(a, "|"))
+    var b: []int = []
+    b = arr::push(b, 7)
+    wok(str::join(b, ","), str::join([], ","), str::join(["x", "y"], ""))
+    wok(str::join([[1], [2, 3]], ";"))
+}
+"#),
     // #1053: pop berbagi penyangga hanya kalau `a` ditimpa tepat sesudahnya; `r[0]` yang dibaca lagi sesudah `a`
     // diubah tetap nilai lama, parameter pinjaman tidak tersentuh, bentuk method `d.pop()` sama.
     ("pop dua pernyataan berbagi penyangga", r#"package main

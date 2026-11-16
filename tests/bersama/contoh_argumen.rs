@@ -279,6 +279,7 @@ const CONTOH_ARGUMEN: &[(&str, &str, &[&str])] = &[
     ("dok::csrf_token", "", &[r#""rahasia-yang-panjangnya-32-byte!""#, r#""sesi-1""#]),
     ("dok::csrf_verify", "", &[r#""1.a.b""#, r#""rahasia-yang-panjangnya-32-byte!""#, r#""sesi-1""#]),
     ("dok::password_verify", "", &[r#""rahasia""#, r#""bukan-hash""#]),
+    ("dok::password_needs_rehash", "", &[r#""bukan-hash""#]),
     ("dok::post", "", &[r#""http://127.0.0.1:1/""#]),
     ("dok::put", "", &[r#""http://127.0.0.1:1/""#]),
     ("dok::query_get", "", &["[1, 2]", r#""a""#]),

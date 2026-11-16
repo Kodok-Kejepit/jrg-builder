@@ -120,7 +120,7 @@ pub enum NativeFnKind {
     // Fase WEB-2: WebSocket.
     DokRouterWs, DokWsSend, DokWsRecv, DokWsClose, DokWsTerbuka,
     // Fase WEB-1: middleware, cookie, sesi, kata sandi, template.
-    DokRouterUse, DokRouterAfter, DokCookieGet, DokCookieSet, DokHeaderSet, DokSessionEncode, DokSessionDecode, DokPasswordHash, DokPasswordVerify, DokRender, DokRenderFile, DokEscapeHtml,
+    DokRouterUse, DokRouterAfter, DokCookieGet, DokCookieSet, DokHeaderSet, DokSessionEncode, DokSessionDecode, DokPasswordHash, DokPasswordNeedsRehash, DokPasswordVerify, DokRender, DokRenderFile, DokEscapeHtml,
 
     DokJsonEncode, DokJsonDecode, DokJsonGet, DokJsonSet, DokJsonKeys,
 
@@ -522,6 +522,7 @@ impl Env {
         self.n("dok::session_decode",     DokSessionDecode);
         self.n("dok::password_hash",      DokPasswordHash);
         self.n("dok::password_verify",    DokPasswordVerify);
+        self.n("dok::password_needs_rehash", DokPasswordNeedsRehash);
         self.n("dok::render",             DokRender);
         self.n("dok::render_file",        DokRenderFile);
         self.n("dok::escape_html",        DokEscapeHtml);
