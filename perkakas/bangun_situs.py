@@ -30,6 +30,7 @@ DOCS = AKAR / "docs"
 VERSI = "0.6.0"
 REPO = "https://github.com/Kodok-Kejepit/jrg"
 SITUS = "https://jrg-lang.org"
+SALURAN_WA = "https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U"
 
 # Bahasa yang sedang dibangun: "en" (akar) atau "id" (/id/). Teks antarmuka lewat `t()`.
 BAHASA = "en"
@@ -47,6 +48,7 @@ KAMUS = {
     "Butuh thread, berkas, jaringan, atau pustaka sistem yang tidak ada di peramban":
         "Needs threads, files, the network, or a system library the browser does not have",
     "Bahasa Indonesia": "Bahasa Indonesia", "Profil pembuat": "About the author",
+    "Saluran WhatsApp JRG": "JRG WhatsApp channel", "Saluran WhatsApp": "WhatsApp channel",
 }
 
 
@@ -367,6 +369,8 @@ IKON = {
     "cari": '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
     "tema": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
     "menu": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+    "wa": ('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l1.2-4.3A8.5 8.5 0 1 1 8 19.4z"/>'
+           '<path d="M9 8.5c0 3.3 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2.2-1.6-2.6-2.6l.9-1-1-2z"/></svg>'),
     "git": ('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5m12 4.5v-3.5c0-1 '
             '.1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 '
             '11.6 0 0 0-6 0C6.8 2.8 5.8 3.1 5.8 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4.4 9.5c0 4.6 2.7 5.7 '
@@ -388,6 +392,7 @@ def kepala(aktif: str, naik: str) -> str:
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="{t("Cari")}">{IKON["cari"]}<span>{t("Cari")}</span><kbd>/</kbd></button>
     {{BAHASA_LAIN}}
     <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="{t("Ganti tema terang atau gelap")}">{IKON["tema"]}</button>
+    <a class="tombol-ikon" href="{SALURAN_WA}" rel="noopener" aria-label="{t("Saluran WhatsApp JRG")}" title="{t("Saluran WhatsApp JRG")}">{IKON["wa"]}</a>
     <a class="tombol-ikon" href="{REPO}" aria-label="{t("Kode sumber di GitHub")}">{IKON["git"]}</a>
   </div>
 </header>"""
@@ -464,7 +469,8 @@ def kaki(naik: str) -> str:
             f'<span><a href="{naik}web_dokumentasi/pasang.html">{t("Pasang")}</a> · '
             f'<a href="{naik}web_dokumentasi/rilis.html">{t("Catatan rilis")}</a> · '
             f'<a href="{naik}profil.html">{t("Profil")}</a> · '
-            f'<a href="{REPO}">{t("Kode sumber")}</a></span></footer>')
+            f'<a href="{REPO}">{t("Kode sumber")}</a> · '
+            f'<a href="{SALURAN_WA}" rel="noopener">{t("Saluran WhatsApp")}</a></span></footer>')
 
 
 def langkah(sebelum, sesudah, label_s=None, label_b=None):
@@ -710,7 +716,7 @@ def data_terstruktur() -> str:
          "alternateName": ["JRG", "JawaRustGo++ (JRG)", "bahasa pemrograman JRG"], "url": f"{SITUS}/",
          "inLanguage": BAHASA},
         {"@context": "https://schema.org", "@type": "ComputerLanguage", "name": "JawaRustGo++",
-         "alternateName": "JRG", "url": f"{SITUS}/", "sameAs": [REPO],
+         "alternateName": "JRG", "url": f"{SITUS}/", "sameAs": [REPO, SALURAN_WA],
          "creator": {"@type": "Person", "name": "Muhamad Surya Widianto", "url": f"{SITUS}/profil.html",
                      "sameAs": ["https://github.com/Kodok-Kejepit", "https://freease.cloud",
                                 "https://www.linkedin.com/in/muhamad-surya-widianto-3567ab40a"]}},

@@ -30,6 +30,10 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   supaya modul yang tidak dipercaya tidak bisa menggantung pemanggilnya.
 - **`dok::password_needs_rehash(hash, putaran?)`**: `true` kalau hash sandi dibuat dengan putaran lain dari bawaan
   (600000), supaya hash lama diringkas ulang sesudah login berhasil.
+- **Situs dokumentasi dua bahasa**: bahasa Inggris jadi bawaan, versi Indonesia di `/id/`, dengan tombol EN/ID di
+  tiap halaman. Halaman mesin menjelaskan mesin kelima (WebAssembly) yang sedang dibuat.
+- **Saluran WhatsApp resmi "JRG — Official Channel"** untuk kabar rilis dan komunitas, ditautkan dari tiap halaman
+  situs.
 
 ### Kinerja
 
