@@ -5700,6 +5700,23 @@ fn proses_keluaran_opsi_di_dua_mesin() {
     }
 }
 
+/// Keluaran anak di atas 256 MiB menghentikan programnya dengan `Err` (Fase AMAN-59): dulu `jrgc` mati SIGABRT.
+#[test]
+fn keluaran_proses_berbatas_di_dua_mesin() {
+    if !cfg!(unix) { return; }
+    let program = "package main\npub fn main() {\n\
+        let t0 = time::now_ms()\n\
+        match proses::keluaran(\"head\", [\"-c\", \"300000000\", \"/dev/zero\"]) { Ok(v) => wok(\"diterima\"), Err(e) => wok(e) }\n\
+        match proses::jalankan(\"head\", [\"-c\", \"300000000\", \"/dev/zero\"]) { Ok(v) => wok(\"diterima\"), Err(e) => wok(e) }\n\
+        match proses::keluaran(\"head\", [\"-c\", \"1000\", \"/dev/zero\"]) { Ok(v) => wok(len(v.keluaran)), Err(e) => wok(e) }\n}\n";
+    for vm in [false, true] {
+        let k = jalankan_keluaran_penuh(program, vm);
+        assert_eq!(k.matches("melewati 256 MiB, jadi programnya dihentikan").count(), 2, "vm={}: {}", vm, k);
+        assert!(k.contains("proses::keluaran: keluaran `head`") && k.contains("proses::jalankan: keluaran `head`"), "vm={}: {}", vm, k);
+        assert!(k.contains("\n1000\n"), "vm={}: {}", vm, k);
+    }
+}
+
 /// `proses::mulai` dan kawan-kawannya: keluaran terbaca SELAGI program jalan, stdin sampai di tengah
 /// jalan, `hentikan` dan `batas_ms` benar-benar menghentikan, nomor yang sudah selesai hangus.
 #[test]

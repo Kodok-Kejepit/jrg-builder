@@ -3527,3 +3527,43 @@ fn pinjam_spek_sama_dengan_vm() {
     let r = jalankan(PINJAM_SPEK, &["--jit"], &[("JRG_JIT_LOG", "rencana")]);
     assert!(r.stderr.contains("rencana fnv") && !r.stderr.contains("LoadLocal 0 Muat [Nilai, Nilai]"), "{}", r.stderr);
 }
+
+/// Sesi panggilan HOF (`jit::panggil::SesiHof`, langkah 84): jenis elemen yang berganti di tengah larik, closure yang
+/// menulis tangkapannya, HOF bersarang, callback rekursif dan berhasil struct, bentuk method dan namespace, galat di
+/// tengah larik (kalimat dan jejaknya).
+const SESI_HOF: &str = r#"struct T { pub a: int }
+
+fn fakt(n) { if n < 2 { return 1 } return n * fakt(n - 1) }
+
+fn main() {
+    let xs = range(0, 3000)
+    // Jenis elemen berganti di tengah: sesinya ditutup, panggilan biasa, lalu dibuka lagi.
+    var campur = []
+    for i in 0..3000 { campur = campur + [(i % 500 == 0) $ (i as float) : i] }
+    wok(campur.map(|x| x * 2).reduce(|a, b| a + b, 0))
+    // Closure yang menulis tangkapannya.
+    var n = 0
+    xs.each(|x| { n = n + x })
+    wok(n)
+    // HOF bersarang di dalam callback.
+    wok(range(0, 300).map(|i| range(0, i % 7).map(|j| j * i).reduce(|a, b| a + b, 0)).reduce(|a, b| a + b, 0))
+    // Callback rekursif dan hasil struct.
+    wok(range(0, 2000).map(|i| fakt(i % 10)).reduce(|a, b| a + b, 0))
+    wok(xs.map(|i| T { a: i }).filter(|t| t.a % 999 == 0).map(|t| t.a))
+    // any/all/count/fold/find.
+    wok(xs.any(|x| x == 2999), xs.all(|x| x < 2999), xs.count_if(|x| x % 7 == 0), xs.fold(1, |a, b| (a + b) % 1000003))
+    wok(arr::map(xs, |x| x + 1)[2999], arr::filter(xs, |x| x % 1000 == 0), arr::reduce(xs, |a, b| a + b, 0))
+    // Galat di tengah larik: keluaran sebelumnya tetap, kalimat dan jejaknya sama.
+    wok(xs.map(|x| 10 / (2500 - x)).reduce(|a, b| a + b, 0))
+}
+"#;
+
+#[test]
+fn sesi_hof_sama_dengan_vm() {
+    let v = jalankan(SESI_HOF, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout.lines().count() == 7 && v.stderr.contains("jejak"), "{}{}", v.stdout, v.stderr);
+    for env in [&[STRES][..], &[STRES, ACAK][..], &[][..]] {
+        let j = jalankan(SESI_HOF, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+}

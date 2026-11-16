@@ -87,7 +87,7 @@ fn skalar(v: &VmValue) -> bool {
 
 /// `*tempat = v` tanpa memanggil `drop_glue` kalau isi lamanya skalar (yang biasa di posisi stack VM).
 #[inline(always)]
-fn timpa(tempat: &mut VmValue, v: VmValue) {
+pub(super) fn timpa(tempat: &mut VmValue, v: VmValue) {
     if skalar(tempat) {
         unsafe { std::ptr::write(tempat, v) }
     } else {

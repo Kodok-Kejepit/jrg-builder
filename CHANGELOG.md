@@ -13,6 +13,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **WebSocket `dok::serve` melepas klien yang diam dan tidak menjawab `ping`** (60 + 30 detik), menutup pesan yang
   tidak utuh dalam 30 detik ditambah 1 detik per 16 KiB, dan menghitung pesan setengah jadi di anggaran 256 MiB yang
   sama dengan badan HTTP.
+- **`proses::jalankan` dan `proses::keluaran` menghentikan program yang keluarannya melewati 256 MiB** dan menjawab
+  `Err` (dulu `jrgc` mati kehabisan memori); penampung `proses::mulai` yang penuh menunggu dibaca.
 - **`wokwok::` menolak hasil broadcast dan `matmul` di atas 256 MiB**, seperti pembangun lariknya — dulu dua larik
   kecil bisa meminta puluhan GB dan mematikan prosesnya.
 
@@ -27,6 +29,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   atas field-nya tidak lagi memanggil method dan membangun struct baru — field dibaca, dihitung di register, lalu
   ditulis ke struct yang sama; method yang cuma mengembalikan rumus pecahan atas field-nya (`rec.score()`) juga
   dihitung di tempat. `struct_particles` 12,9 → 3,3 s, `mixed_report` 2,2 → 1,4 s.
+- **`--jit` memanggil callback `map`/`filter`/`reduce` dan kawan-kawannya langsung**: bingkai callback disiapkan sekali
+  untuk seluruh larik, bukan per elemen. `hof_closure` 0,66 → 0,44 s.
 - **`--jit` tidak lagi jatuh ke nilai VM di loop sesudah titik masuknya**: panggilan di loop yang belum pernah dijalankan
   saat fungsi pemanggilnya dikompilasi meminjam jenis hasil panggilan lain ke fungsi yang sama. `string_scan`
   0,44 → 0,32 s.
