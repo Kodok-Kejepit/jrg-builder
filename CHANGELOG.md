@@ -10,6 +10,9 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 - **`json::stringify`, `json::pretty` dan `dok::json_encode` menolak pegangan pustaka** (`Ptr`, `Future`, `DokDb`, …),
   seperti `Mutex` — dulu tertulis `{"id":1}`.
+- **WebSocket `dok::serve` melepas klien yang diam dan tidak menjawab `ping`** (60 + 30 detik), menutup pesan yang
+  tidak utuh dalam 30 detik ditambah 1 detik per 16 KiB, dan menghitung pesan setengah jadi di anggaran 256 MiB yang
+  sama dengan badan HTTP.
 - **`wokwok::` menolak hasil broadcast dan `matmul` di atas 256 MiB**, seperti pembangun lariknya — dulu dua larik
   kecil bisa meminta puluhan GB dan mematikan prosesnya.
 
