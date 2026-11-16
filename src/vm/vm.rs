@@ -96,6 +96,7 @@ pub(crate) type VmResult<T> = Result<T, VmError>;
 pub(crate) struct Panggil {
     f: VmValue,
     /// `--jit` (diputuskan sekali per HOF).
+    #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
     jit: bool,
     #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
     sesi: Option<crate::jit::panggil::SesiHof>,
@@ -103,7 +104,15 @@ pub(crate) struct Panggil {
 
 impl Panggil {
     pub(crate) fn baru(vm: &Vm, f: &VmValue) -> Self {
-        Panggil { f: f.clone(), jit: vm.profil_jit, #[cfg(all(feature = "jit", not(target_arch = "wasm32")))] sesi: None }
+        #[cfg(not(all(feature = "jit", not(target_arch = "wasm32"))))]
+        let _ = vm;
+        Panggil {
+            f: f.clone(),
+            #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
+            jit: vm.profil_jit,
+            #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
+            sesi: None,
+        }
     }
 
     #[inline(always)]

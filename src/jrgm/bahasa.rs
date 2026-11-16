@@ -647,8 +647,8 @@ pub(crate) fn rangka(nama: &str, r: &Resep) -> Result<(), String> {
         return Err("`jrgm new --bahasa lain` tidak punya rangka; buat proyeknya dengan bahasa yang ada \
                     lalu ganti langkahnya di [perintah]".into());
     }
+    super::rangka::periksa_nama_baru(nama)?;
     let akar = PathBuf::from(nama);
-    if akar.exists() { return Err(format!("jrgm: `{}` sudah ada", nama)); }
     let tulis = |p: &str, isi: &str| -> Result<(), String> {
         let f = akar.join(p);
         if let Some(d) = f.parent() { std::fs::create_dir_all(d).map_err(|e| format!("jrgm: {}", crate::host::galat_io(&e)))?; }

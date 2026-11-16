@@ -989,6 +989,28 @@ mod uji {
         let _ = std::fs::remove_dir_all(&d);
     }
 
+    /// `jrgm new` tidak menimpa folder yang sudah ada dan menolak nama yang merusak manifesnya (Fase AMAN-62).
+    #[test]
+    fn proyek_baru_tidak_menimpa_dan_nama_aman() {
+        let d = crate::bersama::dir_unik("jrg-uji-new-aman");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(d.join("ada/src")).unwrap();
+        std::fs::write(d.join("ada/src/main.jrg"), "kode pemakai").unwrap();
+        for args in [&["new", "ada"][..], &["new", "ada", "--bahasa", "python"][..]] {
+            let (kode, teks) = jalankan(jrgm(), args, &d);
+            assert_eq!(kode, Some(1), "{:?} menimpa folder yang ada:\n{}", args, teks);
+            assert!(teks.contains("sudah ada"), "{:?}:\n{}", args, teks);
+        }
+        assert_eq!(std::fs::read_to_string(d.join("ada/src/main.jrg")).unwrap(), "kode pemakai");
+        for nama in ["a\"b", "x\n[dependencies]", "a b", ".", "..", "a/..", "-x"] {
+            let (kode, teks) = jalankan(jrgm(), &["new", "--", nama], &d);
+            assert_eq!(kode, Some(1), "nama {:?} diterima:\n{}", nama, teks);
+        }
+        let (kode, teks) = jalankan(jrgm(), &["new", "sub/baru-1"], &d);
+        assert_eq!(kode, Some(0), "jalur folder ditolak:\n{}", teks);
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
     /// Proyek baru harus bisa `jrgm test` sejak menit pertama, dan `jrgm
     /// build` harus ikut memeriksa berkas ujinya.
     #[test]

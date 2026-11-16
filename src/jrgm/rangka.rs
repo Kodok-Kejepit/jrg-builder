@@ -108,7 +108,25 @@ pub fn main() {{
 "#, name = name)
 }
 
+/// Nama proyek masuk ke `jrgm.toml` dan `package uji_<nama>` apa adanya: tanda kutip atau baris baru dulu merusak
+/// manifesnya (atau menyisipkan bagian lain), dan `.`/`..` jadi folder yang sudah ada (Fase AMAN-62).
+pub(crate) fn periksa_nama_baru(name: &str) -> Result<(), String> {
+    let akhir = name.trim_end_matches('/').rsplit('/').next().unwrap_or("");
+    let sah = !name.is_empty() && name.bytes().all(|b| b.is_ascii_alphanumeric() || b"_-./".contains(&b))
+        && !akhir.is_empty() && akhir != "." && akhir != ".." && !akhir.starts_with('-');
+    if !sah {
+        return Err(format!("jrgm: nama proyek {:?} tidak sah — pakai huruf, angka, `_` dan `-` (boleh diawali \
+            jalur folder, mis. `../alat/hitung`)", name));
+    }
+    // Folder yang sudah ada tidak ditimpa: `src/main.jrg` pemakai dulu diganti templat tanpa suara.
+    if std::path::Path::new(name).exists() {
+        return Err(format!("jrgm: `{}` sudah ada — pilih nama lain, atau pindahkan isinya dulu", name));
+    }
+    Ok(())
+}
+
 pub(crate) fn cmd_new(name: &str, kind: &str) -> Result<(), String> {
+    periksa_nama_baru(name)?;
     let root = PathBuf::from(name);
     std::fs::create_dir_all(root.join("src"))
         .map_err(|e| format!("tidak bisa buat direktori project: {}", crate::host::galat_io(&e)))?;

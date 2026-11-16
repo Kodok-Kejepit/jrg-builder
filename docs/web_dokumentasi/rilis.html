@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Catatan rilis 0.5.0 — Dokumentasi JRG</title>
-<meta name="description" content="Rilis kelima JawaRustGo++.">
+<title>Catatan rilis 0.6.0 — Dokumentasi JRG</title>
+<meta name="description" content="Rilis keenam JawaRustGo++.">
 <link rel="canonical" href="https://jrg-lang.org/web_dokumentasi/rilis.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JawaRustGo++ (JRG)">
 <meta property="og:locale" content="id_ID">
-<meta property="og:title" content="Catatan rilis 0.5.0 — Dokumentasi JRG">
-<meta property="og:description" content="Rilis kelima JawaRustGo++.">
+<meta property="og:title" content="Catatan rilis 0.6.0 — Dokumentasi JRG">
+<meta property="og:description" content="Rilis keenam JawaRustGo++.">
 <meta property="og:url" content="https://jrg-lang.org/web_dokumentasi/rilis.html">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="96x96" href="../aset/favicon-96.png?v=59ebaf4767">
@@ -441,7 +441,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Buka navigasi" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
   <nav class="situs" aria-label="Situs"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Dokumentasi</a><a href="../matematika_x_jrg/index.html">Matematika × JRG</a><a href="../profil.html">Profil</a></nav>
-  <span class="versi">v0.5.0</span>
+  <span class="versi">v0.6.0</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Cari"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari</span><kbd>/</kbd></button>
     <button class="tombol-ikon" type="button" data-aksi="tema" aria-label="Ganti tema terang atau gelap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
@@ -453,17 +453,19 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <main id="isi" class="isi">
 <article class="artikel">
 <p class="rel">Di balik layar</p>
-<h1>Catatan rilis 0.5.0</h1>
-<p class="ringkas">Rilis kelima JawaRustGo++.</p>
-<p>0.5.0 adalah rilis kelima JRG. Ia membuat <code>--jit</code> lebih cepat di teks dan bilangan besar, memperketat <code>dok::serve</code>, dan menambal beberapa celah di <code>--emit-llvm</code> dan pemeriksa. Dua perubahan bisa membuat program lama berperilaku lain; daftarnya di bawah.</p>
+<h1>Catatan rilis 0.6.0</h1>
+<p class="ringkas">Rilis keenam JawaRustGo++.</p>
+<p>0.6.0 adalah rilis keenam JRG. Ia membuat <code>--jit</code> jauh lebih cepat untuk kode yang hidup dari struct dan <code>map</code>/<code>filter</code>/<code>reduce</code>, membawa <code>--jit</code> ke <code>jrgm</code>, dan memperketat beberapa batas sumber daya. Tiga perubahan bisa membuat program lama berperilaku lain; daftarnya di bawah.</p>
 <h2 id="lebih-cepat"><a class="jangkar" href="#lebih-cepat">Lebih cepat</a></h2>
-<p><code>--jit</code>, jam penuh lawan 0.4.0: <code>numeric_kernel</code> 0,62 → 0,47 detik (setara biner <code>--emit-llvm</code>), <code>string_ops</code> 0,66 → 0,61, <code>mixed_report</code> 2,18 → 2,10. Yang tidak lagi lewat jalur umum: <code>teks + teks</code>, <code>str(n)</code>, geser bit konstan atas bilangan di atas 64 bit, dan closure pendek yang membaca tangkapannya.</p>
-<h2 id="lebih-aman"><a class="jangkar" href="#lebih-aman">Lebih aman</a></h2>
-<ul><li><code>dok::serve</code> melepas klien yang tidak membaca jawabannya (tenggat tulis 30 detik ditambah 1 detik per 16 KiB), jadi satu klien lambat tidak bisa menahan pekerja server.</li><li>Permintaan HTTP/1.1 tanpa kepala <code>Host</code> dijawab 400 (RFC 9112).</li></ul>
+<p><code>--jit</code> sekarang menghitung method kecil berumus langsung di tempat pemanggilnya. <code>x = x.m(dt)</code> yang membangun <code>Self</code> baru dari rumus pecahan atas field-nya tidak lagi memanggil method dan membuat struct baru: field dibaca, dihitung di register, lalu ditulis ke struct yang sama. Method yang cuma mengembalikan rumus pecahan atas field-nya (<code>rec.score()</code>) juga dihitung di tempat. Callback <code>map</code>/<code>filter</code>/<code>reduce</code> dan kawan-kawannya dipanggil tanpa menyiapkan bingkai baru tiap elemen. Jam penuh lawan 0.5.0:</p>
+<div class="tabel"><table><thead><tr><th>program</th><th>0.5.0</th><th>0.6.0</th></tr></thead><tbody><tr><td><code>struct_particles</code></td><td>12,9 s</td><td>3,3 s</td></tr><tr><td><code>mixed_report</code></td><td>2,2 s</td><td>1,4 s</td></tr><tr><td><code>hof_closure</code></td><td>0,66 s</td><td>0,44 s</td></tr><tr><td><code>string_scan</code></td><td>0,44 s</td><td>0,32 s</td></tr></tbody></table></div>
+<p>Jawabannya tetap sama persis dengan interpreter dan VM, termasuk saat struct-nya dibagi dengan variabel lain, field-nya berganti jenis, atau callback-nya gagal di tengah larik.</p>
+<h2 id="baru"><a class="jangkar" href="#baru">Baru</a></h2>
+<ul><li><code>jrgm run --jit</code>, <code>jrgm exec --jit</code> dan <code>jrgm test --jit</code>: proyek bisa dijalankan dan diuji lewat mesin keempat, sama dengan <code>jrgc --jit</code>. <code>--watch</code> ikut meneruskannya.</li></ul>
 <h2 id="bisa-memutus-program-lama"><a class="jangkar" href="#bisa-memutus-program-lama">Bisa memutus program lama</a></h2>
-<ul><li>Klien HTTP/1.1 yang tidak mengirim <code>Host</code> ke <code>dok::serve</code> sekarang ditolak; HTTP/1.0 tetap boleh.</li><li>Klien yang membaca jawaban sangat lambat diputus sesudah tenggat tulisnya habis.</li></ul>
-<h2 id="lainnya"><a class="jangkar" href="#lainnya">Lainnya</a></h2>
-<ul><li><code>jrgc --periksa</code> dan <code>jrgm lint</code> melaporkan method dan field yang tidak ada atas <code>let x = T { .. }</code>, dengan kalimat yang sama seperti saat baris itu dijalankan.</li><li><code>--emit-llvm</code>: <code>arr::insert</code> dengan nilai berjenis lain membuat larik campur seperti interpreter, dan sebar <code>...x</code> di literal varian enum generik jalan.</li></ul>
+<ul><li><code>json::stringify</code>, <code>json::pretty</code> dan <code>dok::json_encode</code> menolak pegangan pustaka (<code>Ptr</code>, <code>Future</code>, <code>DokDb</code>, …), seperti <code>Mutex</code>. Dulu hasilnya <code>{&quot;id&quot;:1}</code>.</li><li>WebSocket <code>dok::serve</code> melepas klien yang diam dan tidak menjawab <code>ping</code> (60 + 30 detik), menutup pesan yang tidak utuh dalam 30 detik ditambah 1 detik per 16 KiB, dan menghitung pesan setengah jadi di anggaran 256 MiB yang sama dengan badan HTTP.</li><li><code>wokwok::</code> menolak hasil broadcast dan <code>matmul</code> di atas 256 MiB, seperti pembangun lariknya. Dulu dua larik kecil bisa meminta puluhan GB dan mematikan prosesnya.</li></ul>
+<h2 id="diperbaiki"><a class="jangkar" href="#diperbaiki">Diperbaiki</a></h2>
+<ul><li><code>jrgm siapkan android</code> melewati entri katalog yang nama berkas atau foldernya bukan nama polos (<code>..</code>, <code>/</code>).</li></ul>
 <p>Rincian lengkapnya di <a href="https://github.com/Kodok-Kejepit/jrg/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
 <h2 id="memasang"><a class="jangkar" href="#memasang">Memasang</a></h2>
 <p>Lihat <a href="pasang.html">Pasang</a>. Biner tersedia untuk Linux (x86_64, aarch64), macOS (Intel, Apple Silicon), Windows (x86_64), dan Termux, masing-masing dengan checksum SHA-256. Arsipnya sudah membawa runtime untuk <code>--emit-llvm</code>, jadi yang perlu dipasang sendiri cuma <code>clang</code>.</p>
@@ -471,15 +473,15 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <p>Lihat <a href="batasan.html">Yang belum jadi</a>.</p>
 </article>
 <nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="batasan.html"><small>Sebelumnya</small><strong>Yang belum jadi</strong></a><span></span></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.5.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a></span></footer>
 </main>
-<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#lebih-cepat">Lebih cepat</a></li><li><a href="#lebih-aman">Lebih aman</a></li><li><a href="#bisa-memutus-program-lama">Bisa memutus program lama</a></li><li><a href="#lainnya">Lainnya</a></li><li><a href="#memasang">Memasang</a></li><li><a href="#yang-belum">Yang belum</a></li></ol></nav>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#lebih-cepat">Lebih cepat</a></li><li><a href="#baru">Baru</a></li><li><a href="#bisa-memutus-program-lama">Bisa memutus program lama</a></li><li><a href="#diperbaiki">Diperbaiki</a></li><li><a href="#memasang">Memasang</a></li><li><a href="#yang-belum">Yang belum</a></li></ol></nav>
 </div>
 <div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
   <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=0218ff4cf5"></script>
+<script defer src="../aset/cari.js?v=1896e80f46"></script>
 <script defer src="../aset/situs.js?v=e91e44ad63"></script>
 </body>
 </html>

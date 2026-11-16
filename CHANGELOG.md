@@ -8,15 +8,27 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Memutus
 
+- **`proses::jalankan` dan `proses::keluaran` menghentikan program yang keluarannya melewati 256 MiB** dan menjawab
+  `Err` (dulu `jrgc` mati kehabisan memori); penampung `proses::mulai` yang penuh menunggu dibaca.
+- **`jrgm new` menolak folder yang sudah ada** (dulu `src/main.jrg` di dalamnya ditimpa templat) **dan nama di luar
+  huruf, angka, `_`, `-`** (dengan jalur folder di depannya).
+- **Klien `http::` menolak jawaban yang terpotong** (badan lebih pendek dari `Content-Length`) dan `Content-Length`
+  yang tidak sah atau berbeda-beda; byte sesudah badan dibuang. HTTPS menuntut paling sedikit TLS 1.2.
+
+### Diperbaiki
+
+- **Berkas statis `dok::serve` dialirkan dari disk**, tidak lagi dimuat utuh per permintaan. Dengan middleware
+  `sesudah` berkasnya tetap dimuat, di bawah anggaran 256 MiB (lewat: 503).
+
+## [0.6.0] — 2026-11-16
+
+### Memutus
+
 - **`json::stringify`, `json::pretty` dan `dok::json_encode` menolak pegangan pustaka** (`Ptr`, `Future`, `DokDb`, …),
   seperti `Mutex` — dulu tertulis `{"id":1}`.
 - **WebSocket `dok::serve` melepas klien yang diam dan tidak menjawab `ping`** (60 + 30 detik), menutup pesan yang
   tidak utuh dalam 30 detik ditambah 1 detik per 16 KiB, dan menghitung pesan setengah jadi di anggaran 256 MiB yang
   sama dengan badan HTTP.
-- **`proses::jalankan` dan `proses::keluaran` menghentikan program yang keluarannya melewati 256 MiB** dan menjawab
-  `Err` (dulu `jrgc` mati kehabisan memori); penampung `proses::mulai` yang penuh menunggu dibaca.
-- **Klien `http::` menolak jawaban yang terpotong** (badan lebih pendek dari `Content-Length`) dan `Content-Length`
-  yang tidak sah atau berbeda-beda; byte sesudah badan dibuang. HTTPS menuntut paling sedikit TLS 1.2.
 - **`wokwok::` menolak hasil broadcast dan `matmul` di atas 256 MiB**, seperti pembangun lariknya — dulu dua larik
   kecil bisa meminta puluhan GB dan mematikan prosesnya.
 
@@ -39,8 +51,6 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Diperbaiki
 
-- **Berkas statis `dok::serve` dialirkan dari disk**, tidak lagi dimuat utuh per permintaan. Dengan middleware
-  `sesudah` berkasnya tetap dimuat, di bawah anggaran 256 MiB (lewat: 503).
 - **`jrgm siapkan android` melewati entri katalog yang nama berkas atau foldernya bukan nama polos** (`..`, `/`).
 
 ## [0.5.0] — 2026-11-16
