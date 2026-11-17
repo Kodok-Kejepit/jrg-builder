@@ -150,7 +150,8 @@ impl Parser {
         // `if a = 1 { ... }` — satu sama dengan di kepala syarat. Pesannya
         // dulu "harusnya ada `{`", yang benar tentang tokennya dan menyuruh
         // pembacanya mencari kurawal yang memang belum waktunya.
-        if matches!(kind, TokenKind::LBrace) && matches!(self.current().kind, TokenKind::Eq) {
+        if matches!(self.current().kind, TokenKind::Eq)
+            && (matches!(kind, TokenKind::LBrace) || (matches!(kind, TokenKind::RParen) && self.di_kurung_kepala_syarat())) {
             return Err(self.error(
                 "`=` itu MENUGASKAN nilai, bukan membandingkan — di kepala `if`/`while` \
                  maksudnya hampir pasti `==`. (JRG memang tidak mengizinkan penugasan \
@@ -161,6 +162,21 @@ impl Parser {
             "harusnya ada {} di sini, yang ketemu malah {}",
             kind.tulisan(), self.current().kind.tulisan()
         )))
+    }
+
+    /// Posisi kini di dalam `(` yang langsung mengikuti `if`/`while` (`if (x = 5)` gaya C).
+    fn di_kurung_kepala_syarat(&self) -> bool {
+        let mut dalam = 0usize;
+        for j in (0..self.pos).rev() {
+            match self.tokens[j].kind {
+                TokenKind::RParen => dalam += 1,
+                TokenKind::LParen if dalam > 0 => dalam -= 1,
+                TokenKind::LParen => return j > 0 && matches!(self.tokens[j - 1].kind, TokenKind::KwIf | TokenKind::KwWhile),
+                TokenKind::Semi | TokenKind::LBrace | TokenKind::RBrace => return false,
+                _ => {}
+            }
+        }
+        false
     }
 
     /// Kata dari bahasa lain yang muncul di posisi operator atau penutup.
@@ -262,6 +278,9 @@ impl Parser {
     pub(crate) fn error(&self, msg: String) -> ParseError {
         ParseError { msg, span: self.current().span }
     }
+
+    /// Galat di `span` tertentu — untuk bentuk yang sudah dilompati sebelum dilaporkan.
+    pub(crate) fn error_di(&self, msg: String, span: Span) -> ParseError { ParseError { msg, span } }
 
     pub(crate) fn span_lo(&self) -> Span { self.current().span }
 

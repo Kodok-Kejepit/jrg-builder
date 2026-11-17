@@ -1412,6 +1412,10 @@ impl Codegen {
                      elemen tuple boleh bertipe berbeda, jadi tipe hasil `t[a:b]` bergantung pada batasnya")),
             }
         };
+        // Batas dari variabel: tiap pasangan sah dipilih saat jalan, hasilnya nilai bertag (seperti `t[i]`).
+        if (konstan(lo.0).is_err() || konstan(hi.0).is_err()) && n <= 16 {
+            return self.potong_tuple_dinamis(ptr, oty, lo.1, hi.1, span);
+        }
         let (lo_k, hi_k) = (konstan(lo.0)?, konstan(hi.0)?);
         let mut pos = [0usize, n];
         for (j, (sisi, k)) in [("awal", lo_k), ("akhir", hi_k)].into_iter().enumerate() {
@@ -1427,21 +1431,54 @@ impl Codegen {
             self.tempat_tiruan_sesudah(&g::potongan_terbalik(pos[0], pos[1]), span)?;
             return Ok(Val::unit());
         }
-        // Tuple tanpa elemen: `{ }`, tampil `()`, `typeof` `tuple` — seperti acuan (dulu ditolak).
-        if pos[0] == pos[1] {
-            return Ok(Val { text: "zeroinitializer".into(), ty: JrgType::Tuple(Vec::new()) });
-        }
+        // Tuple tanpa elemen: `{ }`, tampil `()`, `typeof` `tuple` — seperti acuan (dulu ditolak), lewat `sub_tuple`.
         let asal = self.load_place(ptr, oty);
-        let hasil_ty = JrgType::Tuple(elems[pos[0]..pos[1]].to_vec());
+        Ok(self.sub_tuple(&asal, oty, pos[0], pos[1]))
+    }
+
+    /// Elemen `a..b` tuple `asal` (bertipe `oty`) sebagai tuple baru.
+    fn sub_tuple(&mut self, asal: &Val, oty: &JrgType, a: usize, b: usize) -> Val {
+        let JrgType::Tuple(elems) = oty else { unreachable!() };
+        if a == b { return Val { text: "zeroinitializer".into(), ty: JrgType::Tuple(Vec::new()) }; }
+        let hasil_ty = JrgType::Tuple(elems[a..b].to_vec());
         let mut agg = "undef".to_string();
-        for (j, i) in (pos[0]..pos[1]).enumerate() {
+        for (j, i) in (a..b).enumerate() {
             let e = self.fresh("tpot.");
             self.emit(format!("{} = extractvalue {} {}, {}", e, oty.llvm_ty(), asal.text, i));
             let r = self.fresh("tpot.");
             self.emit(format!("{} = insertvalue {} {}, {} {}, {}", r, hasil_ty.llvm_ty(), agg, elems[i].llvm_ty(), e, j));
             agg = r;
         }
-        Ok(Val { text: agg, ty: hasil_ty })
+        Val { text: agg, ty: hasil_ty }
+    }
+
+    /// `t[a:b]` dengan batas dari variabel: batasnya diperiksa dengan kalimat acuan, lalu pasangan
+    /// `(a, b)` dipilih lewat satu `switch` atas `a * (n + 1) + b`; tiap lengan mengotakkan potongannya.
+    fn potong_tuple_dinamis(&mut self, ptr: &str, oty: &JrgType, lo: Option<Val>, hi: Option<Val>, span: Span) -> Result<Val, String> {
+        let JrgType::Tuple(elems) = oty else { unreachable!() };
+        let n = elems.len();
+        let panjang = Val { text: n.to_string(), ty: JrgType::I64 };
+        let Some((a, b)) = self.batas_potongan_dicek(lo, hi, &panjang, span)? else { return Ok(Val::unit()) };
+        let asal = self.load_place(ptr, oty);
+        let kunci = self.fresh("tpd.");
+        self.emit(format!("{} = mul i64 {}, {}", kunci, a.text, n + 1));
+        let kunci2 = self.fresh("tpd.");
+        self.emit(format!("{} = add i64 {}, {}", kunci2, kunci, b.text));
+        let hasil = self.alloca_typed("tpd.", &JrgType::Any);
+        let usai = self.fresh_label("tpd.usai.");
+        let mut lengan = Vec::new();
+        for x in 0..=n { for y in x..=n { lengan.push((x, y, self.fresh_label("tpd.l."))); } }
+        let kasus: Vec<String> = lengan.iter().map(|(x, y, l)| format!("i64 {}, label %{}", x * (n + 1) + y, l)).collect();
+        self.terminate(format!("switch i64 {}, label %{} [ {} ]", kunci2, usai, kasus.join(" ")));
+        for (x, y, l) in lengan {
+            self.start_block(l);
+            let v = self.sub_tuple(&asal, oty, x, y);
+            let k = self.kotak_any(&v, span)?;
+            self.emit(format!("store %JrgAny {}, ptr {}", k.text, hasil));
+            self.terminate(format!("br label %{}", usai));
+        }
+        self.start_block(usai);
+        Ok(self.load_place(&hasil, &JrgType::Any))
     }
 
     /// `s[lo:hi]` — potongan string, per KARAKTER.

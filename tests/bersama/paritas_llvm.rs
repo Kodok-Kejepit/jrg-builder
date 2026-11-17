@@ -1,6 +1,18 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const PARITAS_LLVM: &[(&str, &str)] = &[
+    // Telaah BELUM_DIDUKUNG_LLVM K4 (2026-11-18): `t[a:b]` berbatas variabel, hasilnya bertag — dulu ditolak saat kompilasi.
+    ("potong tuple berbatas variabel, juga negatif, kosong dan campur tipe", r#"package main
+pub fn main() {
+    let t = (1, "dua", 3.5, true)
+    for i in 0..5 { wok(t[i:]) }
+    var a = 1
+    var b = -1
+    wok(t[a:b], t[:a], t[b:], t[a:a], typeof(t[a:b]))
+    let u = (7, 8)
+    wok(u[a:] == (8,), len(u[0:a]))
+}
+"#),
     // Ukuran enum = tipe yang dipancarkan (`{ i32, [n x i64] }`), bukan perataan muatannya: `Option<bool>`/`Option<i32>`
     // dulu terhitung 8 byte padahal 16, jadi larik yang tumbuh menjawab nilai salah dan `<?>` dengan kode 0; di wasm32
     // kotak `Option<P>` di dalam tuple ditulis melewati tempatnya dan tampilannya berulang sampai stack habis.

@@ -853,9 +853,6 @@ const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
     ("potong: array di dalam nilai bertag",
      "package main\npub fn main() { let v = len(env::args()) > 99 $ 5 : [1, 2, 3]\n wok(v[0:2]) }",
      "di dalam nilai bertag belum didukung backend LLVM"),
-    // Fase POTONG: tipe hasil `t[a:b]` bergantung pada batasnya.
-    ("potong: tuple berbatas variabel", "package main\npub fn main() { let t = (1, 2, 3)\n let i = 1\n wok(t[i:]) }",
-     "batas potongan tuple di backend LLVM harus angka yang sudah pasti saat kompilasi"),
     // Fase SEBAR-TIPE: dua mesin lain menyimpan `2` di field `string`; di LLVM tipe field tetap.
     ("sebar membawa field berjenis lain dari sasarannya",
      "package main\nstruct A { pub x: int, pub y: string }\nstruct B { pub x: int, pub y: int }\npub fn main() { let b = B { x: 1, y: 2 }\n let a = A { x: 5, ...b }\n wok(a.y) }",

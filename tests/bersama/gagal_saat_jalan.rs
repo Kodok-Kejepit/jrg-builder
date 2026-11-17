@@ -1,6 +1,11 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const GAGAL_SAAT_JALAN: &[(&str, &str, &str, &str)] = &[
+    // K4: batas tuple dari variabel di luar jangkauan atau terbalik — kalimat acuan, saat jalan.
+    ("potong tuple: batas variabel di luar jangkauan", "package main\npub fn main() {\n let t = (1, 2)\n var i = 5\n wok(\"mulai\")\n wok(t[i:])\n}",
+     "mulai", "di luar"),
+    ("potong tuple: batas variabel terbalik", "package main\npub fn main() {\n let t = (1, 2, 3)\n var i = 2\n var j = 1\n wok(\"mulai\")\n wok(t[i:j])\n}",
+     "mulai", "terbalik"),
     // `match` bulat lewat `switch` tanpa `_`: nilai di luar semua lengan gagal dengan kalimat acuan.
     ("match bulat lewat switch tanpa lengan cocok",
      "package main\nfn f(v: int) -> string { match v { 0 => \"nol\", 1..=2 => \"kecil\" } }\npub fn main() {\n wok(f(1))\n wok(f(7))\n}",

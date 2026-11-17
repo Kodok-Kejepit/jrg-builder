@@ -625,6 +625,19 @@ impl Parser {
                 _ => PESAN_KURANG.to_string(),
             });
         }
+        // `c ? a : b` gaya C: `?` sudah dibaca sebagai penerus galat, lalu `:` tidak punya tempat.
+        if matches!(self.current().kind, TokenKind::Colon) {
+            let mut i = self.pos;
+            while let Some(j) = i.checked_sub(1) {
+                match &self.tokens[j].kind {
+                    TokenKind::Question => return Some(concat!(
+                        "ternary di JRG ditulis `syarat $ a : b` — `?` di JRG cuma berarti meneruskan ",
+                        "galat (`f()?`)").to_string()),
+                    TokenKind::Semi | TokenKind::LBrace | TokenKind::RBrace => break,
+                    _ => i = j,
+                }
+            }
+        }
         // `i++`: `+` pertama sudah dimakan operator biner.
         if matches!(self.current().kind, TokenKind::Plus)
             && matches!(kb(1), Some(TokenKind::Plus))
