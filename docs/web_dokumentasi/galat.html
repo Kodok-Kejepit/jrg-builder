@@ -532,6 +532,19 @@ error: age cannot be negative
   |
   = trace: `valid_age` called at panic.jrg:9:5</code></pre></figure>
 <p>The <code>trace:</code> line shows where the function was called from. <code>exit(code)</code> ends the program with an exit code 0–255 and no message.</p>
+<h2 id="catching-an-error"><a class="jangkar" href="#catching-an-error">Catching an error</a></h2>
+<p><code>tangkap(f)</code> runs a function that takes no arguments and answers a <code>Result</code>: <code>Ok</code> with its value, or <code>Err</code> with a <code>Galat</code> when an error happens while it runs. The fields are <code>pesan</code> (the sentence, in the message language), <code>berkas</code>, <code>baris</code> and <code>kolom</code> (where it happened). <code>defer</code> inside <code>f</code> still runs first.</p>
+<figure class="kode" data-jalan><figcaption><span>catch.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">divide</span>(a, b) {
+    <span class="k-kunci">return</span> a / b
+}
+
+<span class="k-kunci">match</span> <span class="k-fn">tangkap</span>(|| <span class="k-fn">divide</span>(<span class="k-ang">10</span>, <span class="k-ang">0</span>)) {
+    <span class="k-fn">Ok</span>(v) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;result:&quot;</span>, v),
+    <span class="k-fn">Err</span>(g) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;failed at line&quot;</span>, g.baris, <span class="k-str">&quot;-&quot;</span>, g.pesan),
+}
+<span class="k-fn">wok</span>(<span class="k-str">&quot;still running&quot;</span>)</code></pre><pre class="keluaran"><code>failed at line 2 - `10 / 0` — cannot divide by zero, the result is never defined. Check the divisor before dividing
+still running</code></pre></figure>
+<p>Every error is caught, including a stack that runs out, except <code>exit()</code>, which ends the program on purpose, and running out of memory. Nothing is rolled back: what <code>f</code> changed before the error stays changed. <code>panik(g)</code> raises a caught <code>Galat</code> again, with a note saying where it first happened.</p>
 <h2 id="checking-assumptions"><a class="jangkar" href="#checking-assumptions">Checking assumptions</a></h2>
 <p><code>assert(condition)</code> and <code>assert_eq(a, b)</code> stop the program when an assumption is false. Inside a test (see the <a href="tur.html#writing-tests">Quick tour</a>), a failing assert marks that test as failed.</p>
 <figure class="kode" data-jalan><figcaption><span>assert.jrg</span></figcaption><pre><code><span class="k-fn">assert</span>(<span class="k-ang">1</span> + <span class="k-ang">1</span> == <span class="k-ang">2</span>)
@@ -547,13 +560,13 @@ error: age cannot be negative
 <nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="pola.html"><small>Previous</small><strong>Patterns</strong></a><a class="ke-kanan" href="modul.html"><small>Next</small><strong>Modules</strong></a></nav>
 <footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
 </main>
-<nav class="di-halaman" aria-label="On this page"><p>On this page</p><ol><li><a href="#option">Option</a></li><li><a href="#result">Result</a></li><li><a href="#propagating-failure-with">Propagating failure with ?</a></li><li><a href="#when-main-fails">When main fails</a></li><li><a href="#stopping-a-program">Stopping a program</a></li><li><a href="#checking-assumptions">Checking assumptions</a></li></ol></nav>
+<nav class="di-halaman" aria-label="On this page"><p>On this page</p><ol><li><a href="#option">Option</a></li><li><a href="#result">Result</a></li><li><a href="#propagating-failure-with">Propagating failure with ?</a></li><li><a href="#when-main-fails">When main fails</a></li><li><a href="#stopping-a-program">Stopping a program</a></li><li><a href="#catching-an-error">Catching an error</a></li><li><a href="#checking-assumptions">Checking assumptions</a></li></ol></nav>
 </div>
 <div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Search">
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=cee15a2dd3"></script>
+<script defer src="../aset/cari.js?v=6c40d0d7bc"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

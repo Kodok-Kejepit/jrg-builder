@@ -35,6 +35,7 @@ pub mod galat_index;
 pub mod konversi;
 pub mod operator;
 pub mod tugas;
+pub mod tangkap;
 pub mod stdlib_src;
 
 pub use value::*;

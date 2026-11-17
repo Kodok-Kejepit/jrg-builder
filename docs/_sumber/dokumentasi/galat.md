@@ -123,6 +123,32 @@ error: umur tidak boleh negatif
 Baris `jejak:` menunjukkan dari mana fungsi itu dipanggil. `exit(kode)` mengakhiri program dengan kode keluar 0–255
 tanpa pesan.
 
+## Menangkap galat
+
+`tangkap(f)` menjalankan fungsi tanpa argumen dan menjawab `Result`: `Ok` berisi nilainya, atau `Err` berisi `Galat`
+kalau ada galat saat ia jalan. Field-nya `pesan` (kalimatnya, dalam bahasa pesan), `berkas`, `baris` dan `kolom`
+(tempatnya). `defer` di dalam `f` tetap jalan lebih dulu.
+
+```jrg tangkap.jrg
+fn bagi(a, b) {
+    return a / b
+}
+
+match tangkap(|| bagi(10, 0)) {
+    Ok(v) => wok("hasil:", v),
+    Err(g) => wok("gagal di baris", g.baris, "-", g.pesan),
+}
+wok("masih jalan")
+```
+```keluaran
+gagal di baris 2 - `10 / 0` — nggak bisa bagi dengan nol, hasilnya nggak pernah terdefinisi. Cek lagi angka pembaginya sebelum dipakai bagi
+masih jalan
+```
+
+Semua galat ditangkap, termasuk stack yang habis, kecuali `exit()`, yang memang sengaja menghentikan program, dan
+memori yang habis. Tidak ada yang dikembalikan: yang sudah diubah `f` sebelum galat tetap berubah. `panik(g)`
+melempar `Galat` yang tertangkap lagi, dengan catatan tempat asalnya.
+
 ## Memeriksa asumsi
 
 `assert(syarat)` dan `assert_eq(a, b)` menghentikan program kalau asumsinya salah. Di dalam tes (lihat

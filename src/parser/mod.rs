@@ -1164,7 +1164,7 @@ pub const TIPE_BAWAAN: &[&str] = &[
     "Canvas", "Channel", "PyObj", "JsObj", "PhpObj", "Nd", "Atomic", "Mutex",
     // Struct yang dibuat interpreter sendiri.
     "DokDb", "DokHttpResp", "DokLinReg", "DokRequest", "DokResponse", "DokWs",
-    "HeapStats", "JsonObject", "MousePos", "Ptr", "UdpPacket",
+    "HeapStats", "JsonObject", "MousePos", "Ptr", "UdpPacket", "Galat",
     // Handle modul `.wasm` yang sedang dimuat (`wasm::muat`).
     "WasmModul",
     // Handle pointer fungsi .NET (`dotnet::fungsi`).

@@ -4774,4 +4774,31 @@ pub fn main() {
     wok(a, p)
 }
 "#),
+    ("tangkap: galat saat jalan jadi Err(Galat)", r#"package main
+fn dalam(n: int) -> int {
+    defer wok("defer dalam jalan")
+    let a = [1, 2]
+    return a[n]
+}
+fn bagi(a: int, b: int) -> int { return a / b }
+pub fn main() {
+    wok(tangkap(|| dalam(1)))
+    match tangkap(|| dalam(5)) {
+        Ok(v) => wok("tidak mungkin", v),
+        Err(g) => wok(g.pesan, str::ends_with(g.berkas, ".jrg"), g.baris, g.kolom),
+    }
+    match tangkap(|| panik("sengaja")) { Err(g) => wok(g.pesan, g.baris, g.kolom), Ok(_) => wok("?") }
+    match tangkap(|| { let d = {"a": 1}
+        d["b"] }) { Err(g) => wok(g.baris, g.pesan), Ok(_) => wok("?") }
+    match tangkap(|| bagi(1, 0)) { Err(g) => wok(g.baris), Ok(_) => wok("?") }
+    var n = 0
+    let r = tangkap(|| { n = 5
+        panik("x") })
+    wok(n, r.is_err())
+    match tangkap(|| tangkap(|| panik("dalam"))) { Ok(Err(g)) => wok("bersarang:", g.pesan), _ => wok("?") }
+    match tangkap(|| 40 + 2) { Ok(x) => wok(x), Err(_) => wok("?") }
+    let p = tangkap(|| assert_eq(1, 2))
+    wok(p.is_err(), typeof(p))
+}
+"#),
 ];

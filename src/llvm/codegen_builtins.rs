@@ -103,6 +103,7 @@ impl Codegen {
             "Atomic::new" | "Mutex::new" | "atomic::get" | "atomic::set" | "atomic::add" | "atomic::sub" | "atomic::cas"
             | "mutex::lock" | "mutex::unlock" | "mutex::with_lock" => self.panggil_sinkron(name, args, span),
             "Future::new" => self.masa_baru(args, false, span),
+            "tangkap" if args.len() == 1 => self.tangkap(&args[0], span),
             "Task::spawn" => self.masa_baru(args, true, span),
             _ if (name.starts_with("future::") || name.starts_with("task::")) && self.nama_masa(name, args.len()) =>
                 return self.coba_builtin_masa(name, args, span),
@@ -818,6 +819,21 @@ impl Codegen {
             return Err(super::galat::tandai(span, format!("`panik` butuh 1 argumen, dapat {}", args.len())));
         }
         let m = self.codegen_expr(&args[0], Some(&JrgType::Str))?;
+        // `panik(g)` atas `Galat` dari `tangkap`: dilempar ulang dengan kalimat `tangkap::pesan_lempar_ulang`.
+        if m.ty == JrgType::Struct(crate::interpreter::tangkap::NAMA.to_string()) {
+            use crate::interpreter::tangkap::{CATATAN_AWAL, CATATAN_AKHIR};
+            let tempat = self.spill_to_place(&m);
+            let g = self.lokal_sementara(tempat, m.ty.clone(), span);
+            let teks = |s: &str| Expr::Literal(LitKind::Str(s.to_string()), span);
+            let f = |n: &str| Expr::Field { obj: Box::new(g.clone()), field: n.to_string(), span };
+            let s = |e: Expr| Expr::Call { func: Box::new(Expr::PathExpr { segments: vec![String::new(), "str".to_string()], span }), args: vec![e], span };
+            let tambah = |a: Expr, b: Expr| Expr::Binary { op: BinaryOp::Add, lhs: Box::new(a), rhs: Box::new(b), span };
+            let catatan = [teks(CATATAN_AWAL), f("berkas"), teks(":"), s(f("baris")), teks(":"), s(f("kolom")), teks(CATATAN_AKHIR)]
+                .into_iter().fold(f("pesan"), tambah);
+            let ada = Expr::Binary { op: BinaryOp::Gt, lhs: Box::new(f("baris")), rhs: Box::new(Expr::Literal(LitKind::Int(0), span)), span };
+            let pesan = Expr::Ternary { cond: Box::new(ada), then: Box::new(catatan), else_: Box::new(f("pesan")), span };
+            return self.builtin_panik(&[pesan], span);
+        }
         let m = if m.ty != JrgType::Str { self.val_to_str(&m)? } else { m };
         self.ensure_extern("declare void @jrg_panic(ptr, i64) cold nounwind noreturn", "jrg_panic");
         let (mp, ml) = self.split_str(&m);

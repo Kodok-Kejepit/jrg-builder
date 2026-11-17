@@ -1324,6 +1324,40 @@ pub unsafe extern "C" fn jrg_uji_lapor(rc: i32, pp: *const u8, pl: i64, okp: *co
     write_out(&format!("{}\n", bahasa::t(&t.replacen('\u{1}', sebab, 1))), 0);
 }
 
+/// `Galat` milik `tangkap` di IR (`codegen_korutin::daftar_galat`): field urut abjad.
+#[repr(C)]
+pub struct TeksMentah { p: *const u8, n: i64 }
+#[repr(C)]
+pub struct GalatTangkap { baris: i64, berkas: TeksMentah, kolom: i64, pesan: TeksMentah }
+
+/// Isi `Galat` dari galat badan `tangkap`: kalimat pertamanya dalam bahasa pesan, lokasinya dari blok situs yang
+/// dirender `jrgc` (`--> berkas:baris:kolom`), `""`/0/0 kalau tidak ada — aturan `interpreter::tangkap::rekam`.
+#[no_mangle]
+pub unsafe extern "C" fn jrg_tangkap_rekam(p: *const u8, n: i64, out: *mut GalatTangkap) {
+    let situs = core::mem::replace(&mut (*core::ptr::addr_of_mut!(PANIK)).situs, 0);
+    let pesan = borrow_str(p, n);
+    let kalimat = pesan.lines().find(|l| !l.trim().is_empty()).unwrap_or("").trim();
+    let (mut berkas, mut baris, mut kolom) = (String::new(), 0i64, 0i64);
+    let (isi, jml, teks) = SITUS;
+    if situs > 0 && situs <= jml && !isi.is_null() {
+        let [awal, panjang, _] = *isi.add((situs - 1) as usize);
+        let b = core::slice::from_raw_parts(teks.add(awal as usize), panjang as usize);
+        let blok = core::str::from_utf8(b).unwrap_or("");
+        if let Some(i) = blok.find("--> ") {
+            let lok = blok[i + 4..].split(|c: char| c == '\n' || c.is_whitespace()).next().unwrap_or("");
+            let mut bagian = lok.rsplitn(3, ':');
+            if let (Some(k), Some(l), Some(f)) = (bagian.next(), bagian.next(), bagian.next()) {
+                if let (Ok(k), Ok(l)) = (k.parse::<i64>(), l.parse::<i64>()) { berkas = f.to_string(); baris = l; kolom = k; }
+            }
+        }
+    }
+    let o = &mut *out;
+    o.baris = baris;
+    o.kolom = kolom;
+    emit_string(bahasa::t(kalimat), &mut o.pesan.p, &mut o.pesan.n);
+    emit_string(berkas, &mut o.berkas.p, &mut o.berkas.n);
+}
+
 /// Rangkuman (`\u{3}` total, `\u{4}` lulus, `\u{5}` gagal); jawabannya kode keluar `main` buatan.
 #[no_mangle]
 pub unsafe extern "C" fn jrg_uji_akhir(tp: *const u8, tl: i64) -> i64 {

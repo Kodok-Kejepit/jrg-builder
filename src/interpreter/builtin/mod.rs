@@ -48,6 +48,8 @@ pub enum NativeFnKind {
     /// `terap_bernama(f, posisional, nama, nilai)` — mesin di balik gula
     /// `f(a, b: 2)`.
     TerapBernama,
+    /// `tangkap(f)` — galat saat jalan di dalam `f` jadi `Err(Galat)` (`interpreter::tangkap`).
+    Tangkap,
     Range, RangeInclusive, Exit,
     ArrCountIf, ArrMaxBy, ArrMinBy, ArrSortByKey, ArrFold,
     // math::
@@ -256,6 +258,7 @@ impl Env {
         self.n("typeof",      Typeof);
         self.n("terap",       Terap);
         self.n("terap_bernama", TerapBernama);
+        self.n("tangkap",     Tangkap);
         self.n("assert",      Assert);
         self.n("panik",       Panik);
         self.n("assert_eq",   AssertEq);

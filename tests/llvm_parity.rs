@@ -305,6 +305,10 @@ include!("bersama/paritas.rs");
 const PARITAS_BEDA_DI_LLVM: &[(&str, &str)] = &[
     // Kosong sejak Fase URUTAN-LLVM (entri terakhirnya, tulisan yang hilang di `m[0] = m[0] + g()`,
     // ditutup). Entri berikutnya: ("nama kasus PARITAS", "sebabnya").
+    ("tangkap: stack habis tertangkap dan berlokasi",
+     "biner LLVM tidak tahu di situs mana stack-nya habis (penjaganya di luar situs mana pun, lihat \
+      `pesan_gagal_saat_jalan_sama`), jadi `Galat`-nya berlokasi kosong (`baris` 0): nilai \"tidak diketahui\" yang \
+      didokumentasikan, bukan lokasi karangan"),
 ];
 
 /// Modul yang di-`import` jalan lewat LLVM dan menjawab sama dengan dua mesin lain (Fase

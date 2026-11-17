@@ -49,6 +49,21 @@ pub fn register_module_source(name: String, src: String) -> u32 {
     id
 }
 
+/// Berkas utama (id 0), dipasang `pipa::lex_dilaporkan`: `lokasi` membutuhkannya saat program berjalan.
+static BERKAS_UTAMA: std::sync::Mutex<Option<SourceFile>> = std::sync::Mutex::new(None);
+
+pub fn daftarkan_utama(sf: &SourceFile) {
+    if sf.id == 0 { *BERKAS_UTAMA.lock().unwrap_or_else(|p| p.into_inner()) = Some(sf.clone()); }
+}
+
+/// `(berkas, baris, kolom)` sebuah `Span` saat program berjalan (`tangkap`), kalau sumbernya diketahui.
+pub fn lokasi(span: Span) -> Option<(String, usize, usize)> {
+    let sf = if span.file_id == 0 { BERKAS_UTAMA.lock().unwrap_or_else(|p| p.into_inner()).clone()? }
+             else { sumber_modul(span.file_id)? };
+    let peta = SourceMap::with_file(sf);
+    peta.locate(span).map(|l| (l.file_name.to_string(), l.line_no, l.col))
+}
+
 /// Salinan sumber modul ber-`id`, kalau pernah didaftarkan.
 pub(crate) fn sumber_modul(id: u32) -> Option<SourceFile> {
     let daftar = berkas_modul().lock().unwrap_or_else(|p| p.into_inner());

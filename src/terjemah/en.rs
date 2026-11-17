@@ -20,6 +20,15 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
      "an `--emit-llvm` binary does not free old copies, so copying a large collection over and over uses up memory; use the forms that change in place "),
     (", atau jalankan tanpa `--emit-llvm`", ", or run without `--emit-llvm`"),
 
+    // ── tangkap ───────────────────────────────────────────────────────────────────────────────────────────────
+    ("tangkap butuh fungsi tanpa argumen, dapat `{}`", "tangkap needs a function without arguments, got `{}`"),
+    ("bungkus kodenya: `tangkap(|| ...)`", "wrap the code: `tangkap(|| ...)`"),
+    ("tangkap butuh fungsi tanpa argumen, dapat fungsi yang butuh {} argumen",
+     "tangkap needs a function without arguments, got a function that needs {} arguments"),
+    ("bungkus panggilannya: `tangkap(|| f(x))`", "wrap the call: `tangkap(|| f(x))`"),
+    ("galat ini ditangkap `tangkap` dari {}, lalu dilempar lagi lewat `panik`",
+     "this error was caught by `tangkap` from {}, then raised again through `panik`"),
+
     // ── --verbose ─────────────────────────────────────────────────────────────────────────────────────────────
     ("[jrgc] {} token(s) diproduksi", "[jrgc] {} token(s) produced"),
     ("[jrgc] backend LLVM aktif — lowering AST ke LLVM IR...", "[jrgc] LLVM backend active — lowering the AST to LLVM IR..."),

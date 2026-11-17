@@ -566,6 +566,16 @@ int32_t jrg_masa_lindung(void (*jalan)(void *), void *env, const char **pesan, i
     return -1;
 }
 
+// `tangkap(f)`: hasil tugasnya ke `out` (1), atau galatnya direkam ke `galat` lewat runtime (0) — tidak melempar.
+void jrg_tangkap_rekam(const char *pesan, int64_t n, void *galat);
+int32_t jrg_tangkap_ambil(JrgChan *c, void *out, void *galat) {
+    jrg_chan_recv(c, out, c->esize);
+    c->diambil = 1;
+    if (!c->gagal) return 1;
+    jrg_tangkap_rekam(c->gagal, c->gagal_n, galat);
+    return 0;
+}
+
 int32_t jrg_masa_selesai(JrgChan *c) {
     int32_t siap = c->n > 0 || c->diambil;
     if (!siap) jrg_ko_serah();

@@ -532,6 +532,19 @@ error: umur tidak boleh negatif
   |
   = jejak: `umur_valid` dipanggil di panik.jrg:9:5</code></pre></figure>
 <p>Baris <code>jejak:</code> menunjukkan dari mana fungsi itu dipanggil. <code>exit(kode)</code> mengakhiri program dengan kode keluar 0–255 tanpa pesan.</p>
+<h2 id="menangkap-galat"><a class="jangkar" href="#menangkap-galat">Menangkap galat</a></h2>
+<p><code>tangkap(f)</code> menjalankan fungsi tanpa argumen dan menjawab <code>Result</code>: <code>Ok</code> berisi nilainya, atau <code>Err</code> berisi <code>Galat</code> kalau ada galat saat ia jalan. Field-nya <code>pesan</code> (kalimatnya, dalam bahasa pesan), <code>berkas</code>, <code>baris</code> dan <code>kolom</code> (tempatnya). <code>defer</code> di dalam <code>f</code> tetap jalan lebih dulu.</p>
+<figure class="kode" data-jalan><figcaption><span>tangkap.jrg</span></figcaption><pre><code><span class="k-kunci">fn</span> <span class="k-fn">bagi</span>(a, b) {
+    <span class="k-kunci">return</span> a / b
+}
+
+<span class="k-kunci">match</span> <span class="k-fn">tangkap</span>(|| <span class="k-fn">bagi</span>(<span class="k-ang">10</span>, <span class="k-ang">0</span>)) {
+    <span class="k-fn">Ok</span>(v) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;hasil:&quot;</span>, v),
+    <span class="k-fn">Err</span>(g) =&gt; <span class="k-fn">wok</span>(<span class="k-str">&quot;gagal di baris&quot;</span>, g.baris, <span class="k-str">&quot;-&quot;</span>, g.pesan),
+}
+<span class="k-fn">wok</span>(<span class="k-str">&quot;masih jalan&quot;</span>)</code></pre><pre class="keluaran"><code>gagal di baris 2 - `10 / 0` — nggak bisa bagi dengan nol, hasilnya nggak pernah terdefinisi. Cek lagi angka pembaginya sebelum dipakai bagi
+masih jalan</code></pre></figure>
+<p>Semua galat ditangkap, termasuk stack yang habis, kecuali <code>exit()</code>, yang memang sengaja menghentikan program, dan memori yang habis. Tidak ada yang dikembalikan: yang sudah diubah <code>f</code> sebelum galat tetap berubah. <code>panik(g)</code> melempar <code>Galat</code> yang tertangkap lagi, dengan catatan tempat asalnya.</p>
 <h2 id="memeriksa-asumsi"><a class="jangkar" href="#memeriksa-asumsi">Memeriksa asumsi</a></h2>
 <p><code>assert(syarat)</code> dan <code>assert_eq(a, b)</code> menghentikan program kalau asumsinya salah. Di dalam tes (lihat <a href="tur.html#menulis-tes">Tur singkat</a>), kegagalan assert menandai tes itu gagal.</p>
 <figure class="kode" data-jalan><figcaption><span>assert.jrg</span></figcaption><pre><code><span class="k-fn">assert</span>(<span class="k-ang">1</span> + <span class="k-ang">1</span> == <span class="k-ang">2</span>)
@@ -547,13 +560,13 @@ error: umur tidak boleh negatif
 <nav class="langkah" aria-label="Halaman berurutan"><a class="ke-kiri" href="pola.html"><small>Sebelumnya</small><strong>Pola</strong></a><a class="ke-kanan" href="modul.html"><small>Berikutnya</small><strong>Modul</strong></a></nav>
 <footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>versi 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Pasang</a> · <a href="../web_dokumentasi/rilis.html">Catatan rilis</a> · <a href="../profil.html">Profil</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Kode sumber</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">Saluran WhatsApp</a></span></footer>
 </main>
-<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#option">Option</a></li><li><a href="#result">Result</a></li><li><a href="#meneruskan-kegagalan-dengan">Meneruskan kegagalan dengan ?</a></li><li><a href="#kalau-main-gagal">Kalau main gagal</a></li><li><a href="#menghentikan-program">Menghentikan program</a></li><li><a href="#memeriksa-asumsi">Memeriksa asumsi</a></li></ol></nav>
+<nav class="di-halaman" aria-label="Di halaman ini"><p>Di halaman ini</p><ol><li><a href="#option">Option</a></li><li><a href="#result">Result</a></li><li><a href="#meneruskan-kegagalan-dengan">Meneruskan kegagalan dengan ?</a></li><li><a href="#kalau-main-gagal">Kalau main gagal</a></li><li><a href="#menghentikan-program">Menghentikan program</a></li><li><a href="#menangkap-galat">Menangkap galat</a></li><li><a href="#memeriksa-asumsi">Memeriksa asumsi</a></li></ol></nav>
 </div>
 <div class="dialog-cari" hidden><div class="kotak-cari" role="dialog" aria-label="Cari">
   <input type="search" placeholder="Cari di dokumentasi dan kelas…" aria-label="Kata yang dicari">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../../aset/cari-id.js?v=d196b167fd"></script>
+<script defer src="../../aset/cari-id.js?v=1e75ba574e"></script>
 <script defer src="../../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

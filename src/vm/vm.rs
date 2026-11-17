@@ -188,6 +188,8 @@ pub enum NativeKhusus {
     /// `terap_bernama(f, posisional, nama, nilai)` — mesin di balik gula
     /// `f(a, b: 2)`.
     TerapBernama,
+    /// `tangkap(f)` — galat saat jalan di dalam `f` jadi `Err(Galat)` (`interpreter::tangkap`).
+    Tangkap,
     /// HOF bawaan yang dipanggil lewat NILAI-nya (`let f = arr::map`).
     Hof { nama: &'static str },
     /// `py::`/`js::`/`php::`/`lua::`: worker-nya memanggil balik fungsi JRG.

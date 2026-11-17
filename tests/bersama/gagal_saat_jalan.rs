@@ -1056,4 +1056,17 @@ pub fn main() {
         "sebelum",
         "`Ptr` adalah handle buatan pustaka — field `id` tidak bisa ditulis",
     ),
+    // `tangkap` (surat 11.30): `panik(g)` melempar ulang dengan tempat asalnya; salah pakai TIDAK ditangkap.
+    ("tangkap: panik(g) melempar ulang dengan lokasi asal",
+     "package main\nfn f() -> int {\n    let a = [1]\n    return a[3]\n}\npub fn main() {\n    match tangkap(|| f()) { Err(g) => { wok(\"sebelum\")\n        panik(g) }, Ok(_) => {} }\n}\n",
+     "sebelum",
+     "uji.jrg:4:12, lalu dilempar lagi lewat `panik`"),
+    ("tangkap: bukan fungsi",
+     "package main\npub fn main() {\n    wok(\"sebelum\")\n    let r = tangkap(5)\n    wok(r)\n}\n",
+     "sebelum",
+     "tangkap butuh fungsi tanpa argumen, dapat `int`"),
+    ("tangkap: fungsi yang butuh argumen",
+     "package main\npub fn main() {\n    wok(\"sebelum\")\n    let r = tangkap(|x| x)\n    wok(r)\n}\n",
+     "sebelum",
+     "tangkap butuh fungsi tanpa argumen, dapat fungsi yang butuh 1 argumen"),
 ];

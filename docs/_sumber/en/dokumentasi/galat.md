@@ -122,6 +122,32 @@ error: age cannot be negative
 The `trace:` line shows where the function was called from. `exit(code)` ends the program with an exit code
 0–255 and no message.
 
+## Catching an error
+
+`tangkap(f)` runs a function that takes no arguments and answers a `Result`: `Ok` with its value, or `Err` with a
+`Galat` when an error happens while it runs. The fields are `pesan` (the sentence, in the message language),
+`berkas`, `baris` and `kolom` (where it happened). `defer` inside `f` still runs first.
+
+```jrg catch.jrg
+fn divide(a, b) {
+    return a / b
+}
+
+match tangkap(|| divide(10, 0)) {
+    Ok(v) => wok("result:", v),
+    Err(g) => wok("failed at line", g.baris, "-", g.pesan),
+}
+wok("still running")
+```
+```keluaran
+failed at line 2 - `10 / 0` — cannot divide by zero, the result is never defined. Check the divisor before dividing
+still running
+```
+
+Every error is caught, including a stack that runs out, except `exit()`, which ends the program on purpose, and
+running out of memory. Nothing is rolled back: what `f` changed before the error stays changed. `panik(g)` raises a
+caught `Galat` again, with a note saying where it first happened.
+
 ## Checking assumptions
 
 `assert(condition)` and `assert_eq(a, b)` stop the program when an assumption is false. Inside a test (see the

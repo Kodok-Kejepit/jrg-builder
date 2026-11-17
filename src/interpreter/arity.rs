@@ -598,6 +598,7 @@ static MAKS: &[(&str, u8)] = &[
     ("suara::sunyi", 1),
     ("suara::tersedia", 0),
     ("tan", 1),
+    ("tangkap", 1),
     ("tar::create", 2),
     ("tar::extract", 2),
     ("tar::list", 1),

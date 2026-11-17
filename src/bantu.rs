@@ -1816,6 +1816,8 @@ pub const DOKUMEN: &[Info] = &[
            ringkas: "Tangen (radian); sama dengan `math::tan`." },
     Info { nama: "teks", tanda_tangan: "teks(v) -> string",
            ringkas: "Sama dengan `str`." },
+    Info { nama: "tangkap", tanda_tangan: "tangkap(f) -> Result<nilai, Galat>",
+           ringkas: "Jalankan `f` (tanpa argumen); galat saat jalannya jadi `Err(Galat)` berisi `pesan`, `berkas`, `baris`, `kolom`. `exit()` tidak ditangkap." },
     Info { nama: "terap", tanda_tangan: "terap(f, args) -> nilai",
            ringkas: "Panggil `f` dengan argumen dari sebuah array. Bentuk pendeknya `f(...args)`." },
     Info { nama: "terap_bernama", tanda_tangan: "terap_bernama(f, posisi, nama?, nilai?) -> nilai",

@@ -27,6 +27,10 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Baru
 
+- **`tangkap(f)` menangkap galat saat jalan** di tiga mesin: `Ok(nilai)`, atau `Err(Galat)` berisi `pesan`, `berkas`,
+  `baris`, `kolom`. Semua galat ditangkap (juga stack habis) kecuali `exit()` dan memori habis; `defer` jalan dulu;
+  `panik(g)` melempar ulang dengan tempat asalnya.
+
 - **Pembaca berkas bertahap `fs::open`, `fs::read_line`, `fs::read_chunk`, `fs::close`**: untuk berkas di atas 256 MiB
   yang ditolak `fs::read`.
 - **`http::tenggat(detik)`**: tenggat total tiap permintaan klien HTTP (bawaan mati), supaya server yang menetes
