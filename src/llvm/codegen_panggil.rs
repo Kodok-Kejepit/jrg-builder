@@ -951,6 +951,24 @@ impl Codegen {
         }
 
         if let JrgType::Enum(ename) = &oty {
+            // Method yang tidak dimiliki penurun asli `Option`/`Result`: prelude JRG (`src/opsi.jrg`).
+            let tipe = if self.option_args.contains_key(ename) { Some("Option") }
+                       else if self.result_args.contains_key(ename) { Some("Result") } else { None };
+            if let Some(tipe) = tipe.filter(|t| !crate::interpreter::calon_method_enum(t).contains(&method)) {
+                if let Some(kunci) = self.kunci_lapis(tipe, method) {
+                    let param: Vec<String> = self.tables.functions.get(&kunci)
+                        .map(|f| f.params.iter().skip(1).map(|p| match &p.pattern {
+                            crate::parser::Pattern::Ident { name, .. } => name.clone(), _ => "_".to_string() }).collect())
+                        .unwrap_or_default();
+                    if param.len() != args.len() {
+                        return self.gagal_sesudah_argumen(&crate::opsi::pesan_argumen(method, &param, args.len()), args);
+                    }
+                    let mut semua = Vec::with_capacity(args.len() + 1);
+                    semua.push(self.lokal_sementara(optr.clone(), oty.clone(), span));
+                    semua.extend(args.iter().cloned());
+                    return self.call_named_function(&kunci, &semua, _expected, span);
+                }
+            }
             if let Some(t) = self.option_args.get(ename).cloned() {
                 return self.codegen_option_method(&optr, ename, &t, method, args, span, _expected);
             }

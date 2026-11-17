@@ -4,6 +4,7 @@
 extern crate alloc;
 pub mod antrean;
 pub mod sinkron;
+pub mod opsi;
 pub mod ruang_tipe;
 pub mod hash_cepat;
 pub mod json_inti;

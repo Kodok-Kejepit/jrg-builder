@@ -99,7 +99,7 @@ impl Codegen {
             Expr::Slice { obj, lo, hi, span } => self.codegen_slice(obj, lo, hi, *span),
             Expr::Call { func, args, span } => self.codegen_call(func, args, expected, *span),
             Expr::Await { .. } => Err("`await` belum didukung backend LLVM v1 (async/concurrency belum diimplementasi)".into()),
-            Expr::Propagate { expr, span } => self.codegen_propagate(expr, *span),
+            Expr::Propagate { expr, span, .. } => self.codegen_propagate(expr, *span),
             Expr::Closure { params, body, is_move, span, .. } =>
                 self.codegen_closure(params, body, *is_move, expected, *span),
             Expr::Block(b) => self.codegen_block_expr(b, expected),

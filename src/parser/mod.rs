@@ -62,6 +62,8 @@ pub struct Parser {
     literal_min: Option<Span>,
     /// Kedalaman sarang ekspresi/blok yang sedang diurai (`masuk_sarang`).
     dalam: u32,
+    /// Keluarga kembalian fungsi/closure yang sedang diurai, untuk `Expr::Propagate`.
+    keluarga: Keluarga,
 }
 
 /// Batas sarang: lebih dalam dari ini, stack pengurai sendiri habis (dulu SIGABRT tanpa pesan,
@@ -72,7 +74,8 @@ impl Parser {
     pub fn new(tokens: Vec<Token>, recover: bool) -> Self {
         Parser { tokens, pos: 0, errors: Vec::new(),
             tambahan_item: Vec::new(), arg_sebar: Vec::new(), recover,
-                 larang_struct_literal: false, minus_baru: false, literal_min: None, dalam: 0 }
+                 larang_struct_literal: false, minus_baru: false, literal_min: None, dalam: 0,
+                 keluarga: Keluarga::Bebas }
     }
 
     /// Urai ekspresi sebagai HEADER kontrol: `{` yang menyusulnya membuka

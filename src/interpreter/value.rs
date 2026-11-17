@@ -1223,6 +1223,16 @@ pub fn pesan_bongkar_bukan_tuple(sasaran: usize, tipe: &str) -> String {
              mengembalikan tuple", sasaran, sasaran, tipe)
 }
 
+/// `?` atas nilai yang bukan `Option`/`Result` — menyebut TIPE, bukan isi; satu kalimat untuk tiga mesin.
+pub fn pesan_sebar_bukan_hasil(tipe: &str) -> String {
+    format!("operator `?` hanya berlaku untuk Result/Option, dapat `{}`", tipe)
+}
+
+/// `?` atas `asal` ("Option"/"Result") di fungsi yang BERANOTASI keluarga lain — tiga mesin, satu kalimat.
+pub fn pesan_sebar_keluarga(asal: &str) -> String {
+    format!("`?` pada {} butuh fungsi ini mengembalikan `{}<..>` juga", asal, asal)
+}
+
 /// `a, b = e` dengan tuple yang isinya tidak sebanyak sasarannya.
 pub fn pesan_bongkar_jumlah(sasaran: usize, isi: usize) -> String {
     format!("`=` dengan {} sasaran, tapi tuple di sisi kanan berisi {} nilai — jumlahnya harus sama", sasaran, isi)

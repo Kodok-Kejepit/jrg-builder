@@ -200,7 +200,7 @@ impl Parser {
                 // `?` sekarang SELALU propagasi error — tidak ada lagi yang perlu dibedakan.
                 TokenKind::Question => {
                     self.advance();
-                    Expr::Propagate { expr: Box::new(lhs), span: self.merge_span(lo) }
+                    Expr::Propagate { expr: Box::new(lhs), keluarga: self.keluarga, span: self.merge_span(lo) }
                 }
                 TokenKind::Dot => {
                     self.advance();
@@ -431,17 +431,21 @@ impl Parser {
                 }
                 self.expect(&TokenKind::RParen)?;
                 // optional return type annotation: `-> Type`
+                let mut anotasi = None;
                 if self.at_exact(&TokenKind::Arrow) {
                     self.advance();
-                    let _ = self.parse_type();
+                    anotasi = self.parse_type().ok();
                 }
-                let body = Box::new(if self.at_exact(&TokenKind::LBrace) {
+                let keluarga_luar = std::mem::replace(&mut self.keluarga, Keluarga::dari_anotasi(anotasi.as_ref()));
+                let body = (|| -> Result<Box<Expr>, ParseError> { Ok(Box::new(if self.at_exact(&TokenKind::LBrace) {
                     Expr::Block(self.parse_block()?)
                 } else {
                     // `=>` (FatArrow) then expression
                     if self.at_exact(&TokenKind::FatArrow) { self.advance(); }
                     self.parse_expr_with_bp(0)?
-                });
+                })) })();
+                self.keluarga = keluarga_luar;
+                let body = body?;
                 Ok(Expr::Closure { params, is_move: false, ret: None, body: body.into(), span: self.merge_span(lo) })
             }
             // Rust-style closure: |params| expr  or  move |params| expr
@@ -757,11 +761,14 @@ impl Parser {
         };
         // `|x| -> int { … }` — sejajar dengan `fn f(x) -> int`.
         let ret = if self.eat(&TokenKind::Arrow) { Some(self.parse_type()?) } else { None };
-        let body = Box::new(if self.at_exact(&TokenKind::LBrace) {
+        let keluarga_luar = std::mem::replace(&mut self.keluarga, Keluarga::dari_anotasi(ret.as_ref()));
+        let body = (|| -> Result<Box<Expr>, ParseError> { Ok(Box::new(if self.at_exact(&TokenKind::LBrace) {
             Expr::Block(self.parse_block()?)
         } else {
             self.parse_expr()?
-        });
+        })) })();
+        self.keluarga = keluarga_luar;
+        let body = body?;
         let (params, body) = bongkar_pola_closure(params, body);
         Ok(Expr::Closure { params, is_move, ret, body: body.into(), span: self.merge_span(lo) })
     }

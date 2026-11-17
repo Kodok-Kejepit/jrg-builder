@@ -186,8 +186,11 @@ impl Codegen {
     }
 
     /// Struct `Galat` milik `tangkap`, field-nya urut abjad seperti tampilannya di dua mesin lain.
-    fn daftar_galat(&mut self) -> JrgType {
+    /// Tata letak `Galat` (rekaman `tangkap`), didaftarkan sekali: dari `tangkap` atau dari anotasi `Galat`.
+    pub(crate) fn daftar_galat(&mut self) -> JrgType {
         let nama = crate::interpreter::tangkap::NAMA.to_string();
+        let milik_tangkap = |s: &super::types::StructLayout| s.fields.iter().map(|(n, _)| n.as_str()).eq(["baris", "berkas", "kolom", "pesan"]);
+        if self.types.structs.get(&nama).is_some_and(milik_tangkap) { return JrgType::Struct(nama); }
         self.types.register_struct(super::types::StructLayout { name: nama.clone(), fields: vec![
             ("baris".to_string(), JrgType::I64), ("berkas".to_string(), JrgType::Str),
             ("kolom".to_string(), JrgType::I64), ("pesan".to_string(), JrgType::Str)] });

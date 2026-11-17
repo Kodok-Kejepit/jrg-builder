@@ -36,6 +36,7 @@ pub mod konversi;
 pub mod operator;
 pub mod tugas;
 pub mod tangkap;
+mod opsi;
 pub mod stdlib_src;
 
 pub use value::*;

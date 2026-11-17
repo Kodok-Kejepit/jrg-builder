@@ -977,6 +977,16 @@ pub fn main() {
 
 /// `(nama, program, kata-kunci-interpreter, kata-kunci-llvm)`
 const DITOLAK_INTERP_DAN_LLVM: &[(&str, &str, &str, &str)] = &[
+    // Audit `Result`/`?` 2026-11-18: `?` yang mengubah keluarga kembalian yang DITULIS — acuan saat jalan (dulu
+    // diam-diam `None` dari fungsi `-> Result`), LLVM saat kompilasi, satu kalimat (`pesan_sebar_keluarga`).
+    ("? atas Option di fungsi -> Result", "package main\nfn f(o: Option<int>) -> Result<int, string> { let v = o?; Ok(v) }\npub fn main() { wok(f(None)) }",
+     "`?` pada Option butuh fungsi ini mengembalikan `Option<..>` juga", "`?` pada Option butuh fungsi ini mengembalikan `Option<..>` juga"),
+    ("? atas Result di fungsi -> Option", "package main\nfn f(r: Result<int, string>) -> Option<int> { let v = r?; Some(v) }\npub fn main() { wok(f(Err(\"x\"))) }",
+     "`?` pada Result butuh fungsi ini mengembalikan `Result<..>` juga", "`?` pada Result butuh fungsi ini mengembalikan `Result<..>` juga"),
+    ("? atas bukan Option/Result: satu kalimat yang menyebut tipe", "package main\nfn f() -> int { let v = 5?; v }\npub fn main() { wok(f()) }",
+     "operator `?` hanya berlaku untuk Result/Option, dapat `int`", "operator `?` hanya berlaku untuk Result/Option, dapat `int`"),
+    ("method prelude: jumlah argumen salah", "package main\npub fn main() { let o: Option<int> = None\n wok(o.or_else()) }",
+     "method `or_else` butuh 1 argumen (f), dapat 0", "method `or_else` butuh 1 argumen (f), dapat 0"),
     // Fase ISI-SISIP: penerima `arr::insert` yang bukan larik — satu kalimat (acuan saat jalan, LLVM saat kompilasi).
     ("arr::insert atas bukan larik", "package main\npub fn main() { wok(arr::insert(5, 0, 1)) }",
      "arr::insert: argumen ke-1 harus array, dapat `int`", "arr::insert: argumen ke-1 harus array, dapat `int`"),
@@ -1767,6 +1777,77 @@ fn paritas_interpreter_dan_llvm() {
          Interpreter adalah acuan semantik: kalau LLVM berbeda, LLVM yang salah.",
         gagal.len(), PARITAS_LLVM.len(), gagal.join("\n\n")
     );
+}
+
+/// Method `Option`/`Result` dari prelude JRG (`src/opsi.jrg`), interpreter ≡ LLVM. Pindah ke
+/// `bersama/paritas_llvm.rs` begitu `--vm` melayaninya juga (sisi VM: Agus, surat 2026-11-18 04.00).
+const PRELUDE_OPSI: &[(&str, &str)] = &[
+    ("prelude Option: cadangan, ganti, gabung", r#"package main
+fn dua() -> Option<int> { Some(2) }
+fn kosong() -> Option<int> { None }
+pub fn main() {
+    wok(kosong().unwrap_or_else(|| 5), dua().unwrap_or_else(|| 5))
+    wok(kosong().or(Some(9)), dua().or(Some(9)), kosong().or_else(|| Some(7)))
+    wok(dua().and(Some("a")), kosong().and(Some("a")))
+    wok(dua().xor(kosong()), dua().xor(Some(3)), kosong().xor(Some(3)))
+    wok(dua().ok_or("tidak ada"), kosong().ok_or("tidak ada"), kosong().ok_or_else(|| "telat"))
+    wok(dua().filter(|x| x % 2 == 0), Some(3).filter(|x| x % 2 == 0))
+    wok(Some(Some(4)).flatten(), dua().zip(Some("b")), dua().zip(kosong()))
+    wok(dua().map_or(0, |x| x * 10), kosong().map_or(0, |x| x * 10))
+    wok(kosong().map_or_else(|| -1, |x| x), dua().map_or_else(|| -1, |x| x + 1))
+    wok(dua().is_some_and(|x| x > 1), kosong().is_some_and(|x| x > 1), kosong().is_none_or(|x| x > 9))
+    wok(dua().inspect(|x| wok("lihat", x)), dua().contains(2), kosong().contains(2))
+}
+"#),
+    ("prelude Result: cadangan, ganti, predikat", r#"package main
+fn bagi(a: int, b: int) -> Result<int, string> { if b == 0 { return Err("nol") } Ok(a / b) }
+pub fn main() {
+    wok(bagi(6, 0).unwrap_or_else(|e| len(e)), bagi(6, 3).unwrap_or_else(|e| len(e)))
+    wok(bagi(1, 0).or(bagi(4, 2)), bagi(1, 0).or_else(|e| Ok(len(e))))
+    wok(bagi(4, 2).and(bagi(9, 3)), bagi(4, 0).and(bagi(9, 3)))
+    wok(bagi(4, 2).map_or(-1, |x| x * 100), bagi(4, 0).map_or(-1, |x| x * 100))
+    wok(bagi(4, 0).map_or_else(|e| e + "!", |x| str(x)))
+    wok(bagi(4, 2).is_ok_and(|x| x == 2), bagi(4, 0).is_err_and(|e| e == "nol"))
+    wok(bagi(4, 0).inspect_err(|e| wok("galat", e)), bagi(4, 0).expect_err("harus gagal"))
+    wok(bagi(4, 2).contains(2))
+}
+"#),
+    ("prelude: transpose dua arah, flatten Result", r#"package main
+pub fn main() {
+    let a: Option<Result<int, string>> = Some(Ok(1))
+    let b: Option<Result<int, string>> = Some(Err("x"))
+    let c: Option<Result<int, string>> = None
+    wok(a.transpose(), b.transpose(), c.transpose())
+    let d: Result<Option<int>, string> = Ok(Some(3))
+    let e: Result<Option<int>, string> = Ok(None)
+    wok(d.transpose(), e.transpose())
+    let f: Result<Result<int, string>, string> = Ok(Err("dalam"))
+    wok(f.flatten())
+}
+"#),
+    ("Result<_, Galat> sebagai anotasi, diteruskan lewat ?", r#"package main
+fn f(n: int) -> Result<int, Galat> { let v = tangkap(|| 10 / n)?; Ok(v * 2) }
+pub fn main() {
+    wok(f(5))
+    match f(0) { Ok(v) => wok(v), Err(g) => wok("gagal di baris", g.baris) }
+}
+"#),
+];
+
+#[test]
+fn prelude_opsi_sama_di_interpreter_dan_llvm() {
+    if lewati_tanpa_clang("prelude_opsi_sama_di_interpreter_dan_llvm") { return; }
+    let mut gagal = Vec::new();
+    for (nama, src) in PRELUDE_OPSI {
+        let i = jalankan_interp(src);
+        let l = jalankan_llvm(src);
+        if !i.sukses { gagal.push(format!("[{}] gagal di interpreter: {}", nama, i.galat)); continue; }
+        if i.keluaran != l.keluaran {
+            gagal.push(format!("[{}]\n  interpreter: {:?}\n  llvm       : {:?}\n  stderr llvm: {}", nama, i.keluaran, l.keluaran,
+                l.galat.lines().take(4).collect::<Vec<_>>().join(" | ")));
+        }
+    }
+    assert!(gagal.is_empty(), "{}", gagal.join("\n\n"));
 }
 
 /// Tiap `pub fn ns_nama` di `lapis.jrg` harus melayani builtin `ns::nama` yang memang ada.

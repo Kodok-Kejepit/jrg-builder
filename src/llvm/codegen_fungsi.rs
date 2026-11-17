@@ -745,6 +745,9 @@ impl Codegen {
     pub fn resolve_type_with_subst(&mut self, te: &TypeExpr, subst: &TypeSubst) -> Result<JrgType, String> {
         // Option/Result need lazy instantiation as a side effect.
         match te {
+            // `Galat` dari `tangkap` (`-> Result<int, Galat>`), kecuali program punya struct bernama sama.
+            TypeExpr::Named(nt) if nt.name == crate::interpreter::tangkap::NAMA && nt.args.is_empty()
+                && !self.tables.structs.contains_key(&nt.name) => Ok(self.daftar_galat()),
             TypeExpr::Named(nt) if nt.name == "Option" => {
                 if nt.args.len() != 1 {
                     return Err("Option<T> butuh tepat satu parameter tipe".into());

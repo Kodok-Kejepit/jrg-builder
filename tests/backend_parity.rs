@@ -4714,6 +4714,7 @@ fn calon_method_enum_dan_skalar_lengkap() {
     assert!(semua.len() > 20, "cuma {} nama disapu — universumnya menyusut", semua.len());
 
     let mut salah = Vec::new();
+    let mut prelude_dilewati = 0usize;
     for (ekspr, dijanjikan) in &penerima {
         for nama in &semua {
             let src = format!("{}{}\n    wok(v.{}())\n}}\n", PRA, ekspr, nama);
@@ -4721,6 +4722,7 @@ fn calon_method_enum_dan_skalar_lengkap() {
             let v = jalankan_keluaran_penuh(&src, true);
             let ada_i = !i.contains(TAK_ADA);
             let ada_v = !v.contains(TAK_ADA);
+            if prelude_belum_di_vm(ekspr, nama, ada_i, ada_v) { prelude_dilewati += 1; continue; }
             if ada_i != ada_v {
                 salah.push(format!("  {}.{}(): ada di interp={} vm={} — satu nama, dua nasib",
                     ekspr, nama, ada_i, ada_v));
@@ -4738,6 +4740,8 @@ fn calon_method_enum_dan_skalar_lengkap() {
     }
     assert!(salah.is_empty(), "{} ketidakcocokan daftar calon:\n{}",
         salah.len(), salah.join("\n"));
+    assert!(!PRELUDE_OPSI_BELUM_DI_VM || prelude_dilewati > 0,
+        "`--vm` sudah melayani method prelude `Option`/`Result`: jadikan PRELUDE_OPSI_BELUM_DI_VM `false`");
 }
 
 /// **Satu nama HOF, satu kontrak — bentuk namespace dan bentuk method.**
@@ -5031,6 +5035,7 @@ fn method_ada_di_dua_mesin_atau_tidak_sama_sekali() {
 
     let mut salah = Vec::new();
     let mut diperiksa = 0usize;
+    let mut prelude_dilewati = 0usize;
     for (tipe, ekspr) in penerima {
         for n in &nama {
             if lewati(tipe, n) { continue; }
@@ -5039,6 +5044,7 @@ fn method_ada_di_dua_mesin_atau_tidak_sama_sekali() {
             let i = jalankan_keluaran_penuh(&src, false);
             let v = jalankan_keluaran_penuh(&src, true);
             let (ada_i, ada_v) = (!i.contains(TAK_ADA), !v.contains(TAK_ADA));
+            if prelude_belum_di_vm(ekspr, n, ada_i, ada_v) { prelude_dilewati += 1; continue; }
             if ada_i != ada_v {
                 if *tipe == "channel" {
                     if let Some(k) = DIVERGEN_KANAL.iter().position(|d| d == n) {
@@ -5056,6 +5062,8 @@ fn method_ada_di_dua_mesin_atau_tidak_sama_sekali() {
     assert!(diperiksa > 1500, "cuma {} kasus — sapuannya sepertinya tidak berjalan", diperiksa);
     assert!(salah.is_empty(), "{} dari {} pintu method cuma ada di satu mesin:\n{}",
         salah.len(), diperiksa, salah.join("\n"));
+    assert!(!PRELUDE_OPSI_BELUM_DI_VM || prelude_dilewati > 0,
+        "`--vm` sudah melayani method prelude `Option`/`Result`: jadikan PRELUDE_OPSI_BELUM_DI_VM `false`");
     // Arah sebaliknya: kalau salah satunya sudah sama, entrinya HARUS dihapus.
     // Sebuah daftar pengecualian yang cuma diperiksa satu arah jadi basi tanpa
     // ada yang memerah.
@@ -9848,4 +9856,14 @@ fn nilai_bersarang_sejuta_tingkat_tidak_mematikan_proses() {
         let j = jalankan_keluaran_penuh(src, vm);
         assert!(j.contains("2200002 true false 2200002"), "{}: {}", if vm { "--vm" } else { "interpreter" }, j);
     }
+}
+
+/// Method prelude `Option`/`Result` (`src/opsi.jrg`) yang interpreter layani dan `--vm` BELUM (sisi VM: Agus,
+/// surat 2026-11-18 06.00). Diperiksa dua arah: begitu `--vm` melayaninya, tes yang memakainya gagal dan
+/// meminta konstanta ini jadi `false` (lalu dihapus bersama pemakainya).
+const PRELUDE_OPSI_BELUM_DI_VM: bool = true;
+
+fn prelude_belum_di_vm(ekspr: &str, nama: &str, ada_i: bool, ada_v: bool) -> bool {
+    let tipe = if ekspr.starts_with("Option::") { "Option" } else if ekspr.starts_with("Result::") { "Result" } else { return false };
+    PRELUDE_OPSI_BELUM_DI_VM && ada_i && !ada_v && jrgc::opsi::nama_fungsi(tipe, nama).is_some()
 }
