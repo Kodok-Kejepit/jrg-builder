@@ -61,6 +61,8 @@ impl Codegen {
             _ => std::collections::HashSet::new(),
         };
         let tangkap_lama = std::mem::replace(&mut self.tangkapan, tangkap);
+        let bagi_lama = std::mem::replace(&mut self.calon_bagi, crate::interpreter::capture::calon_bagi(&decl.body));
+        let milik_lama = std::mem::take(&mut self.milik_lokal);
         let ditangkap = match &*decl.body {
             FnBody::Block(b) => crate::interpreter::capture::ditangkap_closure_blok(b),
             _ => std::collections::HashSet::new(),
@@ -278,6 +280,8 @@ impl Codegen {
         self.lokal_tumbuh = tumbuh_lama;
         self.tangkapan = tangkap_lama;
         self.ditangkap_closure = ditangkap_lama;
+        self.calon_bagi = bagi_lama;
+        self.milik_lokal = milik_lama;
         self.fn_bersarang = sarang_lama;
         self.ret_ditebak = ditebak_lama;
         self.tipe_argumen = arg_lama;

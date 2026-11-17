@@ -301,6 +301,9 @@ impl Codegen {
         self.mulai_fungsi_kosong(ret.clone());
         self.cur_self_ty = self.ruang_simbol.get(nama).cloned();
         self.tangkapan = nama_naik_ke_heap_ekspr(body);
+        // Badan closure tidak berbagi penyangga antar-lokalnya: salinan saat diikat seperti dulu.
+        self.calon_bagi.clear();
+        self.milik_lokal.clear();
         self.ditangkap_closure = crate::interpreter::capture::ditangkap_closure_ekspr(body);
         let masuk_lama = std::mem::replace(
             &mut self.tangkap_masuk, tangkap.iter().map(|(n, _)| n.clone()).collect());

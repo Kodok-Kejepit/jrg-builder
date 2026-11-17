@@ -153,6 +153,10 @@ pub struct Codegen {
 
     // ---- per-function state (reset in `begin_function`) ----
     pub(crate) locals: Vec<HashMap<String, (String, JrgType)>>, // stack of scopes: name -> (ptr register, type)
+    /// Lokal yang boleh berbagi penyangga lewat `let b = a` (`capture::calon_bagi`), dan bendera
+    /// "milik sendiri" tiap slot lokal itu (`codegen_bagi.rs`).
+    pub(crate) calon_bagi: std::collections::HashSet<String>,
+    pub(crate) milik_lokal: HashMap<String, String>,
     pub(crate) cur_label: String,
     pub(crate) cur_lines: Vec<String>,
     pub(crate) entry_allocas: Vec<String>,
@@ -374,6 +378,8 @@ impl Codegen {
             antrian_fn: VecDeque::new(),
             next_id: 0,
             locals: Vec::new(),
+            calon_bagi: std::collections::HashSet::new(),
+            milik_lokal: HashMap::new(),
             cur_label: String::new(),
             tunda: None,
             tangkapan: std::collections::HashSet::new(),
@@ -698,6 +704,7 @@ impl Codegen {
             return self.kotak_lokal(name, &ty);
         }
         let reg = self.alloca_typed("local.", &ty);
+        self.pasang_bendera_milik(name, &reg, &ty);
         self.define_local(name, reg.clone(), ty);
         reg
     }

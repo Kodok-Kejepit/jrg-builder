@@ -4729,4 +4729,49 @@ pub fn main() {
      "fn cek(v) { if let Some(n) = v { return n } else { return 0 } }\nfn bagian(x) { match x { Some(a) | Ok(a) => a, n @ Some(_) => 1, _ => 9 } }\npub fn main() {\n  let d = {\"a\": 2}\n  wok(match d { Some(n) => n, _ => -1 })\n  let x = 5\n  wok(match x { Some(n) => n, Ok(k) => k, _ => -2 })\n  wok(match \"t\" { Some(n) => n + \"!\", _ => \"lain\" })\n  wok(match [1] { None => \"kosong\", _ => \"isi\" })\n  wok(cek(\"t\"), cek(3), bagian([1]))\n}\n"),
     ("json::keys/values/has/get atas struct membaca field-nya",
      "struct P { pub z: int, pub a: int, pub m: string = \"s\" }\npub fn main() {\n  let p = P { z: 1, a: 2 }\n  wok(json::keys(p), json::keys({\"b\": 1, \"a\": 2}))\n  wok(json::values(p), json::has(p, \"a\"), json::has(p, \"q\"), json::get(p, \"z\"), json::get(p, \"q\"))\n}\n"),
+    // Antrean B butir 4: `let b = a` atas lokal polos berbagi penyangga sampai salah satunya menulis — tiap bentuk
+    // tulis (indeks, `+=`, tumbuh, push, pop berbagi, `:=`, rantai, saling tukar) memisahkan dulu.
+    ("salin-saat-tulis lokal: tulisan lewat nama mana pun tidak terlihat nama lain", r#"package main
+fn ubah(x: []int) -> []int {
+    var y = x
+    y[0] = 100
+    return y
+}
+pub fn main() {
+    var a = [1, 2, 3]
+    var b = a
+    b[0] = 9
+    wok(a, b)
+    let c = a
+    a += [4]
+    wok(a, c)
+    var d = c
+    d = d + [5]
+    wok(c, d)
+    e := a
+    e[1] = 7
+    wok(a, e)
+    var f = a
+    f = arr::push(f, 6)
+    wok(a, f)
+    var g = a
+    let r = arr::pop(g)
+    g = r[0]
+    g += [8, 8]
+    wok(a, g)
+    var h = a
+    for i in 0..3 { h[i] = h[i] * 2 }
+    wok(a, h)
+    wok(ubah(a), a)
+    var k = a
+    var m = k
+    k = [0]
+    m[0] = -1
+    wok(a, k, m)
+    var p = a
+    a = p
+    p[0] = 55
+    wok(a, p)
+}
+"#),
 ];

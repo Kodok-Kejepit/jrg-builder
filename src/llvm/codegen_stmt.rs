@@ -138,6 +138,7 @@ impl Codegen {
 
     pub(crate) fn codegen_let(&mut self, l: &LetStmt) -> Result<(), String> {
         if let Some(a) = self.pop_pindah.take() {
+            self.pastikan_milik(&a);
             if self.coba_pop_berbagi(l, &a)? { return Ok(()); }
         }
         let expected = match &l.ty {
@@ -156,14 +157,19 @@ impl Codegen {
         let v = self.codegen_expr(&l.init, expected.as_ref());
         self.nama_diikat = nama_lama;
         let v = v?;
+        // `let b = a` atas lokal berbendera: berbagi penyangga sampai salah satunya menulis (`codegen_bagi.rs`).
+        let bagi = pattern_simple_name(&l.pattern).filter(|n| self.akan_berbendera(n, &v.ty)
+            && expected.as_ref().map_or(true, |t| *t == v.ty))
+            .and_then(|n| self.sumber_bagi(&l.init, Some(&v.ty)).map(|b| (n, b)));
         // Nama baru = pemilik baru. Lihat `ambil_milik`.
-        let v = self.ambil_milik(&l.init, v)?;
+        let v = if bagi.is_some() { v } else { self.ambil_milik(&l.init, v)? };
         let final_ty = expected.unwrap_or(v.ty.clone());
         // Span dipersempit ke INISIALISASINYA sebelum koersi.
         let lama = self.masuk_span(l.init.span());
         let v = self.coerce(&v, &final_ty);
         self.pulih_span(lama);
         self.bind_pattern(&l.pattern, &v, &final_ty)?;
+        if let Some((n, sumber)) = bagi { self.tandai_berbagi(&n, &sumber); }
         if let (false, Expr::Closure { params, .. }, Some(n)) = (l.is_mut, &*l.init, pattern_simple_name(&l.pattern)) {
             if let Some((ptr, _)) = self.lookup_local(&n) { self.param_closure.insert(ptr, params.clone()); }
         }
@@ -183,7 +189,13 @@ impl Codegen {
                 let hasil = self.codegen_expr(e, expected.as_ref());
                 self.nama_diikat = nama_lama;
                 let hasil = hasil?;
-                self.ambil_milik(e, hasil)?
+                // `var b = a` atas lokal berbendera: berbagi, seperti `let`.
+                let sama_tipe = expected.as_ref().map_or(true, |t| *t == hasil.ty);
+                if sama_tipe && self.akan_berbendera(&v.name, &hasil.ty) && self.sumber_bagi(e, Some(&hasil.ty)).is_some() {
+                    hasil
+                } else {
+                    self.ambil_milik(e, hasil)?
+                }
             }
             None => {
                 // Tipe tanpa nilai nol yang jelas (struct, Option, enum, …) bernilai `nil` di
@@ -216,6 +228,10 @@ impl Codegen {
         let slot = self.alloca_local(&v.name, final_ty.clone());
         if final_ty != JrgType::Unit {
             self.emit(format!("store {} {}, ptr {}", final_ty.llvm_ty(), val.text, slot));
+        }
+        if let Some(sumber) = v.init.as_ref().and_then(|e| self.sumber_bagi(e, Some(&final_ty)))
+            .filter(|_| self.milik_lokal.contains_key(&slot)) {
+            self.tandai_berbagi(&v.name, &sumber);
         }
         Ok(())
     }
@@ -319,10 +335,14 @@ impl Codegen {
             for (n, e) in s.names.iter().zip(s.values.iter()) {
                 let v = self.codegen_expr(e, None)?;
                 if n == "_" { continue; }
+                // `b := a` berbagi kalau dua-duanya berbendera; selain itu nama baru = pemilik baru.
+                let sumber = self.sumber_bagi(e, Some(&v.ty)).filter(|_| self.akan_berbendera(n, &v.ty));
+                let v = if sumber.is_some() { v } else { self.ambil_milik(e, v)? };
                 let slot = self.alloca_local(n, v.ty.clone());
                 if v.ty != JrgType::Unit {
                     self.emit(format!("store {} {}, ptr {}", v.ty.llvm_ty(), v.text, slot));
                 }
+                if let Some(s) = sumber { self.tandai_berbagi(n, &s); }
             }
             Ok(())
         } else if s.values.len() == 1 {
@@ -383,6 +403,8 @@ impl Codegen {
         }
         // `a = a + [x]`, `a = arr::push(a, x)`, `a += [x]`: ditumbuhkan DI TEMPAT (kapasitas
         // per variabel) — dulu tiap putaran menyalin seluruh array ke alokasi baru.
+        // Salin-saat-tulis lokal polos (`codegen_bagi.rs`): sasaran yang masih berbagi penyangga disalin dulu.
+        let tanpa_salin = self.milik_sebelum_tugas(a);
         if a.targets.len() > 1 && a.values.len() == 1 && matches!(a.op, AssignOp::Eq) {
             return self.codegen_bongkar(a);
         }
@@ -458,7 +480,7 @@ impl Codegen {
             self.nama_diikat = nama_lama;
             let v = v?;
             let milik = std::mem::take(&mut self.lit_milik) | std::mem::take(&mut self.hasil_pindah_milik);
-            let v = if milik { v } else { self.ambil_milik(val_expr, v)? };
+            let v = if milik || tanpa_salin { v } else { self.ambil_milik(val_expr, v)? };
             new_vals.push(v);
         }
         if tunda_ya { place_ptrs[0] = Some(self.tempat_tulis(&a.targets[0])?); }

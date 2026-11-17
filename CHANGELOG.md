@@ -42,6 +42,9 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ### Kinerja
 
+- **`var b = a` di biner `--emit-llvm` tidak lagi menyalin array**: dua nama berbagi isinya sampai salah satunya
+  menulis (16 ribu salinan 16 ribu elemen: 1,2 detik dan 1,9 GB, sekarang 4 ms).
+
 - **`--emit-llvm`: `match` atas bilangan bulat berlengan literal dan rentang jadi satu lompatan bertabel**, bukan
   perbandingan berurutan — `match_dispatch` 710 → 580 ms, setara C.
 - **`--emit-llvm`: `str::char_at` di dalam loop tidak lagi memeriksa ulang jumlah karakter tiap putaran** —

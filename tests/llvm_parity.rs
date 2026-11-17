@@ -68,7 +68,7 @@ fn jalankan_llvm(src: &str) -> Hasil {
 }
 
 /// `jalankan_llvm`, lalu biner yang sama dijalankan langsung dengan `JRG_BAHASA=en` (Fase DWIBAHASA): biner memilih
-/// bahasa galatnya sendiri saat jalan. Batas memorinya dipasang `ulimit`, seperti `JRGC_BATAS_MEMORI` di `jrgc`.
+/// bahasa galatnya sendiri saat jalan. Batas memorinya `JRGC_BATAS_MEMORI` lewat `ulimit`, seperti di `jrgc`.
 fn jalankan_llvm_dua_bahasa(src: &str) -> (Hasil, String) {
     let dir = dir_uji("emit2");
     let file = dir.join("uji.jrg");
@@ -79,7 +79,10 @@ fn jalankan_llvm_dua_bahasa(src: &str) -> (Hasil, String) {
         .env("JRG_SOPAN", "1").env("JRG_BAHASA", "id").env_remove("DISPLAY").env_remove("WAYLAND_DISPLAY")
         .output().expect("jalankan jrgc --emit-llvm");
     let en = if bin.exists() {
-        let o = Command::new("sh").arg("-c").arg("ulimit -v 2097152; exec \"$0\"").arg(&bin)
+        // Batasnya `JRGC_BATAS_MEMORI` yang sama (kosong = tanpa batas: sapuan ASan butuh ruang alamat bayangannya).
+        let mib = std::env::var("JRGC_BATAS_MEMORI").unwrap_or_default();
+        let batas = if mib.trim().is_empty() { String::new() } else { format!("ulimit -v {}; ", mib.trim().parse::<u64>().unwrap_or(2048) * 1024) };
+        let o = Command::new("sh").arg("-c").arg(format!("{batas}exec \"$0\"")).arg(&bin)
             .env("JRG_BAHASA", "en").env_remove("DISPLAY").env_remove("WAYLAND_DISPLAY")
             .stdin(std::process::Stdio::null()).output().expect("jalankan biner");
         String::from_utf8_lossy(&o.stderr).to_string()
@@ -664,6 +667,10 @@ const BIAYA_LLVM: &[(&str, &str, &str, usize, f64)] = &[
      "let a = arr::map(arr::fill(0, N), |y| y + 1)\n var i = 0\n var s = 0\n while i < 200000 { s += satu(a)\n i += 1 }\n wok(s)", 2_000, 4.0),
     ("x, _ = m::f(x, ..): std/batas::coba", "import \"std/batas\"\n",
      "var p = batas::baru(5, 0.001, N)\n for _, i in range(N) { p, _ = batas::coba(p, «k${i}», i) }\n wok(batas::jumlah_kunci(p))", 2_000, 24.0),
+    // Antrean B butir 4: `var b = a` antar-lokal polos berbagi penyangga — dulu disalin tiap kali (16 ribu × 16 ribu
+    // elemen: 1,2 s dan 1,9 GB).
+    ("var b = a yang cuma dibaca", "",
+     "var a = arr::fill(0, N)\n var i = 0\n var s = 0\n while i < 200000 { var b = a\n s += b[0]\n i += 1 }\n wok(s)", 2_000, 4.0),
     ("array sebagai argumen ke parameter yang cuma dibaca", "fn pjg(x: []int) -> int { return len(x) + x[0] }\n",
      "var a = arr::fill(0, N)\n var i = 0\n var s = 0\n while i < 200000 { s += pjg(a)\n i += 1 }\n wok(s)", 2_000, 4.0),
     ("struct berisi array sebagai argumen", "struct P { pub xs: []int }\nfn pjg(p: P) -> int { return len(p.xs) }\n",

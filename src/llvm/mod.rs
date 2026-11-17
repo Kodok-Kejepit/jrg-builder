@@ -56,6 +56,7 @@ pub mod infer_bentrok;
 pub mod galat;
 pub mod situs;
 mod terjemah;
+mod codegen_bagi;
 pub use situs::isi_situs;
 pub mod modul;
 pub mod generik;
