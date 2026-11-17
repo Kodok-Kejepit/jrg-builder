@@ -217,7 +217,7 @@ pub(crate) fn channel_try_send(chan: &ChannelHandle, val: Value) -> Result<(), b
 /// Terima yang memblokir. Gagal hanya kalau channelnya ditutup DAN kosong:
 /// isi yang sudah terkirim tetap dikuras lebih dulu.
 pub fn channel_recv(chan: &ChannelHandle) -> Result<Value, String> {
-    chan.terima().ok_or_else(|| crate::antrean::PESAN_TERIMA_TERTUTUP.to_string())
+    chan.terima_cek()?.ok_or_else(|| crate::antrean::PESAN_TERIMA_TERTUTUP.to_string())
 }
 
 /// Ambil kalau sudah ada, tanpa memblokir.

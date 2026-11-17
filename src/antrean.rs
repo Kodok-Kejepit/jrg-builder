@@ -1,7 +1,7 @@
 // src/antrean.rs — antrean channel, SATU definisi untuk dua mesin
 
 use std::collections::VecDeque;
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 
 /// Isi bersama sebuah antrean. `closed` adalah BENDERA, bukan tebakan dari
 /// hitungan rujukan — itu bedanya yang paling penting dengan `mpsc`.
@@ -63,6 +63,8 @@ impl<T> Antrean<T> {
     // ── Kirim ────────────────────────────────────────────────────────────
 
     pub fn kirim(&self, nilai: T) -> Result<(), String> {
+        buntu::geser();
+        let mut jaga = None;
         let mut g = self.isi.lock().unwrap_or_else(|p| p.into_inner());
         if g.tertutup {
             return Err(PESAN_KIRIM_TERTUTUP.to_string());
@@ -71,7 +73,7 @@ impl<T> Antrean<T> {
             g.penunggu_kirim += 1;
             // Tunggu sampai ada penerima, lalu taruh dan tunggu ia mengambil.
             while g.buf.is_empty() && g.penunggu_terima == 0 && !g.tertutup {
-                g = self.temu.wait(g).unwrap_or_else(|p| p.into_inner());
+                g = match self.tunggu(&self.temu, g, &mut jaga) { Ok(g) => g, Err(e) => return Err(e) };
             }
             if g.tertutup {
                 g.penunggu_kirim -= 1;
@@ -84,12 +86,12 @@ impl<T> Antrean<T> {
             self.temu.notify_all();
             self.tak_kosong.notify_all();
             while !g.buf.is_empty() && !g.tertutup {
-                g = self.temu.wait(g).unwrap_or_else(|p| p.into_inner());
+                g = match self.tunggu(&self.temu, g, &mut jaga) { Ok(g) => g, Err(e) => return Err(e) };
             }
             return Ok(());
         }
         while g.buf.len() >= g.kapasitas && !g.tertutup {
-            g = self.tak_penuh.wait(g).unwrap_or_else(|p| p.into_inner());
+            g = self.tunggu(&self.tak_penuh, g, &mut jaga)?;
         }
         if g.tertutup {
             return Err(PESAN_KIRIM_TERTUTUP.to_string());
@@ -101,6 +103,7 @@ impl<T> Antrean<T> {
 
     /// `Ok(true)` terkirim, `Ok(false)` akan memblokir, `Err` sudah ditutup.
     pub fn coba_kirim(&self, nilai: T) -> Result<bool, String> {
+        buntu::geser();
         let mut g = self.isi.lock().unwrap_or_else(|p| p.into_inner());
         if g.tertutup {
             return Err(PESAN_KIRIM_TERTUTUP.to_string());
@@ -128,28 +131,35 @@ impl<T> Antrean<T> {
     /// Isi yang sudah terkirim tetap dikuras lebih dulu: menutup berarti tidak
     /// ada lagi yang DIKIRIM, bukan membuang yang sudah terkirim.
     pub fn terima(&self) -> Option<T> {
+        match self.terima_cek() { Ok(v) => v, Err(_) => None }
+    }
+
+    /// `terima` yang di thread utama mesin berdeteksi bisa gagal dengan `PESAN_BUNTU`.
+    pub fn terima_cek(&self) -> Result<Option<T>, String> {
+        buntu::geser();
+        let mut jaga = None;
         let mut g = self.isi.lock().unwrap_or_else(|p| p.into_inner());
         if g.kapasitas == 0 {
             g.penunggu_terima += 1;
             self.temu.notify_all();
             while g.buf.is_empty() && !g.tertutup {
-                g = self.temu.wait(g).unwrap_or_else(|p| p.into_inner());
+                g = self.tunggu(&self.temu, g, &mut jaga)?;
             }
             g.penunggu_terima -= 1;
             let keluar = g.buf.pop_front();
             self.temu.notify_all();
             self.tak_penuh.notify_one();
-            return keluar;
+            return Ok(keluar);
         }
         loop {
             if let Some(v) = g.buf.pop_front() {
                 self.tak_penuh.notify_one();
-                return Some(v);
+                return Ok(Some(v));
             }
             if g.tertutup {
-                return None;
+                return Ok(None);
             }
-            g = self.tak_kosong.wait(g).unwrap_or_else(|p| p.into_inner());
+            g = self.tunggu(&self.tak_kosong, g, &mut jaga)?;
         }
     }
 
@@ -157,6 +167,7 @@ impl<T> Antrean<T> {
     /// Dua kegagalan itu dipisah karena artinya berbeda bagi pemanggilnya:
     /// yang satu "coba lagi nanti", yang satu "jangan coba lagi".
     pub fn coba_terima(&self) -> Result<T, bool> {
+        buntu::geser();
         let mut g = self.isi.lock().unwrap_or_else(|p| p.into_inner());
         if let Some(v) = g.buf.pop_front() {
             self.temu.notify_all();
@@ -191,6 +202,7 @@ impl<T> Antrean<T> {
     /// dibuang — versi sebelumnya mengosongkan buffer di sini, dan sepuluh
     /// nilai yang sudah terkirim jadi satu yang diterima, tanpa satu pun galat.
     pub fn tutup(&self) {
+        buntu::geser();
         let mut g = self.isi.lock().unwrap_or_else(|p| p.into_inner());
         g.tertutup = true;
         drop(g);
@@ -222,3 +234,88 @@ impl<T> Antrean<T> {
 pub const PESAN_KIRIM_TERTUTUP: &str = "channel sudah ditutup: tidak bisa kirim lagi";
 pub const PESAN_TERIMA_TERTUTUP: &str =
     "channel sudah ditutup dan kosong: tidak akan ada nilai lagi";
+
+/// Kalimat kebuntuan, satu definisi untuk tiga mesin (LLVM: `korutin.c::jrg_ko_buntu`).
+pub const PESAN_BUNTU: &str =
+    "kebuntuan: semua goroutine sedang menunggu channel atau kunci dan tidak ada yang bisa melanjutkan";
+
+/// Deteksi kebuntuan untuk mesin ber-thread (`dokumentasi/antrean-fase.md`, "Rancangan: kebuntuan").
+/// Mati sampai sebuah mesin memanggil `aktifkan()`; aktor = thread yang menjalankan kode JRG dan dihitung.
+pub mod buntu {
+    use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering::SeqCst};
+    use std::sync::OnceLock;
+    use std::time::Duration;
+
+    static AKTIF: AtomicBool = AtomicBool::new(false);
+    static HIDUP: AtomicUsize = AtomicUsize::new(0);
+    static TERBLOKIR: AtomicUsize = AtomicUsize::new(0);
+    static GENERASI: AtomicU64 = AtomicU64::new(0);
+    static UTAMA: OnceLock<std::thread::ThreadId> = OnceLock::new();
+    /// Tenggang sebelum dinyatakan buntu: dua pemeriksaan berturut tanpa perubahan apa pun.
+    pub const TIAP: Duration = Duration::from_millis(100);
+
+    /// Dipanggil sekali oleh thread utama sebuah mesin sebelum `main` jalan.
+    pub fn aktifkan() {
+        if UTAMA.set(std::thread::current().id()).is_ok() {
+            HIDUP.store(1, SeqCst);
+            AKTIF.store(true, SeqCst);
+        }
+    }
+    pub fn aktif() -> bool { AKTIF.load(SeqCst) }
+    pub fn geser() { GENERASI.fetch_add(1, SeqCst); }
+    pub fn utama() -> bool { UTAMA.get() == Some(&std::thread::current().id()) }
+
+    /// Aktor baru — dibuat PEMBUAT thread sebelum `spawn` dan dipindah ke dalamnya; lepas = aktor selesai.
+    pub struct Aktor(bool);
+    pub fn lahir() -> Aktor {
+        let a = aktif();
+        if a { HIDUP.fetch_add(1, SeqCst); geser(); }
+        Aktor(a)
+    }
+    impl Drop for Aktor {
+        fn drop(&mut self) { if self.0 { HIDUP.fetch_sub(1, SeqCst); geser(); } }
+    }
+
+    /// Satu kali menunggu tanpa tenggat sedang berlangsung.
+    pub struct Blokir { gen_awal: u64, stabil: u32 }
+    impl Blokir {
+        pub fn mulai() -> Blokir { TERBLOKIR.fetch_add(1, SeqCst); geser(); Blokir { gen_awal: GENERASI.load(SeqCst), stabil: 0 } }
+        /// Dipanggil tiap tenggat `TIAP` habis tanpa dibangunkan: benar kalau programnya pasti buntu.
+        pub fn buntu(&mut self) -> bool {
+            let g = GENERASI.load(SeqCst);
+            if g != self.gen_awal || TERBLOKIR.load(SeqCst) < HIDUP.load(SeqCst) {
+                self.gen_awal = g;
+                self.stabil = 0;
+                return false;
+            }
+            self.stabil += 1;
+            self.stabil >= 2
+        }
+    }
+    impl Drop for Blokir {
+        fn drop(&mut self) { TERBLOKIR.fetch_sub(1, SeqCst); geser(); }
+    }
+
+    /// `join` milik main atas aktor lain: buntu kalau SEMUA aktor lain terblokir dan tidak ada perubahan.
+    pub fn sisanya_buntu(gen_awal: &mut u64, stabil: &mut u32) -> bool {
+        let g = GENERASI.load(SeqCst);
+        let lain = HIDUP.load(SeqCst).saturating_sub(1);
+        if g != *gen_awal || lain == 0 || TERBLOKIR.load(SeqCst) < lain { *gen_awal = g; *stabil = 0; return false; }
+        *stabil += 1;
+        *stabil >= 2
+    }
+    pub fn generasi() -> u64 { GENERASI.load(SeqCst) }
+}
+
+impl<T> Antrean<T> {
+    /// `cv.wait(g)`, yang di thread utama mesin berdeteksi berhenti dengan `PESAN_BUNTU` kalau programnya buntu.
+    fn tunggu<'a>(&self, cv: &Condvar, g: MutexGuard<'a, Isi<T>>, jaga: &mut Option<buntu::Blokir>)
+        -> Result<MutexGuard<'a, Isi<T>>, String>
+    {
+        if !buntu::aktif() { return Ok(cv.wait(g).unwrap_or_else(|p| p.into_inner())); }
+        let b = jaga.get_or_insert_with(buntu::Blokir::mulai);
+        let (g, habis) = cv.wait_timeout(g, buntu::TIAP).unwrap_or_else(|p| p.into_inner());
+        if habis.timed_out() && b.buntu() && buntu::utama() { return Err(PESAN_BUNTU.to_string()); }
+        Ok(g)
+    }
+}

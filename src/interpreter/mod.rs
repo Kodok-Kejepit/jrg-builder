@@ -327,7 +327,7 @@ impl Interpreter {
             crate::host::tulis_baris(&crate::uji::baris_hasil(nama, &hasil, baris));
         }
         crate::host::tulis_baris(&crate::uji::rangkuman(lulus, gagal));
-        self.join_all_goroutines();
+        let _ = self.join_all_goroutines();
         Ok(gagal)
     }
 
@@ -348,6 +348,8 @@ impl Interpreter {
     }
 
     pub fn run_file(&mut self, file: &ParsedFile) -> Result<(), RuntimeError> {
+        // Thread ini yang menjalankan `main`: kebuntuan dilaporkan dari sini (`antrean::buntu`).
+        crate::antrean::buntu::aktifkan();
         // ── Proses top-level imports dulu (Tier 2 module system) ───────────
         let file = &self.siapkan_utama(file)?;
         self.hoist_top_level(file)?;
@@ -410,22 +412,33 @@ impl Interpreter {
         // Goroutine ditunggu hanya kalau `main` berhasil: program yang gagal
         // langsung melapor dan berhenti, seperti LLVM dan Go (dulu galatnya
         // tertahan, dan menggantung tanpa pesan kalau goroutine-nya terblokir).
-        if result.is_ok() { self.join_all_goroutines(); }
-        result
+        match result {
+            Ok(()) => self.join_all_goroutines().map_err(RuntimeError::new),
+            e => e,
+        }
     }
 
     /// Waits for every goroutine spawned so far to finish.
-    pub fn join_all_goroutines(&self) {
+    /// `Err(PESAN_BUNTU)` kalau semua yang ditunggu terblokir selamanya (deteksi aktif saja).
+    pub fn join_all_goroutines(&self) -> Result<(), String> {
         loop {
             let handle = {
                 let mut guard = self.spawn_handles.lock().unwrap_or_else(|p| p.into_inner());
                 guard.pop()
             };
-            match handle {
-                Some(h) => { let _ = h.join(); }
-                None => break,
+            let Some(h) = handle else { break };
+            if crate::antrean::buntu::aktif() && crate::antrean::buntu::utama() {
+                let (mut gen, mut stabil) = (crate::antrean::buntu::generasi(), 0u32);
+                while !h.is_finished() {
+                    std::thread::sleep(crate::antrean::buntu::TIAP);
+                    if crate::antrean::buntu::sisanya_buntu(&mut gen, &mut stabil) {
+                        return Err(crate::antrean::PESAN_BUNTU.to_string());
+                    }
+                }
             }
+            let _ = h.join();
         }
+        Ok(())
     }
 
 /// Ambil galat runtime dari sebuah `Signal` TANPA men-stringify-nya.

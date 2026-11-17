@@ -1,6 +1,23 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const PARITAS_LLVM: &[(&str, &str)] = &[
+    // Deteksi kebuntuan (2026-11-18) TIDAK boleh menuduh yang cuma lambat: tidur dan kerja lebih lama dari tenggangnya.
+    ("bukan kebuntuan: goroutine tidur lalu mengirim, Future yang lama", r#"package main
+pub fn main() {
+    let c = make_chan(int)
+    spawn { time::sleep(0.5)
+        c <- 7 }
+    wok(<-c)
+    let f = Future::new(|| { time::sleep(0.4)
+        return 5 })
+    wok(future::await(f))
+    let d = make_chan(int, 1)
+    spawn { time::sleep(0.3)
+        d <- 1 }
+    spawn { let x = <-d
+        wok("terima", x) }
+}
+"#),
     // Telaah BELUM_DIDUKUNG_LLVM K4 (2026-11-18): `t[a:b]` berbatas variabel, hasilnya bertag — dulu ditolak saat kompilasi.
     ("potong tuple berbatas variabel, juga negatif, kosong dan campur tipe", r#"package main
 pub fn main() {

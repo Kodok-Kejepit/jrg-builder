@@ -883,11 +883,6 @@ const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
     ("nilai bertag: struct dibuka sebagai struct lain",
      "package main\nstruct P { pub x: int }\nstruct Q { pub y: int }\npub fn main() { var y = nil\n y = P { x: 7 }\n let q: Q = y\n wok(q.y) }",
      "nilai bertipe `struct:P` tidak bisa mengisi tempat yang bertipe `struct:Q`"),
-    // Fase KORUTIN: kebuntuan DILAPORKAN di LLVM (korutin satu utas bisa melihatnya); dua mesin
-    // lain menggantung selamanya, jadi kasus ini tidak pernah dijalankan di sana.
-    ("kebuntuan: menerima dari channel yang tidak punya pengirim",
-     "package main\npub fn main() { let c = make_chan(int)\n wok(<-c) }",
-     "kebuntuan: semua goroutine sedang menunggu channel"),
     // Fase ISI: kotak bertag mencatat isi array/dict-nya. Dulu dua program ini mencetak sampah
     // tanpa pesan (pemeriksaan tagnya cuma tahu "ini array").
     ("nilai bertag: array<int> dibuka sebagai []string", "package main\npub fn main() {\n    var x = nil\n    x = [1, 2, 3]\n    let a: []string = x\n    wok(len(a))\n    wok(a[0])\n}\n",
@@ -976,6 +971,13 @@ pub fn main() {
 
 /// `(nama, program, kata-kunci-interpreter, kata-kunci-llvm)`
 const DITOLAK_INTERP_DAN_LLVM: &[(&str, &str, &str, &str)] = &[
+    // 2026-11-18: kebuntuan dilaporkan interpreter juga (`antrean::buntu`); `--vm` masih menggantung (Agus).
+    ("kebuntuan: main menerima dari channel tanpa pengirim", "package main\npub fn main() { let c = make_chan(int)\n wok(<-c) }",
+     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
+    ("kebuntuan: main dan goroutine saling menunggu", "package main\npub fn main() { let a = make_chan(int)\n let b = make_chan(int)\n spawn { <-a\n b <- 1 }\n <-b\n a <- 1 }",
+     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
+    ("kebuntuan: goroutine buntu sesudah main selesai", "package main\npub fn main() { let c = make_chan(int)\n spawn { <-c }\n wok(\"main selesai\") }",
+     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
     // 2026-11-18 (surat Bayu–Agus): `var x: T` tanpa nilai nol yang dibaca sebelum diisi — acuan dulu `nil`.
     ("var struct dibaca sebelum diisi", "package main\nstruct D { x: int = 5 }\npub fn main() { var a: D\n wok(a) }",
      "`a` dibaca sebelum diisi", "tidak punya nilai nol"),
