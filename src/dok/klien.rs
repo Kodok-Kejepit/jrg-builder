@@ -54,30 +54,44 @@ static TENGGAT: AtomicU64 = AtomicU64::new(0);
 /// `http::tenggat(detik)`: berlaku untuk permintaan sesudahnya, sejak sambungannya dibuka.
 pub fn atur_tenggat(detik: u64) { TENGGAT.store(detik, Ordering::SeqCst) }
 
+fn galat_tenggat() -> std::io::Error {
+    std::io::Error::other(format!("tenggat `http::tenggat` {} detik habis", TENGGAT.load(Ordering::SeqCst)))
+}
+
 impl Sambungan {
     fn tunggu(&self, tulis: bool) -> std::io::Result<()> {
         let Some(akhir) = self.akhir else { return Ok(()) };
         let sisa = akhir.saturating_duration_since(Instant::now());
-        if sisa.is_zero() {
-            return Err(std::io::Error::other(format!(
-                "tenggat `http::tenggat` {} detik habis", TENGGAT.load(Ordering::SeqCst))));
-        }
+        if sisa.is_zero() { return Err(galat_tenggat()); }
         let d = Some(sisa.min(Duration::from_secs(30)));
         if tulis { self.soket.set_write_timeout(d) } else { self.soket.set_read_timeout(d) }
+    }
+
+    /// Batas tunggu soket dipasang sebesar SISA tenggat, jadi bacaan yang habis waktunya tepat di ujung tenggat adalah
+    /// tenggat itu sendiri — dulu kalimatnya ikut waktu: "belum ada yang siap" kalau habisnya di tengah `read`.
+    fn di_tenggat<T>(&self, r: std::io::Result<T>) -> std::io::Result<T> {
+        use std::io::ErrorKind as K;
+        match r {
+            Err(e) if matches!(e.kind(), K::WouldBlock | K::TimedOut)
+                && self.akhir.is_some_and(|a| Instant::now() + Duration::from_millis(50) >= a) => Err(galat_tenggat()),
+            r => r,
+        }
     }
 }
 
 impl Read for Sambungan {
     fn read(&mut self, b: &mut [u8]) -> std::io::Result<usize> {
         self.tunggu(false)?;
-        match &mut self.isi { Isi::Polos(s) => s.read(b), Isi::Tls(t) => t.read(b) }
+        let r = match &mut self.isi { Isi::Polos(s) => s.read(b), Isi::Tls(t) => t.read(b) };
+        self.di_tenggat(r)
     }
 }
 
 impl Write for Sambungan {
     fn write(&mut self, b: &[u8]) -> std::io::Result<usize> {
         self.tunggu(true)?;
-        match &mut self.isi { Isi::Polos(s) => s.write(b), Isi::Tls(t) => t.write(b) }
+        let r = match &mut self.isi { Isi::Polos(s) => s.write(b), Isi::Tls(t) => t.write(b) };
+        self.di_tenggat(r)
     }
     fn flush(&mut self) -> std::io::Result<()> {
         match &mut self.isi { Isi::Polos(s) => s.flush(), Isi::Tls(t) => t.flush() }

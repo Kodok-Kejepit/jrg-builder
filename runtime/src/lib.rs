@@ -318,7 +318,7 @@ impl BumpAllocator {
         let awal = blok as usize + 16;
         let mulai = (awal + align - 1) & !(align - 1);
         a.kursor = mulai + size;
-        a.ujung = awal + besar;
+        a.ujung = blok as usize + besar;
         a.terakhir = mulai;
         mulai as *mut u8
     }
