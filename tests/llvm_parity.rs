@@ -7,7 +7,12 @@ use std::process::Command;
 /// supaya kasus yang rakus gagal "memori habis" alih-alih menghabiskan memori mesin.
 fn jrgc() -> &'static str {
     static PASANG: std::sync::Once = std::sync::Once::new();
-    PASANG.call_once(|| if std::env::var_os("JRGC_BATAS_MEMORI").is_none() { std::env::set_var("JRGC_BATAS_MEMORI", "2048") });
+    // `JRG_ARENA_RACUN=1`: arena yang dipulihkan di akhir putaran loop (`codegen_arena`) diisi sampah, jadi nilai yang
+    // salah dibebaskan muncul sebagai jawaban rusak di SELURUH tabel ini, bukan benar karena kebetulan.
+    PASANG.call_once(|| {
+        if std::env::var_os("JRGC_BATAS_MEMORI").is_none() { std::env::set_var("JRGC_BATAS_MEMORI", "2048") }
+        std::env::set_var("JRG_ARENA_RACUN", "1");
+    });
     env!("CARGO_BIN_EXE_jrgc")
 }
 
@@ -673,6 +678,10 @@ const BIAYA_LLVM: &[(&str, &str, &str, usize, f64)] = &[
      "var p = batas::baru(5, 0.001, N)\n for _, i in range(N) { p, _ = batas::coba(p, «k${i}», i) }\n wok(batas::jumlah_kunci(p))", 2_000, 24.0),
     // Antrean B butir 4: `var b = a` antar-lokal polos berbagi penyangga — dulu disalin tiap kali (16 ribu × 16 ribu
     // elemen: 1,2 s dan 1,9 GB).
+    ("let t = [a] yang cuma dibaca", "",
+     "var a = arr::fill(0, N)\n var i = 0\n var s = 0\n while i < 200000 { let t = [a]\n s += len(t[0])\n i += 1 }\n wok(s)", 2_000, 4.0),
+    ("var n = m atas larik bersarang yang cuma dibaca", "",
+     "var m: [][]int = [arr::fill(0, N)]\n var i = 0\n var s = 0\n while i < 200000 { var n = m\n s += n[0][0]\n i += 1 }\n wok(s)", 2_000, 4.0),
     ("var b = a yang cuma dibaca", "",
      "var a = arr::fill(0, N)\n var i = 0\n var s = 0\n while i < 200000 { var b = a\n s += b[0]\n i += 1 }\n wok(s)", 2_000, 4.0),
     ("array sebagai argumen ke parameter yang cuma dibaca", "fn pjg(x: []int) -> int { return len(x) + x[0] }\n",
@@ -2183,4 +2192,31 @@ pub fn main() {{
     assert_eq!(hasil[0], ["200 hai 1", "200 hai 2", "200 id=77", "500 handler error",
                           "404 404 Not Found: GET /hilang", "200 3"], "jawaban acuan");
     assert_eq!(hasil[0], hasil[1], "--emit-llvm menjawab beda dari acuan");
+}
+
+/// Fase ARENA: dua juta putaran yang membuat teks dulu memuncak ±95 MB, sekarang ±1,5 MB — harus muat 64 MiB dan sama
+/// dengan acuan; TANPA pemulihan (`JRGC_TANPA_PULIH_ARENA=1`) harus kehabisan memori, kalau tidak batasnya tak membuktikan.
+#[test]
+fn arena_dipulihkan_tiap_putaran() {
+    if lewati_tanpa_clang("arena_dipulihkan_tiap_putaran") { return; }
+    let src = "package main\nfn h(acc: int, s: string) -> int {\n    var a = acc\n    for i in 0..len(s) { a = (a * 31 + i) % 1000003 }\n    return a\n}\npub fn main() {\n    var acc = 7\n    for r in 0..2000000 {\n        let t = \"butir-\" + str(r % 997) + \":\" + str(r)\n        let u = str::upper(str::reverse(t))\n        acc = h(acc, u)\n    }\n    wok(acc)\n}\n";
+    let dir = dir_uji("arena");
+    let file = dir.join("uji.jrg");
+    std::fs::write(&file, src).unwrap();
+    let jalan = |tanpa: bool| {
+        let mut c = Command::new(jrgc());
+        c.arg(&file).arg("--emit-llvm").arg("-o").arg(dir.join(if tanpa { "mati.bin" } else { "baru.bin" }))
+            .env("JRG_SOPAN", "1").env("JRGC_BATAS_MEMORI", "64");
+        if tanpa { c.env("JRGC_TANPA_PULIH_ARENA", "1"); }
+        c.output().unwrap()
+    };
+    let baru = jalan(false);
+    let acuan = jalankan_interp(src);
+    assert!(baru.status.success(), "dengan pemulihan arena harus muat 64 MiB:\n{}", String::from_utf8_lossy(&baru.stderr));
+    assert_eq!(String::from_utf8_lossy(&baru.stdout).trim(), acuan.keluaran, "jawaban beda dengan acuan");
+    let mati = jalan(true);
+    assert!(!mati.status.success() && String::from_utf8_lossy(&mati.stderr).contains("memori habis"),
+        "tanpa pemulihan arena program ini seharusnya melewati 64 MiB (puncaknya ±95 MB) — instrumennya tidak membuktikan apa-apa:\n{}",
+        String::from_utf8_lossy(&mati.stderr));
+    let _ = std::fs::remove_dir_all(&dir);
 }

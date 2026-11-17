@@ -36,6 +36,11 @@ jobs:
           path: ~/.cache/jrgm/wasi
           key: wasi-sdk-34
 
+      # Node 24: rekursi 20 ribu tingkat lewat --emit-wasm keluar 1 tanpa keluaran di node bawaan image.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
       - name: Alat WASI (--emit-wasm)
         run: |
           rustup target add wasm32-wasip1

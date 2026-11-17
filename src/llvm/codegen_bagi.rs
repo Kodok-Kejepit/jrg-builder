@@ -8,15 +8,16 @@ use super::codegen::Codegen;
 use super::types::JrgType;
 
 impl Codegen {
-    /// Slice yang elemennya tidak memuat penyangga lain: salinan dangkalnya sudah milik sendiri.
-    fn slice_datar(&self, t: &JrgType) -> bool {
-        matches!(t, JrgType::Slice(e) if !self.butuh_salin(e))
+    /// Tipe yang bisa dibagi lewat bendera: memuat penyangga, dan `salin_dalam` menyalinnya utuh (nilai bertag dan
+    /// kotak tidak ikut — isinya baru diketahui saat jalan).
+    fn bisa_dibagi(&self, t: &JrgType) -> bool {
+        self.butuh_salin(t) && !matches!(t, JrgType::Any | JrgType::Kotak(_))
     }
 
     /// Dipanggil `alloca_local`: lokal calon berbagi (`capture::calon_bagi`) yang bertipe slice datar mendapat
     /// bendera, mulai 1 (nilai yang diikat kepadanya milik sendiri, kecuali `bagi_lokal` mengubahnya).
     pub(crate) fn pasang_bendera_milik(&mut self, nama: &str, slot: &str, ty: &JrgType) {
-        if !self.calon_bagi.contains(nama) || self.tangkapan.contains(nama) || !self.slice_datar(ty) { return; }
+        if !self.calon_bagi.contains(nama) || self.tangkapan.contains(nama) || !self.bisa_dibagi(ty) { return; }
         let bendera = self.alloca_raw("milik.", "i1", Some(1));
         self.emit(format!("store i1 1, ptr {}", bendera));
         self.milik_lokal.insert(slot.to_string(), bendera);
@@ -38,12 +39,34 @@ impl Codegen {
 
     /// Apakah lokal baru `nama` bertipe `ty` akan mendapat bendera (syarat yang sama dengan `pasang_bendera_milik`)?
     pub(crate) fn akan_berbendera(&self, nama: &str, ty: &JrgType) -> bool {
-        self.calon_bagi.contains(nama) && !self.tangkapan.contains(nama) && self.slice_datar(ty)
+        self.calon_bagi.contains(nama) && !self.tangkapan.contains(nama) && self.bisa_dibagi(ty)
     }
 
-    /// Dua nama sekarang memegang penyangga yang sama: dua-duanya bukan pemilik tunggal.
-    pub(crate) fn tandai_berbagi(&mut self, nama_baru: &str, bendera_sumber: &str) {
-        self.emit(format!("store i1 0, ptr {}", bendera_sumber));
+    /// Literal larik/tuple yang tiap elemennya bebas penyangga atau lokal berbendera: bendera sumbernya (bisa kosong
+    /// kalau tidak ada yang berbagi; `None` kalau ada elemen lain yang bisa menumpang penyangga orang).
+    pub(crate) fn sumber_bagi_literal(&self, e: &Expr) -> Option<Vec<String>> {
+        let (Expr::Array { elems, .. } | Expr::Tuple { elems, .. }) = e else { return None };
+        let mut bendera = Vec::new();
+        for x in elems {
+            if let Some(b) = self.sumber_bagi(x, None) { bendera.push(b); continue; }
+            let bebas = matches!(x, Expr::Literal(..))
+                || self.peek_expr_type(x).is_some_and(|t| !self.butuh_salin(&t) && t != JrgType::Any);
+            if !bebas { return None; }
+        }
+        (!bendera.is_empty()).then_some(bendera)
+    }
+
+    /// Sumber pembagian untuk nilai awal `e` bertipe `ty`: nama berbendera, atau literal berisi nama berbendera.
+    pub(crate) fn sumber_bagi_nilai(&self, e: &Expr, ty: &JrgType) -> Option<Vec<String>> {
+        match e {
+            Expr::Ident(..) => self.sumber_bagi(e, Some(ty)).map(|b| vec![b]),
+            _ => self.sumber_bagi_literal(e),
+        }
+    }
+
+    /// Nama-nama ini sekarang memegang penyangga yang sama: tidak satu pun pemilik tunggal.
+    pub(crate) fn tandai_berbagi(&mut self, nama_baru: &str, bendera_sumber: &[String]) {
+        for b in bendera_sumber { self.emit(format!("store i1 0, ptr {}", b)); }
         if let Some((_, b, _)) = self.bendera_nama(nama_baru) { self.emit(format!("store i1 0, ptr {}", b)); }
     }
 
@@ -56,8 +79,8 @@ impl Codegen {
         self.terminate(format!("br i1 {}, label %{}, label %{}, !prof !1", f, usai, salin));
         self.start_block(salin);
         let v = self.load_place(&slot, &ty);
-        let baru = self.salin_slice(&v);
-        self.emit(format!("store %JrgSlice {}, ptr {}", baru.text, slot));
+        let baru = self.salin_dalam(&v);
+        self.emit(format!("store {} {}, ptr {}", ty.llvm_ty(), baru.text, slot));
         self.emit(format!("store i1 1, ptr {}", bendera));
         self.terminate(format!("br label %{}", usai));
         self.start_block(usai);
@@ -75,9 +98,9 @@ impl Codegen {
             let utuh = a.targets.len() == 1 && matches!(t, Expr::Ident(..)) && matches!(a.op, AssignOp::Eq) && !disebut(akar);
             if !utuh { self.pastikan_milik(akar); continue; }
             match a.values.as_slice() {
-                [v] => match self.sumber_bagi(v, Some(&ty)) {
+                [v] => match self.sumber_bagi_nilai(v, &ty) {
                     Some(sumber) => {
-                        self.emit(format!("store i1 0, ptr {}", sumber));
+                        for s in &sumber { self.emit(format!("store i1 0, ptr {}", s)); }
                         self.emit(format!("store i1 0, ptr {}", bendera));
                         tanpa_salin = true;
                     }

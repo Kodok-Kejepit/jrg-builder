@@ -93,10 +93,15 @@ pub fn calon_bagi(b: &FnBody) -> HashSet<String> {
 }
 
 fn tandai_bagi(kiri: &str, kanan: &Expr, out: &mut HashSet<String>) {
-    if let Expr::Ident(n, _) = kanan {
-        out.insert(format!("{}{}", PENANDA_BAGI, kiri));
-        out.insert(format!("{}{}", PENANDA_BAGI, n));
-    }
+    let isi: Vec<&Expr> = match kanan {
+        Expr::Ident(..) => vec![kanan],
+        Expr::Array { elems, .. } | Expr::Tuple { elems, .. } => elems.iter().collect(),
+        _ => return,
+    };
+    let nama: Vec<&str> = isi.iter().filter_map(|e| if let Expr::Ident(n, _) = e { Some(n.as_str()) } else { None }).collect();
+    if nama.is_empty() { return; }
+    out.insert(format!("{}{}", PENANDA_BAGI, kiri));
+    for n in nama { out.insert(format!("{}{}", PENANDA_BAGI, n)); }
 }
 
 fn akar_sasaran(e: &Expr) -> Option<&str> {

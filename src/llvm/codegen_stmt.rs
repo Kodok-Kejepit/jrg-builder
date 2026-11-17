@@ -160,7 +160,7 @@ impl Codegen {
         // `let b = a` atas lokal berbendera: berbagi penyangga sampai salah satunya menulis (`codegen_bagi.rs`).
         let bagi = pattern_simple_name(&l.pattern).filter(|n| self.akan_berbendera(n, &v.ty)
             && expected.as_ref().map_or(true, |t| *t == v.ty))
-            .and_then(|n| self.sumber_bagi(&l.init, Some(&v.ty)).map(|b| (n, b)));
+            .and_then(|n| self.sumber_bagi_nilai(&l.init, &v.ty).map(|b| (n, b)));
         // Nama baru = pemilik baru. Lihat `ambil_milik`.
         let v = if bagi.is_some() { v } else { self.ambil_milik(&l.init, v)? };
         let final_ty = expected.unwrap_or(v.ty.clone());
@@ -191,7 +191,7 @@ impl Codegen {
                 let hasil = hasil?;
                 // `var b = a` atas lokal berbendera: berbagi, seperti `let`.
                 let sama_tipe = expected.as_ref().map_or(true, |t| *t == hasil.ty);
-                if sama_tipe && self.akan_berbendera(&v.name, &hasil.ty) && self.sumber_bagi(e, Some(&hasil.ty)).is_some() {
+                if sama_tipe && self.akan_berbendera(&v.name, &hasil.ty) && self.sumber_bagi_nilai(e, &hasil.ty).is_some() {
                     hasil
                 } else {
                     self.ambil_milik(e, hasil)?
@@ -229,7 +229,7 @@ impl Codegen {
         if final_ty != JrgType::Unit {
             self.emit(format!("store {} {}, ptr {}", final_ty.llvm_ty(), val.text, slot));
         }
-        if let Some(sumber) = v.init.as_ref().and_then(|e| self.sumber_bagi(e, Some(&final_ty)))
+        if let Some(sumber) = v.init.as_ref().and_then(|e| self.sumber_bagi_nilai(e, &final_ty))
             .filter(|_| self.milik_lokal.contains_key(&slot)) {
             self.tandai_berbagi(&v.name, &sumber);
         }
@@ -336,7 +336,7 @@ impl Codegen {
                 let v = self.codegen_expr(e, None)?;
                 if n == "_" { continue; }
                 // `b := a` berbagi kalau dua-duanya berbendera; selain itu nama baru = pemilik baru.
-                let sumber = self.sumber_bagi(e, Some(&v.ty)).filter(|_| self.akan_berbendera(n, &v.ty));
+                let sumber = self.sumber_bagi_nilai(e, &v.ty).filter(|_| self.akan_berbendera(n, &v.ty));
                 let v = if sumber.is_some() { v } else { self.ambil_milik(e, v)? };
                 let slot = self.alloca_local(n, v.ty.clone());
                 if v.ty != JrgType::Unit {
@@ -776,7 +776,7 @@ impl Codegen {
         self.start_block(body_lbl);
         self.loop_stack.push(LoopCtx { label: w.label.clone(), continue_bb: cond_lbl.clone(), break_bb: end_lbl.clone() });
         self.push_scope();
-        self.codegen_stmt_block(&w.body)?;
+        self.badan_loop(&w.body)?;
         self.pop_scope();
         self.loop_stack.pop();
         if !self.terminated { self.terminate(format!("br label %{}", cond_lbl)); }
@@ -793,7 +793,7 @@ impl Codegen {
         self.start_block(body_lbl.clone());
         self.loop_stack.push(LoopCtx { label: l.label.clone(), continue_bb: body_lbl.clone(), break_bb: end_lbl.clone() });
         self.push_scope();
-        self.codegen_stmt_block(&l.body)?;
+        self.badan_loop(&l.body)?;
         self.pop_scope();
         self.loop_stack.pop();
         if !self.terminated { self.terminate(format!("br label %{}", body_lbl)); }
@@ -825,7 +825,7 @@ impl Codegen {
                 self.start_block(body_lbl);
                 self.loop_stack.push(LoopCtx { label: label.clone(), continue_bb: post_lbl.clone(), break_bb: end_lbl.clone() });
                 self.push_scope();
-                self.codegen_stmt_block(body)?;
+                self.badan_loop(body)?;
                 self.pop_scope();
                 self.loop_stack.pop();
                 if !self.terminated { self.terminate(format!("br label %{}", post_lbl)); }

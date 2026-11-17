@@ -383,9 +383,11 @@ void *jrg_slice_tukar(const void *p, int64_t len, int64_t i0, int64_t j0, int64_
 // Kapasitas dicatat di tabel kecil berkunci alamat penyangga. `terisi` adalah batas yang sudah
 // ditulisi: menyambung di tempat hanya kalau slice ini berakhir TEPAT di sana, jadi dua
 // pemegang penyangga yang sama tidak pernah saling menimpa.
-typedef struct { void *ptr; int64_t kap; int64_t terisi; } JrgKapUmum;
+// `gen`: generasi arena saat entri dicatat; sesudah `jrg_arena_pulih` alamat yang sama bisa jadi penyangga lain.
+typedef struct { void *ptr; int64_t kap; int64_t terisi; uint64_t gen; } JrgKapUmum;
 #define JRG_KAP_UMUM 4096
 static JrgKapUmum jrg_kap_umum[JRG_KAP_UMUM];
+extern uint64_t jrg_arena_gen;
 
 static JrgKapUmum *jrg_kap_cari(const void *p) {
     uintptr_t h = (uintptr_t)p;
@@ -396,7 +398,7 @@ static JrgKapUmum *jrg_kap_cari(const void *p) {
 void jrg_slice_tumbuh_umum(JrgSlice *s, const void *isi, int64_t n, int64_t ukuran, int64_t jajar) {
     int64_t len = s->len, baru = len + n;
     JrgKapUmum *k = s->ptr ? jrg_kap_cari(s->ptr) : 0;
-    if (k == 0 || k->ptr != s->ptr || k->terisi != len || baru > k->kap) {
+    if (k == 0 || k->ptr != s->ptr || k->terisi != len || baru > k->kap || k->gen != jrg_arena_gen) {
         int64_t kap = baru * 2;
         if (kap < 8) kap = 8;
         void *p = jrg_alloc(jrg_kali(kap, ukuran), jajar);
@@ -405,6 +407,7 @@ void jrg_slice_tumbuh_umum(JrgSlice *s, const void *isi, int64_t n, int64_t ukur
         k = jrg_kap_cari(p);
         k->ptr = p;
         k->kap = kap;
+        k->gen = jrg_arena_gen;
     }
     if (n > 0) memcpy((char *)s->ptr + len * ukuran, isi, (size_t)(n * ukuran));
     k->terisi = baru;

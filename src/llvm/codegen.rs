@@ -157,6 +157,8 @@ pub struct Codegen {
     /// "milik sendiri" tiap slot lokal itu (`codegen_bagi.rs`).
     pub(crate) calon_bagi: std::collections::HashSet<String>,
     pub(crate) milik_lokal: HashMap<String, String>,
+    /// `codegen_arena::fungsi_bersih`, per nama fungsi.
+    pub(crate) fungsi_bersih_memo: HashMap<String, bool>,
     pub(crate) cur_label: String,
     pub(crate) cur_lines: Vec<String>,
     pub(crate) entry_allocas: Vec<String>,
@@ -380,6 +382,7 @@ impl Codegen {
             locals: Vec::new(),
             calon_bagi: std::collections::HashSet::new(),
             milik_lokal: HashMap::new(),
+            fungsi_bersih_memo: HashMap::new(),
             cur_label: String::new(),
             tunda: None,
             tangkapan: std::collections::HashSet::new(),

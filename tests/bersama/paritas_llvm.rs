@@ -4801,4 +4801,40 @@ pub fn main() {
     wok(p.is_err(), typeof(p))
 }
 "#),
+    // Antrean B butir 4, langkah 2: lokal bersarang (`[][]int`, dict, tuple) dan literal berisi lokal (`[a, a]`,
+    // `(a, 5)`) berbagi penyangga; tulisan lewat nama mana pun memisahkan dulu, sampai ke dalam.
+    ("salin-saat-tulis bersarang dan lewat literal", r#"package main
+pub fn main() {
+    var a = [1, 2, 3]
+    let t = [a, a]
+    var u = t
+    u[0][1] = 99
+    wok(a, t, u)
+    var t2 = [a, [7]]
+    t2[1] += [8]
+    t2[0][0] = -1
+    wok(a, t2)
+    a[2] = 30
+    wok(a, t, t2)
+    var p = (a, 5)
+    p.0[0] = 11
+    wok(a, p)
+    var m: [][]int = [[1], [2]]
+    var n = m
+    n[0] += [5]
+    m[1][0] = 9
+    wok(m, n)
+    var d = {"x": [1]}
+    var e = d
+    e["x"] = [2]
+    d["y"] = [3]
+    wok(d, e)
+    var q = [a]
+    q = q + [[4]]
+    wok(a, q)
+    let r = [a]
+    a = [0]
+    wok(a, r)
+}
+"#),
 ];

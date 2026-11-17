@@ -928,7 +928,7 @@ impl Codegen {
             }
         }
         self.push_loop(LoopCtx { label: label.clone(), continue_bb: pasca.clone(), break_bb: usai.clone() });
-        self.codegen_stmt_block(body)?;
+        self.badan_loop(body)?;
         self.pop_loop();
         self.pop_scope();
         if !self.is_terminated() { self.terminate(format!("br label %{}", pasca)); }

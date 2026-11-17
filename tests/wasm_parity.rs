@@ -113,8 +113,9 @@ fn builtin_jembatan_ditolak_keras_lewat_wasm() {
         "{}", w.stderr);
 }
 
-/// Stack: larik lokal besar (stack bayangan wasm 8 MiB, bawaan `wasm-ld` 64 KiB meluap) dan rekursi. Rekursi 20 ribu
-/// tingkat lulus di node 24 tapi keluar 1 tanpa keluaran di node runner CI: kedalamannya dipendekkan sampai CI node 24.
+/// Stack: larik lokal besar (stack bayangan wasm 8 MiB, bawaan `wasm-ld` 64 KiB meluap) dan rekursi 20 ribu tingkat
+/// (`node --stack-size=3000`). Dibandingkan dengan jawaban tertulis, bukan interpreter: di runner CI interpreter
+/// sendiri menolak 20 ribu tingkat (penjaga stack-nya), dan itu dulu terbaca sebagai kegagalan wasm.
 const STACK_DALAM: &str = r#"fn dalam(n: int) -> int {
     if n == 0 { return 0 }
     return 1 + dalam(n - 1)
@@ -123,7 +124,7 @@ fn main() {
     var a: [2000]int = [7; 2000]
     var b: [2000]int = [7; 2000]
     b[1999] = 8
-    wok(a == b, dalam(2000))
+    wok(a == b, dalam(20000))
 }
 "#;
 
@@ -131,8 +132,7 @@ fn main() {
 fn stack_dalam_lewat_wasm() {
     let kerja = folder("stack");
     let p = tulis(&kerja, "stack.jrg", STACK_DALAM);
-    let acuan = jalan(&[p.to_str().unwrap()], &kerja);
     let Some(w) = wasm(&p, &kerja) else { return };
     let _ = std::fs::remove_dir_all(&kerja);
-    assert_eq!((acuan.kode, acuan.stdout.as_str()), (w.kode, w.stdout.as_str()), "{}", w.stderr);
+    assert_eq!((w.kode, w.stdout.as_str()), (0, "false 20000\n"), "{}", w.stderr);
 }
