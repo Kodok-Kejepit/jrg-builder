@@ -565,6 +565,7 @@ const CONTOH_ARGUMEN: &[(&str, &str, &[&str])] = &[
     ("suara::simpan_wav", "", &["suara::sunyi(1)", r#""s.wav""#]),
     ("suara::sunyi", "", &["10"]),
     ("tan", "", &["1"]),
+    ("tangkap", "", &["|| 1"]),
     ("task::join", "", &["Task::spawn(|| 1)"]),
     ("terap", "", &["|a, b| a", "[1, 2]"]),
     ("terap_bernama", "", &["|a, b| a", "[1, 2]"]),

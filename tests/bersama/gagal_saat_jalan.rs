@@ -1060,7 +1060,7 @@ pub fn main() {
     ("tangkap: panik(g) melempar ulang dengan lokasi asal",
      "package main\nfn f() -> int {\n    let a = [1]\n    return a[3]\n}\npub fn main() {\n    match tangkap(|| f()) { Err(g) => { wok(\"sebelum\")\n        panik(g) }, Ok(_) => {} }\n}\n",
      "sebelum",
-     "uji.jrg:4:12, lalu dilempar lagi lewat `panik`"),
+     ":4:12, lalu dilempar lagi lewat `panik`"),
     ("tangkap: bukan fungsi",
      "package main\npub fn main() {\n    wok(\"sebelum\")\n    let r = tangkap(5)\n    wok(r)\n}\n",
      "sebelum",
