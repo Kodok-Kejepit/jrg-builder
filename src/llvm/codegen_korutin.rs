@@ -140,10 +140,6 @@ impl Codegen {
     /// `tangkap(f)`: `f` dijalankan sebagai tugas (seperti `Future::new`), dan hasilnya diambil tanpa melempar galatnya —
     /// gagal = `Err(Galat)` yang diisi runtime (`jrg_tangkap_rekam`: kalimat dalam bahasa pesan, lokasi dari blok situs).
     pub(crate) fn tangkap(&mut self, f: &Expr, span: Span) -> Result<Val, String> {
-        if self.options.ptr32 {
-            return Err(super::galat::tandai(span, "`tangkap` belum didukung --emit-wasm (butuh korutin W1c); \
-                jalankan tanpa --emit-wasm".to_string()));
-        }
         // Closure literal dipakai apa adanya; yang lain dihitung sekali dulu, seperti di dua mesin acuan.
         let fexpr = match f {
             Expr::Closure { params, .. } if !params.is_empty() => {

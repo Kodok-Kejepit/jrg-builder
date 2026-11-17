@@ -30,7 +30,8 @@ impl Codegen {
     /// Apakah badan loop ini boleh dipulihkan tiap putaran? Tulisan ke nama luar cuma skalar, panggilan cuma bawaan
     /// murni atau fungsi milik program yang lolos aturan yang sama, tanpa closure/goroutine/channel/`defer`.
     pub(crate) fn badan_bisa_dipulihkan(&mut self, b: &Block) -> bool {
-        if self.options.ptr32 || std::env::var_os("JRGC_TANPA_PULIH_ARENA").is_some() { return false; }
+        // IR membaca `jrg_arena` sebagai `[4 x i64]`: cuma di sasaran berpenunjuk 8 bita.
+        if self.options.ptr32 || self.types.lebar_ptr != 8 || std::env::var_os("JRGC_TANPA_PULIH_ARENA").is_some() { return false; }
         // Badan yang tidak mungkin mengalokasi (hitungan angka, `char_at`) tidak dibayar dua panggilan per putaran.
         self.blok_mengalokasi(b) && self.blok_bersih(b, true)
     }
@@ -49,13 +50,32 @@ impl Codegen {
             Stmt::Expr(e) => self.expr_mengalokasi(e),
             Stmt::Assign(a) => a.values.iter().chain(a.targets.iter()).any(|e| self.expr_mengalokasi(e))
                 || !matches!(a.op, AssignOp::Eq | AssignOp::PlusEq | AssignOp::MinusEq | AssignOp::StarEq)
-                || a.targets.iter().any(|t| !matches!(t, Expr::Ident(..))),
+                || a.targets.iter().any(|t| !matches!(t, Expr::Ident(..)) && !self.tulis_elemen_di_tempat(t)),
             Stmt::If(i) => self.expr_mengalokasi(&i.cond) || self.blok_mengalokasi(&i.then)
                 || i.init.is_some() || i.else_ifs.iter().any(|(init, c, b)| init.is_some() || self.expr_mengalokasi(c) || self.blok_mengalokasi(b))
                 || i.else_.as_ref().is_some_and(|b| self.blok_mengalokasi(b)),
             Stmt::Break(_) | Stmt::Continue(_) => false,
             Stmt::Block(b) => self.blok_mengalokasi(b),
+            Stmt::While(w) => self.expr_mengalokasi(&w.cond) || self.blok_mengalokasi(&w.body),
+            Stmt::Loop(l) => self.blok_mengalokasi(&l.body),
+            Stmt::For(ForStmt::Range { iter, body, .. }) =>
+                !matches!(&**iter, Expr::Range { .. }) || self.expr_mengalokasi(iter) || self.blok_mengalokasi(body),
+            Stmt::For(ForStmt::Classic { init, cond, post, body, .. }) =>
+                init.as_ref().is_some_and(|s| self.stmt_mengalokasi(s)) || cond.as_ref().is_some_and(|e| self.expr_mengalokasi(e))
+                    || post.as_ref().is_some_and(|s| self.stmt_mengalokasi(s)) || self.blok_mengalokasi(body),
+            Stmt::Return(r) => r.values.iter().any(|e| self.expr_mengalokasi(e)),
             _ => true,
+        }
+    }
+
+    /// `a[i] = skalar` atas larik/slice skalar yang terlihat dan tidak berbagi penyangga: ditulis di tempat.
+    fn tulis_elemen_di_tempat(&self, t: &Expr) -> bool {
+        let Expr::Index { obj, .. } = t else { return false };
+        let Expr::Ident(n, _) = &**obj else { return false };
+        match self.lookup_local(n) {
+            Some((_, JrgType::Array(e, _))) => Self::skalar(&e),
+            Some((slot, JrgType::Slice(e))) => Self::skalar(&e) && !self.milik_lokal.contains_key(&slot),
+            _ => false,
         }
     }
 
@@ -68,9 +88,23 @@ impl Codegen {
             Expr::Literal(LitKind::Str(_) | LitKind::RawStr(_), _) => false,
             Expr::Literal(..) | Expr::Ident(..) => false,
             Expr::Unary { expr, .. } | Expr::Cast { expr, .. } => self.expr_mengalokasi(expr),
-            Expr::Binary { lhs, rhs, .. } => !(skalar(lhs) && skalar(rhs)) || self.expr_mengalokasi(lhs) || self.expr_mengalokasi(rhs),
+            // Salah menjawab "tidak" cuma melewatkan pemulihan (aman), jadi operan yang tipenya belum diketahui (lokal
+            // badan) dianggap angka; yang PASTI teks atau berpenyangga dianggap mengalokasi.
+            Expr::Binary { lhs, rhs, .. } => {
+                let berisi = |x: &Expr| matches!(x, Expr::Literal(LitKind::Str(_) | LitKind::RawStr(_), _))
+                    || (!skalar(x) && self.peek_expr_type(x).is_some());
+                berisi(lhs) || berisi(rhs) || self.expr_mengalokasi(lhs) || self.expr_mengalokasi(rhs)
+            }
             Expr::Index { obj, idx, .. } => self.expr_mengalokasi(obj) || self.expr_mengalokasi(idx),
             Expr::Field { obj, .. } => self.expr_mengalokasi(obj),
+            // `if`/`match`/blok di posisi pernyataan diurai sebagai ekspresi.
+            Expr::If(i) => self.stmt_mengalokasi(&Stmt::If((**i).clone())),
+            Expr::Block(b) => self.blok_mengalokasi(b),
+            Expr::Match { scrutinee, arms, .. } => self.expr_mengalokasi(scrutinee) || arms.iter().any(|a|
+                a.guard.as_ref().is_some_and(|g| self.expr_mengalokasi(g)) || match &a.body {
+                    MatchBody::Expr(e) => self.expr_mengalokasi(e),
+                    MatchBody::Block(b) => self.blok_mengalokasi(b),
+                }),
             Expr::Call { func, args, .. } => {
                 let tanpa = match &**func {
                     Expr::Ident(n, _) => matches!(n.as_str(), "len" | "int" | "float" | "uint" | "rune")
@@ -161,7 +195,16 @@ impl Codegen {
         let tipe = if luar { self.tipe_luar(&n) } else { self.var_global.get(&self.k(&n)).map(|(_, t)| t.clone()) };
         match tipe {
             None => indeks_bersih,
-            Some(ty) => matches!(t, Expr::Ident(..)) && Self::skalar(&ty),
+            Some(ty) if matches!(t, Expr::Ident(..)) => Self::skalar(&ty),
+            // `luar[i] = skalar` atas larik skalar menulis di tempat tanpa alokasi. Slice yang masih berbagi
+            // penyangga (bendera CoW) disalin saat ditulis — salinannya lahir sesudah titik simpan, jadi tidak.
+            Some(ty) => match (t, &ty) {
+                (Expr::Index { obj, .. }, JrgType::Array(e, _)) if matches!(**obj, Expr::Ident(..)) => Self::skalar(e) && indeks_bersih,
+                (Expr::Index { obj, .. }, JrgType::Slice(e)) if matches!(**obj, Expr::Ident(..)) =>
+                    Self::skalar(e) && indeks_bersih
+                        && self.lookup_local(&n).is_some_and(|(slot, _)| !self.milik_lokal.contains_key(&slot)),
+                _ => false,
+            },
         }
     }
 
@@ -184,10 +227,32 @@ impl Codegen {
                 TemplatePart::Text(_) => true,
                 TemplatePart::Expr(x) => self.expr_bersih(x) && self.tampil_polos(x),
             }),
-            Expr::Method { obj, args, .. } => {
-                let polos = self.peek_expr_type(obj).is_some_and(|t| Self::skalar(&t) || t == JrgType::Str);
+            Expr::Method { obj, method, args, .. } => {
+                let tipe = self.peek_expr_type(obj);
+                // Method milik program atas struct: diperiksa seperti fungsi milik program (`self` nama dalam).
+                if let Some(JrgType::Struct(nama)) = &tipe {
+                    let f = self.tables.impls.get(nama).and_then(|m| m.get(method)).cloned();
+                    return match f {
+                        Some(f) => self.expr_bersih(obj) && args.iter().all(|x| self.expr_bersih(x))
+                            && self.fungsi_bersih(&format!("{}::{}", nama, method), &f),
+                        None => false,
+                    };
+                }
+                if tipe.is_none() {
+                    // Penerima lokal badan (tipenya belum diketahui): tiap method program bernama sama harus bersih;
+                    // tanpa itu ia method bawaan, murni kecuali yang merender di program yang punya hook.
+                    let calon: Vec<(String, std::rc::Rc<FnDecl>)> = self.tables.impls.iter()
+                        .filter_map(|(t, m)| m.get(method).map(|f| (format!("{}::{}", t, method), f.clone()))).collect();
+                    let dasar = self.expr_bersih(obj) && args.iter().all(|x| self.expr_bersih(x) && self.tampil_polos(x));
+                    if calon.is_empty() {
+                        return dasar && (!self.ada_hook() || !matches!(method.as_str(), "to_string" | "format" | "pad_left" | "pad_right" | "center"));
+                    }
+                    return dasar && calon.iter().all(|(n, f)| self.fungsi_bersih(n, f));
+                }
+                let polos = tipe.is_some_and(|t| Self::skalar(&t) || t == JrgType::Str);
                 polos && self.expr_bersih(obj) && args.iter().all(|x| self.expr_bersih(x) && self.tampil_polos(x))
             }
+            Expr::Struct { fields, spread: None, .. } => fields.iter().all(|f| self.expr_bersih(&f.value)),
             Expr::Call { func, args, .. } => self.panggilan_bersih(func, args),
             _ => false,
         }
@@ -234,20 +299,46 @@ impl Codegen {
         ok
     }
 
-    /// Awal badan loop yang bersih: titik simpan di slot bingkai, dipakai `pulihkan_putaran` dan `continue`.
+    /// Awal badan loop yang bersih: kursor dan chunk arena (`jrg_arena` field 0 dan 3) dibaca langsung ke dua slot.
     pub(crate) fn simpan_putaran(&mut self) -> String {
-        let t = self.alloca_raw("titik.", "[4 x i64]", Some(8));
-        self.ensure_extern("declare void @jrg_arena_simpan(ptr) nounwind", "jrg_arena_simpan");
-        self.emit(format!("call void @jrg_arena_simpan(ptr {})", t));
+        if self.declared_externs.insert("jrg_arena".to_string()) {
+            self.extern_decls.push("@jrg_arena = external global [4 x i64]".to_string());
+        }
+        let t = self.alloca_raw("titik.", "[2 x i64]", Some(8));
+        for (dari, ke) in [(0, 0), (3, 1)] {
+            let (p, v, q) = (self.fresh("arp."), self.fresh("arv."), self.fresh("arq."));
+            self.emit(format!("{} = getelementptr [4 x i64], ptr @jrg_arena, i64 0, i64 {}", p, dari));
+            self.emit(format!("{} = load i64, ptr {}", v, p));
+            self.emit(format!("{} = getelementptr [2 x i64], ptr {}, i64 0, i64 {}", q, t, ke));
+            self.emit(format!("store i64 {}, ptr {}", v, q));
+        }
         t
     }
 
-    /// Ujung putaran: kursor kembali ke titik simpan, dan kapasitas lokal yang lahir di badan ini dilupakan (alamatnya
-    /// bisa jadi milik penyangga lain sesudah pemulihan).
+    /// Ujung putaran: kalau kursor atau chunk bergerak (ada yang dialokasi), kursor kembali ke titik simpan dan kapasitas
+    /// lokal yang lahir di badan ini dilupakan (alamatnya bisa jadi milik penyangga lain sesudah pemulihan).
     pub(crate) fn pulihkan_putaran(&mut self, titik: &str, kap_badan: &[String]) {
-        self.ensure_extern("declare void @jrg_arena_pulih(ptr) nounwind", "jrg_arena_pulih");
-        self.emit(format!("call void @jrg_arena_pulih(ptr {})", titik));
+        self.ensure_extern("declare void @jrg_arena_pulih_ke(i64, i64) nounwind", "jrg_arena_pulih_ke");
+        let mut nilai = Vec::new();
+        for (dari, ke) in [(0, 0), (3, 1)] {
+            let (p, v, q, s) = (self.fresh("arp."), self.fresh("arv."), self.fresh("arq."), self.fresh("ars."));
+            self.emit(format!("{} = getelementptr [4 x i64], ptr @jrg_arena, i64 0, i64 {}", p, dari));
+            self.emit(format!("{} = load i64, ptr {}", v, p));
+            self.emit(format!("{} = getelementptr [2 x i64], ptr {}, i64 0, i64 {}", q, titik, ke));
+            self.emit(format!("{} = load i64, ptr {}", s, q));
+            nilai.push((v, s));
+        }
+        let (b1, b2, b) = (self.fresh("arb."), self.fresh("arb."), self.fresh("arb."));
+        self.emit(format!("{} = icmp ne i64 {}, {}", b1, nilai[0].0, nilai[0].1));
+        self.emit(format!("{} = icmp ne i64 {}, {}", b2, nilai[1].0, nilai[1].1));
+        self.emit(format!("{} = or i1 {}, {}", b, b1, b2));
+        let (lambat, usai) = (self.fresh_label("arena.lambat."), self.fresh_label("arena.usai."));
+        self.terminate(format!("br i1 {}, label %{}, label %{}, !prof !0", b, lambat, usai));
+        self.start_block(lambat);
+        self.emit(format!("call void @jrg_arena_pulih_ke(i64 {}, i64 {})", nilai[0].1, nilai[1].1));
         for k in kap_badan { self.emit(format!("store {{ ptr, i64 }} zeroinitializer, ptr {}", k)); }
+        self.terminate(format!("br label %{}", usai));
+        self.start_block(usai);
     }
 
     /// Badan loop, dengan pemulihan arena kalau `badan_bisa_dipulihkan`. Dipanggil sesudah `LoopCtx`-nya didorong:

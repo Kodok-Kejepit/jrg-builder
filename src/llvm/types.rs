@@ -511,16 +511,13 @@ impl TypeTable {
                     None => 0,
                 }
             }
-            JrgType::Enum(name) => {
-                match self.enums.get(name) {
-                    Some(e) => {
-                        let tag = 4u64;
-                        let pad = round_up(tag, e.payload_align.max(1));
-                        round_up(pad + e.payload_bytes, e.payload_align.max(4))
-                    }
-                    None => 4,
-                }
-            }
+            // Cermin `llvm_struct_def`: `{ i32, [n x i64|i128] }`, muatan mulai di satu elemen blob. Dulu dari
+            // perataan muatan sendiri, jadi `Option<bool>`/`Option<i32>` (dan penunjuk di wasm32) terhitung 8 byte
+            // padahal 16: larik dan kotaknya ditulis melewati tempatnya.
+            JrgType::Enum(name) => match self.enums.get(name) {
+                Some(e) if e.blob_len() > 0 => e.blob_elem_size() * (1 + e.blob_len()),
+                _ => 4,
+            },
             // `{ ptr, ptr }` dan penunjuk telanjang: ikut lebar penunjuk sasaran.
             JrgType::Fn(..) => 2 * self.lebar_ptr,
             JrgType::Chan(_) | JrgType::Masa(..) | JrgType::Sinkron(_) | JrgType::Kotak(_) => self.lebar_ptr,
@@ -550,8 +547,8 @@ impl TypeTable {
                 None => 1,
             },
             JrgType::Enum(name) => match self.enums.get(name) {
-                Some(e) => e.payload_align.max(4),
-                None => 4,
+                Some(e) if e.blob_len() > 0 => e.blob_elem_size(),
+                _ => 4,
             },
             JrgType::Fn(..) => self.lebar_ptr,
             JrgType::Chan(_) | JrgType::Masa(..) | JrgType::Sinkron(_) | JrgType::Kotak(_) => self.lebar_ptr,

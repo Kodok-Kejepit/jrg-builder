@@ -86,17 +86,36 @@ fn closure_di_larik_lewat_wasm() {
     assert_eq!((acuan.kode, acuan.stdout.as_str()), (w.kode, w.stdout.as_str()), "{}", w.stderr);
 }
 
-/// Goroutine belum didukung (`korutin_wasm.c`): ditolak saat jalan, sesudah keluaran sebelumnya, menyebut
-/// `--emit-wasm` dan jalan keluarnya — tidak pernah dijawab diam-diam.
+include!("bersama/paritas_llvm.rs");
+
+/// Konkurensi (W1c: korutin lewat Asyncify): tiap kasus `PARITAS_LLVM` yang memakai goroutine, channel, `select`,
+/// Future/Task, `Atomic`, `Mutex` atau `tangkap` menjawab sama lewat wasm. Satu tabel dengan LLVM, bukan salinan.
+const PENANDA_KORUTIN: &[&str] = &["spawn", "Chan::new", "Future::new", "Task::spawn", "select", "Mutex::new",
+    "Atomic::new", "tangkap("];
+/// Kasus konkurensi yang ikut memanggil builtin lewat jembatan `jrgc`: belum ditaut di wasm (W1d), ditolak keras.
+const LEWAT_JEMBATAN: &[&str] = &["jembatan: struct berisi enum, enum dan struct rekursif",
+    "goroutine tetap mendapat giliran selama main menunggu proses::",
+    "struct pengguna bernama Ptr/Task/DokRouter terpisah dari handle pustaka"];
+
 #[test]
-fn goroutine_ditolak_keras_lewat_wasm() {
-    let kerja = folder("goroutine");
-    let p = tulis(&kerja, "spawn.jrg", "fn main() {\n    wok(\"sebelum\")\n    spawn { wok(\"di goroutine\") }\n    wok(\"sesudah\")\n}\n");
-    let Some(w) = wasm(&p, &kerja) else { return };
+fn korutin_lewat_wasm_sama_dengan_interpreter() {
+    let kerja = folder("korutin");
+    let mut beda = Vec::new();
+    let mut n = 0;
+    for (i, (nama, src)) in PARITAS_LLVM.iter().enumerate() {
+        if !PENANDA_KORUTIN.iter().any(|p| src.contains(p)) || LEWAT_JEMBATAN.contains(nama) { continue; }
+        n += 1;
+        let p = tulis(&kerja, &format!("k{i}.jrg"), src);
+        let acuan = jalan(&[p.to_str().unwrap()], &kerja);
+        let Some(w) = wasm(&p, &kerja) else { return };
+        if (acuan.kode, &acuan.stdout) != (w.kode, &w.stdout) {
+            beda.push(format!("{nama}: kode {} / {}\n--- interpreter\n{}--- wasm\n{}{}", acuan.kode, w.kode,
+                acuan.stdout, w.stdout, w.stderr));
+        }
+    }
     let _ = std::fs::remove_dir_all(&kerja);
-    assert_ne!(w.kode, 0, "goroutine di wasm harus gagal:\n{}{}", w.stdout, w.stderr);
-    assert_eq!(w.stdout, "sebelum\n", "keluaran sebelum penolakan harus tetap tercetak");
-    assert!(w.stderr.contains("belum didukung --emit-wasm") && w.stderr.contains("--emit-llvm"), "{}", w.stderr);
+    assert!(n >= 8, "cuma {n} kasus konkurensi terbaca dari PARITAS_LLVM: penandanya basi?");
+    assert!(beda.is_empty(), "{} dari {n} kasus konkurensi beda lewat --emit-wasm:\n{}", beda.len(), beda.join("\n"));
 }
 
 /// Builtin lewat jembatan `jrgc` belum ditaut di wasm (`korutin_wasm.c` menggantikan simbol lemah

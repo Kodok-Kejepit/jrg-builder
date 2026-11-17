@@ -1,6 +1,21 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const PARITAS_LLVM: &[(&str, &str)] = &[
+    // Ukuran enum = tipe yang dipancarkan (`{ i32, [n x i64] }`), bukan perataan muatannya: `Option<bool>`/`Option<i32>`
+    // dulu terhitung 8 byte padahal 16, jadi larik yang tumbuh menjawab nilai salah dan `<?>` dengan kode 0; di wasm32
+    // kotak `Option<P>` di dalam tuple ditulis melewati tempatnya dan tampilannya berulang sampai stack habis.
+    ("enum bermuatan kecil di larik dan kotak", r#"struct N { pub x: (bool, Option<N>) }
+fn main() {
+    var a = [Some(true), Some(false)]
+    for i in 0..5 { a = arr::push(a, Some(i % 2 == 0)) }
+    wok(a)
+    let n = N { x: (true, Some(N { x: (false, None) })) }
+    wok(n)
+    var b: []Option<i32> = []
+    for i in 0..4 { b = arr::push(b, Some(i as i32)) }
+    wok(b)
+}
+"#),
     // `str::join` atas larik bukan teks jalan seperti `arr::join` (dulu ditolak LLVM saat kompilasi: literal `[1, 2]`
     // dipaksa ke `[]string` sebelum sampai ke jalur lapis); larik kosong tetap bertipe teks.
     ("str::join atas larik bukan teks", r#"package main

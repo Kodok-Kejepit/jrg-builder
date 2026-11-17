@@ -1,9 +1,9 @@
-// Pengganti `korutin.c` (dijaga `__unix__`) dan jembatan builtin di WebAssembly (`--emit-wasm`): yang berjalan
-// selalu `main`, dan yang butuh korutin lain atau builtin lewat jembatan DITOLAK dengan kalimat yang menyebut jalan
-// keluarnya, bukan dijawab diam-diam (`primitif.c` menyebut jembatan yang tak ditaut "tag tak dikenal").
+// Pindah stack korutin di WebAssembly (`--emit-wasm`) lewat Asyncify, plus penolakan builtin lewat jembatan, yang
+// belum ditaut di wasm: kalimatnya menyebut jalan keluarnya, bukan dijawab diam-diam (`primitif.c` menyebutnya
+// "tag tak dikenal").
 #include <stdint.h>
 #include <string.h>
-#include <time.h>
+#include <stdlib.h>
 
 void jrg_panic(const unsigned char *ptr, int64_t len);
 
@@ -23,56 +23,91 @@ static void jrg_wasm_belum_karena(const char *apa, const char *sebab) {
     jrg_panic((const unsigned char *)pesan, (int64_t)(n + sizeof ekor - 1));
 }
 
-static void jrg_wasm_belum(const char *apa) { jrg_wasm_belum_karena(apa, "WebAssembly belum punya pindah stack"); }
+// ── Korutin lewat Asyncify (`wasm-opt --asyncify`) ──
+// Satu unit terjemahan dengan `korutin.c`: penjadwal, channel, Future/Task dan Mutex miliknya dipakai utuh, yang
+// diganti cuma pindah stack. Asyncify asimetris: korutin yang menyerah MEMBUKA stack-nya sampai `__main_void`, lalu
+// `__main_void` MENGGULUNG ULANG korutin tujuan. Jadi `main` milik program juga jalan sebagai korutin di atasnya.
+__attribute__((import_module("asyncify"), import_name("start_unwind"))) void jrg_asy_mulai_buka(void *data);
+__attribute__((import_module("asyncify"), import_name("stop_unwind"))) void jrg_asy_henti_buka(void);
+__attribute__((import_module("asyncify"), import_name("start_rewind"))) void jrg_asy_mulai_gulung(void *data);
+__attribute__((import_module("asyncify"), import_name("stop_rewind"))) void jrg_asy_henti_gulung(void);
 
-// Yang sedang berjalan selalu `main`: tidak ada goroutine yang bisa berhenti sendirian, tidak ada badan tugas.
-int jrg_ko_gugur(int tanya) { (void)tanya; return 0; }
-int jrg_masa_gagal(const char *s, int64_t n) { (void)s; (void)n; return 0; }
-int64_t jrg_ko_lain(void) { return 0; }
-void jrg_ko_serah(void) {}
-void jrg_ko_tunggu_semua(void) {}
-int jrg_ko_di_stack(uintptr_t alamat) { (void)alamat; return 1; }
-int jrg_ko_selamatkan(void (*fn)(void)) { (void)fn; return 0; }
-
-void jrg_ko_tidur(int64_t mikro) {
-    if (mikro <= 0) return;
-    struct timespec t = { (time_t)(mikro / 1000000), (long)(mikro % 1000000) * 1000 };
-    nanosleep(&t, 0);
+static void *jrg_sp_baca(void) {
+    void *p;
+    __asm__ volatile(".globaltype __stack_pointer, i32\n global.get __stack_pointer\n local.set %0" : "=r"(p));
+    return p;
+}
+static void jrg_sp_tulis(void *p) {
+    __asm__ volatile(".globaltype __stack_pointer, i32\n local.get %0\n global.set __stack_pointer" :: "r"(p));
 }
 
-void jrg_ko_spawn(void (*fn)(void *), void *arg) { (void)fn; (void)arg; jrg_wasm_belum("goroutine (`spawn`/`go`)"); }
+// Data Asyncify per korutin: lokal tiap bingkai yang sedang dibuka (bukan stack-nya, yang tinggal di `stack`).
+#define JRG_WASM_SIMPAN ((size_t)256 << 10)
+static int jrg_wasm_dibuka;
 
-void *jrg_chan_new(int64_t kap, int64_t esize) { (void)kap; (void)esize; jrg_wasm_belum("channel"); return 0; }
-int32_t jrg_chan_try_send(void *c, const void *v, int64_t esize) { (void)c; (void)v; (void)esize; jrg_wasm_belum("channel"); return 0; }
-void jrg_chan_send(void *c, const void *v, int64_t esize) { (void)c; (void)v; (void)esize; jrg_wasm_belum("channel"); }
-int32_t jrg_chan_try_recv(void *c, void *out, int64_t esize) { (void)c; (void)out; (void)esize; jrg_wasm_belum("channel"); return 0; }
-void jrg_chan_recv(void *c, void *out, int64_t esize) { (void)c; (void)out; (void)esize; jrg_wasm_belum("channel"); }
-void jrg_chan_close(void *c) { (void)c; jrg_wasm_belum("channel"); }
-int64_t jrg_chan_info(const void *c, int32_t apa) { (void)c; (void)apa; jrg_wasm_belum("channel"); return 0; }
+// Wajib `noinline` dan tanpa bingkai stack: kalau disisipkan clang, unwind tidak terjadi; kalau berbingkai, prolognya
+// jalan ulang saat rewind dan stack pointer turun tiap perpindahan. Saat rewind fungsi ini dimasuki ULANG dari atas.
+__attribute__((noinline)) static void jrg_ko_wasm_tukar(JrgKo *dari, JrgKo *ke) {
+    (void)ke;
+    if (!dari->ctx.tidur) {
+        dari->ctx.tidur = 1;
+        dari->ctx.data[0] = dari->ctx.simpan;
+        dari->ctx.data[1] = dari->ctx.simpan + JRG_WASM_SIMPAN;
+        dari->ctx.sp = jrg_sp_baca();
+        jrg_wasm_dibuka = 1;
+        jrg_asy_mulai_buka(dari->ctx.data);
+    } else {
+        jrg_asy_henti_gulung();
+        dari->ctx.tidur = 0;
+    }
+}
 
-void *jrg_masa_baru(void (*jalan)(void *), void *env, void *kode, int64_t esize, int32_t tugas) {
-    (void)jalan; (void)env; (void)kode; (void)esize; (void)tugas;
-    jrg_wasm_belum("`Future`/`Task`");
-    return 0;
+static char *jrg_ko_wasm_stack(JrgKo *k) {
+    k->ctx.simpan = malloc(JRG_WASM_SIMPAN);
+    char *st = malloc(JRG_KO_STACK);
+    if (st == 0 || k->ctx.simpan == 0) { free(st); free(k->ctx.simpan); k->ctx.simpan = 0; return 0; }
+    k->ctx.sp = (void *)(((uintptr_t)st + JRG_KO_STACK) & ~(uintptr_t)15);
+    return st;
 }
-void jrg_masa_ambil(void *c, void *out, const char *nama, int64_t nl) { (void)c; (void)out; (void)nama; (void)nl; jrg_wasm_belum("`Future`/`Task`"); }
-int32_t jrg_masa_coba(void *c, void *out, int64_t mikro, const char *nama, int64_t nl) {
-    (void)c; (void)out; (void)mikro; (void)nama; (void)nl;
-    jrg_wasm_belum("`Future`/`Task`");
-    return 0;
-}
-int32_t jrg_masa_lindung(void (*jalan)(void *), void *env, const char **pesan, int64_t *n) {
-    (void)jalan; (void)env; (void)pesan; (void)n;
-    jrg_wasm_belum("`--uji` dan handler `dok::`");
-    return 0;
-}
-int32_t jrg_masa_selesai(void *c) { (void)c; jrg_wasm_belum("`Future`/`Task`"); return 0; }
-int64_t jrg_masa_balap(void **daftar, int64_t n) { (void)daftar; (void)n; jrg_wasm_belum("`Future`/`Task`"); return 0; }
 
-void *jrg_atom_baru(int64_t awal) { (void)awal; jrg_wasm_belum("`Atomic`"); return 0; }
-void *jrg_kunci_baru(void) { jrg_wasm_belum("`Mutex`"); return 0; }
-void jrg_kunci_kunci(void *k, int32_t dijaga, const char *nama, int64_t nl) { (void)k; (void)dijaga; (void)nama; (void)nl; jrg_wasm_belum("`Mutex`"); }
-void jrg_kunci_lepas(void *k, const char *nama, int64_t nl) { (void)k; (void)nama; (void)nl; jrg_wasm_belum("`Mutex`"); }
+static void jrg_ko_wasm_lepas(JrgKo *k) {
+    free(k->stack);
+    free(k->ctx.simpan);
+    k->stack = 0;
+    k->ctx.simpan = 0;
+}
+
+// `main` milik program (`jrgc` menamainya ulang); `__main_void` adalah dasar tempat korutin dibuka dan digulung,
+// jadi ia sendiri TIDAK diinstrumentasi Asyncify (`asyncify-removelist`). Keadaannya global, bukan di stack bayangan.
+int jrg_main_program(void);
+
+// Pintu masuk goroutine TIDAK boleh disisipkan ke `__main_void` (yang tidak diinstrumentasi): badannya bisa pindah
+// korutin, dan kode yang bisa pindah wajib diinstrumentasi Asyncify.
+__attribute__((noinline)) static void jrg_wasm_masuk(void) { jrg_ko_masuk(); }
+static int jrg_wasm_hasil;
+static void *jrg_wasm_dasar;
+
+int __main_void(void) {
+    jrg_wasm_dasar = jrg_sp_baca();
+    jrg_ko_utama.ctx.simpan = malloc(JRG_WASM_SIMPAN);
+    if (jrg_ko_utama.ctx.simpan == 0) jrg_wasm_belum_karena("korutin", "memori habis untuk data Asyncify");
+    for (;;) {
+        JrgKo *k = jrg_ko_kini;
+        jrg_wasm_dibuka = 0;
+        if (k->ctx.mulai) {
+            jrg_sp_tulis(k->ctx.sp);
+            jrg_asy_mulai_gulung(k->ctx.data);
+        } else {
+            k->ctx.mulai = 1;
+            if (k != &jrg_ko_utama) jrg_sp_tulis(k->ctx.sp);
+        }
+        if (k == &jrg_ko_utama) jrg_wasm_hasil = jrg_main_program(); else jrg_wasm_masuk();
+        jrg_sp_tulis(jrg_wasm_dasar);
+        if (jrg_wasm_dibuka) { jrg_asy_henti_buka(); continue; }
+        // Kembali biasa cuma `main`: goroutine yang selesai menyerahkan giliran (`jrg_ko_tamat`) dan tidak kembali.
+        return jrg_wasm_hasil;
+    }
+}
 
 // Jembatan builtin milik `jrgc` (`libjrgjembatan`) belum ditaut di wasm: yang kuat ini menggantikan simbol lemah di
 // `primitif.c`, jadi galatnya menyebut builtin yang dipanggil.

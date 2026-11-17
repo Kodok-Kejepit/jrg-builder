@@ -29,12 +29,13 @@ jobs:
           (cd runtime && cargo build --release)
           (cd jembatan && cargo build --release)
 
-      # Mesin kelima (`--emit-wasm`): sysroot dan compiler-rt wasi-sdk, sidiknya dipatok (rantai pasok).
+      # Mesin kelima (`--emit-wasm`): sysroot dan compiler-rt wasi-sdk plus binaryen (`wasm-opt`, Asyncify untuk
+      # korutin), sidiknya dipatok (rantai pasok).
       - name: Tembolok alat WASI
         uses: actions/cache@v4
         with:
           path: ~/.cache/jrgm/wasi
-          key: wasi-sdk-34
+          key: wasi-sdk-34-binaryen-133
 
       # Node 24: rekursi 20 ribu tingkat lewat --emit-wasm keluar 1 tanpa keluaran di node bawaan image.
       - uses: actions/setup-node@v4
@@ -52,6 +53,11 @@ jobs:
             echo "9d813544eeebe38b7b8f2244ed591de46b6db812c6dd1a257ff9f0d2a905a2be  sysroot.tgz" | sha256sum -c -
             echo "eee3e634dcf71aa22b1333391623cf5c9965a637dc428a27b1a858c026c587f1  rt.tgz" | sha256sum -c -
             tar xzf sysroot.tgz && tar xzf rt.tgz -C rt && rm sysroot.tgz rt.tgz
+          fi
+          if [ ! -x binaryen-version_133/bin/wasm-opt ]; then
+            curl -sSfL -o bny.tgz https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz
+            echo "2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489  bny.tgz" | sha256sum -c -
+            tar xzf bny.tgz && rm bny.tgz
           fi
           (cd $GITHUB_WORKSPACE/runtime && cargo build --release --target wasm32-wasip1)
 

@@ -47,7 +47,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 ### Kinerja
 
 - **Biner `--emit-llvm` membebaskan memori sementara tiap putaran loop** yang tidak menyimpan nilainya ke luar putaran
-  (teks yang dirakit lalu cuma dibaca): `string_ops` 24 MB → 1,5 MB, setara C. Sambil itu `let t = [a]` dan
+  (teks yang dirakit lalu cuma dibaca): `string_ops` 24 MB → 1,5 MB dan `mixed_report` 7,2 → 1,6 MB, setara C, tanpa
+  melambat. Sambil itu `let t = [a]` dan
   `var n = m` atas larik bersarang juga tidak lagi menyalin sampai ada yang menulis.
 
 - **`var b = a` di biner `--emit-llvm` tidak lagi menyalin array**: dua nama berbagi isinya sampai salah satunya

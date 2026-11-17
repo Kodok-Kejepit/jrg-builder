@@ -47,6 +47,9 @@ const UKURAN_CHUNK: usize = 1 << 20; // 1 MiB
 /// Batas ruang lebih di belakang alokasi raksasa.
 const RUANG_LEBIH_MAKS: usize = 64 << 20;
 
+/// `repr(C)` dan diekspor sebagai `jrg_arena`: IR membaca `kursor` (field 0) dan `chunk` (field 3) langsung di titik
+/// simpan loop (`codegen_arena::simpan_putaran`), jadi putaran yang tidak mengalokasi tidak memanggil runtime.
+#[repr(C)]
 struct Arena {
     kursor: usize,
     ujung: usize,
@@ -58,35 +61,31 @@ struct Arena {
     chunk: usize,
 }
 
+#[export_name = "jrg_arena"]
 static mut ARENA: Arena = Arena { kursor: 0, ujung: 0, terakhir: 0, chunk: 0 };
-
-/// Titik simpan arena (`jrg_arena_simpan`), dipancarkan codegen di awal badan loop yang terbukti tidak meloloskan
-/// nilai berpenyangga (`codegen_arena.rs`): semua yang dialokasi sesudahnya sampah di akhir putarannya.
-#[repr(C)]
-pub struct TitikArena { kursor: usize, ujung: usize, terakhir: usize, chunk: usize }
 
 /// Generasi arena: naik tiap `jrg_arena_pulih`, jadi catatan berkunci ALAMAT (tabel kapasitas di `primitif.c`) yang
 /// lahir sebelum pemulihan tidak berlaku untuk penyangga baru yang kebetulan beralamat sama.
 #[no_mangle]
 pub static mut jrg_arena_gen: u64 = 0;
 
-#[no_mangle]
-pub unsafe extern "C" fn jrg_arena_simpan(t: *mut TitikArena) {
-    let a = &*core::ptr::addr_of!(ARENA);
-    *t = TitikArena { kursor: a.kursor, ujung: a.ujung, terakhir: a.terakhir, chunk: a.chunk };
-}
+struct TitikArena { kursor: usize, chunk: usize }
 
+/// Ujung putaran loop yang MENGALOKASI (IR sudah membandingkan kursor dan chunk-nya dengan titik simpan): semua yang
+/// dialokasi sesudah `(kursor, chunk)` sampah. Dipancarkan di badan yang terbukti tidak meloloskan nilai berpenyangga
+/// (`codegen_arena.rs`).
 #[no_mangle]
-pub unsafe extern "C" fn jrg_arena_pulih(t: *const TitikArena) {
+pub unsafe extern "C" fn jrg_arena_pulih_ke(kursor: usize, chunk: usize) {
+    let t = TitikArena { kursor, chunk };
     // Arena cadangan (memori sudah habis) tidak pernah dipulihkan: programnya sedang melapor lalu berhenti.
     if CADANGAN_TERPAKAI { return; }
-    let t = &*t;
     let a = &mut *core::ptr::addr_of_mut!(ARENA);
+    if a.chunk == t.chunk && a.kursor == t.kursor { return; }
     let racun = racun_arena();
     if a.chunk == t.chunk {
         if racun && t.kursor < a.kursor { core::ptr::write_bytes(t.kursor as *mut u8, 0xDB, a.kursor - t.kursor); }
         a.kursor = t.kursor;
-        a.terakhir = t.terakhir;
+        a.terakhir = t.kursor;
     } else {
         // Chunk terbaru dipertahankan dan dipakai dari awal (kalau dilepas, putaran yang titik simpannya di ujung
         // chunk akan `malloc`/`free` satu chunk tiap putaran); chunk di antaranya dilepas.
@@ -101,7 +100,6 @@ pub unsafe extern "C" fn jrg_arena_pulih(t: *const TitikArena) {
         *(terbaru as *mut usize) = t.chunk;
         let awal = terbaru + 16;
         if racun {
-            if t.kursor < t.ujung { core::ptr::write_bytes(t.kursor as *mut u8, 0xDB, t.ujung - t.kursor); }
             if awal < a.kursor { core::ptr::write_bytes(awal as *mut u8, 0xDB, a.kursor - awal); }
         }
         a.kursor = awal;

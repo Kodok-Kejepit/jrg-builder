@@ -15,6 +15,8 @@ pub struct Alat {
     penaut: (PathBuf, bool),
     sysroot: PathBuf,
     builtins: PathBuf,
+    /// `wasm-opt` binaryen, untuk pass Asyncify (pindah stack korutin).
+    wasm_opt: PathBuf,
 }
 
 fn dir_wasi() -> PathBuf {
@@ -58,10 +60,15 @@ pub fn cari_alat() -> Result<Alat, String> {
         .filter(|p| p.exists())
         .ok_or_else(|| format!("--emit-wasm butuh compiler-rt wasm (`libclang_rt-<versi>.tar.gz` wasi-sdk) di {}",
             wasi.join("rt").display()))?;
+    let wasm_opt = di_path("wasm-opt")
+        .or_else(|| sub_terbaru(&wasi, "binaryen-").map(|d| d.join("bin").join("wasm-opt")).filter(|p| p.exists()))
+        .ok_or_else(|| format!("--emit-wasm butuh `wasm-opt` (binaryen, untuk korutin lewat Asyncify): di PATH, atau \
+            ekstrak `binaryen-version_<v>-x86_64-linux.tar.gz` dari rilis github.com/WebAssembly/binaryen di {}",
+            wasi.display()))?;
     let penaut = di_path("wasm-ld").map(|p| (p, false))
         .or_else(|| rust_lld().map(|p| (p, true)))
         .ok_or("--emit-wasm butuh penaut wasm: `wasm-ld` (lld) di PATH, atau `rust-lld` dari rustup")?;
-    Ok(Alat { clang, penaut, sysroot, builtins })
+    Ok(Alat { clang, penaut, sysroot, builtins, wasm_opt })
 }
 
 fn jalankan_alat(cmd: &mut Command, apa: &str) -> Result<(), String> {
@@ -70,9 +77,10 @@ fn jalankan_alat(cmd: &mut Command, apa: &str) -> Result<(), String> {
     Err(format!("{} gagal:\n{}", apa, String::from_utf8_lossy(&out.stderr)))
 }
 
-/// `main` JRG di IR berbentuk `i32 main()`; wasi-libc memanggilnya lewat `__main_void`.
+/// `main` JRG di IR berbentuk `i32 main()`. wasi-libc memanggil `__main_void`, yang di sini milik `korutin_wasm.c`:
+/// dasar Asyncify yang menjalankan `main` program sebagai korutin.
 fn ganti_main(ir: &str) -> String {
-    ir.replacen("@\"main\"()", "@\"__main_void\"()", 1)
+    ir.replacen("@\"main\"()", "@\"jrg_main_program\"()", 1)
 }
 
 /// Menyusun IR (`CodegenOptions::ptr32`) jadi `keluar` (.wasm) dan pemuatnya `keluar.mjs`.
@@ -94,17 +102,26 @@ pub fn kompilasi(ir: &str, keluar: &Path, verbose: bool) -> Result<PathBuf, Stri
     // Primitif runtime yang sama dengan `--emit-llvm` (satu definisi); korutin diganti versi WASM.
     let c = dir.join("pengantar.c");
     std::fs::write(&c, concat!(include_str!("../llvm/primitif.c"), "\n", include_str!("../llvm/jaga_stack.c"), "\n",
-        include_str!("../llvm/korutin_wasm.c")))
+        include_str!("../llvm/korutin.c"), "\n", include_str!("../llvm/korutin_wasm.c")))
         .map_err(|e| format!("gagal menulis {}: {}", c.display(), crate::host::galat_io(&e)))?;
     let c_o = dir.join("pengantar.o");
     susun(&c, &c_o)?;
+    let taut_wasm = dir.join("tertaut.wasm");
     let lib = alat.sysroot.join("lib").join(SASARAN);
     let mut taut = Command::new(&alat.penaut.0);
     if alat.penaut.1 { taut.args(["-flavor", "wasm"]); }
     // Stack bayangan 8 MiB seperti stack utama native (bawaan wasm-ld 64 KiB: larik `[2000]int` lokal sudah meluap).
     taut.args(["-m", "wasm32", "--gc-sections", "-z", "stack-size=8388608"]).arg(format!("-L{}", lib.display())).arg(lib.join("crt1-command.o"))
-        .arg(&prog_o).arg(&c_o).arg(&runtime).arg("-lc").arg(&alat.builtins).arg("-o").arg(keluar);
-    let hasil = jalankan_alat(&mut taut, "penaut wasm");
+        .arg(&prog_o).arg(&c_o).arg(&runtime).arg("-lc").arg(&alat.builtins).arg("-o").arg(&taut_wasm);
+    let hasil = jalankan_alat(&mut taut, "penaut wasm").and_then(|_| {
+        // Asyncify: korutin dibuka dan digulung ulang sampai `__main_void`, yang karena itu tidak diinstrumentasi.
+        // `JRG_WASM_NAMA=1`: nama fungsi ikut di .wasm (jejak trap node terbaca) dan IR-nya disimpan, untuk menyelidiki.
+        let nama = std::env::var_os("JRG_WASM_NAMA").is_some_and(|v| v == "1");
+        jalankan_alat(Command::new(&alat.wasm_opt).arg(&taut_wasm).args(["--asyncify",
+            "--pass-arg=asyncify-removelist@__main_void", "-O2"]).args(nama.then_some("-g")).arg("-o").arg(keluar),
+            "wasm-opt (Asyncify)")
+    });
+    if std::env::var_os("JRG_WASM_NAMA").is_some_and(|v| v == "1") { let _ = std::fs::copy(&ll, keluar.with_extension("ll")); }
     let _ = std::fs::remove_dir_all(&dir);
     hasil?;
     let pemuat = pemuat_untuk(keluar);
