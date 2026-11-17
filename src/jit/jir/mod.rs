@@ -71,6 +71,11 @@ pub enum Unar {
 pub struct Keadaan {
     pub ip: usize,
     pub isi: Vec<Option<Nilai>>,
+    /// Bingkai callee yang disisipkan (JIR-3): fungsi JIT-nya (`modul::info`), geser posisinya di stack pemanggil,
+    /// dan keadaan pemanggil di `Call`-nya. `None` = bingkai unit ini sendiri.
+    pub fid: Option<u32>,
+    pub geser: usize,
+    pub induk: Option<Box<Keadaan>>,
 }
 
 /// Jaga yang gagal = deopt di `keadaan`. `spek`: kegagalannya dicatat (`GAGAL_SPEK`), kompilasi berikutnya tidak
@@ -262,7 +267,9 @@ fn daftar(v: &[Nilai]) -> String { v.iter().map(|x| x.to_string()).collect::<Vec
 impl fmt::Display for Keadaan {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let isi: Vec<String> = self.isi.iter().map(|x| x.map_or("_".into(), |v| v.to_string())).collect();
-        write!(f, "@{} [{}]", self.ip, isi.join(" "))
+        write!(f, "@{} [{}]", self.ip, isi.join(" "))?;
+        if let Some(i) = &self.induk { write!(f, " < fid {} +{} {i}", self.fid.unwrap_or(0), self.geser)?; }
+        Ok(())
     }
 }
 
@@ -344,10 +351,11 @@ impl fmt::Display for Fungsi {
     }
 }
 
-/// `JRG_JIT_JIR=paksa`: unit yang dicakup JIR diturunkan lewat JIR (fase JIR-1; penurun langsung tetap bawaan).
+/// Unit yang dicakup JIR diturunkan lewat JIR (bawaan sejak langkah 101); `JRG_JIT_JIR=mati` (`lama`, `off`) memakai
+/// penurun langsung untuk semuanya. Yang ditolak JIR selalu lewat penurun langsung.
 pub fn aktif() -> bool {
     static A: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *A.get_or_init(|| std::env::var("JRG_JIT_JIR").is_ok_and(|v| v == "paksa"))
+    *A.get_or_init(|| !std::env::var("JRG_JIT_JIR").is_ok_and(|v| matches!(v.as_str(), "mati" | "lama" | "off")))
 }
 
 /// Unit yang diturunkan lewat JIR di proses ini (untuk `JRG_JIT_LOG=ringkas` dan tes).

@@ -16,6 +16,7 @@ mod python;
 mod cli;
 mod jalankan;
 mod rangka;
+mod rangka_en;
 mod perintah;
 mod android;
 mod bahasa;

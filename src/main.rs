@@ -324,7 +324,7 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
     }
 
     if cli.verbose {
-        eprintln!("[jrgc] lexing: {}", nama);
+        jrgc::ecetak_t!("[jrgc] lexing: {}", nama);
     }
 
     // 2. Lexing
@@ -336,8 +336,8 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
     }
 
     if cli.verbose {
-        eprintln!("[jrgc] {} token(s) diproduksi", tokens.len());
-        eprintln!("[jrgc] parsing: {}", nama);
+        jrgc::ecetak_t!("[jrgc] {} token(s) diproduksi", tokens.len());
+        jrgc::ecetak_t!("[jrgc] parsing: {}", nama);
     }
 
     // 3. Parsing
@@ -379,7 +379,7 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
         let effective_full_buffered_stdout = cli.full_buffered_stdout || cli.full_power;
         let effective_opt_level = if cli.full_power { 3 } else { cli.opt_level };
         if cli.verbose {
-            eprintln!("[jrgc] backend LLVM aktif — lowering AST ke LLVM IR...");
+            jrgc::ecetak_t!("[jrgc] backend LLVM aktif — lowering AST ke LLVM IR...");
         }
         let mut jalur_impor = vec![dir.clone()];
         jalur_impor.extend(cli.include_dirs.iter().cloned());
@@ -409,7 +409,7 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
             } else { cli.output.clone() };
             jrgc::wasm::kompilasi(&ir, &berkas, cli.verbose).map_err(|e| vec![format!("jrgc: --emit-wasm: {}", e)])?;
             if cli.no_run {
-                eprintln!("[jrgc] wasm: {} (jalankan: node {})", berkas.display(), jrgc::wasm::pemuat_untuk(&berkas).display());
+                jrgc::ecetak_t!("[jrgc] wasm: {} (jalankan: node {})", berkas.display(), jrgc::wasm::pemuat_untuk(&berkas).display());
                 return Ok(());
             }
             let kode = jrgc::wasm::jalankan(&berkas, &[]).map_err(|e| vec![format!("jrgc: {}", e)])?;
@@ -426,7 +426,7 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
             };
             let hasil = llvm::apk::bangun(Some(&ir), std::path::Path::new(nama), apk, &opsi, cli.verbose)
                 .map_err(|e| vec![format!("jrgc: --apk: {}", e)])?;
-            eprintln!("[jrgc] APK: {}", hasil.display());
+            jrgc::ecetak_t!("[jrgc] APK: {}", hasil.display());
             return Ok(());
         }
 
@@ -434,12 +434,12 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
         if is_ll_text {
             std::fs::write(&cli.output, &ir)
                 .map_err(|e| vec![format!("jrgc: gagal menulis {}: {}", cli.output.display(), crate::host::galat_io(&e))])?;
-            eprintln!("[jrgc] LLVM IR ditulis ke {}", cli.output.display());
+            jrgc::ecetak_t!("[jrgc] LLVM IR ditulis ke {}", cli.output.display());
             return Ok(());
         }
 
         if cli.verbose {
-            eprintln!("[jrgc] LLVM IR OK ({} baris) — mengompilasi ke native via clang -O{}...",
+            jrgc::ecetak_t!("[jrgc] LLVM IR OK ({} baris) — mengompilasi ke native via clang -O{}...",
                 ir.lines().count(), effective_opt_level);
         }
         let pgo = if let Some(path) = &cli.pgo_generate {
@@ -478,12 +478,12 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
             .map_err(|e| vec![format!("jrgc: {}", e)])?;
 
         if cli.no_run {
-            eprintln!("[jrgc] native binary: {}", binary.display());
+            jrgc::ecetak_t!("[jrgc] native binary: {}", binary.display());
             return Ok(());
         }
 
         if cli.verbose {
-            eprintln!("[jrgc] menjalankan {}...", binary.display());
+            jrgc::ecetak_t!("[jrgc] menjalankan {}...", binary.display());
         }
         let run_path = if binary.is_absolute() {
             binary.clone()
@@ -491,6 +491,8 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
             std::env::current_dir().map(|d| d.join(&binary)).unwrap_or(binary.clone())
         };
         let mut perintah = process::Command::new(&run_path);
+        // Biner memilih bahasa galatnya sendiri; yang dijalankan `jrgc` mengikuti pilihan jalan ini (`--bahasa`).
+        perintah.env("JRG_BAHASA", jrgc::terjemah::aktif().kode());
         let batas = batas_memori_anak(&mut perintah).map_err(|e| vec![e])?;
         let status = perintah.status();
         match status {
@@ -501,16 +503,16 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
 
     if cli.no_run {
         if cli.verbose {
-            eprintln!("[jrgc] syntax OK ({} top-level items) — --no-run: tidak dieksekusi",
+            jrgc::ecetak_t!("[jrgc] syntax OK ({} top-level items) — --no-run: tidak dieksekusi",
                 ast.items.len());
         } else {
-            eprintln!("[jrgc] syntax OK");
+            jrgc::ecetak_t!("[jrgc] syntax OK");
         }
         return Ok(());
     }
 
     if cli.verbose {
-        eprintln!("[jrgc] {} top-level items — memulai {}...",
+        jrgc::ecetak_t!("[jrgc] {} top-level items — memulai {}...",
             ast.items.len(),
             if cli.use_vm { "Bytecode VM" } else { "interpreter" });
     }
@@ -562,7 +564,7 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
     })?;
 
     if cli.verbose {
-        eprintln!("[jrgc] eksekusi selesai: {}", nama);
+        jrgc::ecetak_t!("[jrgc] eksekusi selesai: {}", nama);
     }
 
     Ok(())
@@ -784,7 +786,7 @@ fn utama() {
     // ── Inisialisasi profiler ───────────────────────────────────────────────
     if cli.profile {
         profiler::init(true);
-        eprintln!("[jrgc] profiler aktif\n");
+        jrgc::ecetak_t!("[jrgc] profiler aktif\n");
     }
 
     // ── Hot reload mode ─────────────────────────────────────────────────────

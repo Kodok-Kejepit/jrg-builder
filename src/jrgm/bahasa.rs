@@ -652,6 +652,7 @@ pub(crate) fn rangka(nama: &str, r: &Resep) -> Result<(), String> {
     let tulis = |p: &str, isi: &str| -> Result<(), String> {
         let f = akar.join(p);
         if let Some(d) = f.parent() { std::fs::create_dir_all(d).map_err(|e| format!("jrgm: {}", crate::host::galat_io(&e)))?; }
+        let isi = if crate::terjemah::aktif() == crate::terjemah::Bahasa::En { super::rangka_en::teks_lain(isi) } else { isi.to_string() };
         std::fs::write(&f, isi.replace("{nama}", nama)).map_err(|e| format!("jrgm: tidak bisa menulis {}: {}", p, crate::host::galat_io(&e)))
     };
     for (p, isi) in r.rangka { tulis(p, isi)?; }

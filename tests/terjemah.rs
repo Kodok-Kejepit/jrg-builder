@@ -111,3 +111,69 @@ fn bantuan_cli_ikut_bahasa() {
     assert!(m.contains("Create a new JawaRustGo++ project"), "{m}");
     let _ = std::fs::remove_dir_all(&r);
 }
+
+/// Isi literal `const NAMA: &str = "...";` di sumber Rust, dengan sambungan `\` + baris baru dirapatkan.
+fn konstanta_teks(sumber: &str, nama: &str) -> String {
+    let awal = sumber.find(&format!("const {nama}: &str = \"")).unwrap_or_else(|| panic!("`{nama}` tidak ada"));
+    let isi = &sumber[awal..];
+    let isi = &isi[isi.find('"').unwrap() + 1..];
+    let (mut out, mut it) = (String::new(), isi.chars().peekable());
+    while let Some(c) = it.next() {
+        match c {
+            '"' => break,
+            '\\' => match it.next() {
+                Some('\n') => { while it.peek().is_some_and(|c| c.is_whitespace()) { it.next(); } }
+                Some('n') => out.push('\n'),
+                Some(x) => out.push(x),
+                None => {}
+            },
+            _ => out.push(c),
+        }
+    }
+    out
+}
+
+/// Saat cadangan memori pun habis, runtime LLVM mencetak padanan Inggris yang ditulis tangan (tanpa alokasi); ia
+/// harus sama dengan yang dijawab tabel untuk kalimat Indonesianya, baris demi baris seperti `bentuk_galat`.
+#[test]
+fn pesan_memori_habis_runtime_sama_dengan_tabel() {
+    let rt = include_str!("../runtime/src/lib.rs");
+    let (id, en) = (konstanta_teks(rt, "PESAN_MEMORI_HABIS"), konstanta_teks(rt, "PESAN_MEMORI_HABIS_EN"));
+    let terjemah = |baris: &str| match baris.trim().strip_prefix("bantuan:") {
+        Some(isi) => format!("  help: {}", jrgc::terjemah::terjemah_ke_en(isi.trim())),
+        None => jrgc::terjemah::terjemah_ke_en(baris),
+    };
+    let dari_tabel: Vec<String> = id.lines().map(terjemah).collect();
+    assert_eq!(dari_tabel.join("\n"), en, "PESAN_MEMORI_HABIS_EN di runtime/src/lib.rs tidak sama dengan tabel");
+}
+
+/// `jrgm new` menulis kerangka dalam bahasa pesan: Inggris bawaan, Indonesia dengan `--bahasa id`. Tiap jenisnya
+/// harus lolos `--periksa`, dan kerangka program biasa beserta tesnya jalan.
+#[test]
+fn kerangka_jrgm_new_ikut_bahasa() {
+    let r = rumah_baru("");
+    for jenis in ["bin", "lib", "web", "android"] {
+        let nama = format!("app_{jenis}");
+        let o = jalan(perintah(jrgm(), &r).args(["new", &nama, "--kind", jenis]));
+        assert!(o.contains("Created"), "jrgm new --kind {jenis}: {o}");
+        let entri = r.join(&nama).join(if jenis == "lib" { "src/lib.jrg" } else { "src/main.jrg" });
+        let isi = std::fs::read_to_string(&entri).unwrap();
+        assert!(!isi.contains("Halo") && !isi.contains("Jalankan"), "kerangka {jenis} masih Indonesia:\n{isi}");
+        let p = jalan(perintah(jrgc(), &r).arg(&entri).arg("--periksa").arg("--sopan"));
+        assert!(p.trim().is_empty(), "kerangka {jenis} tidak lolos --periksa:\n{p}");
+        let toml = std::fs::read_to_string(r.join(&nama).join("jrgm.toml")).unwrap();
+        assert!(toml.contains("# Dependencies") && !toml.contains("Dependensi"), "{toml}");
+    }
+    let o = jalan(perintah(jrgc(), &r).arg(r.join("app_bin/src/main.jrg")));
+    assert!(o.starts_with("Hello from JawaRustGo++!\n0 -> 1\n"), "{o}");
+    let u = jalan(perintah(jrgm(), &r.join("app_bin")).arg("test"));
+    assert!(u.contains("1 passed") || u.contains("ok    test_example"), "jrgm test atas kerangka Inggris:\n{u}");
+
+    let o = jalan(perintah(jrgm(), &r).args(["new", "app_id"]).env("JRG_BAHASA", "id"));
+    assert!(o.contains("app_id"), "{o}");
+    assert!(std::fs::read_to_string(r.join("app_id/src/main.jrg")).unwrap().contains("Halo dari JawaRustGo++!"));
+    let o = jalan(perintah(jrgm(), &r).args(["new", "app_py", "--bahasa", "python"]));
+    assert!(o.contains("app_py"), "{o}");
+    assert!(std::fs::read_to_string(r.join("app_py/src/main.py")).unwrap().contains("Hello from app_py!"));
+    let _ = std::fs::remove_dir_all(&r);
+}

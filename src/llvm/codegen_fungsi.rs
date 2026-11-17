@@ -212,6 +212,10 @@ impl Codegen {
         if self.is_main_fn {
             self.ensure_extern("declare void @jrg_situs_pasang(ptr, ptr, ptr) nounwind", "jrg_situs_pasang");
             self.emit("call void @jrg_situs_pasang(ptr @jrg_situs_isi, ptr @jrg_situs_n, ptr @jrg_situs_teks)".to_string());
+            self.ensure_extern("declare void @jrg_terjemah_pasang(ptr, i64) nounwind", "jrg_terjemah_pasang");
+            let n = self.fresh("terjemah.n.");
+            self.emit(format!("{} = load i64, ptr @jrg_terjemah_n", n));
+            self.emit(format!("call void @jrg_terjemah_pasang(ptr @jrg_terjemah_teks, i64 {})", n));
         }
 
         if self.is_main_fn && self.options.full_buffered_stdout {

@@ -112,3 +112,27 @@ fn builtin_jembatan_ditolak_keras_lewat_wasm() {
     assert!(w.stderr.contains("builtin `crypto::sha256` belum didukung --emit-wasm") && w.stderr.contains("jembatan.jrg:3"),
         "{}", w.stderr);
 }
+
+/// Stack: larik lokal besar (stack bayangan wasm 8 MiB, bawaan `wasm-ld` 64 KiB meluap) dan rekursi. Rekursi 20 ribu
+/// tingkat lulus di node 24 tapi keluar 1 tanpa keluaran di node runner CI: kedalamannya dipendekkan sampai CI node 24.
+const STACK_DALAM: &str = r#"fn dalam(n: int) -> int {
+    if n == 0 { return 0 }
+    return 1 + dalam(n - 1)
+}
+fn main() {
+    var a: [2000]int = [7; 2000]
+    var b: [2000]int = [7; 2000]
+    b[1999] = 8
+    wok(a == b, dalam(2000))
+}
+"#;
+
+#[test]
+fn stack_dalam_lewat_wasm() {
+    let kerja = folder("stack");
+    let p = tulis(&kerja, "stack.jrg", STACK_DALAM);
+    let acuan = jalan(&[p.to_str().unwrap()], &kerja);
+    let Some(w) = wasm(&p, &kerja) else { return };
+    let _ = std::fs::remove_dir_all(&kerja);
+    assert_eq!((acuan.kode, acuan.stdout.as_str()), (w.kode, w.stdout.as_str()), "{}", w.stderr);
+}

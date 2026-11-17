@@ -55,6 +55,7 @@ pub mod infer_bentrok;
 /// kenapa penandanya diurai alih-alih tipenya diganti.
 pub mod galat;
 pub mod situs;
+mod terjemah;
 pub use situs::isi_situs;
 pub mod modul;
 pub mod generik;
@@ -529,7 +530,7 @@ pub fn ensure_runtime(verbose: bool, target: Option<&str>) -> Result<PathBuf, St
         })
     };
     if needs_build {
-        if verbose { eprintln!("[jrgc] membangun runtime native (jrgrt) — sekali saja, di-cache setelahnya..."); }
+        if verbose { crate::ecetak_t!("[jrgc] membangun runtime native (jrgrt) — sekali saja, di-cache setelahnya..."); }
         let mut cmd = Command::new("cargo");
         cmd.args(["build", "--release"]);
         if let Some(triple) = target {
@@ -545,7 +546,7 @@ pub fn ensure_runtime(verbose: bool, target: Option<&str>) -> Result<PathBuf, St
             ));
         }
         segarkan_cap(&lib);
-        if verbose { eprintln!("[jrgc] runtime jrgrt siap: {}", lib.display()); }
+        if verbose { crate::ecetak_t!("[jrgc] runtime jrgrt siap: {}", lib.display()); }
     }
     if !lib.exists() {
         return Err(format!("build runtime selesai tapi {} tidak ditemukan", lib.display()));
@@ -605,7 +606,7 @@ pub fn ensure_jembatan_untuk(verbose: bool, sasaran: Option<(&str, &Path, &Path)
         }
     };
     if perlu {
-        if verbose { eprintln!("[jrgc] membangun jembatan builtin (libjrgjembatan) — beberapa menit, di-cache setelahnya..."); }
+        if verbose { crate::ecetak_t!("[jrgc] membangun jembatan builtin (libjrgjembatan) — beberapa menit, di-cache setelahnya..."); }
         let mut cmd = Command::new("cargo");
         cmd.args(["build", "--release", "-j", "1"]).current_dir(&dir);
         if let Some((t, penaut, ar)) = sasaran {
@@ -664,7 +665,7 @@ pub fn compile_ir_to_native(
     };
     std::fs::write(&ll_path, ir_to_write)
         .map_err(|e| format!("gagal menulis {}: {}", ll_path.display(), e))?;
-    if verbose { eprintln!("[jrgc] LLVM IR ditulis ke {}", ll_path.display()); }
+    if verbose { crate::ecetak_t!("[jrgc] LLVM IR ditulis ke {}", ll_path.display()); }
 
     let pgo_ll_path = with_extension_pgo_ll(output);
     let clang_input = match &options.pgo {

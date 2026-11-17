@@ -283,7 +283,7 @@ pub unsafe extern "C" fn jrg_jembatan_panggil(
 ) -> i32 {
     let k = &*kait;
     let nama = teks(nama as u64, nl as u64);
-    let gagal = |pesan: String| { let (p, l) = bocorkan(&pesan); kotak(5, p, l) };
+    let gagal = |pesan: String| { let (p, l) = bocorkan(&jrgc::terjemah::t(&pesan)); kotak(5, p, l) };
     // `::tampil` dan `::typeof`: tampilan dan nama tipe sebuah nilai titipan.
     // `::field`: `x.f` atas nilai titipan (struct milik `jrgc`, mis. `MousePos`).
     if nama == "::field" {
@@ -361,7 +361,7 @@ pub unsafe extern "C" fn jrg_jembatan_panggil(
 }
 
 unsafe fn tulis_hasil(nama: &str, hasil: Hasil, out: *mut KotakAny, k: &Kait) -> i32 {
-    let gagal = |pesan: String| { let (p, l) = bocorkan(&pesan); kotak(5, p, l) };
+    let gagal = |pesan: String| { let (p, l) = bocorkan(&jrgc::terjemah::t(&pesan)); kotak(5, p, l) };
     match hasil {
         Err(_) => { out.write(gagal(format!("`{}` panik di dalam jrgc — ini bug di jrgc, bukan di programmu", nama))); -1 }
         Ok(None) => { out.write(gagal(format!("`{}` tidak ada di pustaka standar", nama))); -1 }

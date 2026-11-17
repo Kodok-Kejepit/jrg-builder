@@ -4,9 +4,10 @@
 use std::sync::atomic::{AtomicU8, Ordering};
 
 mod en;
+pub mod inti;
 mod mesin;
 
-pub use mesin::terjemah_ke_en;
+pub use mesin::{blob_tersaring, terjemah_ke_en};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Bahasa { Id, En }

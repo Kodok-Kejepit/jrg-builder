@@ -225,11 +225,13 @@ fn rangka_web_langsung_melayani_dan_melolosi_html() {
         eprintln!("LEWAT: biner jrgm belum dibangun di {}", j.display());
         return;
     }
+    // Kerangka ikut bahasa pesan; keduanya harus jalan dan melolosi HTML.
+    for (bahasa, rute) in [("id", "/halo/"), ("en", "/hello/")] {
     let tmp = crate::bersama::dir_unik("jrg_rangka_web");
     let _ = std::fs::remove_dir_all(&tmp);
     std::fs::create_dir_all(&tmp).unwrap();
 
-    let out = Command::new(&j).args(["new", "situs", "--kind", "web"])
+    let out = Command::new(&j).args(["new", "situs", "--kind", "web"]).env("JRG_BAHASA", bahasa)
         .current_dir(&tmp).output().unwrap();
     assert!(out.status.success(), "jrgm new --kind web gagal: {}",
         String::from_utf8_lossy(&out.stderr));
@@ -270,7 +272,7 @@ fn rangka_web_langsung_melayani_dan_melolosi_html() {
     let api = ambil("/api");
     // `<script>` di URL harus tampil terlolosi — kalau tidak, kerangka bawaan
     // ini memasang lubang XSS di setiap proyek baru.
-    let nakal = ambil("/halo/%3Cscript%3E");
+    let nakal = ambil(&format!("{rute}%3Cscript%3E"));
     let hilang = ambil("/tidak-ada-sama-sekali");
     let _ = anak.kill();
     let _ = anak.wait();
@@ -288,6 +290,7 @@ fn rangka_web_langsung_melayani_dan_melolosi_html() {
     assert!(!nakal.contains("<script>"), "tag mentah lolos ke halaman");
     let hilang = hilang.expect("404 tidak menjawab");
     assert!(hilang.contains("404"), "path tak dikenal bukan 404");
+    }
 }
 
 /// Tiap subperintah yang belum ada isinya harus KELUAR TIDAK NOL dan menyebut

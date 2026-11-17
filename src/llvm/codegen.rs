@@ -1170,6 +1170,7 @@ impl Codegen {
         out.push_str(&self.definisi_metode_dinamis());
         out.push_str(&self.definisi_keluarga());
         out.push_str(&super::situs::definisi(&self.situs));
+        out.push_str(&super::terjemah::definisi(&self.string_globals, self.declared_externs.contains("jrg_jembatan")));
         if self.pakai_uji { out.push_str(&super::situs::definisi_baris(self.situs.len())); }
         out.push_str("!0 = !{!\"branch_weights\", i32 1, i32 2000}\n");
         out.push_str("!1 = !{!\"branch_weights\", i32 2000, i32 1}\n");

@@ -11,6 +11,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **Pesan JRG tampil dalam bahasa Inggris secara bawaan** (galat, peringatan, laporan uji, REPL, `jrgm`, `--help`).
   Bahasa Indonesia tetap ada: `jrgm language id` (untuk semua jalan berikutnya), `jrgc --bahasa id`, atau
   `JRG_BAHASA=id`. Keluaran program tidak berubah; skrip yang membandingkan teks galat perlu memasang bahasanya.
+  Biner `--emit-llvm` memilih bahasa galatnya sendiri saat jalan dengan aturan yang sama, dan `jrgm new` menulis
+  kerangka proyek dalam bahasa pesan.
 - **`proses::jalankan` dan `proses::keluaran` menghentikan program yang keluarannya melewati 256 MiB** dan menjawab
   `Err` (dulu `jrgc` mati kehabisan memori); penampung `proses::mulai` yang penuh menunggu dibaca.
 - **`jrgm new` menolak folder yang sudah ada** (dulu `src/main.jrg` di dalamnya ditimpa templat) **dan nama di luar

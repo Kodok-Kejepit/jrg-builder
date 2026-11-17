@@ -67,6 +67,46 @@ fn jalankan_llvm(src: &str) -> Hasil {
     }
 }
 
+/// `jalankan_llvm`, lalu biner yang sama dijalankan langsung dengan `JRG_BAHASA=en` (Fase DWIBAHASA): biner memilih
+/// bahasa galatnya sendiri saat jalan. Batas memorinya dipasang `ulimit`, seperti `JRGC_BATAS_MEMORI` di `jrgc`.
+fn jalankan_llvm_dua_bahasa(src: &str) -> (Hasil, String) {
+    let dir = dir_uji("emit2");
+    let file = dir.join("uji.jrg");
+    std::fs::write(&file, src).expect("tulis sumber");
+    let bin = dir.join("uji.bin");
+    let out = Command::new(jrgc())
+        .arg(&file).arg("--emit-llvm").arg("-o").arg(&bin)
+        .env("JRG_SOPAN", "1").env("JRG_BAHASA", "id").env_remove("DISPLAY").env_remove("WAYLAND_DISPLAY")
+        .output().expect("jalankan jrgc --emit-llvm");
+    let en = if bin.exists() {
+        let o = Command::new("sh").arg("-c").arg("ulimit -v 2097152; exec \"$0\"").arg(&bin)
+            .env("JRG_BAHASA", "en").env_remove("DISPLAY").env_remove("WAYLAND_DISPLAY")
+            .stdin(std::process::Stdio::null()).output().expect("jalankan biner");
+        String::from_utf8_lossy(&o.stderr).to_string()
+    } else { String::new() };
+    let _ = std::fs::remove_dir_all(&dir);
+    (Hasil {
+        keluaran: String::from_utf8_lossy(&out.stdout).trim().to_string(),
+        galat: String::from_utf8_lossy(&out.stderr).to_string(),
+        sukses: out.status.success(),
+        kode: out.status.code(),
+    }, en)
+}
+
+/// Kata Indonesia yang tidak mungkin ada di kalimat Inggris (sama dengan `tests/terjemah.rs`).
+fn masih_indonesia(baris: &str) -> bool {
+    const KATA: [&str; 16] = ["tidak", "bisa", "harus", "yang", "dengan", "belum", "pakai", "untuk", "kalau",
+        "cuma", "sudah", "butuh", "dapat", "bukan", "karena", "tanpa"];
+    let mut bersih = String::new();
+    let mut dalam = false;
+    for c in baris.chars() {
+        if c == '`' { dalam = !dalam; continue; }
+        if !dalam { bersih.push(c.to_ascii_lowercase()); }
+    }
+    let kata: Vec<&str> = bersih.split(|c: char| !c.is_alphanumeric()).collect();
+    KATA.iter().filter(|k| kata.contains(k)).count() >= 2
+}
+
 /// `tok()` atas masukan bukan UTF-8 gagal dengan kalimat yang sama di tiga mesin (Fase AMAN-68): LLVM dulu
 /// menjawab teks kosong tanpa suara.
 #[test]
@@ -1394,9 +1434,19 @@ fn pesan_gagal_saat_jalan_sama() {
     let mut gagal = Vec::new();
     let mut berlokasi = 0;
     let mut tanpa: Vec<&str> = Vec::new();
+    let (mut baris_en, mut indo) = (0, Vec::new());
     for (nama, src, keluaran, memuat) in GAGAL_SAAT_JALAN {
         let i = jalankan_interp(src);
-        let l = jalankan_llvm(src);
+        let (l, en) = jalankan_llvm_dua_bahasa(src);
+        // Biner yang sama dalam bahasa Inggris: lokasinya tetap, kalimatnya tidak lagi Indonesia.
+        let lokasi_baris = |g: &str| g.lines().find(|b| b.trim_start().starts_with("--> ")).map(str::to_string);
+        if lokasi_baris(&en) != lokasi_baris(&l.galat) {
+            gagal.push(format!("[{}] lokasi LLVM berbahasa Inggris {:?}, Indonesia {:?}", nama, lokasi_baris(&en), lokasi_baris(&l.galat)));
+        }
+        for b in en.lines().filter(|b| b.starts_with("error") || b.trim_start().starts_with("= ")) {
+            baris_en += 1;
+            if masih_indonesia(b) { indo.push(format!("{}: {}", nama, b)); }
+        }
 
         for (label, h) in [("interpreter", &i), ("llvm", &l)] {
             if h.sukses {
@@ -1429,6 +1479,9 @@ fn pesan_gagal_saat_jalan_sama() {
         }
     }
     eprintln!("{} dari {} kasus berlokasi di LLVM; berlokasi di acuan saja: {:?}", berlokasi, GAGAL_SAAT_JALAN.len(), tanpa);
+    assert!(baris_en > 150, "cuma {} baris galat Inggris terbaca dari biner LLVM", baris_en);
+    assert!(indo.len() * 50 <= baris_en, "{} dari {} baris galat biner LLVM (JRG_BAHASA=en) masih Indonesia:\n  {}",
+        indo.len(), baris_en, indo.join("\n  "));
     assert!(gagal.is_empty(), "{} masalah pada pesan gagal saat jalan:\n\n{}", gagal.len(), gagal.join("\n\n"));
 }
 
@@ -1713,6 +1766,13 @@ fn tiap_fungsi_lapis_bernama_builtin_yang_ada() {
     }
     assert!(jumlah >= 40, "lapis.jrg cuma memuat {} fungsi publik — berkasnya terbaca?", jumlah);
     assert!(salah.is_empty(), "fungsi lapis tanpa builtin bernama sama: {:?}", salah);
+}
+
+/// Runtime LLVM menerjemahkan galatnya dengan SALINAN `src/terjemah/inti.rs` (Fase DWIBAHASA).
+#[test]
+fn salinan_terjemah_inti_di_runtime_identik() {
+    assert!(include_str!("../src/terjemah/inti.rs") == include_str!("../runtime/src/terjemah_inti.rs"),
+        "runtime/src/terjemah_inti.rs berbeda dari src/terjemah/inti.rs — salin ulang: cp src/terjemah/inti.rs runtime/src/terjemah_inti.rs");
 }
 
 /// Runtime LLVM memakai SALINAN `json_inti.rs`; dua berkas itu harus sama bita demi bita.

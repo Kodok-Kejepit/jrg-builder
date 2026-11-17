@@ -346,20 +346,28 @@ impl Penurun<'_, '_> {
     }
 
     /// Isi native keadaan ke slot rekaman, `deopt::catat`, lalu kembali `DEOPT`.
+    /// Rekaman bingkai terdalam lebih dulu: callee yang disisipkan (`Keadaan::induk`, bit `SISIP`) lalu pemanggilnya.
     fn deopt(&mut self, k: &Keadaan, bendera: i64) {
-        for (i, isi) in k.isi.iter().enumerate() {
-            let Some(n) = isi else { continue };
-            // `Lebar` langsung ke stack VM; `deopt::pulihkan` membacanya dari sana.
-            if self.j.tipe(*n) == Tipe::L { self.tulis_lebar(i, *n); continue; }
-            let v = self.v(*n);
-            let v = if self.j.tipe(*n) == Tipe::F { self.b.ins().bitcast(types::I64, MemFlagsData::new(), v) } else { v };
-            self.b.ins().stack_store(self.ptr, v, self.slot, (i * 8) as i32);
+        let mut kini = Some(k);
+        let mut pertama = true;
+        while let Some(k) = kini {
+            for (i, isi) in k.isi.iter().enumerate() {
+                let Some(n) = isi else { continue };
+                // `Lebar` langsung ke stack VM; `deopt::pulihkan` membacanya dari sana.
+                if self.j.tipe(*n) == Tipe::L { self.tulis_lebar(k.geser + i, *n); continue; }
+                let v = self.v(*n);
+                let v = if self.j.tipe(*n) == Tipe::F { self.b.ins().bitcast(types::I64, MemFlagsData::new(), v) } else { v };
+                self.b.ins().stack_store(self.ptr, v, self.slot, (i * 8) as i32);
+            }
+            let pn = self.b.ins().stack_addr(self.ptr, self.slot, 0);
+            let fid = self.b.ins().iconst(types::I32, k.fid.map_or(self.fid, |f| f as i64));
+            let tanda = if pertama { bendera } else { 0 } | if k.induk.is_some() { crate::jit::turun::SISIP } else { 0 };
+            let ipv = self.b.ins().iconst(types::I32, k.ip as i64 | tanda);
+            let n = self.b.ins().iconst(types::I32, k.isi.len() as i64);
+            self.b.ins().call(self.catat, &[fid, ipv, pn, n]);
+            pertama = false;
+            kini = k.induk.as_deref();
         }
-        let pn = self.b.ins().stack_addr(self.ptr, self.slot, 0);
-        let fid = self.b.ins().iconst(types::I32, self.fid);
-        let ipv = self.b.ins().iconst(types::I32, k.ip as i64 | bendera);
-        let n = self.b.ins().iconst(types::I32, k.isi.len() as i64);
-        self.b.ins().call(self.catat, &[fid, ipv, pn, n]);
         self.pulang_status(DEOPT);
     }
 

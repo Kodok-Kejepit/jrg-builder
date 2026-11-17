@@ -137,8 +137,13 @@ pub(crate) fn cmd_new(name: &str, kind: &str) -> Result<(), String> {
              `lib` (pustaka), `web` (server HTTP yang langsung jalan), `android` (aplikasi HP)", kind));
     }
     let entry = if kind == "lib" { "src/lib.jrg" } else { "src/main.jrg" };
+    // Kerangka ikut bahasa pesan: dalam bahasa Inggris komentar, nama dan teksnya juga Inggris.
+    let en = crate::terjemah::aktif() == crate::terjemah::Bahasa::En;
+    use super::rangka_en as en_;
 
-    let entry_content = if kind == "web" {
+    let entry_content = if en {
+        match kind { "web" => en_::web(name), "android" => en_::android(name), "lib" => en_::lib(name), _ => en_::bin(name) }
+    } else if kind == "web" {
         rangka_web(name)
     } else if kind == "android" {
         rangka_android(name)
@@ -180,7 +185,7 @@ pub fn main() {{
     std::fs::write(root.join(entry), entry_content)
         .map_err(|e| format!("tidak bisa tulis entry file: {}", crate::host::galat_io(&e)))?;
 
-    let manifest = format!(
+    let manifest = if en { en_::manifes_umum(name, entry) } else { format!(
         "[package]\nname        = \"{name}\"\nversion     = \"0.1.0\"\n\
          edition     = \"jrg2025\"\nentry       = \"{entry}\"\n\n\
          # Dependensi: direktori lokal, atau repositori git (dikunci di jrgm.lock):\n\
@@ -193,8 +198,10 @@ pub fn main() {{
          # tangkap (mis. py::exec(\"import ...\")) atau supaya eksplisit.\n\
          # [python]\n\
          # packages = [\"requests\", \"numpy\"]\n"
-    );
-    let manifest = if kind == "web" {
+    ) };
+    let manifest = if kind == "web" && en {
+        format!("{manifest}{}", en_::MANIFES_WEB)
+    } else if kind == "web" {
         format!("{manifest}\n\
                  # Jadikan aplikasi Android: `jrgm apk`. Halaman ini tampil di WebView, dan program ini\n\
                  # jalan di dalam HP sebagai pelayannya (jrgc ikut di dalam APK).\n\
@@ -204,7 +211,7 @@ pub fn main() {{
     } else { manifest };
     let manifest = if kind == "android" {
         let paket = crate::llvm::apk::nama_paket(name);
-        format!("{manifest}\n\
+        if en { format!("{manifest}{}", en_::manifes_android(name, &paket)) } else { format!("{manifest}\n\
                  # Identitas APK untuk `jrgm apk` dan `jrgm run --android`.\n\
                  [android]\n\
                  nama      = \"{name}\"\n\
@@ -221,7 +228,7 @@ pub fn main() {{
                  # libhitung = [\"native/hitung.c\"]\n\
                  # [android.pustaka_rust]\n\
                  # librumus = \"rust/rumus\"      # crate dengan crate-type = [\"cdylib\"]\n\
-                 # Kunci rilis: `jrgm kunci` sekali, lalu `jrgm apk --rilis`.\n")
+                 # Kunci rilis: `jrgm kunci` sekali, lalu `jrgm apk --rilis`.\n") }
     } else { manifest };
     std::fs::write(root.join("jrgm.toml"), manifest)
         .map_err(|e| format!("tidak bisa tulis jrgm.toml: {}", crate::host::galat_io(&e)))?;
@@ -235,7 +242,7 @@ pub fn main() {{
     // dan konvensinya terlihat tanpa perlu dicari di dokumentasi.
     std::fs::create_dir_all(root.join("tests"))
         .map_err(|e| format!("tidak bisa buat direktori tests: {}", crate::host::galat_io(&e)))?;
-    let contoh_uji = format!(
+    let contoh_uji = if en { en_::uji(name) } else { format!(
         "// Test untuk `{name}`. Dijalankan dengan `jrgm test`.\n\
          //\n\
          // Sebuah fungsi dianggap test kalau namanya diawali `test_` atau\n\
@@ -252,7 +259,7 @@ pub fn main() {{
          //         testing::cek_sama(\"tambah\", 1 + 1, 2)\n\
          //         assert_eq(testing::hitungan().1, 0)\n\
          //     }}\n"
-    );
+    ) };
     std::fs::write(root.join("tests").join("dasar.jrg"), contoh_uji)
         .map_err(|e| format!("tidak bisa tulis contoh test: {}", crate::host::galat_io(&e)))?;
 

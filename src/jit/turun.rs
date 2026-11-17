@@ -198,6 +198,9 @@ pub const BUKA_SUDAH: i64 = 1 << 30;
 pub const GAGAL_SPEK: i64 = 1 << 29;
 /// Bit `ip` deopt: puncak stack masih milik VM (hasil instruksi sebelumnya yang spekulasinya gagal).
 pub const PUNCAK_VM: i64 = 1 << 28;
+/// Bit `ip` deopt: bingkai callee yang disisipkan JIR (`jir::Keadaan::induk`); wilayahnya di atas posisi fungsi di
+/// stack pemanggil, dan nilai milik VM-nya sudah di sana (`deopt::pulihkan`).
+pub const SISIP: i64 = 1 << 27;
 
 /// Blok saat ini menjadi keluar deopt: nilai stack `jenis` dicatat untuk dilanjutkan VM di `ip`.
 /// `LoadLocal`/`AmbilLokal` di `ip` diikuti `Dup; GetMethod(Cara::Metode); Swap` tanpa sasaran lompat:

@@ -32,6 +32,8 @@ struct ModulJit {
     badan: HashMap<u32, cranelift_codegen::ir::Function>,
     /// Titik masuk yang bisa dipanggil tanpa bingkai VM didorong lebih dulu (`layak::ringan`).
     ringan: HashMap<Kunci, bool>,
+    /// JIR callee panggilan langsung yang sudah dibangun, dengan `fid`-nya: disisipkan pemanggilnya (JIR-3).
+    jir_jadi: HashMap<Kunci, (std::sync::Arc<super::jir::Fungsi>, u32)>,
 }
 
 /// Callee bulat yang badannya disisipkan paling besar sekian instruksi CLIF.
@@ -218,7 +220,7 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
             let undi = if deopt::acak_aktif() {
                 Some(m.declare_function("jrg_jit_undi", Linkage::Import, &turun::tanda_tangan_undi(cc)).ok()?)
             } else { None };
-            Some(ModulJit { m, jadi: HashMap::new(), info: Vec::new(), catat, undi, baca, tulis, lambat, fctx: FunctionBuilderContext::new(), urut: 0, tolak: Vec::new(), badan: HashMap::new(), ringan: HashMap::new() })
+            Some(ModulJit { m, jadi: HashMap::new(), info: Vec::new(), catat, undi, baca, tulis, lambat, fctx: FunctionBuilderContext::new(), urut: 0, tolak: Vec::new(), badan: HashMap::new(), ringan: HashMap::new(), jir_jadi: HashMap::new() })
         }))
     })
 }
@@ -346,8 +348,11 @@ pub fn kompilasi(
         let impor = turun::Impor {
             catat: mj.catat, undi: mj.undi, baca: mj.baca, tulis: mj.tulis, fid: fid0 + i as u32, lambat: &mj.lambat, ringan: &ringan,
         };
-        // JIR (`JRG_JIT_JIR=paksa`) untuk unit di cakupannya, selain itu penurun langsung.
-        let jir = super::jir::aktif().then(|| super::jir::bangun::bangun(h, r, impor.undi.is_some()));
+        // JIR (bawaan; `JRG_JIT_JIR=mati` mematikannya) untuk unit di cakupannya, selain itu penurun langsung.
+        // Callee panggilan langsung yang JIR-nya sudah ada boleh disisipkan pembangun (`jir::bangun`, JIR-3).
+        let sisip: Vec<Option<(std::sync::Arc<super::jir::Fungsi>, u32)>> = r.langsung.iter()
+            .map(|(i, jenis)| mj.jir_jadi.get(&kunci(&r.callee[*i], 0, layak::KEMBALI_SKALAR, jenis)).cloned()).collect();
+        let jir = super::jir::aktif().then(|| super::jir::bangun::bangun(h, r, impor.undi.is_some(), &sisip));
         if std::env::var("JRG_JIT_LOG").is_ok_and(|v| v == "jir") {
             match &jir { Some(Ok(fj)) => eprintln!("[jit] jir {}:\n{fj}", h.name), Some(Err(e)) => eprintln!("[jit] jir {}: {e}", h.name), None => {} }
         }
@@ -355,6 +360,7 @@ pub fn kompilasi(
             Some(Ok(fj)) => {
                 super::jir::turun::turunkan(&mut mj.m, &mut ctx.func, &mut mj.fctx, &fj, &impor, &callee, &langsung);
                 super::jir::UNIT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                if k.2 == layak::KEMBALI_SKALAR { mj.jir_jadi.insert(k.clone(), (std::sync::Arc::new(fj), fid0 + i as u32)); }
             }
             _ => turun::turunkan(&mut mj.m, &mut ctx.func, &mut mj.fctx, h, r, &callee, &langsung, &impor),
         }

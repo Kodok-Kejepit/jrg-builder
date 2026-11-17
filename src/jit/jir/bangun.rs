@@ -43,6 +43,12 @@ struct Pembangun<'a> {
     rantai: (std::collections::HashMap<usize, (usize, usize)>, Vec<i64>),
     /// Instruksi sesudahnya yang sudah ikut diturunkan (fusi), dilewati badan.
     lewati: usize,
+    /// Callee yang boleh disisipkan (`Sisip`), blok dan stack tempat pemanggil melanjutkan sesudah callee yang
+    /// disisipkan, panjang stack terbesar callee yang disisipkan (digeser), dan geser nomor rantai `match`-nya.
+    sisip: &'a Sisip,
+    lanjutan: Option<(Blok, Vec<Option<Nilai>>)>,
+    maks_sisip: usize,
+    rantai_sisip: usize,
     /// Bacaan field angka lokal (`Pb::FieldLokal`) di blok ini: (blok, lokal, situs) -> nilainya. Dibuang di awal blok
     /// dan sesudah instruksi apa pun yang bukan aritmetika, jaga, atau bacaan.
     cse_field: Vec<((Blok, usize, i64), Nilai)>,
@@ -52,11 +58,14 @@ struct Pembangun<'a> {
 }
 
 /// JIR titik masuk `r` fungsi `f`; `acak` = deopt acak di tiap instruksi (`JRG_JIT_STRES=deopt-acak`).
-pub fn bangun(f: &VmFunction, r: &Rencana, acak: bool) -> Result<Fungsi, String> {
+/// JIR callee panggilan langsung yang boleh disisipkan, sejajar `Rencana::langsung`: fungsinya dan `fid`-nya.
+pub type Sisip = [Option<(std::sync::Arc<Fungsi>, u32)>];
+
+pub fn bangun(f: &VmFunction, r: &Rencana, acak: bool, sisip: &Sisip) -> Result<Fungsi, String> {
     periksa_cakupan(f, r)?;
     let kode = &f.chunk.code;
     let mut p = Pembangun {
-        f, r, acak,
+        f, r, acak, sisip, lanjutan: None, maks_sisip: 0, rantai_sisip: 0,
         j: Fungsi { blok: Vec::new(), masuk: Blok(0), tipe: Vec::new(), posisi_masuk: Vec::new(), maks: 1, rumus: r.ubah.clone() },
         blok_ip: vec![None; kode.len()],
         rantai: Default::default(),
@@ -90,9 +99,21 @@ pub fn bangun(f: &VmFunction, r: &Rencana, acak: bool) -> Result<Fungsi, String>
     let args = p.args_ke(Blok(0), r.masuk, &p.isi_masuk(&params)?)?;
     p.j.blok[0].akhir = Some(Akhir::Lompat { ke, args });
     p.badan()?;
-    p.j.maks = r.keadaan.iter().flatten().map(|s| s.len()).max().unwrap_or(1).max(1);
+    p.j.maks = r.keadaan.iter().flatten().map(|s| s.len()).max().unwrap_or(1).max(1).max(p.maks_sisip);
     super::periksa::periksa(&p.j)?;
     Ok(p.j)
+}
+
+/// Indeks argumen `Inst::Pembantu` yang berupa posisi stack (digeser saat callee disisipkan); lainnya alamat, kode,
+/// atau isi native.
+fn posisi_pb(pb: Pb) -> &'static [usize] {
+    match pb {
+        Pb::Field | Pb::Pola | Pb::Payload | Pb::Indeks | Pb::JenisSama | Pb::Karakter => &[0],
+        Pb::PolaLokal | Pb::PayloadJenisSama | Pb::PayloadPanjang | Pb::KarakterLokal | Pb::Baca | Pb::BacaPecahan | Pb::Tulis => &[0],
+        Pb::PayloadLokal | Pb::PayloadAngkaLokal => &[0, 1],
+        Pb::MuatGlobal | Pb::SimpanGlobal => &[1],
+        Pb::FieldLokal => &[0, 3],
+    }
 }
 
 /// Seluruh instruksi terjangkau harus berada di cakupan JIR-1.
@@ -172,7 +193,10 @@ impl Pembangun<'_> {
     /// dibuka tetap utuh di stack VM, jadi VM membacanya dari sana).
     fn keadaan_di(&self, ip: usize, isi: &[Option<Nilai>]) -> Keadaan {
         let s = self.keadaan(ip);
-        Keadaan { ip, isi: isi.iter().enumerate().map(|(i, v)| if s.get(i).is_some_and(|j| j.skalar() || *j == Jenis::Lebar) { *v } else { None }).collect() }
+        Keadaan {
+            ip, isi: isi.iter().enumerate().map(|(i, v)| if s.get(i).is_some_and(|j| j.skalar() || *j == Jenis::Lebar) { *v } else { None }).collect(),
+            fid: None, geser: 0, induk: None,
+        }
     }
 
     fn badan(&mut self) -> Result<(), String> {
@@ -214,7 +238,11 @@ impl Pembangun<'_> {
                 continue;
             }
             match self.cara(b, ip, &mut isi)? {
-                Some(akhir) => self.akhiri(b, akhir),
+                Some(akhir) => {
+                    self.akhiri(b, akhir);
+                    // Callee yang disisipkan berakhir di blok lanjutan: pemanggil melanjutkan di sana.
+                    if let Some(l) = self.lanjutan.take() { kini = Some(l); }
+                }
                 None => {
                     // Keadaan yang dibawa tepinya (sebelum titik temu melebarkannya: `isi_tepi` yang menulis).
                     // Sesudah fusi, keadaan yang dicocokkan milik ip sesudah instruksi terakhir yang ikut.
@@ -534,6 +562,9 @@ impl Pembangun<'_> {
                 OpCode::SimpanBuang => { isi[a] = None; isi.pop(); }
                 op => return Err(format!("Cara::Salinan atas {op:?}")),
             },
+            Cara::Langsung(n) if self.sisip.get(n).is_some_and(|x| x.is_some()) && self.bisa_sisip(n, ip, isi, &s) => {
+                return self.sisipkan(b, ip, isi, &s, n).map(Some);
+            }
             Cara::Langsung(n) => {
                 let (dari, fungsi) = match s[t - a - 1] {
                     Jenis::Fungsi(c) => (t - a, &self.r.callee_nilai[c] as *const _ as i64),
@@ -1092,6 +1123,169 @@ impl Pembangun<'_> {
     fn gabung(&self, ip: usize) -> bool {
         !self.r.pemimpin.get(ip).copied().unwrap_or(true) && self.r.keadaan.get(ip).is_some_and(|k| k.is_some())
             && !self.r.keluar[ip] && self.r.wujud.get(ip).is_some_and(|w| w.is_empty())
+    }
+
+    /// Callee langsung ke-`n` bisa disisipkan di `ip`: JIR-nya kecil dan cuma memakai instruksi posisional (tanpa
+    /// bingkai VM, upvalue, panggilan, atau `?` yang pulang), kembaliannya seragam dan cocok dengan spekulasi hasil
+    /// pemanggil, dan tiap argumen yang ia baca native ada isinya di pemanggil.
+    fn bisa_sisip(&self, n: usize, ip: usize, isi: &[Option<Nilai>], s: &[Jenis]) -> bool {
+        let Some(Some((c, _))) = self.sisip.get(n) else { return false };
+        let a = self.f.chunk.code[ip].arg as usize;
+        let t = isi.len();
+        if !matches!(s.get(t.wrapping_sub(a + 1)), Some(Jenis::Fungsi(_))) { return false; }
+        if c.blok.len() > 64 || c.blok.iter().map(|b| b.inst.len()).sum::<usize>() > 200 { return false; }
+        let posisional = c.blok.iter().flat_map(|b| &b.inst).all(|i| matches!(i,
+            Inst::KonstI { .. } | Inst::KonstF { .. } | Inst::KonstL { .. } | Inst::Biner { .. } | Inst::Unar { .. }
+            | Inst::BinerL { .. } | Inst::Pilih { .. } | Inst::JagaJika { .. } | Inst::Undi { .. } | Inst::Sempit { .. }
+            | Inst::Muat { .. } | Inst::Simpan { .. } | Inst::Buang { .. } | Inst::Benar { .. } | Inst::Taruh { .. }
+            | Inst::Buka { .. } | Inst::BukaLebar { .. } | Inst::TulisLebar { .. } | Inst::TulisVm { .. }
+            | Inst::Salin { .. } | Inst::Tukar { .. } | Inst::Pindah { .. } | Inst::Pembantu { .. } | Inst::Rantai { .. }
+            | Inst::Rumus { .. } | Inst::Bangun { .. } | Inst::Panjang { .. } | Inst::TeksBulat { .. }
+            | Inst::IterAda { .. } | Inst::Maju { .. } | Inst::CekMetode { .. } | Inst::Sebar { pulang: false, .. }));
+        if !posisional { return false; }
+        // Kembalian: semuanya angka native setipe spekulasi pemanggil, atau semuanya milik VM tanpa spekulasi.
+        let kembali: Vec<&Akhir> = c.blok.iter().filter_map(|b| b.akhir.as_ref())
+            .filter(|a| matches!(a, Akhir::Kembali { .. } | Akhir::KembaliNilai { .. } | Akhir::KembaliUnit)).collect();
+        let cocok = match self.r.spek[ip] {
+            Some(Jenis::Bulat) => kembali.iter().all(|a| matches!(a, Akhir::Kembali { hasil: super::Hasil::Bulat, .. })),
+            Some(Jenis::Pecahan) => kembali.iter().all(|a| matches!(a, Akhir::Kembali { hasil: super::Hasil::Pecahan, .. })),
+            // Hasil milik VM belum: struct yang dibangun tepat sebelum `Return` memakai ulang lokal bingkainya sendiri
+            // (`StrukturUlang`), dan disisipkan `nil` ditemukan `paritas_llvm_lewat_jit` sebelum didorong.
+            _ => false,
+        };
+        if kembali.is_empty() || !cocok { return false; }
+        if c.blok.iter().any(|b| matches!(b.akhir, Some(Akhir::CabangVm { .. }) | Some(Akhir::KembaliUnit) | None)) { return false; }
+        // Parameter masuk callee: posisi argumen yang di pemanggil berisi native setipe.
+        let geser = t - a;
+        c.posisi_masuk.iter().zip(&c.blok[0].params)
+            .all(|(p, par)| isi.get(geser + p).copied().flatten().is_some_and(|v| self.j.tipe(v) == c.tipe(*par)))
+            // Posisi argumen yang di pemanggil native tapi bagi callee milik VM belum ditangani.
+            && (0..a).all(|k| isi[geser + k].is_none() || c.posisi_masuk.contains(&k))
+    }
+
+    /// Menyalin JIR callee langsung ke-`n` ke fungsi ini: nilai dan blok diberi nomor baru, posisi stack digeser ke
+    /// atas posisi fungsinya, tiap keadaan deopt membawa keadaan pemanggil di `Call` sebagai induknya, dan
+    /// kembaliannya lompat ke blok lanjutan tempat pemanggil melanjutkan (`Pembangun::lanjutan`).
+    fn sisipkan(&mut self, b: Blok, ip: usize, isi: &mut Vec<Option<Nilai>>, s: &[Jenis], n: usize) -> Result<Akhir, String> {
+        let (c, fid) = self.sisip[n].clone().expect("diperiksa bisa_sisip");
+        let a = self.f.chunk.code[ip].arg as usize;
+        let t = isi.len();
+        let geser = t - a;
+        let induk = Box::new(self.keadaan_di(ip, isi));
+        let (dasar_n, dasar_b) = (self.j.tipe.len() as u32, self.j.blok.len() as u32);
+        self.j.tipe.extend(c.tipe.iter().copied());
+        let rumus0 = self.j.rumus.len();
+        self.j.rumus.extend(c.rumus.iter().cloned());
+        self.rantai_sisip += 1;
+        let rantai0 = 1_000_000 * self.rantai_sisip;
+        self.maks_sisip = self.maks_sisip.max(geser + c.maks);
+        let nv = |v: Nilai| Nilai(v.0 + dasar_n);
+        let nb = |x: Blok| Blok(x.0 + dasar_b);
+        let keadaan = |k: &Keadaan| -> Keadaan {
+            let mut x = k.clone();
+            x.isi = k.isi.iter().map(|v| v.map(nv)).collect();
+            if x.induk.is_none() { x.fid = Some(fid); x.geser = geser; x.induk = Some(induk.clone()); }
+            x
+        };
+        let jaga = |j: &Jaga| Jaga { keadaan: keadaan(&j.keadaan), spek: j.spek, puncak_vm: j.puncak_vm };
+        let jo = |j: &Option<Jaga>| j.as_ref().map(jaga);
+        let lanjut = Blok(dasar_b + c.blok.len() as u32);
+        let hasil = match self.r.spek[ip] {
+            Some(j @ (Jenis::Bulat | Jenis::Pecahan)) => Some(self.j.nilai_baru(tipe_jenis(j)?.ok_or("hasil angka")?)),
+            _ => None,
+        };
+        for blk in c.blok.iter() {
+            let mut inst = Vec::with_capacity(blk.inst.len());
+            for i in &blk.inst {
+                inst.push(match i.clone() {
+                    Inst::KonstI { hasil, nilai } => Inst::KonstI { hasil: nv(hasil), nilai },
+                    Inst::KonstF { hasil, nilai } => Inst::KonstF { hasil: nv(hasil), nilai },
+                    Inst::KonstL { hasil, nilai } => Inst::KonstL { hasil: nv(hasil), nilai },
+                    Inst::Biner { hasil, op, a, b, jaga: j } => Inst::Biner { hasil: nv(hasil), op, a: nv(a), b: nv(b), jaga: jo(&j) },
+                    Inst::Unar { hasil, op, a, jaga: j } => Inst::Unar { hasil: nv(hasil), op, a: nv(a), jaga: jo(&j) },
+                    Inst::BinerL { hasil, op, a, b, jaga: j, jaga_muat } =>
+                        Inst::BinerL { hasil: nv(hasil), op, a: nv(a), b: nv(b), jaga: jo(&j), jaga_muat: jo(&jaga_muat) },
+                    Inst::Pilih { hasil, jika, ya, tidak } => Inst::Pilih { hasil: nv(hasil), jika: nv(jika), ya: nv(ya), tidak: nv(tidak) },
+                    Inst::JagaJika { kondisi, jaga: j } => Inst::JagaJika { kondisi: nv(kondisi), jaga: jaga(&j) },
+                    Inst::Undi { hasil } => Inst::Undi { hasil: nv(hasil) },
+                    Inst::Sempit { hasil, a, jaga: j } => Inst::Sempit { hasil: nv(hasil), a: nv(a), jaga: jaga(&j) },
+                    Inst::Muat { lokal, ke, pindah } => Inst::Muat { lokal: lokal + geser, ke: ke + geser, pindah },
+                    Inst::Simpan { ke, dari, nilai, kode, buang } => Inst::Simpan { ke: ke + geser, dari: dari + geser, nilai: nilai.map(nv), kode, buang },
+                    Inst::Buang { pos } => Inst::Buang { pos: pos + geser },
+                    Inst::Benar { hasil, pos, lepas } => Inst::Benar { hasil: nv(hasil), pos: pos + geser, lepas },
+                    Inst::Taruh { pos, alamat } => Inst::Taruh { pos: pos + geser, alamat },
+                    Inst::Buka { hasil, pos, kode, jaga: j } => Inst::Buka { hasil: nv(hasil), pos: pos + geser, kode, jaga: jaga(&j) },
+                    Inst::BukaLebar { hasil, pos, jaga: j } => Inst::BukaLebar { hasil: nv(hasil), pos: pos + geser, jaga: jaga(&j) },
+                    Inst::TulisLebar { pos, nilai } => Inst::TulisLebar { pos: pos + geser, nilai: nv(nilai) },
+                    Inst::TulisVm { pos, nilai, kode } => Inst::TulisVm { pos: pos + geser, nilai: nilai.map(nv), kode },
+                    Inst::Salin { dari, ke } => Inst::Salin { dari: dari + geser, ke: ke + geser },
+                    Inst::Tukar { x, y } => Inst::Tukar { x: x + geser, y: y + geser },
+                    Inst::Pindah { dari, ke } => Inst::Pindah { dari: dari + geser, ke: ke + geser },
+                    Inst::Pembantu { pb, args, hasil, gagal, keluar } => {
+                        let posisi = posisi_pb(pb);
+                        let args = args.into_iter().enumerate().map(|(k, x)| match x {
+                            Arg::I64(v) if posisi.contains(&k) => Arg::I64(v + geser as i64),
+                            Arg::Isi(v) => Arg::Isi(nv(v)),
+                            x => x,
+                        }).collect();
+                        Inst::Pembantu { pb, args, hasil: hasil.map(nv), gagal: gagal.map(|(u, j)| (u, jaga(&j))), keluar: keluar.map(nv) }
+                    }
+                    Inst::Rantai { hasil, rantai, urutan, lokal, situs, jaga: j } =>
+                        Inst::Rantai { hasil: nv(hasil), rantai: rantai + rantai0, urutan, lokal: lokal + geser, situs, jaga: jaga(&j) },
+                    Inst::Rumus { rumus, lokal, args, tulis, hasil, jaga: j } => Inst::Rumus {
+                        rumus: rumus + rumus0, lokal: lokal + geser, args: args.into_iter().map(|x| x.map(nv)).collect(), tulis,
+                        hasil: hasil.map(nv), jaga: jaga(&j),
+                    },
+                    Inst::Bangun { situs, jenis, t: tb, n: nn, isi: bi, taruh } => {
+                        // `jenis` dibaca menurut posisi mutlak: diawali `geser` posisi pemanggil (tak dibaca).
+                        let asli = unsafe { std::slice::from_raw_parts(jenis as *const Jenis, tb) };
+                        let mut j2 = vec![Jenis::Kosong; geser];
+                        j2.extend_from_slice(asli);
+                        let j2: &'static [Jenis] = Box::leak(j2.into_boxed_slice());
+                        Inst::Bangun {
+                            situs, jenis: j2.as_ptr() as i64, t: tb + geser, n: nn,
+                            isi: bi.into_iter().map(|(p, v)| (p + geser, nv(v))).collect(),
+                            taruh: taruh.into_iter().map(|(p, x)| (p + geser, x)).collect(),
+                        }
+                    }
+                    Inst::Panjang { hasil, pos, lokal, jaga: j } => Inst::Panjang { hasil: nv(hasil), pos: pos + geser, lokal, jaga: jaga(&j) },
+                    Inst::TeksBulat { pos, n } => Inst::TeksBulat { pos: pos + geser, n: nv(n) },
+                    Inst::IterAda { hasil, slot, jaga: j } => Inst::IterAda { hasil: nv(hasil), slot: slot + geser, jaga: jaga(&j) },
+                    Inst::Maju { slot, jaga: j } => Inst::Maju { slot: slot + geser, jaga: jaga(&j) },
+                    Inst::CekMetode { pos, label, jaga: j } => Inst::CekMetode { pos: pos + geser, label, jaga: jaga(&j) },
+                    Inst::Sebar { pos, pulang, jaga: j } => Inst::Sebar { pos: pos + geser, pulang, jaga: jaga(&j) },
+                    lain => return Err(format!("instruksi callee tak bisa disisipkan: {lain:?}")),
+                });
+            }
+            let akhir = match blk.akhir.clone().expect("diperiksa") {
+                Akhir::Lompat { ke, args } => Akhir::Lompat { ke: nb(ke), args: args.into_iter().map(nv).collect() },
+                Akhir::Cabang { kondisi, ya, ya_args, tidak, tidak_args } => Akhir::Cabang {
+                    kondisi: nv(kondisi), ya: nb(ya), ya_args: ya_args.into_iter().map(nv).collect(),
+                    tidak: nb(tidak), tidak_args: tidak_args.into_iter().map(nv).collect(),
+                },
+                Akhir::Keluar { keadaan: k } => Akhir::Keluar { keadaan: keadaan(&k) },
+                Akhir::Kembali { nilai, .. } => Akhir::Lompat { ke: lanjut, args: vec![nv(nilai)] },
+                // Hasil milik VM: ke posisi fungsinya, seperti `Return` VM.
+                Akhir::KembaliNilai { pos } => {
+                    inst.push(Inst::Pindah { dari: pos + geser, ke: geser - 1 });
+                    Akhir::Lompat { ke: lanjut, args: Vec::new() }
+                }
+                lain => return Err(format!("akhir callee tak bisa disisipkan: {lain:?}")),
+            };
+            self.j.blok.push(DataBlok { ip: blk.ip, params: blk.params.iter().map(|p| nv(*p)).collect(), inst, akhir: Some(akhir) });
+        }
+        self.j.blok.push(DataBlok { ip: ip + 1, params: hasil.into_iter().collect(), inst: Vec::new(), akhir: None });
+        let _ = (b, s);
+        // Masuk: parameter blok masuk callee = isi native argumennya di pemanggil.
+        let args: Vec<Nilai> = c.posisi_masuk.iter().map(|p| isi[*p + geser]).collect::<Option<Vec<_>>>()
+            .ok_or("argumen callee tanpa isi native")?;
+        // Pemanggil melanjutkan di blok lanjutan: stack sampai posisi fungsi, lalu hasilnya.
+        let mut sesudah: Vec<Option<Nilai>> = isi[..geser - 1].to_vec();
+        sesudah.push(hasil);
+        self.lanjutan = Some((lanjut, sesudah));
+        isi.truncate(geser - 1);
+        isi.push(hasil);
+        Ok(Akhir::Lompat { ke: nb(c.masuk), args })
     }
 
     fn ke_l(&mut self, b: Blok, v: Nilai) -> Nilai {

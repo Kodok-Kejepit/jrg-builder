@@ -866,7 +866,7 @@ int32_t jrg_jembatan(const char *nama, int64_t nl, const JrgAny *args, int64_t n
 }
 
 // ── pintu sistem operasi untuk lapis ketiga (`lapis::os`): berkas, lingkungan, jam ──
-#if defined(__unix__) || defined(__APPLE__)
+#if defined(__unix__) || defined(__APPLE__) || defined(__wasi__)
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -884,10 +884,23 @@ int64_t jrg_num_cpus(void) {
 // Argumen proses, ditangkap sebelum `main`: glibc dan dyld menyerahkannya ke konstruktor.
 static int jrg_argc;
 static char **jrg_argv;
+#if defined(__wasi__)
+// WebAssembly: konstruktor tidak boleh berargumen, argumennya diminta ke WASI.
+#include <wasi/api.h>
+__attribute__((constructor)) static void jrg_tangkap_argumen(void) {
+    __wasi_size_t n = 0, ukuran = 0;
+    if (__wasi_args_sizes_get(&n, &ukuran) != 0) return;
+    char **v = malloc((n + 1) * sizeof *v), *isi = malloc(ukuran ? ukuran : 1);
+    if (!v || !isi || __wasi_args_get((uint8_t **)v, (uint8_t *)isi) != 0) return;
+    jrg_argc = (int)n;
+    jrg_argv = v;
+}
+#else
 __attribute__((constructor)) static void jrg_tangkap_argumen(int argc, char **argv) {
     jrg_argc = argc;
     jrg_argv = argv;
 }
+#endif
 
 void jrg_ko_tidur(int64_t mikro);
 
