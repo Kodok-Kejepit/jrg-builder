@@ -203,9 +203,9 @@ impl Codegen {
                 if let Some(te) = &v.ty {
                     if crate::parser::nilai_nol(te, v.span).is_none() {
                         return Err(super::galat::tandai(v.span, format!(
-                            "`var {}` tanpa nilai awal bertipe yang tidak punya nilai nol — acuan \
-                             mengisinya `nil`, yang belum bisa diwakili backend LLVM v1. Beri nilai \
-                             awal, atau jalankan tanpa `--emit-llvm`", v.name)));
+                            "`var {}` tanpa nilai awal bertipe yang tidak punya nilai nol — dua mesin lain \
+                             menolaknya saat DIBACA sebelum diisi, dan backend LLVM v1 belum bisa mencatat \
+                             \"belum diisi\". Beri nilai awal, atau jalankan tanpa `--emit-llvm`", v.name)));
                     }
                 }
                 let t = expected.clone().unwrap_or(JrgType::I64);

@@ -22,12 +22,13 @@ pub mod vm;
 // membuat `vm.rs` bisa tinggal jadi rangkanya saja.
 mod jalankan;
 #[cfg(all(feature = "jit", not(target_arch = "wasm32")))]
-pub(crate) use jalankan::{cocok_enum, larik_milik_tunggal};
+pub(crate) use jalankan::{cocok_enum, cocok_enum_bagian, larik_milik_tunggal, sebar_lintas_keluarga};
 mod panggil;
 pub(crate) mod info_native;
 mod akses;
 pub(crate) mod hof;
 mod op;
+mod opsi;
 pub(crate) mod bawaan;
 
 pub use compiler::{compile, CompileError};

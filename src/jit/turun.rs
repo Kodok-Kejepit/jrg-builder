@@ -100,7 +100,7 @@ pub struct ImporLambat {
     pub pola_lokal: FuncId, pub payload_lokal: FuncId, pub payload_angka: FuncId, pub pola_pilih: FuncId, pub buka_lokal: FuncId, pub field_lokal: FuncId, pub field_banyak: FuncId, pub metode_tukar: FuncId, pub metode_lokal: FuncId, pub karakter_lokal: FuncId, pub konteks_mentah: FuncId, pub masuk_ringan: FuncId, pub keluar_ringan: FuncId, pub karakter: FuncId, pub bangun: FuncId, pub baca_pecahan: FuncId, pub jenis_sama: FuncId, pub panjang: FuncId, pub panjang_lokal: FuncId,
     pub payload_jenis_sama: FuncId, pub payload_panjang: FuncId, pub keluar_ringan_angka: FuncId, pub teks_bulat: FuncId,
     pub tambah_nilai: FuncId, pub keluar_ringan_nilai: FuncId, pub ubah_baca: FuncId, pub ubah_tulis: FuncId, pub ubah_tulis_lokal: FuncId, pub ubah_siap: FuncId,
-    pub iter_ada: FuncId, pub maju: FuncId, pub langkah_cabang: FuncId, pub sebar: FuncId,
+    pub iter_ada: FuncId, pub maju: FuncId, pub langkah_cabang: FuncId, pub sebar: FuncId, pub wujud_varian: FuncId,
     pub pindah: FuncId, pub muat_global: FuncId, pub simpan_global: FuncId, pub indeks: FuncId, pub field: FuncId,
     pub masuk: FuncId, pub keluar: FuncId, pub salin: FuncId, pub tukar: FuncId, pub cek_metode: FuncId,
     pub bawaan: FuncId, pub biner: FuncId, pub muat_upval: FuncId, pub simpan_upval: FuncId,
@@ -1910,7 +1910,8 @@ pub fn turunkan(
             Cara::Sebar => {
                 // 1 = `Err`/`None`: fungsinya kembali dengan nilai itu (masuk dari VM), selain itu VM yang menjalankannya.
                 let p = i64c(&mut b, t as i64 - 1);
-                let c = b.ins().call(f_sebar, &[p]);
+                let pk = i64c(&mut b, (t as i64 - 1) | (ins.arg as i64) << 32);
+                let c = b.ins().call(f_sebar, &[pk]);
                 let c = b.inst_results(c)[0];
                 if r.kembali == super::layak::KEMBALI_SKALAR && !r.ada_defer {
                     let (pulang, terus) = (b.create_block(), b.create_block());

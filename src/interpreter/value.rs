@@ -1008,6 +1008,21 @@ pub fn pesan_modul_tak_diimpor(path: &str, modul: &str) -> String {
             path, modul)
 }
 
+/// Penanda isi `var x: T` tanpa nilai awal untuk `T` yang tidak punya nilai nol (struct, enum, `Option`, ..).
+/// Nama tipenya diawali karakter kendali, jadi program tidak bisa menulisnya; MEMBACA-nya gagal.
+pub const TIPE_BELUM_DIISI: &str = "\u{1}belum-diisi";
+
+pub fn nilai_belum_diisi(tipe: &str) -> Value {
+    Value::Enum { type_name: TIPE_BELUM_DIISI.to_string(), variant: tipe.to_string(), payload: None }
+}
+
+/// `var x: T` dibaca sebelum ditulis — satu kalimat untuk tiga mesin.
+pub fn pesan_dibaca_sebelum_diisi(nama: &str, tipe: &str) -> String {
+    format!("`{}` dibaca sebelum diisi — `var {}: {}` ditulis tanpa nilai awal, dan `{}` tidak punya nilai nol \
+             yang jelas; isi dulu (`{} = ..`) sebelum dipakai, atau beri nilai awal di deklarasinya",
+            nama, nama, tipe, tipe, nama)
+}
+
 /// Nama tingkat atas yang dibaca sebelum barisnya sempat dijalankan. Dulu dijawab "belum
 /// dikenal … lupa `let B`?" untuk nama yang jelas dideklarasikan beberapa baris di bawahnya.
 pub fn pesan_belum_diisi(nama: &str) -> String {

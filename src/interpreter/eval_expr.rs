@@ -180,6 +180,8 @@ impl Interpreter {
             Expr::Literal(lit, _) => Ok(self.eval_lit(lit)),
 
             Expr::Ident(name, _) => match env.get(name) {
+                Some(Value::Enum { type_name, variant, .. }) if type_name == crate::interpreter::TIPE_BELUM_DIISI =>
+                    runtime_err!("{}", crate::interpreter::pesan_dibaca_sebelum_diisi(name, &variant)),
                 Some(v) => Ok(v),
                 None if self.belum_diisi.contains(name) => {
                     runtime_err!("{}", crate::interpreter::pesan_belum_diisi(name))

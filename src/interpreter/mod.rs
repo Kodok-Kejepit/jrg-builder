@@ -476,7 +476,8 @@ fn galat_item(s: Signal) -> RuntimeError {
                     let v = if let Some(init) = vd.value.as_deref().or(nol.as_ref()) {
                         self.eval_expr(init, &mut self.env.clone())
                             .map_err(Self::galat_item)?
-                    } else { Value::Nil };
+                    } else if let Some(t) = &vd.ty { nilai_belum_diisi(&crate::parser::nama_tipe(t)) }
+                    else { Value::Nil };
                     self.env.define(&vd.name, v);
                     self.env.tandai_var(&vd.name);
                     self.belum_diisi.remove(&vd.name);

@@ -99,6 +99,7 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
             jb.symbol("jrg_jit_payload_lokal", lambat::payload_lokal as *const u8);
             jb.symbol("jrg_jit_payload_angka_lokal", lambat::payload_angka_lokal as *const u8);
             jb.symbol("jrg_jit_pola_pilih", lambat::pola_pilih as *const u8);
+            jb.symbol("jrg_jit_wujud_varian", lambat::wujud_varian as *const u8);
             jb.symbol("jrg_jit_field_lokal", lambat::field_lokal as *const u8);
             jb.symbol("jrg_jit_field_lokal_banyak", lambat::field_lokal_banyak as *const u8);
             jb.symbol("jrg_jit_metode_tukar", lambat::metode_tukar as *const u8);
@@ -170,6 +171,7 @@ fn modul() -> &'static Mutex<Option<ModulJit>> {
                 payload_lokal: impor("jrg_jit_payload_lokal", &[I64, I64], Some(I32))?,
                 payload_angka: impor("jrg_jit_payload_angka_lokal", &[I64, I64, I32, p], Some(I32))?,
                 pola_pilih: impor("jrg_jit_pola_pilih", &[I64, p], Some(I32))?,
+                wujud_varian: impor("jrg_jit_wujud_varian", &[I64, p, I64, I64, I64, p], None)?,
                 field_lokal: impor("jrg_jit_field_lokal", &[I64, I64, I64, I64], Some(I32))?,
                 field_banyak: impor("jrg_jit_field_lokal_banyak", &[I64, I64, I64], Some(I64))?,
                 metode_tukar: impor("jrg_jit_metode_tukar", &[I64, I64], Some(I32))?,

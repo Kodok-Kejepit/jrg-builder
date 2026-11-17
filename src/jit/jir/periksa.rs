@@ -4,7 +4,21 @@
 
 use std::collections::HashSet;
 
-use super::{Akhir, Biner, Blok, Fungsi, Inst, Jaga, Nilai, OpL, Tipe, Unar};
+use super::{Akhir, Biner, Blok, Fungsi, Inst, Jaga, Keadaan, Maya, Nilai, OpL, Tipe, Unar};
+
+/// Nilai yang dibaca keadaan deopt `k` dan induknya: isi native dan bayangan varian yang basi.
+fn nilai_keadaan(k: &Keadaan) -> Vec<Nilai> {
+    let mut v = Vec::new();
+    let mut x = Some(k);
+    while let Some(k) = x {
+        v.extend(k.isi.iter().flatten().copied());
+        for m in &k.maya { v.extend(nilai_maya(m)); }
+        x = k.induk.as_deref();
+    }
+    v
+}
+
+fn nilai_maya(m: &Maya) -> Vec<Nilai> { std::iter::once(m.tag).chain(m.muatan.iter().copied()).collect() }
 
 /// Penerus blok `b` dari akhirnya.
 fn penerus(f: &Fungsi, b: usize) -> Vec<usize> {
@@ -93,8 +107,7 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
             if f.tipe(v) == Tipe::L { Err(format!("b{bi}: {v} bertipe 128 bit di tempat 64 bit")) } else { Ok(()) }
         };
         let jaga = |j: &Jaga, ada: &HashSet<Nilai>| -> Result<(), String> {
-            let mut k = Some(&j.keadaan);
-            while let Some(x) = k { for v in x.isi.iter().flatten() { pakai(*v, ada)?; } k = x.induk.as_deref(); }
+            for v in nilai_keadaan(&j.keadaan) { pakai(v, ada)?; }
             Ok(())
         };
         for ins in &b.inst {
@@ -185,15 +198,16 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
                 Inst::Langsung { isi, args, basi, hasil, .. } => {
                     for (_, v) in isi.iter().chain(args) { pakai(*v, &ada)?; }
                     for (_, v) in args { bukan_l(*v)?; }
-                    for v in basi.isi.iter().flatten() { pakai(*v, &ada)?; }
+                    for v in nilai_keadaan(basi) { pakai(v, &ada)?; }
                     if let Some((h, _, j)) = hasil { jaga(j, &ada)?; definisi(*h, &mut ada)?; }
                 }
+                Inst::Wujud(m) => for v in nilai_maya(m) { pakai(v, &ada)?; bukan_l(v)?; },
                 Inst::IterAda { hasil, jaga: j, .. } => { jaga(j, &ada)?; definisi(*hasil, &mut ada)?; tipe(*hasil, Tipe::I)?; }
                 Inst::TulisVm { nilai, .. } => if let Some(v) = nilai { pakai(*v, &ada)?; bukan_l(*v)?; },
                 Inst::SimpanUpval { nilai, jaga: j, .. } => { if let Some(v) = nilai { pakai(*v, &ada)?; bukan_l(*v)?; } jaga(j, &ada)?; }
                 Inst::Panggil { hasil, args, di, sesudah, .. } => {
                     for a in args { pakai(*a, &ada)?; tipe(*a, Tipe::I)?; }
-                    for v in di.isi.iter().chain(&sesudah.isi).flatten() { pakai(*v, &ada)?; }
+                    for v in nilai_keadaan(di).into_iter().chain(nilai_keadaan(sesudah)) { pakai(v, &ada)?; }
                     definisi(*hasil, &mut ada)?;
                     tipe(*hasil, Tipe::I)?;
                 }
@@ -226,8 +240,7 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
                 for (ke, args, _) in tujuan { lompat(*ke, args, &ada)?; }
             }
             Some(Akhir::Keluar { keadaan }) => {
-                let mut k = Some(keadaan);
-                while let Some(x) = k { for v in x.isi.iter().flatten() { pakai(*v, &ada)?; } k = x.induk.as_deref(); }
+                for v in nilai_keadaan(keadaan) { pakai(v, &ada)?; }
             }
             None => return Err(format!("b{bi} tanpa akhir")),
         }

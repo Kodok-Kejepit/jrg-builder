@@ -181,6 +181,10 @@ const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
     ("parser: for gaya C", "for (var i = 0; i < 3; i += 1) { wok(i) }\nwok(\"sesudah\")\n", "`for (awal; syarat; langkah)` gaya C bukan bentuk JRG", "`for (awal; syarat; langkah)` gaya C bukan bentuk JRG"),
     ("parser: ternary gaya C", "let x = 1\nlet y = x > 0 ? 2 : 3\nwok(y)\n", "ternary di JRG ditulis `syarat $ a : b`", "ternary di JRG ditulis `syarat $ a : b`"),
     ("parser: = di kurung kepala if", "var x = 1\nif (x = 5) { wok(x) }\n", "`=` itu MENUGASKAN nilai, bukan membandingkan", "`=` itu MENUGASKAN nilai, bukan membandingkan"),
+    // Audit `Result`/`?` 2026-11-18: `?` yang mengubah keluarga kembalian yang DITULIS gagal saat jalan di dua mesin
+    // (dulu diam-diam `None` dari fungsi `-> Result`), satu kalimat (`pesan_sebar_keluarga`), juga lewat JIT.
+    ("? atas Option di fungsi -> Result", "fn f(o: Option<int>) -> Result<int, string> { let v = o?; Ok(v) }\nwok(f(Some(1)))\nwok(f(None))\n", "`?` pada Option butuh fungsi ini mengembalikan `Option<..>` juga", "`?` pada Option butuh fungsi ini mengembalikan `Option<..>` juga"),
+    ("? atas Result di fungsi -> Option", "fn f(r: Result<int, string>) -> Option<int> { let v = r?; Some(v) }\nwok(f(Ok(1)))\nwok(f(Err(\"x\")))\n", "`?` pada Result butuh fungsi ini mengembalikan `Result<..>` juga", "`?` pada Result butuh fungsi ini mengembalikan `Result<..>` juga"),
     // Fase AMAN-52 (#1041): broadcast dan `matmul` berbatas seperti pembangun — dua masukan 800 KB dulu minta 80 GB.
     ("wokwok broadcast kegedean", "wok(wokwok::mul(wokwok::ones([100000, 1]), wokwok::ones([1, 100000])))\n", "wokwok `*`: minta 10000000000 elemen (~76293 MiB) — batasnya 33554432 elemen (256 MiB)", "wokwok `*`: minta 10000000000 elemen (~76293 MiB) — batasnya 33554432 elemen (256 MiB)"),
     ("wokwok::matmul kegedean", "wok(wokwok::matmul(wokwok::ones([100000, 1]), wokwok::ones([1, 100000])))\n", "wokwok::matmul: minta 10000000000 elemen (~76293 MiB) — batasnya 33554432 elemen (256 MiB)", "wokwok::matmul: minta 10000000000 elemen (~76293 MiB) — batasnya 33554432 elemen (256 MiB)"),
@@ -4734,7 +4738,9 @@ fn calon_method_enum_dan_skalar_lengkap() {
                     ekspr, nama, ada_i, ada_v));
                 continue;
             }
-            let dijanji = dijanjikan.contains(nama);
+            // Method prelude `Option`/`Result` (`src/opsi.jrg`) ikut disarankan (`opsi::method_milik`).
+            let tipe = ekspr.split("::").next().unwrap_or("");
+            let dijanji = dijanjikan.contains(nama) || jrgc::opsi::method_milik(tipe).iter().any(|m| m == nama);
             if ada_i && !dijanji {
                 salah.push(format!("  {}.{}(): METHOD-nya ada tapi tidak ada di daftar calon \
                     — salah ketiknya tidak akan pernah disarankan", ekspr, nama));
@@ -9867,7 +9873,7 @@ fn nilai_bersarang_sejuta_tingkat_tidak_mematikan_proses() {
 /// Method prelude `Option`/`Result` (`src/opsi.jrg`) yang interpreter layani dan `--vm` BELUM (sisi VM: Agus,
 /// surat 2026-11-18 06.00). Diperiksa dua arah: begitu `--vm` melayaninya, tes yang memakainya gagal dan
 /// meminta konstanta ini jadi `false` (lalu dihapus bersama pemakainya).
-const PRELUDE_OPSI_BELUM_DI_VM: bool = true;
+const PRELUDE_OPSI_BELUM_DI_VM: bool = false;
 
 fn prelude_belum_di_vm(ekspr: &str, nama: &str, ada_i: bool, ada_v: bool) -> bool {
     let tipe = if ekspr.starts_with("Option::") { "Option" } else if ekspr.starts_with("Result::") { "Result" } else { return false };

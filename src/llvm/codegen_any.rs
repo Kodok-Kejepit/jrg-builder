@@ -31,7 +31,7 @@ pub fn tag_untuk(t: &JrgType) -> Option<i32> {
         JrgType::Slice(_) | JrgType::Array(_, _) => TAG_SLICE,
         JrgType::Dict(_) => TAG_DICT,
         JrgType::Struct(_) | JrgType::Enum(_) | JrgType::Fn(..) | JrgType::Chan(_) | JrgType::Masa(..) | JrgType::Sinkron(_) => TAG_BURAM,
-        JrgType::Tuple(ts) if !ts.is_empty() => TAG_BURAM,
+        JrgType::Tuple(_) => TAG_BURAM,
         t if t.is_float() => TAG_FLOAT,
         t if t.is_int() => TAG_INT,
         _ => return None,

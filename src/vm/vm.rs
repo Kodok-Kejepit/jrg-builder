@@ -464,8 +464,11 @@ impl Vm {
             _ => false,
         };
         if !punya {
-            // 3.
-            let callee = self.get_method(&obj, method, sp)?;
+            // 3. Juga method prelude `Option`/`Result` (`<opsi>`) yang bernama HOF (`filter`).
+            let callee = match self.get_method(&obj, method, sp) {
+                Err(e) => match self.fungsi_opsi(&obj, method, Some(argc), sp) { Some(r) => r?, None => return Err(e) },
+                ok => ok?,
+            };
             if matches!(callee, VmValue::NativeFn(_)) {
                 if let Some(p) = Self::pesan_jumlah_arg(&obj, method, argc) {
                     return Err(VmError::at(p, sp));

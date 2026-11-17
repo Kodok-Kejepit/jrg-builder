@@ -718,9 +718,11 @@ impl Compiler {
             }
 
             // Semua ekspresi lain → emit Nil (placeholder)
-            Expr::Propagate { expr, .. } => {
+            // Arg = keluarga kembalian yang ditulis fungsi pemiliknya (`vm::sebar_lintas_keluarga`).
+            Expr::Propagate { expr, keluarga, .. } => {
                 self.compile_expr(expr)?;
-                self.chunk.emit(OpCode::Propagate);
+                let k = match keluarga { crate::parser::Keluarga::Bebas => 0, crate::parser::Keluarga::Option => 1, crate::parser::Keluarga::Result => 2 };
+                self.chunk.emit_arg(OpCode::Propagate, k);
             }
             Expr::Await { expr, .. } => {
                 self.compile_expr(expr)?;

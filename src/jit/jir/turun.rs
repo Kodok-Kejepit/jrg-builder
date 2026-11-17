@@ -6,7 +6,7 @@ use cranelift_codegen::ir::{condcodes::{FloatCC, IntCC}, types, Block, FuncRef, 
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext, Variable};
 use cranelift_module::{FuncId, Module};
 
-use super::{Akhir, Arg, Banding, Biner, Fungsi, Hasil, Inst, Jaga, Keadaan, Nilai, OpL, Pb, Tipe, Uji, Unar};
+use super::{Akhir, Arg, Banding, Biner, Fungsi, Hasil, Inst, Jaga, Keadaan, Maya, Nilai, OpL, Pb, Tipe, Uji, Unar};
 use crate::jit::turun::{Impor, BERHASIL, BERHASIL_BOOL, BERHASIL_NILAI, BERHASIL_PECAHAN, BERHASIL_UNIT, DEOPT, GAGAL, GAGAL_SPEK, KEDALAMAN_MAKS, PUNCAK_VM, ULANG};
 
 /// Pembantu nilai VM (`lambat`) yang dipanggil JIR.
@@ -19,7 +19,7 @@ struct Pembantu {
     keluar_ringan_nilai: FuncRef, panjang: FuncRef, panjang_lokal: FuncRef,
     /// `Inst::Pembantu`, menurut `Pb`.
     pb: Vec<(Pb, FuncRef)>,
-    tulis_lebar: FuncRef, buka_lebar: FuncRef, sebar: FuncRef, pola_pilih: FuncRef,
+    tulis_lebar: FuncRef, buka_lebar: FuncRef, sebar: FuncRef, pola_pilih: FuncRef, wujud_varian: FuncRef,
     ubah_baca: FuncRef, ubah_siap: FuncRef, ubah_tulis_lokal: FuncRef,
 }
 
@@ -56,6 +56,8 @@ struct Penurun<'a, 'b> {
     larik_tb: Vec<(usize, Variable, Variable, Variable)>,
     /// Slot indeks lengan tiap rantai `match` (`Inst::Rantai`).
     rantai_slot: std::collections::HashMap<usize, StackSlot>,
+    /// Penyangga payload `lambat::wujud_varian` (dibuat saat pertama dipakai).
+    slot_wujud: Option<StackSlot>,
     /// Bulat konstanta yang sudah diturunkan (geseran tetap 128 bit).
     konst: std::collections::HashMap<u32, i64>,
 }
@@ -106,6 +108,7 @@ pub fn turunkan(
             (Pb::Karakter, il.karakter), (Pb::KarakterLokal, il.karakter_lokal), (Pb::PayloadAngkaLokal, il.payload_angka), (Pb::FieldLokal, il.field_lokal)].into_iter().map(|(p, id)| (p, m.declare_func_in_func(id, b.func))).collect(),
         tulis_lebar: m.declare_func_in_func(il.tulis_lebar, b.func), buka_lebar: m.declare_func_in_func(il.buka_lebar, b.func),
         sebar: m.declare_func_in_func(il.sebar, b.func), pola_pilih: m.declare_func_in_func(il.pola_pilih, b.func),
+        wujud_varian: m.declare_func_in_func(il.wujud_varian, b.func),
         ubah_baca: m.declare_func_in_func(il.ubah_baca, b.func), ubah_siap: m.declare_func_in_func(il.ubah_siap, b.func),
         ubah_tulis_lokal: m.declare_func_in_func(il.ubah_tulis_lokal, b.func),
     };
@@ -118,7 +121,7 @@ pub fn turunkan(
     let mut p = Penurun {
         b, j, nilai: vec![None; j.tipe.len()], slot, catat, undi, fid: impor.fid as i64, ptr, keluar, register, callee, kedalaman1,
         lb, wadah, titip, langsung, ringan, wadah16, konst: Default::default(), sebaris: None,
-        larik_tb: Vec::new(), rantai_slot: Default::default(),
+        larik_tb: Vec::new(), rantai_slot: Default::default(), slot_wujud: None,
     };
     // Kedalaman native dijaga di pintu masuk; parameter dimuat dari register atau penyangga argumen.
     let dalam = p.b.create_block();
@@ -348,6 +351,12 @@ impl Penurun<'_, '_> {
     /// Isi native keadaan ke slot rekaman, `deopt::catat`, lalu kembali `DEOPT`.
     /// Rekaman bingkai terdalam lebih dulu: callee yang disisipkan (`Keadaan::induk`, bit `SISIP`) lalu pemanggilnya.
     fn deopt(&mut self, k: &Keadaan, bendera: i64) {
+        // Varian berbayangan yang isi stack VM-nya basi ditulis dulu, jadi `pulihkan` membacanya seperti biasa.
+        let mut kini = Some(k);
+        while let Some(k) = kini {
+            for m in &k.maya { self.wujud(m, k.geser); }
+            kini = k.induk.as_deref();
+        }
         let mut kini = Some(k);
         let mut pertama = true;
         while let Some(k) = kini {
@@ -369,6 +378,19 @@ impl Penurun<'_, '_> {
             kini = k.induk.as_deref();
         }
         self.pulang_status(DEOPT);
+    }
+
+    /// `lambat::wujud_varian` atas bayangan `m` (posisinya digeser `geser`).
+    fn wujud(&mut self, m: &Maya, geser: usize) {
+        let s = *self.slot_wujud.get_or_insert_with(|| self.b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 64, 3)));
+        for (k, n) in m.muatan.iter().enumerate().take(8) {
+            let v = self.bit(*n);
+            self.b.ins().stack_store(self.ptr, v, s, (k * 8) as i32);
+        }
+        let isi = self.b.ins().stack_addr(self.ptr, s, 0);
+        let tag = self.v(m.tag);
+        let (pos, tabel, basi, pecahan) = (self.i64c((m.pos + geser) as i64), self.i64c(m.tabel), self.i64c(m.basi as i64), self.i64c(m.pecahan as i64));
+        self.b.ins().call(self.lb.wujud_varian, &[pos, tabel, tag, basi, pecahan, isi]);
     }
 
     /// `cond` bukan nol = deopt; sesudahnya builder di blok lanjutan.
@@ -489,11 +511,11 @@ impl Penurun<'_, '_> {
                     self.tetapkan(*hn, v);
                 }
             }
-            Inst::Rantai { hasil, rantai, urutan, lokal, situs, jaga } => {
+            Inst::Rantai { hasil, rantai, urutan, lokal, situs, panggil, jaga } => {
                 let slot = *self.rantai_slot.entry(*rantai)
                     .or_insert_with(|| self.b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 8, 3)));
                 // Lengan berikutnya cuma dicapai dari kegagalan lengan sebelumnya (`rantai_pola`): slotnya sudah terisi.
-                if *urutan == 0 {
+                if *urutan == 0 || *panggil {
                     let (l, sp) = (self.i64c(*lokal as i64), self.i64c(*situs));
                     let pilih = self.b.ins().call(self.lb.pola_pilih, &[l, sp]);
                     let c = self.b.inst_results(pilih)[0];
@@ -507,9 +529,10 @@ impl Penurun<'_, '_> {
                 let v = self.b.ins().uextend(types::I64, v);
                 self.tetapkan(*hasil, v);
             }
-            Inst::Sebar { pos, pulang, jaga } => {
+            Inst::Sebar { pos, pulang, keluarga, jaga } => {
                 let p = self.i64c(*pos as i64);
-                let c = self.b.ins().call(self.lb.sebar, &[p]);
+                let pk = self.i64c(*pos as i64 | (*keluarga as i64) << 32);
+                let c = self.b.ins().call(self.lb.sebar, &[pk]);
                 let c = self.b.inst_results(c)[0];
                 // 1 = `Err`/`None`: fungsinya kembali dengan nilai itu (masuk dari VM).
                 if *pulang {
@@ -774,6 +797,7 @@ impl Penurun<'_, '_> {
                 self.tetapkan(*k, v);
             }
             Inst::Pembantu { .. } => self.lambat_inst(ins),
+            Inst::Wujud(m) => self.wujud(m, 0),
             Inst::Maju { slot, jaga } => {
                 let p = self.i64c(*slot as i64);
                 let c = self.b.ins().call(self.lb.maju, &[p]);

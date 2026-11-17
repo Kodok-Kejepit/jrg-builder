@@ -146,8 +146,10 @@ fn isi_bingkai(
         }),
         _ => None,
     }).collect();
+    // Posisi yang tidak pernah ditulis (lubang `ambil` atas varian basi, JIR-3b) adalah `nil`, seperti di VM.
     let mut ambil = |i: usize| -> VmValue {
-        if i < args.len() { std::mem::replace(&mut args[i], VmValue::Nil) } else { std::mem::replace(&mut lama[geser + i], VmValue::Nil) }
+        if i < args.len() { std::mem::replace(&mut args[i], VmValue::Nil) }
+        else { lama.get_mut(geser + i).map_or(VmValue::Nil, |v| std::mem::replace(v, VmValue::Nil)) }
     };
     for (i, v) in nilai.into_iter().enumerate() {
         // `Lebar` sudah ditulis ke stack VM oleh blok deopt-nya (`turun::keluar_deopt`).

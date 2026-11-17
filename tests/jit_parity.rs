@@ -4408,3 +4408,74 @@ fn jir_sisip_sama_dengan_vm() {
     let r = jalankan(JIR_SISIP, &["--jit"], &[JIR, ("JRG_JIT_LOG", "jir")]);
     assert!(r.stderr.contains(" < fid"), "tidak ada callee yang disisipkan:\n{}", r.stderr);
 }
+
+/// JIR-3b langkah 1 (bayangan varian): varian yang dibangun di cabang berbeda bertemu, lalu `match` di callee yang
+/// disisipkan dan di pemanggil dilipat dari penandanya. Payload bulat/pecahan/tuple, varian tanpa payload,
+/// payload milik VM, varian yang lolos (larik, cetak, callee lain), dan varian yang dibawa loop.
+const JIR_BAYANG: &str = r#"enum Op { Tambah(int), Skala(float), Rentang(int, int), Diam, Balik }
+
+fn jalan(o: Op, acc: int) -> int {
+    match o {
+        Op::Tambah(k) => acc + k,
+        Op::Skala(f) => int(f * 2.0) + acc,
+        Op::Rentang(lo, hi) => {
+            if acc < lo { return lo }
+            if acc > hi { return hi }
+            return acc
+        }
+        Op::Diam => acc,
+        Op::Balik => 0 - acc,
+    }
+}
+
+fn nol(o: Op) -> bool {
+    match o {
+        Op::Tambah(0) => true,
+        _ => false,
+    }
+}
+
+fn main() {
+    let xs = [3, 4, 5]
+    var acc = 1
+    var simpan = []
+    var lama = Op::Diam
+    var nolnya = 0
+    for i in 0..20000 {
+        let s = i % 7
+        var op = Op::Diam
+        if s == 0 { op = Op::Tambah(i % 13) }
+        else if s == 1 { op = Op::Skala(1.25) }
+        else if s == 2 { op = Op::Rentang(-50, 50) }
+        else if s == 3 { op = Op::Balik }
+        else if s == 4 { op = Op::Tambah(xs[i % 3]) }
+        else if s == 5 { op = Op::Tambah(0) }
+        acc = jalan(op, acc) % 100003
+        match op {
+            Op::Tambah(k) => { if k > 11 { acc = acc + 1 } }
+            Op::Skala(f) => { if f > 2.0 { acc = 0 } }
+            _ => {}
+        }
+        if nol(op) { nolnya += 1 }
+        if i % 5000 == 0 { simpan = simpan + [op]; wok(op) }
+        acc = jalan(lama, acc)
+        lama = op
+    }
+    wok(acc, nolnya, simpan)
+    wok(jalan(Op::Tambah(170141183460469231731687303715884105727), 1))
+}
+"#;
+
+#[test]
+fn jir_bayang_varian_sama_dengan_vm() {
+    let v = jalankan(JIR_BAYANG, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout.lines().count() == 5, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..], &[JIR, STRES, ("JRG_JIT_BAYANG", "mati")][..]] {
+        let j = jalankan(JIR_BAYANG, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let rantai = |bayang: &str| jalankan(JIR_BAYANG, &["--jit"], &[JIR, STRES, ("JRG_JIT_LOG", "jir"), ("JRG_JIT_BAYANG", bayang)])
+        .stderr.matches(" = rantai #").count();
+    let (dengan, tanpa) = (rantai(""), rantai("mati"));
+    assert!(dengan < tanpa, "tidak ada rantai yang dilipat bayangan: {dengan} lawan {tanpa}");
+}

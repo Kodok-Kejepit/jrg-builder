@@ -10,7 +10,58 @@ pub fn main() {
     var b = -1
     wok(t[a:b], t[:a], t[b:], t[a:a], typeof(t[a:b]))
     let u = (7, 8)
-    wok(u[a:] == (8,), len(u[0:a]))
+    wok(u[a:] == (8,), u[0:a] == (7,))
+}
+"#),
+    // Method `Option`/`Result` dari prelude JRG (`src/opsi.jrg`), dilayani interpreter, `--vm`, `--jit` dan LLVM.
+    ("prelude Option: cadangan, ganti, gabung", r#"package main
+fn dua() -> Option<int> { Some(2) }
+fn kosong() -> Option<int> { None }
+pub fn main() {
+    wok(kosong().unwrap_or_else(|| 5), dua().unwrap_or_else(|| 5))
+    wok(kosong().or(Some(9)), dua().or(Some(9)), kosong().or_else(|| Some(7)))
+    wok(dua().and(Some("a")), kosong().and(Some("a")))
+    wok(dua().xor(kosong()), dua().xor(Some(3)), kosong().xor(Some(3)))
+    wok(dua().ok_or("tidak ada"), kosong().ok_or("tidak ada"), kosong().ok_or_else(|| "telat"))
+    wok(dua().filter(|x| x % 2 == 0), Some(3).filter(|x| x % 2 == 0))
+    wok(Some(Some(4)).flatten(), dua().zip(Some("b")), dua().zip(kosong()))
+    wok(dua().map_or(0, |x| x * 10), kosong().map_or(0, |x| x * 10))
+    wok(kosong().map_or_else(|| -1, |x| x), dua().map_or_else(|| -1, |x| x + 1))
+    wok(dua().is_some_and(|x| x > 1), kosong().is_some_and(|x| x > 1), kosong().is_none_or(|x| x > 9))
+    wok(dua().inspect(|x| wok("lihat", x)), dua().contains(2), kosong().contains(2))
+}
+"#),
+    ("prelude Result: cadangan, ganti, predikat", r#"package main
+fn bagi(a: int, b: int) -> Result<int, string> { if b == 0 { return Err("nol") } Ok(a / b) }
+pub fn main() {
+    wok(bagi(6, 0).unwrap_or_else(|e| len(e)), bagi(6, 3).unwrap_or_else(|e| len(e)))
+    wok(bagi(1, 0).or(bagi(4, 2)), bagi(1, 0).or_else(|e| Ok(len(e))))
+    wok(bagi(4, 2).and(bagi(9, 3)), bagi(4, 0).and(bagi(9, 3)))
+    wok(bagi(4, 2).map_or(-1, |x| x * 100), bagi(4, 0).map_or(-1, |x| x * 100))
+    wok(bagi(4, 0).map_or_else(|e| e + "!", |x| str(x)))
+    wok(bagi(4, 2).is_ok_and(|x| x == 2), bagi(4, 0).is_err_and(|e| e == "nol"))
+    wok(bagi(4, 0).inspect_err(|e| wok("galat", e)), bagi(4, 0).expect_err("harus gagal"))
+    wok(bagi(4, 2).contains(2))
+}
+"#),
+    ("prelude: transpose dua arah, flatten Result", r#"package main
+pub fn main() {
+    let a: Option<Result<int, string>> = Some(Ok(1))
+    let b: Option<Result<int, string>> = Some(Err("x"))
+    let c: Option<Result<int, string>> = None
+    wok(a.transpose(), b.transpose(), c.transpose())
+    let d: Result<Option<int>, string> = Ok(Some(3))
+    let e: Result<Option<int>, string> = Ok(None)
+    wok(d.transpose(), e.transpose())
+    let f: Result<Result<int, string>, string> = Ok(Err("dalam"))
+    wok(f.flatten())
+}
+"#),
+    ("Result<_, Galat> sebagai anotasi, diteruskan lewat ?", r#"package main
+fn f(n: int) -> Result<int, Galat> { let v = tangkap(|| 10 / n)?; Ok(v * 2) }
+pub fn main() {
+    wok(f(5))
+    match f(0) { Ok(v) => wok(v), Err(g) => wok("gagal di baris", g.baris) }
 }
 "#),
     // Ukuran enum = tipe yang dipancarkan (`{ i32, [n x i64] }`), bukan perataan muatannya: `Option<bool>`/`Option<i32>`
