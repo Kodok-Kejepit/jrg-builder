@@ -1,11 +1,11 @@
 // src/host.rs — yang disediakan lingkungan: keluaran, masukan, jam, keacakan,
-// tidur, dan keluar. Di mesin biasa ini std apa adanya; di peramban (wasm) std
-// diam atau panik untuk semuanya, jadi tiap-tiapnya diminta ke JavaScript.
+// tidur, dan keluar. Di mesin biasa dan WASI ini std apa adanya; di peramban (Praktik,
+// `wasm32-unknown-unknown`) std diam atau panik, jadi tiap-tiapnya diminta ke JavaScript.
 
 use std::io;
 use std::time::Duration;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 mod imp {
     use std::collections::VecDeque;
     use std::io::{self, BufRead, Write};
@@ -111,7 +111,16 @@ mod imp {
         static AWAL: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
         AWAL.get_or_init(std::time::Instant::now).elapsed()
     }
+    #[cfg(not(target_os = "wasi"))]
     pub fn acak(_: usize) -> Option<Vec<u8>> { None }
+    // WASI tidak punya `/dev/urandom`; sumber acaknya `random_get` (preview1).
+    #[cfg(target_os = "wasi")]
+    pub fn acak(n: usize) -> Option<Vec<u8>> {
+        #[link(wasm_import_module = "wasi_snapshot_preview1")]
+        extern "C" { fn random_get(p: *mut u8, n: usize) -> i32; }
+        let mut buf = vec![0u8; n];
+        (unsafe { random_get(buf.as_mut_ptr(), n) } == 0).then_some(buf)
+    }
     pub fn tidur(d: Duration) { std::thread::sleep(d) }
     pub fn keluar(kode: i32) -> ! {
         // `process::exit` tidak menjalankan `Drop` milik `static`, jadi terminal yang
@@ -132,7 +141,7 @@ mod imp {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 mod imp {
     use std::io;
     use std::time::Duration;
@@ -345,7 +354,7 @@ pub fn sejak_epoch() -> Option<Duration> { imp::sejak_epoch() }
 /// Jam yang cuma maju, untuk mengukur selisih; `std::time::Instant` panik di peramban.
 pub fn monoton() -> Duration { imp::monoton() }
 /// `n` byte dari sumber acak lingkungan; `None` kalau lingkungan ini tidak
-/// menyediakannya sendiri (di mesin biasa: pakai `/dev/urandom`).
+/// menyediakannya sendiri (di mesin biasa: pakai `/dev/urandom`; WASI dan peramban menyediakannya).
 pub fn acak(n: usize) -> Option<Vec<u8>> { imp::acak(n) }
 /// Tunggu sekurang-kurangnya `d`.
 pub fn tidur(d: Duration) { imp::tidur(d) }

@@ -14,6 +14,11 @@ on:
 jobs:
   suite:
     runs-on: ubuntu-latest
+    # Profil rilis tanpa LTO dan dengan codegen-units 16, KHUSUS uji: biner yang dirilis (`rilis.yml`) tetap LTO.
+    # Tiap biner tes ditaut ulang dengan LTO dan satu unit kode, dan itu bagian terbesar job ini (17 dari 37 menit).
+    env:
+      CARGO_PROFILE_RELEASE_LTO: "false"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
     steps:
       - uses: actions/checkout@v4
 
