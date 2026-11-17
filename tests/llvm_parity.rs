@@ -2199,6 +2199,11 @@ pub fn main() {{
 #[test]
 fn arena_dipulihkan_tiap_putaran() {
     if lewati_tanpa_clang("arena_dipulihkan_tiap_putaran") { return; }
+    // Sapuan sanitizer memasang `JRGC_BATAS_MEMORI` kosong: ruang alamat bayangan ASan tidak muat di batas apa pun.
+    if std::env::var("JRGC_BATAS_MEMORI").is_ok_and(|v| v.trim().is_empty()) {
+        eprintln!("lewati: tanpa batas memori (sapuan sanitizer)");
+        return;
+    }
     let src = "package main\nfn h(acc: int, s: string) -> int {\n    var a = acc\n    for i in 0..len(s) { a = (a * 31 + i) % 1000003 }\n    return a\n}\npub fn main() {\n    var acc = 7\n    for r in 0..2000000 {\n        let t = \"butir-\" + str(r % 997) + \":\" + str(r)\n        let u = str::upper(str::reverse(t))\n        acc = h(acc, u)\n    }\n    wok(acc)\n}\n";
     let dir = dir_uji("arena");
     let file = dir.join("uji.jrg");
