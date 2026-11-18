@@ -141,6 +141,27 @@ impl Parser {
                     "`switch` bukan bentuk JRG — pakai `match`, yang juga menerima pola ",
                     "dan penjaga: `match x { 1 | 2 => ..., n if n > 9 => ..., _ => ... }`")
                     .to_string()),
+            // `class Foo { .. }`, `class Foo: Induk { .. }`, `class Foo(Induk):` — Java/Python/JS/C++.
+            TokenKind::Ident(n)
+                if matches!(n.as_str(), "class" | "interface" | "abstract")
+                    && matches!(self.peek_kind(1), Some(TokenKind::Ident(_))) => {
+                let n = n.clone();
+                self.lompati_bentuk_berblok();
+                Some(format!(
+                    "`{}` bukan bentuk JRG. Sebuah tipe berisi field ditulis `struct Nama {{ x: int }}` \
+                     (warisan: `struct Anak: Induk {{ .. }}`); pilihan terbatas pakai `enum`; perilaku bersama \
+                     pakai `trait` lalu `impl Trait for Nama`. Method ditulis di blok `impl Nama {{ fn m(self) {{ .. }} }}`", n))
+            }
+            // `public`/`private`/`protected` sebagai pengubah di depan deklarasi — Java/TS/C++.
+            TokenKind::Ident(n)
+                if matches!(n.as_str(), "public" | "private" | "protected" | "internal")
+                    && matches!(self.peek_kind(1), Some(TokenKind::KwFn | TokenKind::KwStruct
+                        | TokenKind::KwEnum | TokenKind::KwConst | TokenKind::KwLet | TokenKind::Ident(_))) => {
+                let n = n.clone();
+                Some(format!(
+                    "`{}` bukan pengubah di JRG. Yang publik ditandai `pub` DI DEPAN deklarasinya \
+                     (`pub fn`, `pub struct`, field `pub x: int`); tanpa `pub` sebuah nama privat ke modulnya", n))
+            }
             _ => None,
         };
         pesan.map(|p| self.error_di(p, galat_di))

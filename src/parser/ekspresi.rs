@@ -625,6 +625,17 @@ impl Parser {
                 _ => PESAN_KURANG.to_string(),
             });
         }
+        // `a === b` / `a !== b` (JS): `==`/`!=` sudah dimakan operator, `=` ketiga tak punya tempat.
+        if matches!(self.current().kind, TokenKind::Eq) && menempel_mundur(1) {
+            match kb(1) {
+                Some(TokenKind::EqEq) => return Some(concat!(
+                    "`===` bukan bentuk JRG — di sini `==` sudah membandingkan nilai DAN tipe sekaligus ",
+                    "(`1 == 1.0` itu `false`), jadi tulis `==`").to_string()),
+                Some(TokenKind::BangEq) => return Some(
+                    "`!==` bukan bentuk JRG — tulis `!=`; perbandingan JRG sudah ketat soal tipe".to_string()),
+                _ => {}
+            }
+        }
         // `c ? a : b` gaya C: `?` sudah dibaca sebagai penerus galat, lalu `:` tidak punya tempat.
         if matches!(self.current().kind, TokenKind::Colon) {
             let mut i = self.pos;
