@@ -158,6 +158,12 @@ impl Parser {
                  di dalam syarat, justru supaya salah ketik ini tidak pernah diam.)"
                     .to_string()));
         }
+        // Badan bergaya titik dua `:` (Python): `def f():`, `if x:`, `fn f() -> int: ...`. Di JRG badan selalu `{ .. }`.
+        if matches!(self.current().kind, TokenKind::Colon) && matches!(kind, TokenKind::LBrace) {
+            return Err(self.error(
+                "badan di JRG selalu dibuka kurung kurawal `{ .. }`, bukan titik dua `:` seperti Python — \
+                 `if syarat { .. }`, `fn f() { .. }`, `for i in 0..n { .. }`".to_string()));
+        }
         Err(self.error(format!(
             "harusnya ada {} di sini, yang ketemu malah {}",
             kind.tulisan(), self.current().kind.tulisan()

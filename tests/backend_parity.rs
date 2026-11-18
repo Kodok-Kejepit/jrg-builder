@@ -181,6 +181,8 @@ const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
     ("public jadi pub", "package main\npublic fn f() { }\n", "bukan pengubah di JRG", "bukan pengubah di JRG"),
     ("=== jadi ==", "package main\npub fn main() { let a = 1\n let b = 2\n wok(a === b) }\n", "`===` bukan bentuk JRG", "`===` bukan bentuk JRG"),
     ("!== jadi !=", "package main\npub fn main() { let a = 1\n let b = 2\n wok(a !== b) }\n", "`!==` bukan bentuk JRG", "`!==` bukan bentuk JRG"),
+    ("badan titik dua Python", "package main\nfn f() -> int: return 5\n", "dibuka kurung kurawal", "dibuka kurung kurawal"),
+    ("if titik dua Python", "package main\npub fn main() { if true: wok(1) }\n", "dibuka kurung kurawal", "dibuka kurung kurawal"),
     // 2026-11-18 (surat Bayu–Agus): kebuntuan yang terlihat dilaporkan di dua mesin (`antrean::buntu`), seperti LLVM
     // — dulu menggantung selamanya tanpa pesan.
     ("kebuntuan: main menerima dari channel tanpa pengirim", "package main\npub fn main() { let c = make_chan(int)\n wok(<-c) }", "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),

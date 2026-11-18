@@ -381,6 +381,8 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
      "`===` is not JRG — here `==` already compares value AND type at once (`1 == 1.0` is `false`), so write `==`"),
     ("`!==` bukan bentuk JRG — tulis `!=`; perbandingan JRG sudah ketat soal tipe",
      "`!==` is not JRG — write `!=`; JRG comparison is already strict about type"),
+    ("badan di JRG selalu dibuka kurung kurawal `{ .. }`, bukan titik dua `:` seperti Python — `if syarat { .. }`, `fn f() { .. }`, `for i in 0..n { .. }`",
+     "a body in JRG always opens with braces `{ .. }`, not a colon `:` like Python — `if condition { .. }`, `fn f() { .. }`, `for i in 0..n { .. }`"),
     ("label `{}` cuma bisa dipasang tepat di depan `for`, `while`, atau `loop` — yang ketemu malah ",
      "the label `{}` can only go right in front of `for`, `while`, or `loop` — found "),
     ("key dict harus string, nama, atau bilangan bulat, dapat ",
