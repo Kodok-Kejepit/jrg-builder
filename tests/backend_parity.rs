@@ -175,6 +175,13 @@ fn konformans_semantik_nilai_jalan_di_dua_backend() {
 
 /// Program yang WAJIB ditolak oleh KEDUA backend, dengan alasan yang sama.
 const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
+    // 2026-11-18 (surat Bayu–Agus): `var x: T` tanpa nilai nol yang dibaca sebelum diisi gagal saat jalan di dua
+    // mesin (dulu `nil` diam-diam), juga lewat closure, `var` modul dan sesudah cabang yang tidak mengisinya.
+    ("var struct dibaca sebelum diisi", "package main\nstruct D { x: int = 5 }\npub fn main() { var a: D\n wok(a) }", "`a` dibaca sebelum diisi", "`a` dibaca sebelum diisi"),
+    ("var Option dibaca sebelum diisi", "package main\npub fn main() { var a: Option<int>\n wok(\"awal\")\n wok(a) }", "`a` dibaca sebelum diisi", "`a` dibaca sebelum diisi"),
+    ("var enum dibaca sebelum diisi, lewat closure", "package main\nenum Warna { Merah, Hijau }\npub fn main() { var a: Warna\n let f = || a\n wok(f()) }", "`a` dibaca sebelum diisi", "`a` dibaca sebelum diisi"),
+    ("var modul dibaca sebelum diisi", "package main\nstruct D { pub x: int }\nvar G: D\nfn baca() -> int { return G.x }\npub fn main() { wok(baca()) }", "`G` dibaca sebelum diisi", "`G` dibaca sebelum diisi"),
+    ("var dibaca sesudah cabang yang tidak mengisinya", "package main\nstruct D { pub x: int }\npub fn main() { var d: D\n if len(\"ab\") > 5 { d = D { x: 1 } }\n wok(d.x) }", "`d` dibaca sebelum diisi", "`d` dibaca sebelum diisi"),
     // Parser pintar 2026-11-18: bentuk dari bahasa lain dijawab padanannya (`antrean-fase.md` "Parser pintar").
     ("parser: elif", "var x = 2\nif x == 1 {\n wok(1)\n} elif x == 2 {\n wok(2)\n}\n", "JRG tidak punya `elif`", "JRG tidak punya `elif`"),
     ("parser: def gaya Python", "def tambah(a, b):\n    return a + b\n", "fungsi di JRG ditulis `fn nama(a, b)", "fungsi di JRG ditulis `fn nama(a, b)"),

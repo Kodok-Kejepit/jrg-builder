@@ -77,6 +77,147 @@ fn jalankan_alat(cmd: &mut Command, apa: &str) -> Result<(), String> {
     Err(format!("{} gagal:\n{}", apa, String::from_utf8_lossy(&out.stderr)))
 }
 
+/// Nama fungsi yang DIDEFINISIKAN modul wasm (bagian `name`, subbagian 1; fungsi impor dilewati).
+fn nama_fungsi(w: &[u8]) -> Vec<String> {
+    fn leb(w: &[u8], i: &mut usize) -> Option<u64> {
+        let (mut v, mut g) = (0u64, 0);
+        loop {
+            let b = *w.get(*i)?;
+            *i += 1;
+            v |= ((b & 0x7f) as u64) << g;
+            if b & 0x80 == 0 { return Some(v); }
+            g += 7;
+        }
+    }
+    // Jumlah fungsi impor (bagian 2): indeks fungsi di bawahnya milik impor.
+    fn impor(w: &[u8], mut j: usize) -> Option<u64> {
+        let (mut f, cacah) = (0, leb(w, &mut j)?);
+        for _ in 0..cacah {
+            for _ in 0..2 { let l = leb(w, &mut j)? as usize; j += l; }
+            let jenis = *w.get(j)?;
+            j += 1;
+            let batas = |w: &[u8], j: &mut usize| -> Option<()> {
+                let b = *w.get(*j)?;
+                *j += 1;
+                leb(w, j)?;
+                if b & 1 == 1 { leb(w, j)?; }
+                Some(())
+            };
+            match jenis {
+                0 => { leb(w, &mut j)?; f += 1; }
+                1 => { j += 1; batas(w, &mut j)?; }
+                2 => batas(w, &mut j)?,
+                3 => j += 2,
+                _ => { j += 1; leb(w, &mut j)?; }
+            }
+        }
+        Some(f)
+    }
+    let mut hasil = Vec::new();
+    let mut n_impor = 0;
+    let mut i = 8;
+    while i < w.len() {
+        let id = w[i];
+        i += 1;
+        let Some(n) = leb(w, &mut i) else { break };
+        let ujung = i + n as usize;
+        if id == 2 { n_impor = impor(w, i).unwrap_or(u64::MAX); }
+        if id == 0 {
+            let mut j = i;
+            let nl = leb(w, &mut j).unwrap_or(0) as usize;
+            if w.get(j..j + nl) == Some(b"name") {
+                j += nl;
+                while j < ujung {
+                    let sub = w[j];
+                    j += 1;
+                    let Some(sn) = leb(w, &mut j) else { break };
+                    let sujung = j + sn as usize;
+                    if sub == 1 {
+                        let cacah = leb(w, &mut j).unwrap_or(0);
+                        for _ in 0..cacah {
+                            let Some(idx) = leb(w, &mut j) else { break };
+                            let Some(pj) = leb(w, &mut j) else { break };
+                            if idx >= n_impor {
+                                if let Some(s) = w.get(j..j + pj as usize) { hasil.push(String::from_utf8_lossy(s).into_owned()); }
+                            }
+                            j += pj as usize;
+                        }
+                    }
+                    j = sujung;
+                }
+            }
+        }
+        i = ujung;
+    }
+    hasil
+}
+
+/// Fungsi milik crate yang tidak pernah berganti korutin: `jrgc` (jembatan; panggilan balik ke program yang berganti
+/// korutin dijaga `jrg_wasm_di_jembatan`) dan pustaka Rust. Runtime (`jrgwasmrt`) tetap diinstrumentasi.
+fn tanpa_korutin(n: &str) -> bool {
+    const CRATE: &[&str] = &["jrgc", "core", "alloc", "std", "hashbrown", "indexmap", "smallvec", "unicode_xid",
+        "bitflags", "clap", "rustc_demangle", "miniz_oxide", "adler2", "memchr", "addr2line", "gimli", "object"];
+    // Mangling v0 (`_R…`): crate pertama sesudah `Cs<penanda>_`; selain itu nama ter-demangle `crate::…`.
+    let krat = if let Some(p) = n.strip_prefix("_R") {
+        let Some(k) = p.find("Cs") else { return false };
+        let s = p[k + 2..].split_once('_').map_or("", |x| x.1);
+        let d: String = s.chars().take_while(|c| c.is_ascii_digit()).collect();
+        let Ok(len) = d.parse::<usize>() else { return false };
+        s.get(d.len()..d.len() + len).unwrap_or("").to_string()
+    } else {
+        n.trim_start_matches('<').split("::").next().unwrap_or("").to_string()
+    };
+    CRATE.contains(&krat.as_str())
+}
+
+/// Pustaka gabungan runtime + jembatan (`wasm-rt/`, `libjrgwasmrt.a`), dibangun kalau belum ada atau lebih tua dari
+/// sumber Rust yang dipakainya (runtime, jembatan, `jrgc`).
+fn ensure_wasm_rt(verbose: bool) -> Result<PathBuf, String> {
+    let akar = match std::env::var("JRGC_WASM_RT_DIR") {
+        Ok(p) if !p.is_empty() => PathBuf::from(p),
+        _ => Path::new(env!("CARGO_MANIFEST_DIR")).join("wasm-rt"),
+    };
+    if !akar.join("Cargo.toml").exists() {
+        return Err(format!("pustaka wasm runtime + jembatan tidak ditemukan di {}\n  bantuan: set `JRGC_WASM_RT_DIR` ke \
+            folder `wasm-rt/` sumber JRG", akar.display()));
+    }
+    let lib = akar.join("target").join(SASARAN).join("release").join("libjrgwasmrt.a");
+    fn terbaru(d: &Path, kini: &mut std::time::SystemTime) {
+        let Ok(isi) = std::fs::read_dir(d) else { return };
+        for e in isi.flatten() {
+            let p = e.path();
+            if p.is_dir() { terbaru(&p, kini); continue; }
+            if p.extension().is_some_and(|x| x == "rs") {
+                if let Ok(t) = e.metadata().and_then(|m| m.modified()) { if t > *kini { *kini = t; } }
+            }
+        }
+    }
+    let induk = akar.parent().unwrap_or(&akar).to_path_buf();
+    let perlu = match std::fs::metadata(&lib).and_then(|m| m.modified()) {
+        Err(_) => true,
+        Ok(t) => {
+            let mut kini = std::time::SystemTime::UNIX_EPOCH;
+            for d in [akar.join("src"), induk.join("runtime").join("src"), induk.join("jembatan").join("src"), induk.join("src")] {
+                terbaru(&d, &mut kini);
+            }
+            kini > t
+        }
+    };
+    if perlu {
+        if verbose { eprintln!("[jrgc] membangun pustaka wasm runtime + jembatan — beberapa menit, di-cache setelahnya..."); }
+        let mut cmd = Command::new("cargo");
+        cmd.args(["build", "--release", "-j", "1", "--target", SASARAN]).current_dir(&akar);
+        let out = crate::putar::jalankan(&mut cmd, "membangun pustaka wasm runtime + jembatan (sekali, di-cache)")
+            .map_err(|e| format!("gagal menjalankan `cargo build` untuk pustaka wasm: {}", e))?;
+        if !out.status.success() {
+            return Err(format!("gagal membangun pustaka wasm runtime + jembatan:\n{}", String::from_utf8_lossy(&out.stderr)));
+        }
+        crate::llvm::segarkan_cap(&lib);
+    }
+    if !lib.exists() { return Err(format!("build pustaka wasm selesai tapi {} tidak ditemukan", lib.display())); }
+    Ok(lib)
+}
+
 /// `main` JRG di IR berbentuk `i32 main()`. wasi-libc memanggil `__main_void`, yang di sini milik `korutin_wasm.c`:
 /// dasar Asyncify yang menjalankan `main` program sebagai korutin.
 fn ganti_main(ir: &str) -> String {
@@ -86,9 +227,10 @@ fn ganti_main(ir: &str) -> String {
 /// Menyusun IR (`CodegenOptions::ptr32`) jadi `keluar` (.wasm) dan pemuatnya `keluar.mjs`.
 pub fn kompilasi(ir: &str, keluar: &Path, verbose: bool) -> Result<PathBuf, String> {
     let alat = cari_alat()?;
-    let runtime = crate::llvm::ensure_runtime(verbose, Some(SASARAN)).map_err(|e| {
-        format!("{e}\n  bantuan: runtime wasm butuh target Rust `{SASARAN}` (`rustup target add {SASARAN}`)")
-    })?;
+    // Program yang memanggil builtin lewat jembatan memakai pustaka gabungan runtime + jembatan (`wasm-rt/`).
+    let jembatan = ir.contains("@jrg_jembatan(") || ir.contains("@jrg_jembatan_lepas(");
+    let runtime = if jembatan { ensure_wasm_rt(verbose) } else { crate::llvm::ensure_runtime(verbose, Some(SASARAN)) }
+        .map_err(|e| format!("{e}\n  bantuan: runtime wasm butuh target Rust `{SASARAN}` (`rustup target add {SASARAN}`)"))?;
     let dir = crate::host::dir_sementara("jrgc-wasm")
         .map_err(|e| format!("gagal membuat folder sementara: {}", crate::host::galat_io(&e)))?;
     let (ll, prog_o) = (dir.join("program.ll"), dir.join("program.o"));
@@ -96,6 +238,7 @@ pub fn kompilasi(ir: &str, keluar: &Path, verbose: bool) -> Result<PathBuf, Stri
     let sysroot = format!("--sysroot={}", alat.sysroot.display());
     let susun = |sumber: &Path, objek: &Path| -> Result<(), String> {
         jalankan_alat(Command::new(&alat.clang).arg(format!("--target={SASARAN}")).arg(&sysroot).arg("-O2")
+            .args(jembatan.then_some("-DJRG_WASM_JEMBATAN"))
             .arg("-Wno-override-module").arg("-c").arg(sumber).arg("-o").arg(objek), "clang (wasm)")
     };
     susun(&ll, &prog_o)?;
@@ -117,9 +260,17 @@ pub fn kompilasi(ir: &str, keluar: &Path, verbose: bool) -> Result<PathBuf, Stri
         // Asyncify: korutin dibuka dan digulung ulang sampai `__main_void`, yang karena itu tidak diinstrumentasi.
         // `JRG_WASM_NAMA=1`: nama fungsi ikut di .wasm (jejak trap node terbaca) dan IR-nya disimpan, untuk menyelidiki.
         let nama = std::env::var_os("JRG_WASM_NAMA").is_some_and(|v| v == "1");
-        jalankan_alat(Command::new(&alat.wasm_opt).arg(&taut_wasm).args(["--asyncify",
-            "--pass-arg=asyncify-removelist@__main_void", "-O2"]).args(nama.then_some("-g")).arg("-o").arg(keluar),
-            "wasm-opt (Asyncify)")
+        // Dengan jembatan: fungsi crate yang tidak pernah berganti korutin (`jrgc`, pustaka Rust) tidak diinstrumentasi.
+        let mut buang = vec!["__main_void".to_string()];
+        if jembatan {
+            let isi = std::fs::read(&taut_wasm).map_err(|e| format!("gagal membaca {}: {}", taut_wasm.display(), crate::host::galat_io(&e)))?;
+            buang.extend(nama_fungsi(&isi).into_iter().filter(|n| tanpa_korutin(n)));
+        }
+        let daftar = dir.join("tanpa-asyncify.txt");
+        std::fs::write(&daftar, buang.join("\n")).map_err(|e| format!("gagal menulis {}: {}", daftar.display(), crate::host::galat_io(&e)))?;
+        jalankan_alat(Command::new(&alat.wasm_opt).arg(&taut_wasm).arg("--asyncify")
+            .arg(format!("--pass-arg=asyncify-removelist@@{}", daftar.display())).arg("-O2")
+            .args(nama.then_some("-g")).arg("-o").arg(keluar), "wasm-opt (Asyncify)")
     });
     if std::env::var_os("JRG_WASM_NAMA").is_some_and(|v| v == "1") { let _ = std::fs::copy(&ll, keluar.with_extension("ll")); }
     let _ = std::fs::remove_dir_all(&dir);

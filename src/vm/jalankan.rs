@@ -172,6 +172,15 @@ impl Vm {
                             crate::interpreter::galat_index::fungsi_sebagai_pernyataan(&nama), sp));
                     }
                 }
+                OpCode::PeriksaIsi => {
+                    if let Some((tipe, varian, _)) = self.peek(0, sp)?.bagian_enum() {
+                        if tipe == crate::interpreter::TIPE_BELUM_DIISI {
+                            let varian = varian.to_string();
+                            let nama = self.frames.last().and_then(|f| f.func.chunk.names.get(arg as usize).cloned()).unwrap_or_default();
+                            return Err(VmError::at(crate::interpreter::pesan_dibaca_sebelum_diisi(&nama, &varian), sp));
+                        }
+                    }
+                }
                 OpCode::Dup    => { let v = self.peek(0, sp)?.clone(); self.push(v); }
                 OpCode::Swap   => {
                     let n = self.stack.len();

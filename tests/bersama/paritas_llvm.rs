@@ -28,6 +28,7 @@ pub fn main() {
     wok(t[a:b], t[:a], t[b:], t[a:a], typeof(t[a:b]))
     let u = (7, 8)
     wok(u[a:] == (8,), u[0:a] == (7,))
+    wok(len(t[a:b]), len(t[a:a]), len(u[a:]), len(t[b:]))
 }
 "#),
     // Method `Option`/`Result` dari prelude JRG (`src/opsi.jrg`), dilayani interpreter, `--vm`, `--jit` dan LLVM.

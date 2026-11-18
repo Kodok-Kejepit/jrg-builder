@@ -62,6 +62,18 @@ __attribute__((noinline)) static void jrg_ko_wasm_tukar(JrgKo *dari, JrgKo *ke) 
     }
 }
 
+// Bingkai `jrgc` di bawah jembatan tidak diinstrumentasi Asyncify (`wasm::tanpa_korutin`): korutin yang berganti
+// dari fungsi program yang dipanggil builtin jembatan tidak bisa dilanjutkan, jadi ditolak keras di sini.
+extern int32_t jrg_wasm_di_jembatan __attribute__((weak));
+static int jrg_wasm_dalam_jembatan(void) { return &jrg_wasm_di_jembatan != 0 && jrg_wasm_di_jembatan > 0; }
+static void jrg_wasm_cek_jembatan(void) {
+    // Seluruh program berhenti, bukan goroutine-nya saja: stack-nya tidak bisa dilanjutkan.
+    if (jrg_wasm_dalam_jembatan()) jrg_ko_fatal = 1;
+    if (jrg_wasm_dalam_jembatan())
+        jrg_wasm_belum_karena("goroutine yang berganti di dalam fungsi yang dipanggil builtin jembatan",
+                              "bingkai builtin tidak bisa dihentikan sementara di WebAssembly");
+}
+
 static char *jrg_ko_wasm_stack(JrgKo *k) {
     k->ctx.simpan = malloc(JRG_WASM_SIMPAN);
     char *st = malloc(JRG_KO_STACK);
@@ -109,8 +121,9 @@ int __main_void(void) {
     }
 }
 
-// Jembatan builtin milik `jrgc` (`libjrgjembatan`) belum ditaut di wasm: yang kuat ini menggantikan simbol lemah di
-// `primitif.c`, jadi galatnya menyebut builtin yang dipanggil.
+// Program tanpa pustaka gabungan runtime + jembatan (`wasm-rt/`, `JRG_WASM_JEMBATAN`): yang kuat ini menggantikan
+// simbol lemah di `primitif.c`, jadi galat yang tidak mungkin terjadi pun menyebut builtin yang dipanggil.
+#ifndef JRG_WASM_JEMBATAN
 int32_t jrg_jembatan_panggil(const char *nama, int64_t nl, const JrgAny *args, int64_t n, JrgAny *out, const JrgKait *kait) {
     (void)args; (void)n; (void)out; (void)kait;
     char apa[96] = "builtin `";
@@ -121,3 +134,4 @@ int32_t jrg_jembatan_panggil(const char *nama, int64_t nl, const JrgAny *args, i
     jrg_wasm_belum_karena(apa, "jembatan builtin `jrgc` belum ditaut di WebAssembly");
     return -1;
 }
+#endif

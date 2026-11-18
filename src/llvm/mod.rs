@@ -558,7 +558,7 @@ pub fn ensure_runtime(verbose: bool, target: Option<&str>) -> Result<PathBuf, St
 
 /// Cargo yang menjawab "sudah segar" tidak menyentuh pustakanya; tanpa ini sumber yang lebih baru (tapi
 /// tidak dipakai pustaka itu) memanggil cargo lagi di SETIAP kompilasi.
-fn segarkan_cap(lib: &Path) {
+pub(crate) fn segarkan_cap(lib: &Path) {
     if let Ok(f) = std::fs::File::options().append(true).open(lib) { let _ = f.set_modified(SystemTime::now()); }
 }
 

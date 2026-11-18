@@ -107,6 +107,8 @@ static void jrg_ko_antre(JrgKo *k) {
 
 #if defined(__wasi__)
 static void jrg_ko_wasm_tukar(JrgKo *dari, JrgKo *ke);
+static void jrg_wasm_cek_jembatan(void);
+static int jrg_wasm_dalam_jembatan(void);
 static char *jrg_ko_wasm_stack(JrgKo *k);
 static void jrg_ko_wasm_lepas(JrgKo *k);
 #endif
@@ -126,6 +128,7 @@ static void jrg_ko_pindah(JrgKo *ke) {
     __sanitizer_start_switch_fiber(dari == jrg_ko_mayat ? 0 : &palsu, ke->asan_bawah, ke->asan_ukuran);
 #endif
 #if defined(__wasi__)
+    jrg_wasm_cek_jembatan();
     jrg_ko_wasm_tukar(dari, ke);
 #elif defined(__ANDROID__)
     jrg_ko_tukar(&dari->ctx.sp, ke->ctx.sp);
@@ -586,6 +589,19 @@ int32_t jrg_masa_coba(JrgChan *c, void *out, int64_t mikro, const char *nama, in
 // Fungsi milik program yang dipanggil balik dari `jrgc`: jalan sebagai badan tugas, dan kalau gagal
 // galatnya DIKEMBALIKAN (-1, kalimatnya di `pesan`), tidak menghentikan proses.
 int32_t jrg_masa_lindung(void (*jalan)(void *), void *env, const char **pesan, int64_t *n) {
+#if defined(__wasi__)
+    // Dari dalam jembatan (`--emit-wasm`) tidak boleh berganti korutin: jalan di sini, galatnya menghentikan program.
+    if (jrg_wasm_dalam_jembatan()) {
+        JrgChan *c = jrg_chan_new(1, 0);
+        c->sekali = 2;
+        void **paket = jrg_alloc(24, 8);
+        paket[0] = env;
+        paket[1] = c;
+        paket[2] = NULL;
+        jalan(paket);
+        return 0;
+    }
+#endif
     JrgChan *c = jrg_masa_baru(jalan, env, NULL, 0, 1);
     char nol[8];
     jrg_chan_recv(c, nol, 0);

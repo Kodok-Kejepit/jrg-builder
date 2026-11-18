@@ -92,10 +92,8 @@ include!("bersama/paritas_llvm.rs");
 /// Future/Task, `Atomic`, `Mutex` atau `tangkap` menjawab sama lewat wasm. Satu tabel dengan LLVM, bukan salinan.
 const PENANDA_KORUTIN: &[&str] = &["spawn", "Chan::new", "Future::new", "Task::spawn", "select", "Mutex::new",
     "Atomic::new", "tangkap("];
-/// Kasus konkurensi yang ikut memanggil builtin lewat jembatan `jrgc`: belum ditaut di wasm (W1d), ditolak keras.
-const LEWAT_JEMBATAN: &[&str] = &["jembatan: struct berisi enum, enum dan struct rekursif",
-    "goroutine tetap mendapat giliran selama main menunggu proses::",
-    "struct pengguna bernama Ptr/Task/DokRouter terpisah dari handle pustaka"];
+/// Kasus konkurensi yang memanggil builtin yang tidak ada di WASI (`proses::`: tanpa proses anak), ditolak di sana.
+const LEWAT_JEMBATAN: &[&str] = &["goroutine tetap mendapat giliran selama main menunggu proses::"];
 
 #[test]
 fn korutin_lewat_wasm_sama_dengan_interpreter() {
@@ -118,18 +116,45 @@ fn korutin_lewat_wasm_sama_dengan_interpreter() {
     assert!(beda.is_empty(), "{} dari {n} kasus konkurensi beda lewat --emit-wasm:\n{}", beda.len(), beda.join("\n"));
 }
 
-/// Builtin lewat jembatan `jrgc` belum ditaut di wasm (`korutin_wasm.c` menggantikan simbol lemah
-/// `jrg_jembatan_panggil`): galatnya menyebut builtin-nya dan lokasinya — dulu "tag nilai tidak dikenal ... bug di jrgc".
+/// W1d: builtin lewat jembatan `jrgc` ditaut di wasm (`wasm-rt/`: runtime + jembatan satu pustaka statis) dan
+/// menjawab sama dengan interpreter, termasuk galatnya.
+const JEMBATAN: &str = r#"fn main() {
+    wok("awal")
+    wok(crypto::sha256("abc"))
+    wok(re::find_all("[0-9]+", "a12 b345 c6"))
+    wok(url::parse("https://x.id:8080/a?b=1"))
+    wok(semver::compare("1.2.3", "1.10.0"))
+    let p = ptr::new(5)
+    ptr::update(p, |x| x * 3)
+    wok(ptr::get(p))
+    wok(re::find("(", "x"))
+}
+"#;
+
 #[test]
-fn builtin_jembatan_ditolak_keras_lewat_wasm() {
+fn builtin_jembatan_lewat_wasm() {
     let kerja = folder("jembatan");
-    let p = tulis(&kerja, "jembatan.jrg", "fn main() {\n    wok(\"awal\")\n    wok(crypto::sha256(\"abc\"))\n}\n");
+    let p = tulis(&kerja, "jembatan.jrg", JEMBATAN);
+    let acuan = jalan(&[p.to_str().unwrap()], &kerja);
+    let Some(w) = wasm(&p, &kerja) else { return };
+    let _ = std::fs::remove_dir_all(&kerja);
+    assert_eq!((acuan.kode, acuan.stdout.as_str()), (w.kode, w.stdout.as_str()), "{}", w.stderr);
+    let galat = |e: &str| e.lines().find(|l| l.starts_with("error")).unwrap_or("").to_string();
+    assert_eq!(galat(&acuan.stderr), galat(&w.stderr), "kalimat galat jembatan beda:\n{}", w.stderr);
+}
+
+/// Bingkai `jrgc` di bawah jembatan tidak diinstrumentasi Asyncify: goroutine yang berganti di dalam callback builtin
+/// ditolak keras dengan kalimat yang menyebutnya, bukan dilanjutkan dari stack yang rusak.
+#[test]
+fn goroutine_berganti_di_callback_jembatan_ditolak_keras() {
+    let kerja = folder("jembatan-ganti");
+    let src = "fn main() {\n    let c = Chan::new()\n    spawn { wok(<-c) }\n    let p = ptr::new(1)\n    wok(\"awal\")\n    ptr::update(p, |x| { c <- x; x + 1 })\n    wok(ptr::get(p))\n}\n";
+    let p = tulis(&kerja, "ganti.jrg", src);
     let Some(w) = wasm(&p, &kerja) else { return };
     let _ = std::fs::remove_dir_all(&kerja);
     assert_ne!(w.kode, 0, "{}{}", w.stdout, w.stderr);
     assert_eq!(w.stdout, "awal\n");
-    assert!(w.stderr.contains("builtin `crypto::sha256` belum didukung --emit-wasm") && w.stderr.contains("jembatan.jrg:3"),
-        "{}", w.stderr);
+    assert!(w.stderr.contains("goroutine yang berganti di dalam fungsi yang dipanggil builtin jembatan"), "{}", w.stderr);
 }
 
 /// Stack: larik lokal besar (stack bayangan wasm 8 MiB, bawaan `wasm-ld` 64 KiB meluap) dan rekursi 20 ribu tingkat
@@ -154,4 +179,19 @@ fn stack_dalam_lewat_wasm() {
     let Some(w) = wasm(&p, &kerja) else { return };
     let _ = std::fs::remove_dir_all(&kerja);
     assert_eq!((w.kode, w.stdout.as_str()), (0, "false 20000\n"), "{}", w.stderr);
+}
+
+/// `JRG_EKSPOR_PARITAS=<dir> cargo test --test wasm_parity -- --ignored ekspor_paritas_llvm`: program `PARITAS_LLVM`
+/// ke berkas, untuk sapuan wasm di luar suite (tiap kasus ±8 detik penyusunan).
+#[test]
+#[ignore]
+fn ekspor_paritas_llvm() {
+    let Ok(dir) = std::env::var("JRG_EKSPOR_PARITAS") else { return };
+    std::fs::create_dir_all(&dir).expect("buat direktori ekspor");
+    let mut daftar = String::new();
+    for (i, (nama, src)) in PARITAS_LLVM.iter().enumerate() {
+        std::fs::write(format!("{}/{:03}.jrg", dir, i), src).expect("tulis program");
+        daftar.push_str(&format!("{:03}\t{}\n", i, nama));
+    }
+    std::fs::write(format!("{}/daftar.txt", dir), daftar).expect("tulis daftar");
 }

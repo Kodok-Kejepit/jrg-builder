@@ -1,0 +1,25 @@
+# wasm-rt/Cargo.toml — runtime `jrgrt` dan jembatan builtin `jrgc` sebagai SATU pustaka statis untuk `--emit-wasm`
+# (`wasm32-wasip1`). Di native keduanya dua pustaka (jembatan dinamis); wasm tidak punya pustaka dinamis.
+[package]
+name = "jrg_wasm_rt"
+version = "0.6.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "jrgwasmrt"
+crate-type = ["staticlib"]
+# Akarnya runtime itu sendiri; jembatan ikut sebagai modulnya (`cfg(jrg_gabung)` di `runtime/src/lib.rs`).
+path = "../runtime/src/lib.rs"
+
+[dependencies]
+jrgc = { path = "..", default-features = false }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(jrg_gabung)'] }
+
+[profile.release]
+opt-level = 2
+lto = "thin"
+codegen-units = 16
+panic = "abort"

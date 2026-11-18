@@ -663,14 +663,25 @@ impl Codegen {
             }
             // Nilai bertag: panjangnya dibaca menurut tagnya; yang tak berpanjang gagal saat jalan.
             JrgType::Any => {
-                use super::codegen_any::{TAG_DICT, TAG_SLICE, TAG_STR};
+                use super::codegen_any::{TAG_BURAM, TAG_DICT, TAG_SLICE, TAG_STR};
                 let tag = self.tag_any(v);
                 let hasil = self.alloca_raw("lenany.", "i64", Some(8));
                 let (l_str, l_agr, l_tolak, l_gab) = (self.fresh_label("lenany.str."),
                     self.fresh_label("lenany.agr."), self.fresh_label("lenany.tolak."), self.fresh_label("lenany.gab."));
+                let l_bur = self.fresh_label("lenany.bur.");
                 self.terminate(format!(
-                    "switch i32 {}, label %{} [ i32 {}, label %{} i32 {}, label %{} i32 {}, label %{} ]",
-                    tag.text, l_tolak, TAG_STR, l_str, TAG_SLICE, l_agr, TAG_DICT, l_agr));
+                    "switch i32 {}, label %{} [ i32 {}, label %{} i32 {}, label %{} i32 {}, label %{} i32 {}, label %{} ]",
+                    tag.text, l_tolak, TAG_STR, l_str, TAG_SLICE, l_agr, TAG_DICT, l_agr, TAG_BURAM, l_bur));
+                // Tipe buram: tuple menjawab jumlah elemennya dari nomor tipenya, yang lain ditolak.
+                self.start_block(l_bur);
+                let (w, _) = self.bagian_buram(v);
+                self.pakai_aritas_buram = true;
+                let (ar, tup, ar64) = (self.fresh("lenanyar."), self.fresh("lenanyt."), self.fresh("lenanyar."));
+                self.emit(format!("{} = call i32 @jrg_buram_aritas(i32 {})", ar, w));
+                self.emit(format!("{} = icmp sge i32 {}, 0", tup, ar));
+                self.emit(format!("{} = sext i32 {} to i64", ar64, ar));
+                self.emit(format!("store i64 {}, ptr {}", ar64, hasil));
+                self.terminate(format!("br i1 {}, label %{}, label %{}", tup, l_gab, l_tolak));
                 self.start_block(l_str);
                 let s = self.buka_any(v, &JrgType::Str, span)?;
                 let n = self.panjang_koleksi(&s, span)?;

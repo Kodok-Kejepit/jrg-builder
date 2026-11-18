@@ -319,3 +319,53 @@ impl<T> Antrean<T> {
         Ok(g)
     }
 }
+
+#[cfg(test)]
+mod uji_penjaga {
+    /// Thread lepas yang tidak menjalankan kode JRG; alasannya di sampingnya.
+    const BUKAN_AKTOR: &[(&str, &str)] = &[
+        ("src/stdlib/regex_inti.rs", "mengompilasi regex di stack besar, menunggu hasilnya"),
+        ("src/stdlib/proses.rs", "pipa stdin/stdout program lain"),
+    ];
+    /// Situs VM yang belum menghitung aktornya; dikerjakan Agus. Entri yang sudah ber-`lahir` membuat tes ini merah.
+    const MENUNGGU_VM: &[&str] = &[
+        "src/vm/tampil.rs", "src/vm/channel.rs", "src/stdlib/future.rs",
+    ];
+
+    fn berkas(dir: &std::path::Path, keluar: &mut Vec<std::path::PathBuf>) {
+        for e in std::fs::read_dir(dir).unwrap().flatten() {
+            let p = e.path();
+            if p.is_dir() { berkas(&p, keluar) } else if p.extension().is_some_and(|x| x == "rs") { keluar.push(p) }
+        }
+    }
+
+    /// Thread lepas yang menjalankan kode JRG wajib `buntu::lahir()` di pembuatnya, atau kebuntuan dituduh palsu.
+    #[test]
+    fn tiap_thread_jrg_dihitung_aktor() {
+        let akar = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut semua = Vec::new();
+        for d in ["src/vm", "src/interpreter", "src/stdlib"] { berkas(&akar.join(d), &mut semua) }
+        let (mut tanpa, mut basi) = (Vec::new(), Vec::new());
+        for p in semua {
+            let rel = p.strip_prefix(akar).unwrap().to_string_lossy().replace('\\', "/");
+            let teks = std::fs::read_to_string(&p).unwrap();
+            let baris: Vec<&str> = teks.lines().collect();
+            let mut ada_lahir = false;
+            for (i, b) in baris.iter().enumerate() {
+                let t = b.trim_start();
+                if t.starts_with("//") || !(t.contains("thread::Builder::new()") || t.contains("thread::spawn(")) {
+                    continue;
+                }
+                let sesudah = baris[i..(i + 4).min(baris.len())].join("\n");
+                if sesudah.contains("spawn_scoped") { continue }
+                let sebelum = baris[i.saturating_sub(15)..i].join("\n");
+                if sebelum.contains("buntu::lahir") { ada_lahir = true; continue }
+                if BUKAN_AKTOR.iter().any(|(f, _)| *f == rel) || MENUNGGU_VM.contains(&rel.as_str()) { continue }
+                tanpa.push(format!("{}:{}", rel, i + 1));
+            }
+            if ada_lahir && MENUNGGU_VM.contains(&rel.as_str()) { basi.push(rel) }
+        }
+        assert!(tanpa.is_empty(), "thread lepas tanpa `buntu::lahir()` di pembuatnya: {:?}", tanpa);
+        assert!(basi.is_empty(), "KABAR BAIK: sudah menghitung aktor, hapus dari MENUNGGU_VM: {:?}", basi);
+    }
+}

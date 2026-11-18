@@ -50,3 +50,5 @@ examples_projects/*/venv/
 __pycache__/
 *.pyc
 /jembatan/target/
+# Pustaka gabungan runtime + jembatan untuk `--emit-wasm` (`wasm-rt/`), dibangun otomatis seperti `jrgrt`.
+/wasm-rt/target/

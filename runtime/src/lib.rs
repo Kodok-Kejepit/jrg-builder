@@ -1,7 +1,9 @@
 // runtime/src/lib.rs — jrgrt — JawaRustGo++ native runtime
 
 // `no_std` for the real (staticlib) build only.
-#![cfg_attr(not(test), no_std)]
+#![cfg_attr(all(not(test), not(jrg_gabung)), no_std)]
+// Pustaka gabungan wasm: alokator bump dan kalimat-kalimatnya tidak dipakai (std yang memegang).
+#![cfg_attr(jrg_gabung, allow(unused, dead_code, unreachable_code))]
 
 extern crate alloc;
 
@@ -361,13 +363,14 @@ unsafe impl GlobalAlloc for BumpAllocator {
     }
 }
 
-#[global_allocator]
+// `jrg_gabung` (`wasm-rt/`): std memegang alokator dan panik di pustaka gabungan wasm.
+#[cfg_attr(not(jrg_gabung), global_allocator)]
 static ALLOCATOR: BumpAllocator = BumpAllocator;
 
 /// Reached only on allocation failure or an internal `unwrap` that JRG
 /// codegen is not supposed to be able to trigger. Prints and exits with
 /// the same code every other JRG panic uses, so behavior stays uniform.
-#[cfg(not(test))]
+#[cfg(all(not(test), not(jrg_gabung)))]
 #[panic_handler]
 fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
     flush_stdout();
@@ -386,7 +389,7 @@ fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
 /// Never actually called: nothing here unwinds (`panic = "abort"`), but
 /// rustc still emits a reference to the personality routine for a
 /// `no_std` staticlib, and the link fails without a definition.
-#[cfg(not(test))]
+#[cfg(all(not(test), not(jrg_gabung)))]
 #[no_mangle]
 pub extern "C" fn rust_eh_personality() {}
 
@@ -2718,3 +2721,9 @@ mod json_llvm {
         }
     }
 }
+
+// Pustaka gabungan wasm (`wasm-rt/`, `jrg_gabung`): jembatan builtin `jrgc` ikut di crate ini, std memegang alokator.
+#[cfg(jrg_gabung)]
+#[path = "../../jembatan/src/lib.rs"]
+#[allow(dead_code, unused_imports, clippy::all)]
+mod jembatan;

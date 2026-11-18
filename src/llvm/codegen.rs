@@ -280,6 +280,7 @@ pub struct Codegen {
     pub(crate) sebaris_sekali: Option<String>,
     pub(crate) pakai_jemb_buram: bool,
     pub(crate) pakai_sama_buram: bool,
+    pub(crate) pakai_aritas_buram: bool,
 
     /// Slot kapasitas tiap variabel yang pernah ditumbuhkan di tempat: slot variabel -> slot
     /// `{ pemilik, kap }`. Lihat `codegen_tumbuh.rs`.
@@ -446,6 +447,7 @@ impl Codegen {
             sebaris_sekali: None,
             pakai_jemb_buram: false,
             pakai_sama_buram: false,
+            pakai_aritas_buram: false,
             kap_tumbuh: HashMap::new(),
             opsi_tertunda: Default::default(),
             struct_instans: HashMap::new(),
@@ -1173,6 +1175,9 @@ impl Codegen {
         }
         if self.pakai_sama_buram {
             out.push_str(&self.definisi_sama_buram());
+        }
+        if self.pakai_sama_buram || self.pakai_aritas_buram {
+            out.push_str(&self.definisi_aritas_buram());
         }
         if self.pakai_jemb_buram {
             out.push_str(&self.definisi_buram_jembatan());
