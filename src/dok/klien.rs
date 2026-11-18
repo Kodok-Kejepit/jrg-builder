@@ -116,7 +116,14 @@ pub fn alamat_internal(ip: IpAddr) -> Option<&'static str> {
             if a.is_unspecified() { return Some("tak bertentu (::)"); }
             if s[..6] == [0; 6] { return internal_v4(v4(s[6], s[7])); }
             if s[0] == 0x64 && s[1] == 0xff9b && s[2..6] == [0; 4] { return internal_v4(v4(s[6], s[7])); }
+            // SIIT `::ffff:0:a.b.c.d` (RFC 6145) juga membawa IPv4 di 32 bit terakhir.
+            if s[..4] == [0; 4] && s[4] == 0xffff && s[5] == 0 { return internal_v4(v4(s[6], s[7])); }
             if s[0] == 0x2002 { return internal_v4(v4(s[1], s[2])); }
+            // NAT64 lokal (RFC 8215): letak IPv4-nya menurut panjang awalan pilihan operator, jadi seluruhnya ditolak.
+            if s[0] == 0x64 && s[1] == 0xff9b && s[2] == 1 { return Some("NAT64 lokal (64:ff9b:1::/48)"); }
+            if s[0] == 0x2001 && s[1] == 0 { return Some("Teredo (2001::/32)"); }
+            if s[0] == 0x2001 && s[1] == 0xdb8 { return Some("dokumentasi IPv6 (2001:db8::/32)"); }
+            if s[0] == 0x100 && s[1..4] == [0; 3] { return Some("discard IPv6 (100::/64)"); }
             if s[0] & 0xfe00 == 0xfc00 { return Some("privat IPv6 (fc00::/7)"); }
             if s[0] & 0xffc0 == 0xfe80 { return Some("link-local IPv6 (fe80::/10)"); }
             if s[0] & 0xffc0 == 0xfec0 { return Some("site-local IPv6 (fec0::/10)"); }
@@ -428,10 +435,11 @@ mod tes {
     fn alamat_internal_dikenali_dalam_tiap_bungkusnya() {
         for ip in ["127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.1.1", "169.254.169.254", "0.0.0.0", "100.64.0.1",
                    "224.0.0.1", "255.255.255.255", "::1", "::", "::ffff:127.0.0.1", "::ffff:169.254.169.254",
-                   "::127.0.0.1", "64:ff9b::a9fe:a9fe", "2002:7f00:1::", "fd00::1", "fe80::1", "ff02::1"] {
+                   "::127.0.0.1", "64:ff9b::a9fe:a9fe", "2002:7f00:1::", "fd00::1", "fe80::1", "ff02::1",
+                   "::ffff:0:7f00:1", "64:ff9b:1::a9fe:a9fe", "2001:0:4136:e378:8000:63bf:80ff:fffe", "2001:db8::1", "100::1"] {
             assert!(alamat_internal(ip.parse().unwrap()).is_some(), "{} harus internal", ip);
         }
-        for ip in ["8.8.8.8", "1.1.1.1", "172.32.0.1", "100.128.0.1", "2606:4700::1111", "::ffff:8.8.8.8"] {
+        for ip in ["8.8.8.8", "1.1.1.1", "172.32.0.1", "100.128.0.1", "2606:4700::1111", "::ffff:8.8.8.8", "2001:4860::8888"] {
             assert!(alamat_internal(ip.parse().unwrap()).is_none(), "{} harus publik", ip);
         }
     }
