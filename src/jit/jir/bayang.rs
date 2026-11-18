@@ -75,12 +75,16 @@ pub(super) fn dibaca(i: &Inst) -> Option<Vec<usize>> {
 }
 
 impl Pembangun<'_> {
-    pub(super) fn tag_varian(&mut self, nama: &'static NamaVarian, payload: Option<usize>, konst: usize) -> Option<u32> {
-        let i = match self.varian.iter().position(|(n, p)| std::ptr::eq(*n, nama) && *p == payload) {
+    /// Penanda varian `nama` berpayload `payload` dengan slot pecahan `apung`: varian yang sama dengan jenis isi lain
+    /// mendapat penanda lain, jadi jenis tiap isi selalu milik penandanya (`TabelVarian`).
+    pub(super) fn tag_varian(&mut self, nama: &'static NamaVarian, payload: Option<usize>, konst: usize, apung: u64) -> Option<u32> {
+        let tabel = self.tabel;
+        let i = match self.varian.iter().enumerate().position(|(k, (n, p))| std::ptr::eq(*n, nama) && *p == payload
+            && tabel.0.read().unwrap_or_else(|e| e.into_inner())[k].3 == apung) {
             Some(i) => i,
             None => {
                 self.varian.push((nama, payload));
-                self.tabel.0.write().unwrap_or_else(|p| p.into_inner()).push((nama, payload, konst));
+                self.tabel.0.write().unwrap_or_else(|p| p.into_inner()).push((nama, payload, konst, apung));
                 self.varian.len() - 1
             }
         };
@@ -92,7 +96,8 @@ impl Pembangun<'_> {
     pub(super) fn lahir_varian(&mut self, b: Blok, pos: usize, nama: &'static NamaVarian, payload: Option<usize>,
         muatan: Vec<(Jenis, Nilai)>, konst: usize, basi: bool) -> bool {
         if !self.bayang_aktif { return false; }
-        let Some(i) = self.tag_varian(nama, payload, konst) else { return false };
+        let apung = muatan.iter().enumerate().filter(|(_, m)| m.0 == Jenis::Pecahan).fold(0u64, |a, (k, _)| a | 1 << k);
+        let Some(i) = self.tag_varian(nama, payload, konst, apung) else { return false };
         let tag = self.konst_i(b, i as i64);
         let bit = 1u64 << i;
         let x = Bayang { tag, mungkin: bit, muatan: muatan.into_iter().map(|(j, v)| (j, v, bit)).collect(), basi: 0 };
@@ -133,9 +138,9 @@ impl Pembangun<'_> {
     pub(super) fn lengkap(&self, x: &Bayang) -> u64 {
         let t = self.tabel.0.read().unwrap_or_else(|p| p.into_inner());
         (0..64).filter(|i| x.mungkin >> i & 1 == 1).filter(|&i| match t[i] {
-            (_, _, k) if k != 0 => true,
-            (_, None, _) => true,
-            (_, Some(n), _) => x.muatan.len() >= n && x.muatan[..n].iter().all(|m| m.2 >> i & 1 == 1),
+            (_, _, k, _) if k != 0 => true,
+            (_, None, _, _) => true,
+            (_, Some(n), _, _) => x.muatan.len() >= n && x.muatan[..n].iter().all(|m| m.2 >> i & 1 == 1),
         }).fold(0, |m, i| m | 1 << i)
     }
 
@@ -143,7 +148,7 @@ impl Pembangun<'_> {
         Maya {
             pos, tag: x.tag, muatan: x.muatan.iter().map(|m| m.1).collect(), basi: x.basi,
             pecahan: x.muatan.iter().enumerate().filter(|(_, m)| m.0 == Jenis::Pecahan).fold(0, |a, (k, _)| a | 1 << k),
-            tabel: self.tabel as *const _ as i64,
+            tabel: self.tabel as *const _ as i64, tuple: false,
         }
     }
 
@@ -266,7 +271,7 @@ impl Pembangun<'_> {
             let e = potret.iter().find(|(p, _)| p == pos).map(|x| x.1.clone()).filter(|e| {
                 e.mungkin & !pb.mungkin == 0 && pb.muatan.iter().enumerate().all(|(k, (j, _, sah))| {
                     let perlu = e.mungkin & sah;
-                    perlu == 0 || e.muatan.get(k).is_some_and(|(je, _, se)| je == j && perlu & !se == 0)
+                    perlu == 0 || e.muatan.get(k).is_some_and(|(je, _, se)| (je == j || *j == Jenis::Nilai) && perlu & !se == 0)
                 })
             })?;
             // Varian yang tujuannya anggap sudah di stack VM: ditulis di asal tepinya.
@@ -277,7 +282,17 @@ impl Pembangun<'_> {
             }
             args.push(e.tag);
             for (k, (j, _, _)) in pb.muatan.iter().enumerate() {
-                let v = match e.muatan.get(k) { Some((je, v, _)) if je == j => *v, _ => self.isi_nol(asal, *j) };
+                let v = match e.muatan.get(k) {
+                    Some((je, v, _)) if je == j => *v,
+                    // Ke slot bit campur: pecahan dibawa bitnya, bulat apa adanya.
+                    Some((Jenis::Pecahan, v, _)) if *j == Jenis::Nilai => {
+                        let h = self.j.nilai_baru(Tipe::I);
+                        self.j.blok[asal.0 as usize].inst.push(Inst::Unar { hasil: h, op: super::Unar::BitF, a: *v, jaga: None });
+                        h
+                    }
+                    Some((_, v, _)) if *j == Jenis::Nilai => *v,
+                    _ => self.isi_nol(asal, *j),
+                };
                 args.push(v);
             }
         }
@@ -313,8 +328,9 @@ impl Pembangun<'_> {
             let lebar = semua.iter().map(|e| e.muatan.len()).max().unwrap_or(0);
             let mut muatan = Vec::new();
             for k in 0..lebar {
-                let j = semua.iter().find_map(|e| e.muatan.get(k).map(|x| x.0)).expect("lebar dari salah satunya");
-                if semua.iter().any(|e| e.muatan.get(k).is_some_and(|x| x.0 != j)) { break; }
+                let j0 = semua.iter().find_map(|e| e.muatan.get(k).map(|x| x.0)).expect("lebar dari salah satunya");
+                // Jenis bercampur antar-tepi: slotnya dibawa sebagai bit (`Nilai`), jenisnya milik penanda (tabel).
+                let j = if semua.iter().any(|e| e.muatan.get(k).is_some_and(|x| x.0 != j0)) { Jenis::Nilai } else { j0 };
                 let ada = semua.iter().fold(0, |m, e| m | e.muatan.get(k).map_or(0, |x| x.2));
                 let hilang = semua.iter().fold(0, |m, e| m | (e.mungkin & !e.muatan.get(k).map_or(0, |x| x.2)));
                 let v = self.j.nilai_baru(if j == Jenis::Pecahan { Tipe::F } else { Tipe::I });
@@ -380,16 +396,27 @@ impl Pembangun<'_> {
         Some(self.lipat_tag(keluar, x, |t| lengan[&t] == urutan))
     }
 
+    /// `pola_lokal` (situs `SitusPola` di alamat `situs`) atas posisi berbayangan `x`: 0/1, kalau tiap varian yang
+    /// mungkin terjawab tanpa galat saat kompilasi.
+    pub(super) fn lipat_pola(&mut self, keluar: &mut Vec<Inst>, x: &Bayang, situs: i64) -> Option<Nilai> {
+        let situs = unsafe { &*(situs as *const crate::jit::lambat::SitusPola) };
+        let mut cocok = 0u64;
+        for t in (0..64u32).filter(|t| x.mungkin >> t & 1 == 1) {
+            let (nama, payload) = *self.varian.get(t as usize)?;
+            if situs.cocok_statis(nama, payload).ok()? { cocok |= 1 << t; }
+        }
+        Some(self.lipat_tag(keluar, x, |t| cocok >> t & 1 == 1))
+    }
+
     /// `payload_angka_lokal` atas posisi berbayangan `x` dengan spekulasi `j`: (status 0/1 seperti pembantunya —
     /// 1 = bukan varian yang payload-nya isi ini, deopt — dan isinya).
     pub(super) fn lipat_payload(&mut self, keluar: &mut Vec<Inst>, x: &Bayang, j: Jenis) -> Option<(Nilai, Nilai)> {
         let (jm, v, sah) = *x.muatan.first()?;
-        if jm != j { return None; }
         let satu: u64 = (0..self.varian.len().min(64)).filter(|t| self.varian[*t].1 == Some(1)).fold(0, |m, t| m | 1 << t);
-        let baik = sah & satu & x.mungkin;
-        if baik == 0 { return None; }
+        let baik = sah & satu & x.mungkin & self.slot_berjenis(0, j);
+        if baik == 0 || !(jm == j || jm == Jenis::Nilai) { return None; }
         let st = self.lipat_tag(keluar, x, |t| baik >> t & 1 == 0);
-        Some((st, v))
+        Some((st, self.dari_slot(keluar, jm, j, v)))
     }
 
     /// `PayloadJenisSama` (nama jenis di alamat `nama`) atau `PayloadPanjang` (`nama` = `None`) atas posisi berbayangan
@@ -405,9 +432,10 @@ impl Pembangun<'_> {
             let (_, payload) = *self.varian.get(t as usize)?;
             let jenis = match payload {
                 None => None,
+                // Jenis isi milik penandanya (tabel), juga untuk slot bit campur.
                 Some(1) => match x.muatan.first() {
-                    Some((j, _, sah)) if sah >> t & 1 == 1 =>
-                        Some(if *j == Jenis::Pecahan { VmValue::Float(0.0).type_name() } else { VmValue::Int(0).type_name() }),
+                    Some((_, _, sah)) if sah >> t & 1 == 1 => Some(if self.slot_berjenis(0, Jenis::Pecahan) >> t & 1 == 1 {
+                        VmValue::Float(0.0).type_name() } else { VmValue::Int(0).type_name() }),
                     _ => return None,
                 },
                 Some(_) => Some(VmValue::tuple(Vec::new()).type_name()),
@@ -440,4 +468,97 @@ impl Pembangun<'_> {
 
     /// Kumpulan instruksi ke blok `b` lewat `dorong` (supaya jejak bayangan dan CSE ikut).
     pub(super) fn dorong_semua(&mut self, b: Blok, xs: Vec<Inst>) { for i in xs { self.dorong(b, i); } }
+}
+
+/// Jaga milik instruksi `i` (keadaan deopt-nya), untuk ditambah tuple maya (langkah 105).
+pub(super) fn jaga_inst(i: &mut Inst) -> Vec<&mut super::Jaga> {
+    match i {
+        Inst::Biner { jaga, .. } | Inst::Unar { jaga, .. } => jaga.iter_mut().collect(),
+        Inst::BinerL { jaga, jaga_muat, .. } => jaga.iter_mut().chain(jaga_muat.iter_mut()).collect(),
+        Inst::Sempit { jaga, .. } | Inst::JagaJika { jaga, .. } | Inst::Buka { jaga, .. } | Inst::BukaLebar { jaga, .. }
+        | Inst::MuatUpval { jaga, .. } | Inst::SimpanUpval { jaga, .. } | Inst::Sebar { jaga, .. }
+        | Inst::Rantai { jaga, .. } | Inst::Rumus { jaga, .. } | Inst::CekMetode { jaga, .. }
+        | Inst::IterAda { jaga, .. } | Inst::Maju { jaga, .. } | Inst::Panjang { jaga, .. } => vec![jaga],
+        Inst::Pembantu { gagal, .. } => gagal.iter_mut().map(|(_, j)| j).collect(),
+        Inst::Langsung { hasil, .. } => hasil.iter_mut().map(|(_, _, j)| j).collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// Blok callee yang membutuhkan tuple maya `ke` dari `PayloadLokal` di blok `bi`: blok terjangkau yang didominasi
+/// `bi` dan punya keadaan deopt dengan `ke` milik VM. `None` = lipatan tidak aman: `ke` dibaca atau ditulis di blok
+/// terjangkau mana pun, atau hidup di keadaan blok terjangkau yang juga dicapai jalur lain.
+pub(super) fn tuple_tak_bocor(c: &super::Fungsi, bi: usize, ke: usize) -> Option<Vec<usize>> {
+    let n = c.blok.len();
+    let penerus = |b: usize| -> Vec<usize> {
+        match &c.blok[b].akhir {
+            Some(Akhir::Lompat { ke, .. }) => vec![ke.0 as usize],
+            Some(Akhir::Cabang { ya, tidak, .. }) => vec![ya.0 as usize, tidak.0 as usize],
+            _ => Vec::new(),
+        }
+    };
+    let mut pend = vec![Vec::new(); n];
+    for b in 0..n { for p in penerus(b) { if p < n { pend[p].push(b); } } }
+    // Terjangkau dari `bi`, lalu yang didominasi `bi`: semua pendahulunya didominasi (titik tetap, dari `bi`).
+    let (mut capai, mut tumpuk) = (vec![false; n], penerus(bi));
+    while let Some(b) = tumpuk.pop() {
+        if b >= n || capai[b] { continue; }
+        capai[b] = true;
+        tumpuk.extend(penerus(b));
+    }
+    let mut dom = vec![false; n];
+    dom[bi] = true;
+    let mut ubah = true;
+    while ubah {
+        ubah = false;
+        for b in 0..n {
+            if !dom[b] && capai[b] && !pend[b].is_empty() && pend[b].iter().all(|p| dom[*p]) { dom[b] = true; ubah = true; }
+        }
+    }
+    let hidup = |k: &super::Keadaan| k.isi.len() > ke && k.isi[ke].is_none();
+    let mut butuh = Vec::new();
+    for b in (0..n).filter(|b| capai[*b] && *b != bi) {
+        let mut ada = false;
+        for i in &c.blok[b].inst {
+            if dibaca(i).is_none_or(|d| d.contains(&ke)) || ditulis(i).is_none_or(|d| d.contains(&ke)) { return None; }
+            if jaga_inst(&mut i.clone()).iter().any(|j| hidup(&j.keadaan)) { ada = true; }
+        }
+        match &c.blok[b].akhir {
+            Some(Akhir::Keluar { keadaan }) if hidup(keadaan) => ada = true,
+            Some(Akhir::KembaliNilai { pos }) if *pos == ke => return None,
+            _ => {}
+        }
+        if ada { if dom[b] { butuh.push(b); } else { return None; } }
+    }
+    Some(butuh)
+}
+
+impl Pembangun<'_> {
+    /// Bit varian yang payload tuple-nya (dua isi atau lebih) seluruhnya ada di bayangan `x`.
+    pub(super) fn tuple_baik(&self, x: &Bayang) -> u64 {
+        let t = self.tabel.0.read().unwrap_or_else(|p| p.into_inner());
+        (0..64).filter(|i| x.mungkin >> i & 1 == 1).filter(|&i| match t[i] {
+            (_, Some(n), 0, _) if n >= 2 => x.muatan.len() >= n && x.muatan[..n].iter().all(|m| m.2 >> i & 1 == 1),
+            _ => false,
+        }).fold(0, |m, i| m | 1 << i)
+    }
+
+    /// Bit penanda yang slot `k`-nya berjenis `j` (`Bulat`/`Pecahan`), menurut tabel.
+    pub(super) fn slot_berjenis(&self, k: usize, j: Jenis) -> u64 {
+        let t = self.tabel.0.read().unwrap_or_else(|p| p.into_inner());
+        t.iter().enumerate().take(64).filter(|(_, e)| (e.3 >> k & 1 == 1) == (j == Jenis::Pecahan)).fold(0, |m, (i, _)| m | 1 << i)
+    }
+
+    /// Isi slot berjenis `jm` (`Nilai` = bit campur) sebagai `j`.
+    pub(super) fn dari_slot(&mut self, keluar: &mut Vec<Inst>, jm: Jenis, j: Jenis, v: Nilai) -> Nilai {
+        if jm != Jenis::Nilai || j != Jenis::Pecahan { return v; }
+        let h = self.j.nilai_baru(Tipe::F);
+        keluar.push(Inst::Unar { hasil: h, op: super::Unar::DariBit, a: v, jaga: None });
+        h
+    }
+
+    /// Jumlah isi payload varian `t` (tabel).
+    pub(super) fn jumlah_payload(&self, t: u32) -> usize {
+        self.tabel.0.read().unwrap_or_else(|p| p.into_inner()).get(t as usize).and_then(|e| e.1).unwrap_or(0)
+    }
 }

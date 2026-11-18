@@ -3162,8 +3162,6 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
      "`{}` is read before it is assigned — `var {}: {}` was written without an initial value, and `{}` has no clear zero value; assign it first (`{} = ..`) before using it, or give the declaration an initial value"),
     ("kebuntuan: semua goroutine sedang menunggu channel atau kunci dan tidak ada yang bisa melanjutkan",
      "deadlock: every goroutine is waiting on a channel or a lock and none can proceed"),
-    ("catatan: interpreter melaporkannya juga; di `--vm` program ini masih menggantung selamanya",
-     "note: the interpreter reports it too; under `--vm` this program still hangs forever"),
     ("method `{}` butuh fungsi sebagai argumen ke-{}, dapat `{}`",
      "method `{}` needs a function as argument {}, got `{}`"),
     ("`?` pada Option butuh fungsi ini mengembalikan `Option<..>` juga",

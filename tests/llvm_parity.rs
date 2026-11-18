@@ -966,7 +966,7 @@ pub fn main() {
 
 /// `(nama, program, kata-kunci-interpreter, kata-kunci-llvm)`
 const DITOLAK_INTERP_DAN_LLVM: &[(&str, &str, &str, &str)] = &[
-    // 2026-11-18: kebuntuan dilaporkan interpreter juga (`antrean::buntu`); `--vm` masih menggantung (Agus).
+    // 2026-11-18: kebuntuan dilaporkan interpreter dan `--vm` juga (`antrean::buntu`).
     ("kebuntuan: main menerima dari channel tanpa pengirim", "package main\npub fn main() { let c = make_chan(int)\n wok(<-c) }",
      "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
     ("kebuntuan: main dan goroutine saling menunggu", "package main\npub fn main() { let a = make_chan(int)\n let b = make_chan(int)\n spawn { <-a\n b <- 1 }\n <-b\n a <- 1 }",

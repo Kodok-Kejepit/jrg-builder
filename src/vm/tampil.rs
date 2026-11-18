@@ -508,10 +508,13 @@ impl Vm {
         let ch_kirim = ch.clone();
         let label = tipe.to_string();
 
+        // Badan tugas aktor kebuntuan (`antrean::buntu`), dihitung SEBELUM utasnya lahir.
+        let aktor = crate::antrean::buntu::lahir();
         let hasil = std::thread::Builder::new()
             .name("jrg-tugas".to_string())
             .stack_size(crate::interpreter::Interpreter::INTERPRETER_STACK_SIZE)
             .spawn(move || {
+                let _aktor = aktor;
                 crate::interpreter::catat_puncak_stack();
                 let mut vm = crate::vm::vm::Vm::new();
                 // Global pemanggil disalin, BUKAN dibagi: `VmValue` agregat sudah berupa

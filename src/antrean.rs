@@ -328,9 +328,7 @@ mod uji_penjaga {
         ("src/stdlib/proses.rs", "pipa stdin/stdout program lain"),
     ];
     /// Situs VM yang belum menghitung aktornya; dikerjakan Agus. Entri yang sudah ber-`lahir` membuat tes ini merah.
-    const MENUNGGU_VM: &[&str] = &[
-        "src/vm/tampil.rs", "src/vm/channel.rs", "src/stdlib/future.rs",
-    ];
+    const MENUNGGU_VM: &[&str] = &[];
 
     fn berkas(dir: &std::path::Path, keluar: &mut Vec<std::path::PathBuf>) {
         for e in std::fs::read_dir(dir).unwrap().flatten() {

@@ -4479,3 +4479,129 @@ fn jir_bayang_varian_sama_dengan_vm() {
     let (dengan, tanpa) = (rantai(""), rantai("mati"));
     assert!(dengan < tanpa, "tidak ada rantai yang dilipat bayangan: {dengan} lawan {tanpa}");
 }
+
+/// JIR-3b langkah 105: payload tuple dibaca per elemen dari bayangan di callee yang disisipkan (`PayloadLokal` +
+/// `Baca` dilipat), tuple-nya diwujudkan cuma saat deopt atau dibaca utuh (`wok`), varian yang lolos ke larik.
+const JIR_TUPLE: &str = r#"enum Bentuk { Kotak(int, int), Garis(int, int, int), Skala(int), Kosong }
+
+fn luas(b: Bentuk, acc: int) -> int {
+    match b {
+        Bentuk::Kotak(p, l) => (acc + p * l) % 1000003,
+        Bentuk::Garis(a, c, d) => {
+            if acc < a { return a }
+            return acc - c + d
+        }
+        Bentuk::Skala(f) => { if f > 1 { return acc + f }
+            return acc }
+        Bentuk::Kosong => acc,
+    }
+}
+
+fn main() {
+    var acc = 0
+    var simpan = []
+    for i in 0..20000 {
+        let s = i % 4
+        var b = Bentuk::Kosong
+        if s == 0 { b = Bentuk::Kotak(i % 7, 3) }
+        else if s == 1 { b = Bentuk::Garis(i % 5, 2, 9) }
+        else if s == 2 { b = Bentuk::Skala(i % 3) }
+        acc = luas(b, acc)
+        if i % 6000 == 1 { simpan = simpan + [b]
+            wok(b) }
+    }
+    wok(acc, simpan)
+    wok(luas(Bentuk::Kotak(170141183460469231731687303715884105727, 2), 1))
+}
+"#;
+
+#[test]
+fn jir_payload_tuple_sama_dengan_vm() {
+    let v = jalankan(JIR_TUPLE, &["--vm"], &[]);
+    assert!(!v.sukses && v.stdout.lines().count() == 5, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..], &[JIR, STRES, ("JRG_JIT_BAYANG", "mati")][..]] {
+        let j = jalankan(JIR_TUPLE, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    let pl = |bayang: &str| jalankan(JIR_TUPLE, &["--jit"], &[JIR, ("JRG_JIT_LOG", "jir"), ("JRG_JIT_BAYANG", bayang)])
+        .stderr.matches("PayloadLokal").count();
+    let (dengan, tanpa) = (pl(""), pl("mati"));
+    assert!(dengan < tanpa, "tidak ada PayloadLokal yang dilipat: {dengan} lawan {tanpa}");
+}
+
+/// JIR-3b: slot payload yang jenisnya bercampur antar-varian (bulat di `Kotak`, pecahan di `Titik`) dibawa sebagai bit
+/// lewat titik temu (`BitF`/`DariBit`, jenis per penanda di `TabelVarian`); pola tunggal (`PolaLokal`) dilipat; lengan
+/// payload tunggal tidak dilipat sebagai tuple (dulu deopt tiap putaran).
+const JIR_CAMPUR: &str = r#"enum B { Kotak(int, int), Titik(float, float), Skala(float), Diam }
+
+fn nilai(b: B, acc: int) -> int {
+    match b {
+        B::Kotak(p, l) => (acc + p * l) % 1000003,
+        B::Titik(x, y) => { if x > y { return acc + 2 }
+            return acc + 1 }
+        B::Skala(f) => { if f > 1.0 { return acc + 3 }
+            return acc }
+        B::Diam => acc,
+    }
+}
+
+fn main() {
+    var acc = 0
+    var simpan = []
+    for i in 0..20000 {
+        let s = i % 4
+        var b = B::Diam
+        if s == 0 { b = B::Kotak(i % 7, 3) }
+        else if s == 1 { b = B::Titik(1.5, 0.25) }
+        else if s == 2 { b = B::Skala(1.25) }
+        acc = nilai(b, acc)
+        if i % 6000 == 1 { simpan = simpan + [b]
+            wok(b) }
+    }
+    wok(acc, simpan)
+}
+"#;
+
+#[test]
+fn jir_payload_campur_sama_dengan_vm() {
+    let v = jalankan(JIR_CAMPUR, &["--vm"], &[]);
+    assert!(v.sukses, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..], &[JIR, ACAK][..]] {
+        let j = jalankan(JIR_CAMPUR, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+    // Tanpa badai deopt: lengan `Skala` (payload tunggal) tidak dijaga sebagai tuple.
+    let r = jalankan(JIR_CAMPUR, &["--jit"], &[JIR, ("JRG_JIT_LOG", "ringkas")]);
+    let deopt: usize = r.stderr.lines().find_map(|l| l.strip_prefix("[jit] deopt: ")).and_then(|n| n.trim().parse().ok()).unwrap_or(0);
+    assert!(deopt < 50, "deopt {deopt} kali:\n{}", r.stderr);
+}
+
+/// A2 (langkah 107): callee berhasil struct milik VM disisipkan. `StrukturUlang` callee (pakai ulang lokal sebentuk)
+/// jadi `Struktur` di salinannya, karena bingkainya bingkai pemanggil: `p` yang masih dibaca tidak boleh ditimpa.
+const JIR_STRUCT_SISIP: &str = r#"package main
+struct P { pub x: f64, pub y: f64 }
+impl P {
+    fn maju(self, d: f64) -> P { return P { x: self.x + d, y: self.y * 1.5 } }
+}
+pub fn main() {
+    var p: P = P { x: 1.0, y: 1.0 }
+    var t: f64 = 0.0
+    for i in 0..3000 {
+        let q = p.maju(0.5)
+        t = t + q.x + p.x
+        if i % 3 == 0 { p = q } else { p = p.maju(0.25) }
+        if p.y > 1000.0 { p = P { x: p.x, y: 1.0 } }
+    }
+    wok(t, p.x, p.y)
+}
+"#;
+
+#[test]
+fn jir_struct_disisipkan_sama_dengan_vm() {
+    let v = jalankan(JIR_STRUCT_SISIP, &["--vm"], &[]);
+    assert!(v.sukses, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..], &[JIR, ACAK][..]] {
+        let j = jalankan(JIR_STRUCT_SISIP, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+}

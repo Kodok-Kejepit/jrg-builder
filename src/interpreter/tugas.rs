@@ -332,6 +332,6 @@ pub fn lewat(batas: Option<std::time::Instant>) -> bool {
 }
 
 /// Galat penerimaan diberi nama pintunya — kecuali kebuntuan, yang milik seluruh program, bukan pintu itu.
-fn sebut_siapa(siapa: &str, e: String) -> String {
+pub(crate) fn sebut_siapa(siapa: &str, e: String) -> String {
     if e == crate::antrean::PESAN_BUNTU { e } else { format!("{}: {}", siapa, e) }
 }

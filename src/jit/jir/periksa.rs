@@ -133,7 +133,8 @@ pub fn periksa(f: &Fungsi) -> Result<(), String> {
                     if let Some(j) = j { jaga(j, &ada)?; }
                     let (masuk, keluar) = match op {
                         Unar::FNeg => (Tipe::F, Tipe::F),
-                        Unar::KeF => (Tipe::I, Tipe::F),
+                        Unar::KeF | Unar::DariBit => (Tipe::I, Tipe::F),
+                        Unar::BitF => (Tipe::F, Tipe::I),
                         Unar::KeL | Unar::KeLU => (Tipe::I, Tipe::L),
                         Unar::BukanBitL => (Tipe::L, Tipe::L),
                         Unar::KeBoolL | Unar::Rendah => (Tipe::L, Tipe::I),

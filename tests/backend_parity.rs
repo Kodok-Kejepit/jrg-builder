@@ -175,6 +175,12 @@ fn konformans_semantik_nilai_jalan_di_dua_backend() {
 
 /// Program yang WAJIB ditolak oleh KEDUA backend, dengan alasan yang sama.
 const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
+    // 2026-11-18 (surat Bayu–Agus): kebuntuan yang terlihat dilaporkan di dua mesin (`antrean::buntu`), seperti LLVM
+    // — dulu menggantung selamanya tanpa pesan.
+    ("kebuntuan: main menerima dari channel tanpa pengirim", "package main\npub fn main() { let c = make_chan(int)\n wok(<-c) }", "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
+    ("kebuntuan: main dan goroutine saling menunggu", "package main\npub fn main() { let a = make_chan(int)\n let b = make_chan(int)\n spawn { <-a\n b <- 1 }\n <-b\n a <- 1 }", "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
+    ("kebuntuan: goroutine buntu sesudah main selesai", "package main\npub fn main() { let c = make_chan(int)\n spawn { <-c }\n wok(\"main selesai\") }", "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
+    ("kebuntuan: menunggu Future yang menunggu channel", "package main\npub fn main() { let c = make_chan(int)\n let f = Future::new(|| <-c)\n wok(future::await(f)) }", "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
     // 2026-11-18 (surat Bayu–Agus): `var x: T` tanpa nilai nol yang dibaca sebelum diisi gagal saat jalan di dua
     // mesin (dulu `nil` diam-diam), juga lewat closure, `var` modul dan sesudah cabang yang tidak mengisinya.
     ("var struct dibaca sebelum diisi", "package main\nstruct D { x: int = 5 }\npub fn main() { var a: D\n wok(a) }", "`a` dibaca sebelum diisi", "`a` dibaca sebelum diisi"),
