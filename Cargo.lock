@@ -563,6 +563,7 @@ dependencies = [
  "cranelift-module",
  "cranelift-native",
  "indexmap",
+ "libc",
  "minifb",
  "smallvec",
  "unicode-xid",
