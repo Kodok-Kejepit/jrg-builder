@@ -6,6 +6,8 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 
 ## [Belum dirilis]
 
+## [0.6.1] — 2026-11-18
+
 ### Memutus
 
 - **Pesan JRG tampil dalam bahasa Inggris secara bawaan** (galat, peringatan, laporan uji, REPL, `jrgm`, `--help`).
@@ -24,6 +26,11 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **`dok::tcp_recv_all` berhenti di 256 MiB** dan menjawab `Err` (dulu menampung sampai memori habis).
 - **Klien `http::` menolak jawaban yang terpotong** (badan lebih pendek dari `Content-Length`) dan `Content-Length`
   yang tidak sah atau berbeda-beda; byte sesudah badan dibuang. HTTPS menuntut paling sedikit TLS 1.2.
+- **`?` tidak lagi mengubah `None` menjadi `Err` (atau sebaliknya) diam-diam.** Di fungsi yang kembalian beranotasi
+  `Result`, `x?` atas `Option` kosong dulu pulang dengan `None` apa adanya; sekarang gagal dengan pesan yang menyebut
+  kedua jenisnya. Tulis `x.ok_or("alasan")?` untuk mengubahnya.
+- **`var x: T` tanpa nilai awal untuk struct, enum atau `Option` gagal kalau dibaca sebelum diisi** (dulu `nil` diam-diam).
+  Jenis yang punya nol jelas (`int`, `float`, `bool`, teks, larik, tuple) tetap berawal dari nolnya.
 
 ### Baru
 
@@ -43,9 +50,24 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   tiap halaman. Halaman mesin menjelaskan mesin kelima (WebAssembly) yang sedang dibuat.
 - **Saluran WhatsApp resmi "JRG — Official Channel"** untuk kabar rilis dan komunitas, ditautkan dari tiap halaman
   situs.
+- **Tiga puluh method baru atas `Option` dan `Result`**, jalan di semua mesin: `unwrap_or_else`, `ok_or`, `ok_or_else`,
+  `filter`, `or`, `or_else`, `and`, `xor`, `map_or`, `map_or_else`, `zip`, `flatten`, `transpose`, `is_some_and`,
+  `is_none_or`, `inspect`, `contains` dan kawan-kawannya.
+- **Kebuntuan dilaporkan, tidak lagi menggantung selamanya.** Kalau semua goroutine menunggu channel dan tidak ada yang
+  bisa maju, programnya berhenti dengan pesan di interpreter, `--vm`, `--jit` dan `--emit-llvm`. Program yang cuma
+  lambat (tidur, kerja lama) tidak dituduh buntu.
+- **Pesan untuk kebiasaan dari bahasa lain**: `elif`, `def`/`function`, `for (;;)` gaya C, `a ? b : c`, `if (x = 5)`,
+  `class`/`interface`, `public`/`private`, `===`/`!==` dan badan bergaya titik dua kini dijawab padanan JRG-nya, dan
+  satu salah tulis tetap satu galat (dulu bisa beruntun sampai lima).
+- **`--emit-llvm`**: potongan tuple dengan batas dari variabel (`t[i:]`), `len()` atas tuple, argumen bernama dan `...`
+  ke nilai fungsi yang baru diketahui saat jalan (`var f = ..`, parameter, `T::m`), dan `json::merge` antara struct
+  dan dict kini jalan; dulu ditolak saat kompilasi.
+- **`--emit-wasm` membawa builtin `jrgc`** (`crypto::`, `re::`, `url::` dan kawan-kawannya) ke WebAssembly.
 
 ### Kinerja
 
+- **`--jit` lebih cepat lagi**: IR milik JRGJIT jadi bawaan, callee yang berhasil disisipkan ke pemanggilnya, dan
+  payload tuple serta struct dilipat tanpa dibangun. Jawabannya tetap sama persis dengan `--vm`.
 - **Biner `--emit-llvm` membebaskan memori sementara tiap putaran loop** yang tidak menyimpan nilainya ke luar putaran
   (teks yang dirakit lalu cuma dibaca): `string_ops` 24 MB → 1,5 MB dan `mixed_report` 7,2 → 1,6 MB, setara C, tanpa
   melambat. Sambil itu `let t = [a]` dan
@@ -66,6 +88,23 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
 - **`--emit-llvm`: `str::join` atas larik bukan teks jalan** seperti `arr::join` (dulu ditolak saat kompilasi).
 - **Berkas statis `dok::serve` dialirkan dari disk**, tidak lagi dimuat utuh per permintaan. Dengan middleware
   `sesudah` berkasnya tetap dimuat, di bawah anggaran 256 MiB (lewat: 503).
+
+### Keamanan
+
+- **`zip::extract` dan `tar::extract` tidak lagi bisa menulis ke luar folder tujuan lewat race tautan simbolik.** Pihak
+  lain yang bisa menulis ke folder tujuan dulu dapat mengganti direktori yang sudah diperiksa menjadi tautan di sela
+  pemeriksaan dan penulisan, lalu isi arsip ditulis mengikuti tautan itu ke luar. Di Linux dan macOS tiap bagian jalur
+  sekarang dibuka relatif ke folder tujuan tanpa mengikuti tautan, jadi tautan yang disisipkan kemudian ditolak.
+- **`--emit-llvm` tidak lagi membocorkan isi memori saat kunci dict campur tipe ditimpa nilai berjenis lain.** Dulu
+  `d["a"]`, `d.a` dan `dict::get` atas kunci yang tadinya angka lalu ditimpa teks atau larik membaca alamat memori atau
+  byte mentah sebagai nilai. Sekarang jenisnya diperiksa: jenis yang sama tetap terbaca, jenis lain gagal dengan pesan
+  yang menyebut jenis sebenarnya.
+- **Anotasi tipe dan pola yang bersarang sangat dalam ditolak, tidak lagi mematikan `jrgc`.** `[][]...int`,
+  `Option<Option<...>>` dan pola `(((...)))` puluhan ribu tingkat dulu menghabiskan stack pengurai; sekarang ditolak di
+  256 tingkat dengan pesan yang sama di semua mesin, seperti ekspresi.
+- **`wasm::muat` menolak berkas `.wasm` rusak dengan pesan**, tidak lagi berhenti mendadak.
+- **`http::hanya_publik(true)` menolak lebih banyak bentuk alamat internal IPv6**: alamat yang membawa IPv4 lewat SIIT
+  (`::ffff:0:a.b.c.d`), NAT64 lokal (`64:ff9b:1::/48`), Teredo (`2001::/32`), `2001:db8::/32` dan `100::/64`.
 
 ## [0.6.0] — 2026-11-16
 

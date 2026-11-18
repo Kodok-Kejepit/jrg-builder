@@ -2,7 +2,7 @@
 # (`wasm32-wasip1`). Di native keduanya dua pustaka (jembatan dinamis); wasm tidak punya pustaka dinamis.
 [package]
 name = "jrg_wasm_rt"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2021"
 publish = false
 

@@ -87,6 +87,7 @@ fn nama_fungsi(w: &[u8]) -> Vec<String> {
             v |= ((b & 0x7f) as u64) << g;
             if b & 0x80 == 0 { return Some(v); }
             g += 7;
+            if g >= 64 { return None; }
         }
     }
     // Jumlah fungsi impor (bagian 2): indeks fungsi di bawahnya milik impor.
@@ -117,7 +118,7 @@ fn nama_fungsi(w: &[u8]) -> Vec<String> {
     let mut n_impor = 0;
     let mut i = 8;
     while i < w.len() {
-        let id = w[i];
+        let Some(&id) = w.get(i) else { break };
         i += 1;
         let Some(n) = leb(w, &mut i) else { break };
         let ujung = i + n as usize;
@@ -128,7 +129,7 @@ fn nama_fungsi(w: &[u8]) -> Vec<String> {
             if w.get(j..j + nl) == Some(b"name") {
                 j += nl;
                 while j < ujung {
-                    let sub = w[j];
+                    let Some(&sub) = w.get(j) else { break };
                     j += 1;
                     let Some(sn) = leb(w, &mut j) else { break };
                     let sujung = j + sn as usize;

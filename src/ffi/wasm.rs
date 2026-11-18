@@ -296,6 +296,8 @@ pub fn baca_modul(b: &[u8]) -> Result<Modul, String> {
                         for _ in 0..ulang { lokal.push(t); }
                     }
                     if sampai > b.len() { return Err("badan fungsi terpotong".to_string()); }
+                    // Deklarasi lokal yang melewati ukuran badannya: dulu `b[r.i..sampai]` panik (AGI-20261118-05).
+                    if r.i > sampai { return Err("deklarasi lokal sebuah fungsi melewati ukuran badannya".to_string()); }
                     let kode = b[r.i..sampai].to_vec();
                     r.i = sampai;
                     m.fungsi.push(Fungsi { tipe: idx_tipe_fungsi[k], lokal, kode });
@@ -1319,6 +1321,14 @@ mod tests {
         assert!(m.panggil_ekspor("f", &[]).err().unwrap().contains("br_table"));
         let pas = modul([leb(1), leb(50_000), vec![0x7e, 0x0b]].concat());
         assert!(Mesin::baru(baca_modul(&pas).unwrap()).unwrap().panggil_ekspor("f", &[]).is_ok());
+    }
+
+    /// AGI-20261118-05: badan berukuran 1 yang deklarasi lokalnya 3 byte dulu membuat `wasm::muat` panik.
+    #[test]
+    fn lokal_melewati_badan_jadi_err_bukan_panik() {
+        let w = [b"\0asm\x01\0\0\0".to_vec(), seksi(1, vec![1, 0x60, 0, 0]), seksi(3, vec![1, 0]),
+            seksi(10, [leb(1), leb(1), vec![1, 0, 0x7f]].concat())].concat();
+        assert!(baca_modul(&w).err().unwrap().contains("deklarasi lokal"));
     }
 
     /// `(loop br 0)` berhenti sesudah `batas_langkah` instruksi, dan batasnya diisi ulang tiap panggilan.

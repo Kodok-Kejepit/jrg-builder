@@ -2494,6 +2494,8 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
      "wasm module version {} is not supported yet (available: 1)"),
     ("panjang seksi melewati akhir berkas",
      "a section's length runs past the end of the file"),
+    ("deklarasi lokal sebuah fungsi melewati ukuran badannya",
+     "a function's local declarations run past the size of its body"),
     ("modul ini mengimpor {} hal ({}) — impor belum didukung. Modul yang butuh impor tidak bisa berjalan tanpa yang diimpornya, dan melewatinya akan menggeser indeks tiap fungsi",
      "this module imports {} things ({}) — imports are not supported yet. A module that needs imports cannot run without them, and skipping them would shift every function's index"),
     ("lebih dari satu memori belum didukung",

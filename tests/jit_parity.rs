@@ -4578,17 +4578,21 @@ fn jir_payload_campur_sama_dengan_vm() {
 
 /// A2 (langkah 107): callee berhasil struct milik VM disisipkan. `StrukturUlang` callee (pakai ulang lokal sebentuk)
 /// jadi `Struktur` di salinannya, karena bingkainya bingkai pemanggil: `p` yang masih dibaca tidak boleh ditimpa.
+/// `baru` (struct dari angka, tanpa argumen struct) yang memicu pakai ulang: `p.maju(..)` sendiri tidak, `p` dibagi dua.
 const JIR_STRUCT_SISIP: &str = r#"package main
 struct P { pub x: f64, pub y: f64 }
 impl P {
     fn maju(self, d: f64) -> P { return P { x: self.x + d, y: self.y * 1.5 } }
 }
+fn baru(x: f64) -> P { return P { x: x, y: 2.0 } }
 pub fn main() {
     var p: P = P { x: 1.0, y: 1.0 }
     var t: f64 = 0.0
     for i in 0..3000 {
         let q = p.maju(0.5)
         t = t + q.x + p.x
+        let r = baru(t * 0.001)
+        t = t + r.x + p.x + q.y
         if i % 3 == 0 { p = q } else { p = p.maju(0.25) }
         if p.y > 1000.0 { p = P { x: p.x, y: 1.0 } }
     }
