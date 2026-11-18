@@ -9893,9 +9893,11 @@ fn bentuk_asing_jadi_satu_galat() {
     let kasus = [
         "pub fn main() {\n    for (var i = 0; i < 3; i += 1) {\n        wok(i)\n    }\n    wok(\"x\")\n}\n",
         "pub fn main() {\n    var x = 2\n    if x == 1 {\n        wok(1)\n    } elif x == 2 {\n        wok(2)\n    }\n}\n",
+        "pub fn main() {\n    var x = 1\n    if (x = 5) {\n        wok(5)\n    } else {\n        wok(0)\n    }\n    wok(x)\n}\n",
     ];
-    for src in kasus {
-        let src = format!("package main\n{}", src);
+    // Mode skrip (tanpa `package`) memulihkan galat lewat jalurnya sendiri.
+    let skrip = ["var x = 1\nif (x = 5) {\n    wok(5)\n} else if x == 2 {\n    wok(2)\n}\nwok(x)\n"];
+    for src in kasus.iter().map(|s| format!("package main\n{}", s)).chain(skrip.iter().map(|s| s.to_string())) {
         let k = jalankan_keluaran_penuh(&src, false);
         let n = k.matches("error[").count();
         assert_eq!(n, 1, "satu salah tulis harus satu galat, dapat {}:\n{}", n, k);

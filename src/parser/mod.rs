@@ -483,6 +483,7 @@ impl Parser {
                 continue;
             }
             let s_lo = self.span_lo();
+            let mulai = self.pos;
             match self.parse_stmt() {
                 Ok(st) => {
                     span_stmt = Some(match span_stmt {
@@ -491,7 +492,12 @@ impl Parser {
                     });
                     stmts.push(st);
                 }
-                Err(e) => { self.errors.push(e); self.synchronize(); }
+                Err(e) => {
+                    self.errors.push(e);
+                    let dalam = self.kurawal_terbuka(mulai);
+                    if dalam > 0 { self.tutup_kurawal(dalam); }
+                    else if !self.lompati_kepala_gagal(mulai) { self.synchronize(); }
+                }
             }
             self.skip_semis();
         }

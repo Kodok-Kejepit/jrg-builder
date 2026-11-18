@@ -43,6 +43,7 @@ impl Parser {
                     // sisa berkas dibaca sebagai isi blok dan satu galat jadi tiga.
                     let dalam = self.kurawal_terbuka(mulai);
                     if dalam > 0 { self.tutup_kurawal(dalam); }
+                    else if self.lompati_kepala_gagal(mulai) {}
                     else if !self.at_exact(&TokenKind::RBrace) { self.synchronize(); }
                 }
             }
@@ -173,6 +174,20 @@ impl Parser {
             }
             self.advance();
         }
+    }
+
+    /// Galat di kepala `if`/`while`/`for`/`match` sebelum badannya dibuka: seluruh bentuknya (juga rantai `else`)
+    /// dilompati, supaya badannya tidak dibaca sebagai pernyataan lepas dan satu salah tulis tetap satu galat.
+    pub(crate) fn lompati_kepala_gagal(&mut self, mulai: usize) -> bool {
+        let Some(t) = self.tokens.get(mulai) else { return false };
+        if !matches!(t.kind, TokenKind::KwIf | TokenKind::KwWhile | TokenKind::KwFor | TokenKind::KwMatch) { return false }
+        if self.pos <= mulai || self.at_exact(&TokenKind::RBrace) { return false }
+        self.lompati_bentuk_berblok();
+        while self.at_exact(&TokenKind::KwElse) {
+            self.advance();
+            self.lompati_bentuk_berblok();
+        }
+        true
     }
 
     pub(crate) fn parse_stmt(&mut self) -> Result<Stmt, ParseError> {
