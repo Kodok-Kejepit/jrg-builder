@@ -38,6 +38,17 @@ impl Parser {
         self.dalam += 1;
         Ok(())
     }
+
+    /// Jalankan `f` satu tingkat sarang lebih dalam, selalu turun lagi sesudahnya (juga saat galat) supaya
+    /// kedalaman tidak bocor antar-saudara. Dipakai di tiap pintu pengurai rekursif: ekspresi, tipe, pola.
+    pub(crate) fn dengan_sarang<T>(
+        &mut self, f: impl FnOnce(&mut Self) -> Result<T, ParseError>,
+    ) -> Result<T, ParseError> {
+        self.masuk_sarang()?;
+        let r = f(self);
+        self.dalam -= 1;
+        r
+    }
 }
 
 pub struct Parser {
