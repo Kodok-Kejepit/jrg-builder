@@ -5,6 +5,7 @@ pub mod mangle;
 pub mod sema;
 pub mod codegen;
 mod codegen_fungsi;
+mod codegen_desk;
 mod codegen_stmt;
 pub mod codegen_expr;
 pub mod codegen_access;
@@ -171,6 +172,7 @@ pub fn generate_ir_dgn_jalur(
 
     cg.enqueue_fn("main", &main_decl, TypeSubst::new(), "main".to_string(), None);
     cg.drain_worklist();
+    cg.rakit_desk();
 
     if !cg.errors.is_empty() {
         let mut errs = cg.errors.clone();

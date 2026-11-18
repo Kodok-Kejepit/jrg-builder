@@ -274,6 +274,11 @@ pub struct Codegen {
     pub(crate) jemb_terpancar: usize,
     /// Adaptor nilai fungsi yang sudah dibuat, per pasangan tipe.
     pub(crate) adaptor_ada: HashMap<String, String>,
+    pub(crate) desk_fn: Vec<super::codegen_desk::DeskFn>,
+    pub(crate) situs_bernama: Vec<super::codegen_desk::SitusBernama>,
+    pub(crate) situs_sebar: Vec<super::codegen_desk::SitusSebar>,
+    pub(crate) pakai_desk: bool,
+    pub(crate) desk_metode: Option<Vec<crate::parser::FnParam>>,
     /// Fungsi bantu per tipe berulang (`tampil.tipe.T`, …) yang sudah diantre.
     pub(crate) bantu_tipe_ada: std::collections::HashSet<String>,
     /// Tipe yang badan fungsi bantunya sedang dibangun: tingkat pertamanya diturunkan sebaris.
@@ -443,6 +448,11 @@ impl Codegen {
             sama_terpancar: 0,
             jemb_terpancar: 0,
             adaptor_ada: HashMap::new(),
+            desk_fn: Vec::new(),
+            situs_bernama: Vec::new(),
+            situs_sebar: Vec::new(),
+            pakai_desk: false,
+            desk_metode: None,
             bantu_tipe_ada: std::collections::HashSet::new(),
             sebaris_sekali: None,
             pakai_jemb_buram: false,

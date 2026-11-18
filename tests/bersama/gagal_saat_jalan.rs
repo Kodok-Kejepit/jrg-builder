@@ -1,6 +1,25 @@
 // Tabel bersama `tests/llvm_parity.rs` dan `tests/jit_parity.rs`; disisipkan lewat `include!`.
 
 const GAGAL_SAAT_JALAN: &[(&str, &str, &str, &str)] = &[
+    // K5: kalimat acuan milik fungsi di balik nilai fungsi, saat jalan.
+    ("argumen bernama asing lewat parameter bernilai fungsi",
+     "package main\nfn pakai(g) { return g(a: 10, b: 2) }\npub fn main() {\n wok(\"mulai\")\n wok(pakai(|x, y| x))\n}",
+     "mulai", "tidak ada parameter bernama `a` — yang ada: x, y"),
+    ("argumen bernama kurang lewat var",
+     "package main\npub fn main() {\n var f = |a, b| a + b\n wok(\"mulai\")\n wok(f(a: 1))\n}",
+     "mulai", "parameter `b` (posisi 2) wajib diisi"),
+    ("spread kurang lewat var",
+     "package main\npub fn main() {\n var f = |a, b| a + b\n var v = [1]\n wok(\"mulai\")\n wok(f(...v))\n}",
+     "mulai", "parameter `b` (posisi 2) wajib diisi"),
+    ("spread kebanyakan lewat parameter",
+     "package main\nfn sebar(g, v) { return g(...v) }\nfn dua(a, b) { return a + b }\npub fn main() {\n wok(\"mulai\")\n wok(sebar(dua, [1, 2, 3]))\n}",
+     "mulai", "3"),
+    ("argumen bernama ke konstruktor sebagai nilai",
+     "package main\nenum E { A(int) }\npub fn main() {\n var f = E::A\n wok(\"mulai\")\n wok(f(x: 1))\n}",
+     "mulai", "`enum_ctor:E::A` tidak menyimpan nama parameternya"),
+    ("spread kurang ke method sebagai nilai",
+     "package main\nstruct T { v: int }\nimpl T { fn m(self, k) { return self.v + k } }\npub fn main() {\n var f = T::m\n var v = [T { v: 1 }]\n wok(\"mulai\")\n wok(f(...v))\n}",
+     "mulai", "fungsi `T::m`: parameter `k` (posisi 2) wajib diisi"),
     // K4: batas tuple dari variabel di luar jangkauan atau terbalik — kalimat acuan, saat jalan.
     ("potong tuple: batas variabel di luar jangkauan", "package main\npub fn main() {\n let t = (1, 2)\n var i = 5\n wok(\"mulai\")\n wok(t[i:])\n}",
      "mulai", "di luar"),

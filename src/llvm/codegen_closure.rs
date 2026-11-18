@@ -85,6 +85,7 @@ impl Codegen {
         // Tipe parameter closure: dari anotasinya, atau dari tipe yang
         // diharapkan di posisi ini (`fn pakai(f: fn(int) -> int)`).
         let nama_tampil = self.closure_bernama.take();
+        let desk_metode = self.desk_metode.take();
         let badan_spawn = std::mem::take(&mut self.spawn_berikut);
         let harap_fn: Option<(Vec<JrgType>, Option<JrgType>)> = match harap {
             Some((ps, r)) if ps.len() == params.len() => Some((ps, r)),
@@ -186,8 +187,13 @@ impl Codegen {
 
         // Closure sintetis untuk `T::m`: tanpa lingkungan, jadi ia tampil dan ber-`typeof` fungsi.
         let env = match nama_tampil {
-            Some(n) => { self.nama_fnval.push((nama_fn.clone(), n)); "null".to_string() }
-            None => env,
+            Some(n) => {
+                // Method sebagai nilai (`T::m`): nama dan parameter deklarasinya, bukan milik closure sintetisnya.
+                if let Some(ps) = &desk_metode { self.catat_desk(&nama_fn, &n, ps); }
+                self.nama_fnval.push((nama_fn.clone(), n));
+                "null".to_string()
+            }
+            None => { self.catat_desk(&nama_fn, "<closure>", params); env }
         };
         let a = self.fresh("clo.");
         self.emit(format!("{} = insertvalue %JrgFn undef, ptr @{}, 0",

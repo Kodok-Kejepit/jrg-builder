@@ -79,6 +79,12 @@ impl Codegen {
                 }
                 let name = segments.get(1).map(|s| s.as_str()).unwrap_or("");
                 if let Some(r) = self.terap_statis(name, args, expected, span) { return r; }
+                if name == "terap_bernama" {
+                    if let Some(r) = self.terap_bernama_dinamis(args, span) { return r; }
+                }
+                if name == "terap" {
+                    if let Some(r) = self.terap_sebar_dinamis(args, span) { return r; }
+                }
                 if let Some(galat) = Self::celah_turunan(name, span) { return Err(galat); }
                 if let Some(g) = Self::aritas_bawaan(name, args.len(), span) { return Err(g); }
                 if let Some(r) = self.try_builtin_call(name, args, expected, span) { return r; }

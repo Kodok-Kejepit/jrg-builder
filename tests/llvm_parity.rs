@@ -951,14 +951,7 @@ pub fn main() {
     // Dict bernilai campur tipe DULU di sini, dengan alasan yang benar: satu
     // buffer pasangan `{ %JrgStr, V }` cuma punya satu `V`, jadi nilai campur …
 
-    // Fase SEBAR-CLOSURE: closure literal yang diikat `let` sudah jalan (`PARITAS_LLVM`); yang fungsinya baru
-    // diketahui saat jalan — `var` yang bisa ditugasi closure lain, parameter — tetap ditolak menyebut gulanya.
-    ("spread di pemanggilan nilai fungsi dari var",
-     "package main\npub fn main() { var tambah = |a, b| a + b\n wok(tambah(...[1, 2])) }",
-     "spread di pemanggilan"),
-    ("argumen bernama ke parameter bernilai fungsi",
-     "package main\nfn pakai(g) { return g(a: 10, b: 2) }\npub fn main() { wok(pakai(|a, b| a / b)) }",
-     "argumen bernama"),
+    // K5 (2026-11-18): spread dan argumen bernama ke nilai fungsi dari `var`/parameter pindah ke `PARITAS_LLVM`.
 
 
     // Fase SINKRON-LLVM: `Atomic` di backend ini 64 bit, dan luapannya ditolak saat jalan.

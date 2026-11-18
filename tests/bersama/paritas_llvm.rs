@@ -31,6 +31,26 @@ pub fn main() {
     wok(len(t[a:b]), len(t[a:a]), len(u[a:]), len(t[b:]))
 }
 "#),
+    // K5 (2026-11-18): nilai fungsi yang baru diketahui saat jalan — urutan argumen bernama dari nama parameter
+    // fungsi DI BALIK nilainya, juga sesudah `var` ditugasi closure lain bernama parameter lain.
+    ("argumen bernama dan spread ke nilai fungsi dari var dan parameter", r#"package main
+fn bagi(a, b) { return a / b }
+fn pakai(g) { return g(a: 10, b: 2) }
+fn sebar(g, v) { return g(...v) }
+pub fn main() {
+    var tambah = |a, b| a + b
+    wok(tambah(...[1, 2]), tambah(b: 5, a: 1))
+    tambah = |b, a| a * 100 + b
+    wok(tambah(a: 1, b: 2), tambah(3, a: 4))
+    wok(pakai(|a, b| a / b), pakai(|b, a| a / b), pakai(bagi))
+    var xs = [7, 3]
+    wok(sebar(bagi, xs), sebar(|x, y| x - y, xs))
+    var m = T::m
+    wok(m(T { v: 1 }, k: 5), m(T { v: 4 }, 2))
+}
+struct T { v: int }
+impl T { fn m(self, k) { return self.v + k } }
+"#),
     // Method `Option`/`Result` dari prelude JRG (`src/opsi.jrg`), dilayani interpreter, `--vm`, `--jit` dan LLVM.
     ("prelude Option: cadangan, ganti, gabung", r#"package main
 fn dua() -> Option<int> { Some(2) }

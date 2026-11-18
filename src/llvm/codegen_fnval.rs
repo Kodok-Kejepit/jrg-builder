@@ -132,8 +132,10 @@ impl Codegen {
         };
         let closure = Expr::Closure { params, is_move: false, ret: None, body: std::sync::Arc::new(badan), span };
         self.closure_bernama = Some(format!("{}::{}", tipe, decl.name));
+        self.desk_metode = Some(decl.params.clone());
         let r = self.codegen_expr(&closure, harap);
         self.closure_bernama = None;
+        self.desk_metode = None;
         r
     }
 
@@ -367,6 +369,7 @@ impl Codegen {
             if !self.nama_fnval.iter().any(|(p, _)| *p == pembungkus) {
                 self.nama_fnval.push((pembungkus.clone(), super::modul::tampil(&decl.name).to_string()));
             }
+            self.catat_desk(&pembungkus, super::modul::tampil(&decl.name), &decl.params);
             if !self.is_fn_emitted_or_queued(&pembungkus) {
                 self.tandai_fn_terpakai(&pembungkus);
                 self.antre_fn(KerjaFn::Bungkus {
