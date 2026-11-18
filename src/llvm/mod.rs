@@ -6,6 +6,7 @@ pub mod sema;
 pub mod codegen;
 mod codegen_fungsi;
 mod codegen_desk;
+mod codegen_gabung;
 mod codegen_stmt;
 pub mod codegen_expr;
 pub mod codegen_access;

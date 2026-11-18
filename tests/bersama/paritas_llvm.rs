@@ -31,6 +31,16 @@ pub fn main() {
     wok(len(t[a:b]), len(t[a:a]), len(u[a:]), len(t[b:]))
 }
 "#),
+    // K6 (2026-11-18): `json::merge` antara struct dan dict yang muat di tata letak struct-nya.
+    ("json::merge struct dan dict", r#"package main
+struct P { pub x: int, pub y: int }
+pub fn main() {
+    let q = json::merge(dict { y: 2 }, P { x: 1, y: 0 })
+    wok(q.y, q, typeof(q))
+    wok(json::merge(P { x: 1, y: 0 }, dict { y: 5 }), json::merge(P { x: 1, y: 0 }, dict { x: 7, y: 5 }))
+    wok(json::merge(P { x: 1, y: 0 }, dict {}))
+}
+"#),
     // K5 (2026-11-18): nilai fungsi yang baru diketahui saat jalan — urutan argumen bernama dari nama parameter
     // fungsi DI BALIK nilainya, juga sesudah `var` ditugasi closure lain bernama parameter lain.
     ("argumen bernama dan spread ke nilai fungsi dari var dan parameter", r#"package main

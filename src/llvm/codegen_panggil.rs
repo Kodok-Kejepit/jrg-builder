@@ -318,6 +318,7 @@ impl Codegen {
                         _ => None,
                     };
                     if let Some(n) = n {
+                        if let Some(r) = self.gabung_json_struct(args, span) { return r; }
                         return Err(crate::llvm::galat::tandai(span, format!(
                             "`json::merge` atas struct `{0}` belum bisa di backend LLVM: hasilnya struct `{0}` yang bisa \
                              membawa field tambahan, dan tata letak struct di sini tetap — ubah dulu jadi dict, \

@@ -844,11 +844,13 @@ const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
     ("larik fungsi bawaan berbeda tipe hasil",
      "package main\npub fn main() {\n let hs = [len, typeof]\n wok(hs[0](\"abc\"))\n}",
      "`fn(nilai bertag) -> string` sebagai `fn(nilai bertag) -> int`"),
-    // Fase AMAN-43: acuan menjawab struct ber-field tambahan; dulu kalimat pertamanya "tipe `unit`
-    // tidak punya method `y`" dan kalimat yang benar menunjuk `<lapis>`, bukan panggilan pemakai.
-    ("json::merge atas struct ditolak di situs panggil",
-     "package main\nstruct P { pub x: int, pub y: int }\npub fn main() { let q = json::merge(dict { y: 2 }, P { x: 1, y: 0 })\n wok(q.y) }",
-     "`json::merge` atas struct `P` belum bisa di backend LLVM"),
+    // `json::merge` struct+dict yang tidak muat di tata letak struct-nya (acuan: struct berfield tambahan/berjenis lain).
+    ("json::merge membawa kunci yang bukan field",
+     "package main\nstruct P { pub x: int, pub y: int }\npub fn main() { wok(json::merge(dict { z: 2 }, P { x: 1, y: 0 })) }",
+     "dict-nya membawa kunci yang bukan field struct `P` (field-nya: x, y)"),
+    ("json::merge mengganti jenis field",
+     "package main\nstruct P { pub x: int, pub y: int }\npub fn main() { wok(json::merge(P { x: 1, y: 0 }, dict { y: \"t\" })) }",
+     "kunci `y` di dict bernilai `string`, sedangkan field `P.y` bertipe `int`"),
     // Fase POTONG-BERTAG (#848): tipe elemennya tidak diketahui dari tag; dulu ditolak saat kompilasi.
     ("potong: array di dalam nilai bertag",
      "package main\npub fn main() { let v = len(env::args()) > 99 $ 5 : [1, 2, 3]\n wok(v[0:2]) }",
