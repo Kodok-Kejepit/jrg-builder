@@ -3458,6 +3458,10 @@ pub fn main() {
      "package main\npub fn main() { let d = {\"nama\": \"budi\", \"umur\": 17}\n wok(d[\"nama\"], d[\"umur\"], dict::len(d)) }"),
     ("any: dict campur lewat .kunci",
      "package main\npub fn main() { let d = {nama: \"siti\", umur: 20}\n wok(d[\"nama\"], d.umur) }"),
+    // AGI-20261118-02: kunci dict campur ditimpa nilai bertipe SAMA — dibaca lewat indeks, field, dan `dict::get`
+    // tetap benar (jalur `buka_terperiksa`, tag cocok). Yang ditimpa tipe LAIN ada di `BELUM_DIDUKUNG_LLVM`.
+    ("any: dict campur, kunci ditimpa tipe sama, baca tiga pintu",
+     "package main\npub fn main() { var d = {\"a\": 1, \"b\": \"teks\"}\n d[\"a\"] = 99\n d[\"b\"] = \"ganti\"\n wok(d[\"a\"], d[\"b\"], d.a, dict::get(d, \"a\")) }"),
     ("any: dict campur bersarang",
      "package main\npub fn main() { let b = {\"angka\": [1, 2], \"dalam\": {\"k\": \"v\"}}\n wok(b[\"angka\"][1], b[\"dalam\"][\"k\"]) }"),
     ("any: dict campur dengan nil",

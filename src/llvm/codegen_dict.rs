@@ -534,8 +534,13 @@ impl Codegen {
         let vp = self.fresh("dgv.");
         self.emit(format!("{} = getelementptr {}, ptr {}, i32 0, i32 1", vp, pty, s));
         let v = self.load_place(&vp, &vty);
+        // Tipe kunci DictCampur cuma petunjuk; nilai yang ditimpa tipe lain diperiksa tagnya, bukan dibuka buta
+        // (AGI-20261118-02) — beda = gagal keras bernama tipe asli, bukan pointer mentah dibaca sebagai skalar.
         let v = match &vbaca {
-            Some(t) => self.buka_any(&v, t, span)?,
+            Some(t) => match self.buka_terperiksa(&v, t) {
+                Some(v) => v,
+                None => self.buka_any(&v, t, span)?,
+            },
             None => v,
         };
         let vsome = layout.variant("Some").cloned()

@@ -1079,8 +1079,14 @@ impl Codegen {
                 | Expr::Literal(crate::parser::LitKind::RawStr(t), _) => Some(t.clone()),
                 _ => None,
             };
+            // Tipe statis kunci cuma PETUNJUK: `d["a"] = <tipe lain>` menimpa nilainya dengan kotak bertag lain
+            // tanpa mengubah tipe variabel. Membuka skalar tanpa memeriksa tag membocorkan pointer/byte mentah
+            // (AGI-20261118-02), jadi lewat `buka_terperiksa` — cocok = nilainya, beda = gagal keras bernama tipe asli.
             return match tertulis.and_then(|t| tabel.iter().find(|(n, _)| *n == t).cloned()) {
-                Some((_, ty)) => self.buka_any(&hasil, &ty, span),
+                Some((_, ty)) => match self.buka_terperiksa(&hasil, &ty) {
+                    Some(v) => Ok(v),
+                    None => self.buka_any(&hasil, &ty, span),
+                },
                 None => Ok(hasil),
             };
         }
