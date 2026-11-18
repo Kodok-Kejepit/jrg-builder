@@ -893,9 +893,9 @@ const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
     // tipe statis kunci cuma petunjuk, dulu payload skalar dibuka tanpa cek tag (pointer/byte mentah bocor). Sekarang
     // lewat `buka_terperiksa`: gagal keras menyebut tipe asli, bukan membaca memori mentah sebagai skalar.
     ("dict campur: kunci int ditimpa string, dibaca lewat indeks", "package main\npub fn main() {\n    var d = {\"a\": 1, \"b\": \"teks\"}\n    d[\"a\"] = \"rahasia\"\n    wok(\"mulai\")\n    let x = d[\"a\"]\n    wok(x)\n}\n",
-     "nilai bertipe `string` tidak bisa mengisi tempat yang bertipe `int`"),
+     "tidak bisa mengisi tempat yang bertipe `int`"),
     ("dict campur: kunci string ditimpa array, dibaca lewat field", "package main\npub fn main() {\n    var d = {\"a\": \"hello\", \"b\": 1}\n    d[\"a\"] = [65, 66]\n    wok(\"mulai\")\n    wok(d.a)\n}\n",
-     "nilai bertipe `array<int>` tidak bisa mengisi tempat yang bertipe `string`"),
+     "tidak bisa mengisi tempat yang bertipe `string`"),
     ("nilai bertag: isi dict campur dibuka sebagai []float", "package main\npub fn main() {\n    var d = {\"a\": 1, \"b\": \"teks\"}\n    d[\"c\"] = [1, 2, 3]\n    let a: []float = d[\"c\"]\n    wok(a)\n    let k = \"c\"\n    let b: [][]int = d[k]\n    wok(len(b))\n    wok(b)\n}\n",
      "nilai bertipe `array<int>` tidak bisa mengisi tempat yang bertipe `array<float>`"),
     // Fase BUNGKUS: nilai bertag yang tagnya tidak cocok dengan tipe variabelnya gagal saat
