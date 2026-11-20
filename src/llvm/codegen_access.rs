@@ -568,6 +568,16 @@ impl Codegen {
     /// Alamat sasaran penugasan: menulis ke field sebuah handle pustaka ditolak saat jalan.
     pub(crate) fn tempat_tulis(&mut self, t: &Expr) -> Result<(String, JrgType), String> {
         match t {
+            // `.len`/`.is_empty` cuma field BACA atas teks/larik: menulisnya dulu menimpa panjang internal `%JrgSlice`/
+            // `%JrgStr`, lalu pemeriksaan batas membaca panjang palsu — OOB baca/tulis (AGI-20261119-48).
+            Expr::Field { obj, field, span } if matches!(field.as_str(), "len" | "is_empty")
+                && matches!(self.tipe_jalur(obj), Some(JrgType::Str | JrgType::Slice(_) | JrgType::Array(..))) => {
+                let ty = self.tipe_jalur(obj).unwrap();
+                self.tulis_antara = true;
+                let _ = self.get_place(obj)?;
+                return self.tempat_tiruan_sesudah(
+                    &crate::interpreter::galat_index::bukan_pemilik_field(&ty.nama_typeof(), field), *span);
+            }
             Expr::Field { obj, field, span } => {
                 if let Some(h) = self.tipe_jalur(obj).and_then(|ty| Self::nama_handle_pustaka(&ty)) {
                     self.tulis_antara = true;
