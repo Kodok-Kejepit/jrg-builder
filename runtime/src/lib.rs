@@ -2254,9 +2254,18 @@ pub extern "C" fn jrg_jawa_free(id: i64) {
     }
 }
 
+/// Panjang alokasi `jawa::`, kalimatnya sama dengan acuan (`heap::cek_panjang`): negatif dan di atas 256 MiB ditolak
+/// SEBELUM dialokasikan. Dulu negatif jadi 0 diam-diam dan tanpa batas atas (AGI-20261118-07).
+fn jawa_panjang(f: &str, n: i64) -> usize {
+    const MAKS: i64 = 256 * 1024 * 1024;
+    if n < 0 { jrg_panic_str(&alloc::format!("{}: panjang tidak boleh negatif, dapat {}", f, n)); }
+    if n > MAKS { jrg_panic_str(&alloc::format!("{}: n={} kelewat besar (maks {})", f, n, MAKS)); }
+    n as usize
+}
+
 #[no_mangle]
 pub extern "C" fn jrg_jawa_array(n: i64) -> i64 {
-    let n = if n < 0 { 0 } else { n as usize };
+    let n = jawa_panjang("jawa::array", n);
     let mut v = Vec::new();
     v.resize(n, 0i64);
     let mut terisi = Vec::new();
@@ -2267,7 +2276,7 @@ pub extern "C" fn jrg_jawa_array(n: i64) -> i64 {
 /// `jawa::array(n, isi)`: semua elemen terisi `isi`, seperti acuannya.
 #[no_mangle]
 pub extern "C" fn jrg_jawa_array_isi(n: i64, isi: i64) -> i64 {
-    let n = if n < 0 { 0 } else { n as usize };
+    let n = jawa_panjang("jawa::array", n);
     let mut v = Vec::new();
     v.resize(n, isi);
     let mut terisi = Vec::new();
@@ -2390,7 +2399,7 @@ pub extern "C" fn jrg_jawa_sizeof(id: i64) -> i64 {
 
 #[no_mangle]
 pub extern "C" fn jrg_jawa_buffer(n: i64) -> i64 {
-    let n = if n < 0 { 0 } else { n as usize };
+    let n = jawa_panjang("jawa::buffer", n);
     let mut v = Vec::new();
     v.resize(n, 0u8);
     unsafe { slot_baru(SlotJawa { jenis: JAWA_BUFFER, sah: true, nilai: 0, larik: Vec::new(), terisi: Vec::new(), buf: v }) }
