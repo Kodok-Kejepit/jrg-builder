@@ -2,6 +2,8 @@
 // dibaca `backend_parity.rs` dan `llvm_parity.rs` lewat `include!`, jadi satu tabel dua tes.
 
 const PARITAS: &[(&str, &str)] = &[
+    // AGI-20261119-02 (#1077): penanda `...` dulu tertimpa panggilan bersarang di dalam argumen dan tergeser.
+    ("spread di samping panggilan bersarang", "package main\nfn show(a, b, c) { return str(a) + \",\" + str(b) + \",\" + str(c) }\nfn tiga(a, b, c) { return a + b + c }\nfn id(x) { return x }\npub fn main() { wok(show(10, id(5), ...[999]))\n wok(tiga(...[1, 2], id(3)))\n wok(show(...[10], id(20), ...[30])) }"),
     // AGI-20261119-01 (#1076): prefiks basis dilepas tepat sekali — `0x0b1` dulu diam-diam `1`, `0x0b` dan `0Xff` ditolak.
     ("literal bulat: prefiks basis tepat sekali, huruf besar sah", "package main\npub fn main() { wok(0x0b1, 0x0b0b1, 0x0b0a, 0x0_b1, 0x0b, 0Xff, 0O77, 0B101, 0b0_1) }"),
     // AGI-20261119-07: header `[..]` ditulis dengan jalur UTUH — dulu jalur di atas 64 karakter dipotong jadi `40…12 (N karakter)`

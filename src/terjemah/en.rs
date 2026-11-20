@@ -381,6 +381,8 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
      "`===` is not JRG — here `==` already compares value AND type at once (`1 == 1.0` is `false`), so write `==`"),
     ("pecahan heksadesimal `{}` belum didukung JRG — tulis pecahan desimal (`2.0`), atau bilangan bulat heksadesimal lalu `as float` (`0x10 as float`)",
      "hexadecimal float `{}` is not supported by JRG yet — write a decimal float (`2.0`), or a hexadecimal integer then `as float` (`0x10 as float`)"),
+    ("argumen bernama dan `...` belum didukung di pemanggilan method `.{}(..)` — tulis sebagai fungsi tipenya, mis. `Tipe::{}(x, ..)`",
+     "named arguments and `...` are not supported in a method call `.{}(..)` yet — write it as the type's function, e.g. `Type::{}(x, ..)`"),
     ("`!==` bukan bentuk JRG — tulis `!=`; perbandingan JRG sudah ketat soal tipe",
      "`!==` is not JRG — write `!=`; JRG comparison is already strict about type"),
     ("badan di JRG selalu dibuka kurung kurawal `{ .. }`, bukan titik dua `:` seperti Python — `if syarat { .. }`, `fn f() { .. }`, `for i in 0..n { .. }`",

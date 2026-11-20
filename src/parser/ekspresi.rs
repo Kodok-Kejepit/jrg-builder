@@ -213,7 +213,15 @@ impl Parser {
                         let field = self.expect_ident_or_kw()?;
                         if self.at_exact(&TokenKind::LParen) {
                             self.advance();
-                            let args = self.parse_call_args()?;
+                            let a0 = self.span_lo();
+                            let (args, bernama) = self.parse_arg_penuh()?;
+                            let sebar = std::mem::take(&mut self.arg_sebar);
+                            // Dulu `...` dan argumen bernama di pemanggilan METHOD dibuang tanpa pesan (AGI-20261119-02).
+                            if !bernama.is_empty() || sebar.iter().any(|x| *x) {
+                                return Err(self.error_di(format!(
+                                    "argumen bernama dan `...` belum didukung di pemanggilan method `.{0}(..)` — tulis \
+                                     sebagai fungsi tipenya, mis. `Tipe::{0}(x, ..)`", field), self.merge_span(a0)));
+                            }
                             self.expect(&TokenKind::RParen)?;
                             Expr::Method { obj: Box::new(lhs), method: field, args, span: self.merge_span(lo) }
                         } else {
@@ -812,7 +820,9 @@ impl Parser {
     {
         let mut args = Vec::new();
         let mut bernama: Vec<(String, Expr)> = Vec::new();
-        self.arg_sebar.clear();
+        // Penanda `...` LOKAL: panggilan bersarang di dalam argumen dulu menimpa `self.arg_sebar` milik panggilan
+        // luar, jadi penandanya tergeser ke argumen lain (AGI-20261119-02). Ditetapkan sekali, sesudah semua diurai.
+        let mut sebar: Vec<bool> = Vec::new();
         while !self.at_exact(&TokenKind::RParen) {
             let ini_sebar = self.eat(&TokenKind::DotDotDot);
             let nama = if !ini_sebar { self.nama_argumen() } else { None };
@@ -831,11 +841,12 @@ impl Parser {
                                 .to_string()));
                     }
                     args.push(e);
-                    self.arg_sebar.push(ini_sebar);
+                    sebar.push(ini_sebar);
                 }
             }
             if !self.eat(&TokenKind::Comma) { break; }
         }
+        self.arg_sebar = sebar;
         Ok((args, bernama))
     }
 

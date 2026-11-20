@@ -175,6 +175,7 @@ fn konformans_semantik_nilai_jalan_di_dua_backend() {
 
 /// Program yang WAJIB ditolak oleh KEDUA backend, dengan alasan yang sama.
 const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
+    ("argumen bernama di pemanggilan method", "package main\nstruct S { v: int }\nimpl S { fn m(self, a, b = 0) { return a + b } }\npub fn main() { let s = S { v: 1 }\n wok(s.m(1, b: 2)) }", "belum didukung di pemanggilan method", "belum didukung di pemanggilan method"),
     ("pecahan heksadesimal dijelaskan", "package main\npub fn main() { wok(0x1p1) }", "pecahan heksadesimal", "pecahan heksadesimal"),
     // 2026-11-19 (AGI-20261119-05): `json::get`/`has`/`keys`/`values`/`merge` melihat handle pustaka, enum dan field privat
     // sebagai dict biasa — memalsukan id handle orang lain, menimpa field privat, merusak tipe enum.
