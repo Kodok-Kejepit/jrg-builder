@@ -14,9 +14,20 @@ fn panggilan_ffi(e: &Expr) -> bool {
         Expr::Method { obj, method, args, .. } if args.is_empty() && method == "unwrap" => &**obj,
         lain => lain,
     };
-    let Expr::Call { func, .. } = e else { return false };
+    let Expr::Call { func, args, .. } = e else { return false };
     let Expr::PathExpr { segments, .. } = &**func else { return false };
-    segments.len() >= 2 && NS_FFI.contains(&segments[segments.len() - 2].as_str())
+    // Argumen harus literal semua: hasil `py::id(h)` bisa berupa kotak titipan `h` sendiri, jadi melepasnya
+    // membebaskan milik orang lain (UAF, dua kali lepas — AGI-20261120-12). Ragu = tidak dilepas (cuma bocor).
+    segments.len() == 2 && NS_FFI.contains(&segments[0].as_str()) && args.iter().all(literal_saja)
+}
+
+fn literal_saja(e: &Expr) -> bool {
+    match e {
+        Expr::Literal(..) => true,
+        Expr::Array { elems, .. } | Expr::Tuple { elems, .. } => elems.iter().all(literal_saja),
+        Expr::Unary { expr, .. } => literal_saja(expr),
+        _ => false,
+    }
 }
 
 fn bawaan_baca(e: &Expr) -> bool {
@@ -139,6 +150,10 @@ impl super::codegen::Codegen {
     pub(crate) fn catat_lepas(&self, calon: Option<String>, lepas: &mut Vec<(String, String)>) {
         let Some(n) = calon else { return };
         if self.tangkapan.contains(&n) { return; }
+        // Analisisnya mencocokkan NAMA (`py::`, `str`, `wok`): kalau program membayanginya dengan modul atau fungsi
+        // sendiri, nama itu tidak lagi berarti bawaan, jadi tidak ada yang dilepas (AGI-20261120-12).
+        if NS_FFI.iter().any(|ns| self.unit_alias(ns).is_some())
+            || ["wok", "wok_", "str", "typeof"].iter().any(|f| self.tables.functions.contains_key(&self.k(f))) { return; }
         if let Some((slot, super::types::JrgType::Any)) = self.lookup_local(&n) { lepas.push((n, slot)); }
     }
 
