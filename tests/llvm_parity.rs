@@ -839,6 +839,13 @@ include!("bersama/paritas_llvm.rs");
 // ───────────────────────────────────────────
 
 const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
+    // AGI-20261119-49 (#1106): `**` yang hasilnya tidak muat tipe sempitnya, dan operand di luar 64 bit — dulu dipotong diam-diam.
+    ("pangkat yang tidak muat u8", "package main\npub fn main() { wok((2 as u8) ** (8 as u8)) }", "tidak muat di `u8`"),
+    ("pangkat atas i128 di luar 64 bit", "package main\npub fn main() {\n let b: i128 = (9223372036854775807 as i128) * 16\n wok(b ** (1 as i128))\n}",
+     "di luar 64 bit bertanda belum didukung"),
+    // AGI-20261119-47 (#1105): bulat di luar 64 bit bertanda di wadah campur — dulu terpotong diam-diam (`u64::MAX` jadi -1).
+    ("u64 di luar 64 bit bertanda masuk wadah campur", "package main\npub fn main() {\n let b: u64 = 18446744073709551615\n let xs = [b, \"x\"]\n wok(xs)\n}",
+     "tidak muat di nilai bertag"),
     // AGI-20261120-21 (#1089): method warisan atas field yang dibayangi anak dengan tipe lain — celah, disebut sebabnya.
     ("method warisan atas field induk yang dibayangi tipe lain", "package main\nstruct Induk { pub x: int }\nimpl Induk { pub fn baca(self) -> int { self.x + 1 } }\nstruct Anak : Induk { pub x: string }\npub fn main() { wok(Anak { x: \"halo\" }.baca()) }",
      "membayangi field induknya dengan tipe lain"),

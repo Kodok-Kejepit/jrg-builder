@@ -452,9 +452,10 @@ impl Codegen {
         ];
         let label: Vec<String> = golongan.iter()
             .map(|(t, _, _)| self.fresh_label(&format!("kvany.{}.", t))).collect();
-        let lain = self.fresh_label("kvany.lain.");
-        let kasus: Vec<String> = golongan.iter().zip(&label)
+        let (lain, buram) = (self.fresh_label("kvany.lain."), self.fresh_label("kvany.buram."));
+        let mut kasus: Vec<String> = golongan.iter().zip(&label)
             .map(|((t, _, _), l)| format!("i32 {}, label %{}", t, l)).collect();
+        kasus.push(format!("i32 {}, label %{}", super::codegen_any::TAG_BURAM, buram));
         self.terminate(format!("switch i32 {}, label %{} [ {} ]", tag.text, lain, kasus.join(" ")));
 
         for ((_, ty, nama), l) in golongan.iter().zip(&label) {
@@ -469,6 +470,9 @@ impl Codegen {
                 None => self.panik(&tak_bisa(nama)),
             }
         }
+        // Struct, tuple, enum, fungsi, channel: kalimat acuan dengan nama tipe saat jalan (AGI-20261119-47).
+        self.start_block(buram);
+        self.panik_tipe_any(v, &tak_bisa);
         // Tag di luar daftar cuma mungkin kalau kotaknya dipasang jalur yang
         // belum ada di sini — bug di jrgc, bukan di program pemakainya.
         self.start_block(lain);

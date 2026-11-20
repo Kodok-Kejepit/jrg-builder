@@ -884,6 +884,16 @@ pub extern "C" fn jrg_f64_to_str_desimal(
 /// `{:.N}` untuk `int`. Nol ditempel, bukan dilewatkan `f64`:
 /// `9007199254740993` melebihi apa yang `f64` bisa wakili persis.
 #[no_mangle]
+pub extern "C" fn jrg_i128_to_str_desimal(
+    v: i128, tak_bertanda: i32, n: i64, out_ptr: *mut *const u8, out_len: *mut i64,
+) {
+    let n = n.max(0) as usize;
+    let angka = if tak_bertanda != 0 { (v as u128).to_string() } else { v.to_string() };
+    let teks = if n == 0 { angka } else { format!("{}.{}", angka, "0".repeat(n)) };
+    unsafe { emit_string(teks, out_ptr, out_len) };
+}
+
+#[no_mangle]
 pub extern "C" fn jrg_i64_to_str_desimal(
     v: i64, n: i64, out_ptr: *mut *const u8, out_len: *mut i64,
 ) {
@@ -1544,8 +1554,11 @@ pub extern "C" fn jrg_panic_div_by_zero(kiri: i64, sisa: i32) -> ! {
 /// Geseran yang tidak sah. Dua kalimat pertama sama dengan `Interpreter::geser_terperiksa`;
 /// yang ketiga milik backend ini: hasilnya ada di 128 bit acuan, tidak di lebar di sini.
 #[no_mangle]
-pub extern "C" fn jrg_panic_geser(x: i64, y: i64, ke_kiri: i32, bit: i32) -> ! {
+pub extern "C" fn jrg_panic_geser(x: i64, y: i64, bendera: i32, bit: i32) -> ! {
     flush_stdout();
+    // Bit 0: ke kiri; bit 1: jumlah geserannya tak bertanda (dicetak sebagai `u64`).
+    let ke_kiri = bendera & 1;
+    let y: i128 = if bendera & 2 != 0 { y as u64 as i128 } else { y as i128 };
     let (op, balik) = if ke_kiri != 0 { ("<<", ">>") } else { (">>", "<<") };
     // `bit` negatif berarti tipe tak bertanda; hasilnya dihitung seperti acuan, di 128 bit.
     let (lebar, tipe) = if bit < 0 { (-bit, "tak bertanda") } else { (bit, "bertanda") };

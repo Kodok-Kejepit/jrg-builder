@@ -84,6 +84,8 @@ typedef struct {
     int64_t cadangan[3];
 } JrgPetaKepala;
 
+void jrg_panic(const unsigned char *ptr, int64_t len);
+
 static JrgPetaKepala *jrg_peta_kepala(const void *p) {
     return (JrgPetaKepala *)((char *)p - sizeof(JrgPetaKepala));
 }
@@ -183,8 +185,13 @@ static void jrg_peta_indeks(JrgPetaKepala *h, const void *p, int64_t len, int64_
         int64_t n = 16;
         int64_t sasaran = 2 * (h->kap > len ? h->kap : len);
         while (n < sasaran) n *= 2;
-        h->indeks = jrg_alloc(jrg_kali(n, (int64_t)sizeof(int32_t)), 4);
-        memset(h->indeks, 0, (size_t)n * sizeof(int32_t));
+        // Di luar arena: indeks lahir malas, sering di putaran loop berarena yang pemulihannya melepasnya padahal
+        // dict-nya hidup di luar loop (AGI-20261119-28). Tidak dibebaskan: kepala yang memegangnya tidak punya pemilik.
+        h->indeks = calloc((size_t)n, sizeof(int32_t));
+        if (h->indeks == 0) {
+            static const char pesan[] = "memori habis";
+            jrg_panic((const unsigned char *)pesan, (int64_t)(sizeof pesan - 1));
+        }
         h->n_indeks = n;
         h->terindeks = 0;
     }

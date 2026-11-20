@@ -267,6 +267,30 @@ impl Codegen {
             self.emit(format!("store ptr {}, ptr {}", buf, mp));
             return Ok(self.load_place(&slot, &JrgType::Any));
         }
+        // Bulat bertag 64 bit bertanda: `u64`/`i128` di luar itu dulu terpotong diam-diam (`u64::MAX` jadi `-1`).
+        if tag == TAG_INT && matches!(v.ty, JrgType::U64 | JrgType::I128 | JrgType::U128) {
+            let t = v.ty.llvm_ty();
+            let syarat = if v.ty == JrgType::U64 {
+                let c = self.fresh("anyb.");
+                self.emit(format!("{} = icmp ugt i64 {}, 9223372036854775807", c, v.text));
+                c
+            } else {
+                let (a, b, c) = (self.fresh("anyb."), self.fresh("anyb."), self.fresh("anyb."));
+                let besar = if v.ty == JrgType::U128 { "ugt" } else { "sgt" };
+                self.emit(format!("{} = icmp {} {} {}, 9223372036854775807", a, besar, t, v.text));
+                let kecil = if v.ty == JrgType::U128 { "false".to_string() } else {
+                    self.emit(format!("{} = icmp slt {} {}, -9223372036854775808", b, t, v.text));
+                    b.clone()
+                };
+                self.emit(format!("{} = or i1 {}, {}", c, a, kecil));
+                c
+            };
+            let pesan = format!("bilangan {} tidak muat di nilai bertag backend `--emit-llvm` (64 bit bertanda) — \
+                simpan di tempat bertipe `{}` sendiri, bukan di wadah campur",
+                super::codegen_konversi::PENANDA, v.ty.display_name());
+            let vv = v.clone();
+            self.gagal_bila(&syarat, |cg| cg.panik_sisip(&pesan, &super::codegen_konversi::Cetak::Bulat(vv)));
+        }
         let nilai = match tag {
             TAG_INT => self.coerce_longgar(v, &JrgType::I64),
             TAG_FLOAT => self.coerce_longgar(v, &JrgType::F64),

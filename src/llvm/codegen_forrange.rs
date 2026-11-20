@@ -249,16 +249,25 @@ impl Codegen {
         self.start_block(body_lbl);
         self.push_scope();
         let curv2 = self.load_place(&idx_slot, &ity);
-        // Nama pertama adalah INDEKS (`cur - lo`), nama kedua nilainya — aturan acuan:
-        // `for i in 5..8` → 0 1 2. Untuk `lo` literal 0 keduanya sama, jadi IR-nya tetap.
+        // Nama pertama INDEKS (`cur - lo`, `for i in 5..8` → 0 1 2), nama kedua nilainya. Indeksnya `int` (i64), bukan
+        // tipe rentangnya: `(-100 as i8)..(100 as i8)` dulu memberi indeks i8 yang meluap jadi negatif (AGI-20261119-47).
         if !vars.is_empty() && vars[0] != "_" {
-            let idx = if lo.text == "0" { curv2.text.clone() } else {
+            let lebar = |cg: &mut Self, t: &str| -> String {
+                if ity == JrgType::I64 || ity == JrgType::U64 { return t.to_string(); }
+                let r = cg.fresh("frx.");
+                let op = if ity.is_signed_int() { "sext" } else { "zext" };
+                cg.emit(format!("{} = {} {} {} to i64", r, op, ity.llvm_ty(), t));
+                r
+            };
+            let idx = if lo.text == "0" && (ity == JrgType::I64 || ity == JrgType::U64) { curv2.text.clone() } else {
+                let (c, l) = (lebar(self, &curv2.text), lebar(self, &lo.text));
                 let d = self.fresh("fri.");
-                self.emit(format!("{} = sub {} {}, {}", d, ity.llvm_ty(), curv2.text, lo.text));
+                self.emit(format!("{} = sub i64 {}, {}", d, c, l));
                 d
             };
-            let s = self.alloca_local(&vars[0], ity.clone());
-            self.emit(format!("store {} {}, ptr {}", ity.llvm_ty(), idx, s));
+            let idx_ty = if ity == JrgType::U64 { ity.clone() } else { JrgType::I64 };
+            let s = self.alloca_local(&vars[0], idx_ty.clone());
+            self.emit(format!("store {} {}, ptr {}", idx_ty.llvm_ty(), idx, s));
         }
         if vars.len() == 2 && vars[1] != "_" {
             let s = self.alloca_local(&vars[1], ity.clone());
@@ -272,6 +281,14 @@ impl Codegen {
 
         self.start_block(post_lbl);
         let curv3 = self.load_place(&idx_slot, &ity);
+        // `..=` sampai batas atas tipenya (`255 as u8`): sesudah `hi`, `+ 1` membungkus dan `<= hi` tetap benar —
+        // loop tak berujung. Berhenti di `hi` sebelum menambah (AGI-20261119-47).
+        if inclusive {
+            let (habis, lanjut) = (self.fresh("frh."), self.fresh_label("forr.tambah."));
+            self.emit(format!("{} = icmp eq {} {}, {}", habis, ity.llvm_ty(), curv3.text, hi.text));
+            self.terminate(format!("br i1 {}, label %{}, label %{}", habis, end_lbl, lanjut));
+            self.start_block(lanjut);
+        }
         let nextv = self.fresh("frn.");
         self.emit(format!("{} = add {} {}, 1", nextv, ity.llvm_ty(), curv3.text));
         self.emit(format!("store {} {}, ptr {}", ity.llvm_ty(), nextv, idx_slot));

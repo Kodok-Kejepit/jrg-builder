@@ -828,7 +828,8 @@ impl Codegen {
             return d;
         }
         let bit = lv.ty.int_bits().unwrap_or(64);
-        let min = if bit >= 64 { i64::MIN as i128 } else { -(1i128 << (bit - 1)) };
+        // `i128`: MIN-nya `i128::MIN`, bukan `i64::MIN` — dulu `i128::MIN / -1` lolos ke `sdiv` (UB) (AGI-20261119-49).
+        let min = if bit >= 128 { i128::MIN } else { -(1i128 << (bit - 1)) };
         let mn = self.fresh("min.");
         self.emit(format!("{} = icmp eq {} {}, {}", mn, t, lv.text, min));
         let both = self.fresh("luber.");
@@ -897,6 +898,24 @@ impl Codegen {
         Val { text: r, ty: lv.ty.clone() }
     }
 
+    /// `v` sebagai `i64` untuk operator yang dihitung 64 bit; `u64`/`i128`/`u128` yang tidak muat ditolak saat jalan.
+    pub(crate) fn ke_i64_terperiksa(&mut self, v: &Val, op: &str) -> Val {
+        if matches!(v.ty, JrgType::U64 | JrgType::I128 | JrgType::U128) {
+            let t = v.ty.llvm_ty();
+            let (a, b, c) = (self.fresh("k64."), self.fresh("k64."), self.fresh("k64."));
+            let unsigned = !v.ty.is_signed_int();
+            self.emit(format!("{} = icmp {} {} {}, 9223372036854775807", a, if unsigned { "ugt" } else { "sgt" }, t, v.text));
+            if unsigned { self.emit(format!("{} = or i1 false, false", b)); }
+            else { self.emit(format!("{} = icmp slt {} {}, -9223372036854775808", b, t, v.text)); }
+            self.emit(format!("{} = or i1 {}, {}", c, a, b));
+            let pesan = format!("`{}` atas bilangan {} di luar 64 bit bertanda belum didukung backend `--emit-llvm` — \
+                jalankan tanpa `--emit-llvm`", op, super::codegen_konversi::PENANDA);
+            let vv = v.clone();
+            self.gagal_bila(&c, |cg| cg.panik_sisip(&pesan, &super::codegen_konversi::Cetak::Bulat(vv)));
+        }
+        self.coerce_longgar(v, &JrgType::I64)
+    }
+
     /// Perlebar bilangan bulat ke `i64` untuk dicetak di kalimat galat.
     fn ke_i64_tampil(&mut self, v: &Val) -> String {
         let t = v.ty.llvm_ty();
@@ -914,16 +933,26 @@ impl Codegen {
         let t = lv.ty.llvm_ty();
         let bit = lv.ty.int_bits().unwrap_or(64);
         let signed = lv.ty.is_signed_int();
-        let y = self.coerce_longgar(rv, &lv.ty);
+        // Jumlahnya diperiksa di TIPENYA SENDIRI sebelum disamakan: tak bertanda tidak pernah negatif, dan yang lebih
+        // lebar dari kirinya tidak boleh dipotong dulu (AGI-20261119-49).
+        let (rt, rbit, rsigned) = (rv.ty.llvm_ty(), rv.ty.int_bits().unwrap_or(64), rv.ty.is_signed_int());
         let (neg, lebar, besar) = (self.fresh("gs.neg."), self.fresh("gs.lbr."), self.fresh("gs.bsr."));
-        self.emit(format!("{} = icmp slt {} {}, 0", neg, t, y.text));
-        self.emit(format!("{} = icmp uge {} {}, {}", lebar, t, y.text, bit));
-        // Tipe 8 bit tidak bisa memuat 128, jadi di sana "128 atau lebih" tidak pernah terjadi.
-        if bit > 8 {
-            self.emit(format!("{} = icmp sge {} {}, 128", besar, t, y.text));
+        if rsigned { self.emit(format!("{} = icmp slt {} {}, 0", neg, rt, rv.text)); }
+        else { self.emit(format!("{} = or i1 false, false", neg)); }
+        // Konstanta `bit` harus muat di tipe jumlahnya; kalau tidak, jumlah yang tak negatif selalu lebih kecil.
+        let maks_r: i128 = if rbit >= 127 { i128::MAX } else if rsigned { (1i128 << (rbit - 1)) - 1 } else { (1i128 << rbit) - 1 };
+        if (bit as i128) <= maks_r {
+            self.emit(format!("{} = icmp uge {} {}, {}", lebar, rt, rv.text, bit));
+        } else {
+            self.emit(format!("{} = or i1 false, false", lebar));
+        }
+        // "128 atau lebih" cuma mungkin kalau tipe jumlahnya memuat 128 (`i8` tidak, `u8` ya).
+        if maks_r >= 128 {
+            self.emit(format!("{} = icmp {} {} {}, 128", besar, if rsigned { "sge" } else { "uge" }, rt, rv.text));
         } else {
             self.emit(format!("{} = or i1 false, false", besar));
         }
+        let y = self.coerce_longgar(rv, &lv.ty);
         let mut buruk = self.fresh("gs.brk.");
         self.emit(format!("{} = or i1 {}, {}", buruk, neg, besar));
         // Jumlah yang sah tapi >= lebar: dijepit ke lebar-1, lalu hasilnya dibetulkan.
@@ -951,9 +980,11 @@ impl Codegen {
             "declare void @jrg_panic_geser(i64, i64, i32, i32) cold nounwind noreturn",
             "jrg_panic_geser",
         );
-        let (x64, y64) = (self.ke_i64_tampil(lv), self.ke_i64_tampil(&y));
+        let (x64, y64) = (self.ke_i64_tampil(lv), self.ke_i64_tampil(rv));
+        // Bit 1 `ke_kiri`: jumlahnya tak bertanda, jadi dicetak sebagai `u64`.
+        let bendera = (if ke_kiri { 1 } else { 0 }) | (if rsigned { 0 } else { 2 });
         self.emit(format!("call void @jrg_panic_geser(i64 {}, i64 {}, i32 {}, i32 {})",
-            x64, y64, if ke_kiri { 1 } else { 0 }, if signed { bit as i32 } else { -(bit as i32) }));
+            x64, y64, bendera, if signed { bit as i32 } else { -(bit as i32) }));
         self.terminate("unreachable".to_string());
         self.start_block(ok);
         // `ashr` yang dijepit sudah benar (semua bit jadi bit tanda); dua lainnya jadi nol.
@@ -1014,11 +1045,23 @@ impl Codegen {
         }
         if lv.ty.is_int() {
             self.ensure_extern("declare i64 @jrg_ipow_i64(i64, i64)", "jrg_ipow_i64");
-            let l64 = self.coerce_longgar(lv, &JrgType::I64);
-            let r64 = self.coerce_longgar(rv, &JrgType::I64);
+            // Operand di luar 64 bit dan hasil yang tidak muat di tipe kirinya ditolak, bukan dipotong (AGI-20261119-49).
+            let l64 = self.ke_i64_terperiksa(lv, "**");
+            let r64 = self.ke_i64_terperiksa(rv, "**");
             let r = self.fresh("ipow.");
             self.emit(format!("{} = call i64 @jrg_ipow_i64(i64 {}, i64 {})", r, l64.text, r64.text));
             let out = Val { text: r, ty: JrgType::I64 };
+            if !matches!(lv.ty, JrgType::I64 | JrgType::I128 | JrgType::U128) {
+                let (lo, hi) = super::codegen_konversi::jangkauan(&lv.ty);
+                let (a, b, c) = (self.fresh("ipw."), self.fresh("ipw."), self.fresh("ipw."));
+                self.emit(format!("{} = icmp slt i64 {}, {}", a, out.text, lo.max(i64::MIN as i128)));
+                self.emit(format!("{} = icmp sgt i64 {}, {}", b, out.text, hi.min(i64::MAX as i128)));
+                self.emit(format!("{} = or i1 {}, {}", c, a, b));
+                let pesan = format!("hasil `**` = {} tidak muat di `{}` backend LLVM (dua mesin lain menghitung di 128 bit) \
+                    — jalankan tanpa `--emit-llvm`, atau pakai `int`", super::codegen_konversi::PENANDA, lv.ty.display_name());
+                let o = out.clone();
+                self.gagal_bila(&c, |cg| cg.panik_sisip(&pesan, &super::codegen_konversi::Cetak::Bulat(o)));
+            }
             return Ok(self.coerce_longgar(&out, &lv.ty));
         }
         Err(format!("operator `**` tidak berlaku untuk tipe `{}`", lv.ty))
@@ -1160,7 +1203,21 @@ impl Codegen {
     pub(crate) fn ulang_string(&mut self, sv: &Val, nv: &Val) -> Result<Val, String> {
         self.ensure_extern(
             "declare void @jrg_str_repeat(ptr, i64, i64, ptr, ptr)", "jrg_str_repeat");
-        let n64 = self.coerce_longgar(nv, &JrgType::I64);
+        // Pengali di luar 64 bit dijenuhkan, bukan dipotong: `2^64` dulu jadi 0 dan menjawab "" (AGI-20261119-49);
+        // yang jenuh ditolak runtime dengan kalimat batas ukurannya.
+        let n64 = if matches!(nv.ty, JrgType::U64 | JrgType::I128 | JrgType::U128) {
+            let t = nv.ty.llvm_ty();
+            let unsigned = !nv.ty.is_signed_int();
+            let (a, b, s1, s2) = (self.fresh("rpn."), self.fresh("rpn."), self.fresh("rpn."), self.fresh("rpn."));
+            self.emit(format!("{} = icmp {} {} {}, 9223372036854775807", a, if unsigned { "ugt" } else { "sgt" }, t, nv.text));
+            let p = self.coerce_longgar(nv, &JrgType::I64);
+            self.emit(format!("{} = select i1 {}, i64 9223372036854775807, i64 {}", s1, a, p.text));
+            if unsigned { Val { text: s1, ty: JrgType::I64 } } else {
+                self.emit(format!("{} = icmp slt {} {}, -9223372036854775808", b, t, nv.text));
+                self.emit(format!("{} = select i1 {}, i64 -9223372036854775808, i64 {}", s2, b, s1));
+                Val { text: s2, ty: JrgType::I64 }
+            }
+        } else { self.coerce_longgar(nv, &JrgType::I64) };
         let (sptr, slen) = self.split_str(sv);
         let outp = self.alloca_raw("rpp.", "ptr", None);
         let outl = self.alloca_raw("rpl.", "i64", None);
@@ -1861,6 +1918,17 @@ impl Codegen {
                 self.emit(format!(
                     "call void @jrg_f64_to_str_desimal(double {}, i64 {}, ptr {}, ptr {})",
                     d.text, n, outp, outl));
+            }
+            // Lebar 128 dan `u64`: digitnya utuh, dulu dipotong ke `i64` (AGI-20261119-49).
+            JrgType::I128 | JrgType::U128 | JrgType::U64 => {
+                self.ensure_extern("declare void @jrg_i128_to_str_desimal(i128, i32, i64, ptr, ptr)", "jrg_i128_to_str_desimal");
+                let w = if v.ty == JrgType::U64 {
+                    let r = self.fresh("ds128.");
+                    self.emit(format!("{} = zext i64 {} to i128", r, v.text));
+                    r
+                } else { v.text.clone() };
+                self.emit(format!("call void @jrg_i128_to_str_desimal(i128 {}, i32 {}, i64 {}, ptr {}, ptr {})",
+                    w, (v.ty == JrgType::U128) as i32, n, outp, outl));
             }
             t if t.is_int() => {
                 let i = if v.ty == JrgType::I64 { v.clone() }

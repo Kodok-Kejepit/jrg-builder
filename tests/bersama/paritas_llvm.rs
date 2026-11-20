@@ -5126,4 +5126,54 @@ fn test_ascii_lalu_utf8() {
 fn main() { test_utf8_lalu_ascii()
  test_ascii_lalu_utf8() }
 "#),
+    ("indeks hash dict yang lahir di putaran berarena tidak ikut dilepas (AGI-20261119-28)", r#"
+fn main() {
+    let d = {
+        "k0": 0, "k1": 1, "k2": 2, "k3": 3, "k4": 4,
+        "k5": 5, "k6": 6, "k7": 7, "k8": 8, "k9": 9
+    }
+    var sum = 0
+    for i in 0..3 {
+        if i == 1 {
+            let spray = str::repeat("A", 512)
+            sum = sum + str::len(spray)
+        }
+        sum = sum + d["k5"]
+    }
+    wok("sum:", sum)
+}
+"#),
+    ("for ..= sampai batas atas tipe, indeks rentang sempit, konversi atas struct bertag (AGI-20261119-47)", r#"
+struct T { pub a: int }
+fn coba(f) { match tangkap(f) { Ok(v) => wok("ok", v), Err(g) => wok("err", g.pesan) } }
+fn main() {
+    var n = 0
+    for i, v in (250 as u8)..=(255 as u8) { n = n + 1 }
+    wok(n)
+    var m = 0
+    for v in 9223372036854775805..=9223372036854775807 { m = m + 1 }
+    wok(m)
+    var akhir = 0
+    for i, v in (-100 as i8)..(100 as i8) { akhir = i }
+    wok(akhir, typeof(akhir))
+    for i, v in 3..=5 { wok(i, v) }
+    let xs = [T { a: 1 }, 5]
+    coba(|| int(xs[0]))
+    coba(|| float(xs[0]))
+}
+"#),
+    ("i128 MIN / -1, {:.N} atas bulat lebar, geseran tak bertanda yang besar (AGI-20261119-49)", r#"
+fn coba(f) { match tangkap(f) { Ok(v) => wok("ok", v), Err(g) => wok("err", g.pesan) } }
+fn main() {
+    let m: i128 = (-9223372036854775807 as i128) - 1
+    let besar: i128 = (9223372036854775807 as i128) * 16
+    let n1: i128 = -1 as i128
+    coba(|| m / n1)
+    coba(|| (3 as u8) ** (4 as u8))
+    coba(|| str::format("{:.2}", besar))
+    coba(|| str::format("{:.1}", (9223372036854775807 as u64) * 2 + 1))
+    coba(|| (8 as u64) >> ((9223372036854775807 as u64) + 1))
+    coba(|| (8 as u8) >> (200 as u8))
+}
+"#),
 ];

@@ -1520,6 +1520,12 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
     ("folder tujuan adalah tautan simbolik — ditolak, karena isinya akan ditulis ke tempat lain",
      "the destination folder is a symbolic link — refused, because its contents would be written somewhere else"),
     ("instruksi pemrosesan tanpa nama target yang sah (`<?nama ...?>`)", "processing instruction without a valid target name (`<?name ...?>`)"),
+    ("bilangan {} tidak muat di nilai bertag backend `--emit-llvm` (64 bit bertanda) — simpan di tempat bertipe `{}` sendiri, bukan di wadah campur",
+     "the number {} does not fit a tagged value on the `--emit-llvm` backend (64-bit signed) — keep it in a place of its own type `{}`, not in a mixed container"),
+    ("hasil `**` = {} tidak muat di `{}` backend LLVM (dua mesin lain menghitung di 128 bit) — jalankan tanpa `--emit-llvm`, atau pakai `int`",
+     "the result of `**` = {} does not fit `{}` on the LLVM backend (the other two engines compute in 128 bits) — run without `--emit-llvm`, or use `int`"),
+    ("`{}` atas bilangan {} di luar 64 bit bertanda belum didukung backend `--emit-llvm` — jalankan tanpa `--emit-llvm`",
+     "`{}` on the number {} outside 64-bit signed is not supported by the `--emit-llvm` backend yet — run without `--emit-llvm`"),
     ("error: nada `{}` tidak ada. yang tersedia: ",
      "error: the tone `{}` does not exist. available: "),
 
