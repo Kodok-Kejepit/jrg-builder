@@ -549,11 +549,15 @@ impl Codegen {
             if !self.butuh_salin(&v.ty) { return v; }
             return self.salin_dalam(&v);
         }
-        // Bentuk lain yang menyebut sebuah pinjaman (`Some(self.xs)`, `(p, 1)`, ternary, `match`):
-        // hasilnya bisa memuat penyangga pemanggil, jadi dijadikan milik sendiri.
-        if self.pinjaman.is_empty() || !self.butuh_salin(&v.ty) { return v; }
+        // Bentuk lain yang menyebut sebuah pinjaman, tangkapan closure, atau `var` modul (`Some(self.xs)`, ternary,
+        // `if`/`match` yang menjawab `g`): hasilnya bisa memuat penyangga pihak lain, jadi dijadikan milik sendiri.
+        if !self.butuh_salin(&v.ty) { return v; }
         let disebut = crate::interpreter::capture::names_mentioned(e);
-        if !self.pinjaman.iter().any(|n| disebut.contains(n)) { return v; }
+        let rawan = |cg: &Self, n: &String| cg.pinjaman.contains(n) || cg.tangkap_masuk.contains(n)
+            || (cg.lookup_local(n).is_none() && cg.var_global.contains_key(&cg.k(n)));
+        if !disebut.iter().any(|n| rawan(self, n)) { return v; }
+        // Akar langsung (`cap_d`, `g.xs`) selalu disalin; bentuk lain lewat `ambil_milik`, yang melewati yang segar.
+        if akar(e).is_some() { return self.salin_dalam(&v); }
         match self.ambil_milik(e, v.clone()) { Ok(baru) => baru, Err(_) => v }
     }
 

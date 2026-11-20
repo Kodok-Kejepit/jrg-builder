@@ -159,10 +159,16 @@ impl Codegen {
                 self.emit(format!("store i8 {}, ptr {}", if semua { 1 } else { 0 }, slot));
                 let f = f.clone();
                 self.loop_hof(&data, &n, elem, move |cg, v| {
+                    // Berhenti memanggil predikat begitu jawabannya pasti, seperti `find` dan acuan (AGI-20261120-01):
+                    // `[1, 0].any(|x| 10 / x > 0)` dulu tetap memanggilnya atas 0.
+                    let (kini, pasti) = (cg.load_place(&slot_k, &JrgType::Bool), cg.fresh("hofp."));
+                    cg.emit(format!("{} = icmp eq i8 {}, {}", pasti, kini.text, if semua { 0 } else { 1 }));
+                    let (cek, usai) = (cg.fresh_label("hof.cek."), cg.fresh_label("hof.usai."));
+                    cg.terminate(format!("br i1 {}, label %{}, label %{}", pasti, usai, cek));
+                    cg.start_block(cek);
                     let r = cg.panggil_hof(&f, &[v])?;
                     let b = cg.to_i1(&r);
                     let ubah = cg.fresh_label("hof.ubah.");
-                    let usai = cg.fresh_label("hof.usai.");
                     if semua {
                         cg.terminate(format!("br i1 {}, label %{}, label %{}", b, usai, ubah));
                     } else {

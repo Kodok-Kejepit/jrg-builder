@@ -663,6 +663,11 @@ impl Codegen {
             }
             Pattern::Struct { ty: pty, fields, .. } => {
                 match ty {
+                    // `B { x }` atas nilai `A` tidak cocok, struct anak pun tidak — seperti acuan (AGI-20261120-01).
+                    JrgType::Struct(sname) if Self::pola_tipe_lain(pty, sname, self.cur_self_ty.as_deref(), false) => {
+                        self.branch_or_fail("false".to_string(), on_fail);
+                        self.ikat_pola_mati(pat, pty, false, on_fail)
+                    }
                     JrgType::Struct(sname) => {
                         let layout = self.types.structs.get(sname).cloned().ok_or_else(|| format!("struct `{}` tidak dikenal", sname))?;
                         let ada: Vec<String> = {
@@ -717,8 +722,13 @@ impl Codegen {
                     other => Err(format!("pola struct `{{ .. }}` tidak cocok dengan tipe `{}`", other.display_name())),
                 }
             }
-            Pattern::Enum { ty: _pty, variant, inner, .. } => {
+            Pattern::Enum { ty: pty, variant, inner, .. } => {
                 match ty {
+                    // `EB::Foo(x)` atas nilai `EA` tidak cocok walau nama variannya sama (AGI-20261120-01).
+                    JrgType::Enum(ename) if Self::pola_tipe_lain(pty, ename, self.cur_self_ty.as_deref(), true) => {
+                        self.branch_or_fail("false".to_string(), on_fail);
+                        self.ikat_pola_mati(pat, pty, true, on_fail)
+                    }
                     JrgType::Enum(ename) => {
                         let layout = self.types.enums.get(ename).cloned().ok_or_else(|| format!("enum `{}` tidak dikenal", ename))?;
                         let v = layout.variant(variant).cloned()
@@ -846,6 +856,26 @@ impl Codegen {
         }
         let v = self.load_place(place, ty);
         let mut acc: Option<String> = None;
+        // Batas bulat dibandingkan dengan jangkauan tipe nilainya SAAT KOMPILASI: yang di luar jangkauan memutuskan
+        // sendiri, bukan dipotong ke lebar tipe (`-10..=-1` atas `u8` dulu jadi `246..=255`) — AGI-20261120-01.
+        let jangkau = ty.is_int().then(|| super::codegen_konversi::jangkauan(ty));
+        let bulat = |lit: &LitKind| match lit { LitKind::Int(n) => Some(*n as i128), _ => None };
+        let lo = match (lo, jangkau) {
+            (Some(l), Some((tmin, tmax))) => match bulat(&extract_lit(l)?) {
+                Some(x) if x > tmax => return Ok("false".to_string()),
+                Some(x) if x <= tmin => &None,
+                _ => lo,
+            },
+            _ => lo,
+        };
+        let hi = match (hi, jangkau) {
+            (Some(h), Some((tmin, tmax))) => match bulat(&extract_lit(h)?) {
+                Some(x) if (inclusive && x < tmin) || (!inclusive && x <= tmin) => return Ok("false".to_string()),
+                Some(x) if (inclusive && x >= tmax) || (!inclusive && x > tmax) => &None,
+                _ => hi,
+            },
+            _ => hi,
+        };
         if let Some(l) = lo {
             let lit = extract_lit(l)?;
             let ltext = lit_operand(&lit, ty)?;
@@ -1043,6 +1073,39 @@ impl Codegen {
     }
 }
 
+impl Codegen {
+    /// Pola yang MENYEBUT tipenya (`B { .. }`, `EB::Foo(..)`) atas nilai bertipe lain: tidak pernah cocok. Pola varian
+    /// telanjang dan `Option`/`Result` tidak menyebut tipe, jadi tidak diperiksa di sini.
+    fn pola_tipe_lain(pty: &TypeExpr, tipe: &str, self_ty: Option<&str>, varian: bool) -> bool {
+        let TypeExpr::Named(nt) = pty else { return false };
+        let ditulis = if varian { match &nt.package { Some(p) => p.as_str(), None => return false } } else { nt.name.as_str() };
+        if matches!(ditulis, "Option" | "Result") { return false; }
+        let nyata = crate::ruang_tipe::bersih(super::generik::dasar(tipe)).into_owned();
+        let nyata = nyata.split('<').next().unwrap_or(&nyata).to_string();
+        let ditulis = if ditulis == "Self" { match self_ty { Some(s) => s, None => return false } } else { ditulis };
+        let ditulis = crate::ruang_tipe::bersih(super::generik::dasar(ditulis)).into_owned();
+        ditulis != nyata
+    }
+
+    /// Sesudah cabang yang tidak pernah diambil: nama-nama pola diikat atas nilai nol bertipe POLA itu (blok mati),
+    /// supaya badan lengannya tetap terkompilasi dengan tipe yang benar.
+    fn ikat_pola_mati(&mut self, p: &Pattern, pty: &TypeExpr, varian: bool, on_fail: &str) -> Result<(), String> {
+        let TypeExpr::Named(nt) = pty else { return Ok(()) };
+        let ditulis = if varian { nt.package.clone().unwrap_or_default() } else { nt.name.clone() };
+        let sama = |k: &String| crate::ruang_tipe::bersih(super::generik::dasar(k)) == ditulis.as_str();
+        // Urut nama, bukan urutan `HashMap`: IR harus sama tiap kompilasi.
+        let ty = if varian {
+            self.types.enums.keys().filter(|k| sama(k)).min().cloned().map(JrgType::Enum)
+        } else {
+            self.types.structs.keys().filter(|k| sama(k)).min().cloned().map(JrgType::Struct)
+        };
+        let Some(ty) = ty else { return Ok(()) };
+        let slot = self.alloca_typed("polamati.", &ty);
+        self.emit(format!("store {} zeroinitializer, ptr {}", ty.llvm_ty(), slot));
+        self.test_pattern(p, &slot, &ty, on_fail)
+    }
+}
+
 fn type_expr_pattern_name(te: &TypeExpr) -> Result<String, String> {
     match te {
         TypeExpr::Named(nt) => Ok(nt.name.clone()),
@@ -1059,8 +1122,9 @@ fn extract_lit(p: &Pattern) -> Result<LitKind, String> {
 
 fn lit_operand(lit: &LitKind, ty: &JrgType) -> Result<String, String> {
     match lit {
+        // Literal negatif disimpan sebagai pola bit `u128`: dibaca bertanda, tidak pernah `u128 as f64`.
         LitKind::Int(n) => {
-            if ty.is_float() { Ok(fmt_hexfloat(*n as f64)) } else { Ok(n.to_string()) }
+            if ty.is_float() { Ok(fmt_hexfloat(*n as i128 as f64)) } else { Ok((*n as i128).to_string()) }
         }
         LitKind::Float(f) => Ok(fmt_hexfloat(*f)),
         LitKind::Rune(c) => Ok((*c as u32).to_string()),

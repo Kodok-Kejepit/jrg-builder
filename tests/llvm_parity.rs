@@ -839,6 +839,9 @@ include!("bersama/paritas_llvm.rs");
 // ───────────────────────────────────────────
 
 const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
+    // AGI-20261120-05 (#1110): argumen bulat `u64`/`i128` di luar 64 bit bertanda — dulu dibaca -1/0 diam-diam.
+    ("math::gcd atas u64 di luar 64 bit bertanda", "package main\npub fn main() {\n let b = (9223372036854775807 as u64) * 2 + 1\n wok(math::gcd(b, 3))\n}",
+     "di luar 64 bit bertanda belum didukung"),
     // AGI-20261119-49 (#1106): `**` yang hasilnya tidak muat tipe sempitnya, dan operand di luar 64 bit — dulu dipotong diam-diam.
     ("pangkat yang tidak muat u8", "package main\npub fn main() { wok((2 as u8) ** (8 as u8)) }", "tidak muat di `u8`"),
     ("pangkat atas i128 di luar 64 bit", "package main\npub fn main() {\n let b: i128 = (9223372036854775807 as i128) * 16\n wok(b ** (1 as i128))\n}",

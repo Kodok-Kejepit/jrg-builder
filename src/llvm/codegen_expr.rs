@@ -898,6 +898,22 @@ impl Codegen {
         Val { text: r, ty: lv.ty.clone() }
     }
 
+    /// Jumlah/indeks bulat sebagai `i64`, DIJENUHKAN: `u64`/`i128` di luar 64 bit jadi `i64::MAX`/`MIN`, jadi pemeriksaan
+    /// batas sesudahnya menolak atau menjepitnya seperti acuan, bukan membaca bit bawahnya (AGI-20261119-49, -20-02).
+    pub(crate) fn jenuh_i64(&mut self, nv: &Val) -> Val {
+        if !matches!(nv.ty, JrgType::U64 | JrgType::I128 | JrgType::U128) { return self.coerce_longgar(nv, &JrgType::I64); }
+        let t = nv.ty.llvm_ty();
+        let unsigned = !nv.ty.is_signed_int();
+        let (a, b, s1, s2) = (self.fresh("jnh."), self.fresh("jnh."), self.fresh("jnh."), self.fresh("jnh."));
+        self.emit(format!("{} = icmp {} {} {}, 9223372036854775807", a, if unsigned { "ugt" } else { "sgt" }, t, nv.text));
+        let p = self.coerce_longgar(nv, &JrgType::I64);
+        self.emit(format!("{} = select i1 {}, i64 9223372036854775807, i64 {}", s1, a, p.text));
+        if unsigned { return Val { text: s1, ty: JrgType::I64 }; }
+        self.emit(format!("{} = icmp slt {} {}, -9223372036854775808", b, t, nv.text));
+        self.emit(format!("{} = select i1 {}, i64 -9223372036854775808, i64 {}", s2, b, s1));
+        Val { text: s2, ty: JrgType::I64 }
+    }
+
     /// `v` sebagai `i64` untuk operator yang dihitung 64 bit; `u64`/`i128`/`u128` yang tidak muat ditolak saat jalan.
     pub(crate) fn ke_i64_terperiksa(&mut self, v: &Val, op: &str) -> Val {
         if matches!(v.ty, JrgType::U64 | JrgType::I128 | JrgType::U128) {
@@ -1205,19 +1221,7 @@ impl Codegen {
             "declare void @jrg_str_repeat(ptr, i64, i64, ptr, ptr)", "jrg_str_repeat");
         // Pengali di luar 64 bit dijenuhkan, bukan dipotong: `2^64` dulu jadi 0 dan menjawab "" (AGI-20261119-49);
         // yang jenuh ditolak runtime dengan kalimat batas ukurannya.
-        let n64 = if matches!(nv.ty, JrgType::U64 | JrgType::I128 | JrgType::U128) {
-            let t = nv.ty.llvm_ty();
-            let unsigned = !nv.ty.is_signed_int();
-            let (a, b, s1, s2) = (self.fresh("rpn."), self.fresh("rpn."), self.fresh("rpn."), self.fresh("rpn."));
-            self.emit(format!("{} = icmp {} {} {}, 9223372036854775807", a, if unsigned { "ugt" } else { "sgt" }, t, nv.text));
-            let p = self.coerce_longgar(nv, &JrgType::I64);
-            self.emit(format!("{} = select i1 {}, i64 9223372036854775807, i64 {}", s1, a, p.text));
-            if unsigned { Val { text: s1, ty: JrgType::I64 } } else {
-                self.emit(format!("{} = icmp slt {} {}, -9223372036854775808", b, t, nv.text));
-                self.emit(format!("{} = select i1 {}, i64 -9223372036854775808, i64 {}", s2, b, s1));
-                Val { text: s2, ty: JrgType::I64 }
-            }
-        } else { self.coerce_longgar(nv, &JrgType::I64) };
+        let n64 = self.jenuh_i64(nv);
         let (sptr, slen) = self.split_str(sv);
         let outp = self.alloca_raw("rpp.", "ptr", None);
         let outl = self.alloca_raw("rpl.", "i64", None);

@@ -46,7 +46,9 @@ impl Codegen {
             return Err(super::galat::tandai(span, format!(
                 "{}butuh bilangan bulat, dapat `{}`", awalan, v.ty.nama_typeof())));
         }
-        Ok(self.coerce_longgar(v, &JrgType::I64))
+        // `u64`/`i128` yang tidak muat 64 bit bertanda ditolak saat jalan: dulu `u64::MAX` dibaca -1 dan `2^64` dibaca 0,
+        // jadi `math::gcd`/`range`/`str::repeat` menjawab salah tanpa suara (AGI-20261120-05).
+        Ok(self.ke_i64_terperiksa(v, if siapa.is_empty() { "argumen bulat" } else { siapa }))
     }
 
     pub fn coerce(&mut self, v: &Val, target: &JrgType) -> Val {

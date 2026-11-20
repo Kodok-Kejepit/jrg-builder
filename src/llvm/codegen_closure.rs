@@ -347,6 +347,8 @@ impl Codegen {
         if super::codegen_tunda::di_ekspr(body) { self.buka_bingkai_tunda(ret); }
 
         let v = self.codegen_expr(body, Some(ret))?;
+        // Ekor closure seperti `return`: tangkapan dan `var` modul yang dikembalikan disalin (AGI-20261120-04).
+        let v = self.lepas_dari_self(body, v);
         self.emit_return(&v, ret);
         if !self.is_terminated() {
             self.emit_return(&Val::unit(), ret);

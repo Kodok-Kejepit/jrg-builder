@@ -407,6 +407,9 @@ impl Codegen {
         let mut pakai = vec![format!("ptr {}", env)];
         for (a, t) in args.iter().zip(params.iter()) {
             let v = self.coerce(a, t);
+            // Parameter callee pengikatan baru: elemen yang diserahkan HOF disalin, seperti `panggil_nilai_fungsi` —
+            // dulu `rows.each(|mut r| { r[0] = 9 })` menulis ke larik `let` pemanggil (AGI-20261120-02).
+            let v = if Self::punya_penunjuk(&v.ty) || self.isi_dalam_perlu_salin(&v.ty) { self.salin_dalam(&v) } else { v };
             pakai.push(format!("{} {}", t.llvm_ty(), v.text));
         }
         if *ret == JrgType::Unit || *ret == JrgType::Never {

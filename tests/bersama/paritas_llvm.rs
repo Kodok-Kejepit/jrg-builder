@@ -5176,4 +5176,93 @@ fn main() {
     coba(|| (8 as u8) >> (200 as u8))
 }
 "#),
+    ("pola menyebut tipenya, batas rentang di luar jangkauan tipe, any/all berhenti di jawaban pasti (AGI-20261120-01)", r#"
+struct A { pub x: int }
+struct B { pub x: int }
+struct C: A { pub y: int = 0 }
+enum EA { Foo(int) }
+enum EB { Foo(int) }
+fn main() {
+    wok(match (A { x: 42 }) { B { x } => "WRONG_B:" + str(x), A { x } => "A:" + str(x) })
+    wok(match EA::Foo(77) { EB::Foo(x) => "WRONG_EB:" + str(x), EA::Foo(x) => "EA:" + str(x) })
+    wok(match (C { x: 1 }) { A { x } => "induk " + str(x), _ => "bukan" })
+    wok(match (250 as u8) { -10..=-1 => "negatif", _ => "lain" })
+    wok(match (5 as u8) { 0..=300 => "dalam", _ => "lain" })
+    wok(match -5.5 { -10..=-1 => "dalam", _ => "lain" })
+    wok(match (-3 as i8) { -5..=-1 => "neg", _ => "lain" })
+    wok([1, 0].any(|x: int| (10 / x) > 0), [0, 1].all(|x: int| if x == 0 { false } else { (10 / (x - 1)) > 0 }))
+}
+"#),
+    ("callback HOF menerima salinan, sort u64 tak bertanda, take di atas 64 bit, get_or eager (AGI-20261120-02)", r#"
+package main
+fn coba(f) { match tangkap(f) { Ok(v) => wok("ok", v), Err(g) => wok("err", g.pesan) } }
+var JEJAK = 0
+fn cadang() { JEJAK = JEJAK + 1; return 0 }
+pub fn main() {
+    let rows = [[1, 2, 3]]
+    rows.each(|mut r: []int| { r[0] = 999 })
+    let rows2 = rows.map(|mut r: []int| { r[1] = 888; return r })
+    wok(rows, rows2)
+    let dicts = [{"a": 1}, {"a": 2}]
+    dicts.each(|mut d| { d["a"] = 777 })
+    wok(dicts)
+    let besar = (9223372036854775807 as u64) * 2 + 1
+    wok(arr::sort([1 as u64, besar, 2 as u64]))
+    let jauh = (9223372036854775807 as i128) * 4
+    coba(|| arr::take([1, 2, 3], jauh))
+    coba(|| arr::take([1, 2, 3], besar))
+    wok(arr::get_or([10, 20], 0, cadang()), JEJAK)
+}
+"#),
+    ("hasil closure/fungsi yang menyebut tangkapan atau var modul disalin, dict::remove kunci tak ada menjawab dict baru (AGI-20261120-04)", r#"
+package main
+var g_dict = {"a": 1}
+fn ambil_g(flag) {
+    let nol = {"a": 0}
+    return if flag { g_dict } else { nol }
+}
+pub fn main() {
+    let cap_d = {"a": 1}
+    let cap_s = [1, 2]
+    let f1 = || cap_d
+    let f_s = || cap_s
+    let fg = || g_dict
+    var d1 = f1()
+    d1["a"] = 111
+    var cs = f_s()
+    cs[0] = 444
+    var gd = fg()
+    gd["a"] = 222
+    let cap_d2 = {"a": 5}
+    let f2 = || { return cap_d2 }
+    var d2 = f2()
+    d2["a"] = 333
+    var g3 = ambil_g(true)
+    g3["a"] = 555
+    let d5 = {"a": 1}
+    var r5 = dict::remove(d5, "tidak")
+    r5["a"] = 666
+    wok(cap_d, cap_s, g_dict, cap_d2, d5)
+    wok(d1, cs, gd, d2, g3, r5)
+}
+"#),
+    ("math::clamp batas terbalik dan NaN, math::sign tak bertanda, str::is_empty atas array, pesan assert_eq eager (AGI-20261120-05)", r#"
+package main
+var JEJAK = 0
+fn pesan() { JEJAK = JEJAK + 1; return "m" }
+fn coba(f) { match tangkap(f) { Ok(v) => wok("ok", v), Err(g) => wok("err", g.pesan) } }
+pub fn main() {
+    coba(|| math::clamp(5, 10, 0))
+    coba(|| math::clamp(2.5, 3.0, 1.0))
+    coba(|| math::is_nan(math::clamp(math::NAN, 0.0, 1.0)))
+    coba(|| math::clamp(-1.0, 0.0, 1.0))
+    coba(|| math::clamp(7, 0, 5))
+    let besar = (9223372036854775807 as u64) * 2 + 1
+    coba(|| math::sign(besar))
+    coba(|| math::sign(-7 as i8))
+    coba(|| str::is_empty([1, 2]))
+    assert_eq(1, 1, pesan())
+    wok(JEJAK)
+}
+"#),
 ];

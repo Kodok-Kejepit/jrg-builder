@@ -901,6 +901,15 @@ impl Codegen {
             (Some(a), Some(b)) if a == b && lv.ty != rv0.ty => (self.coerce(&lv, &a), self.coerce(&rv0, &b)),
             _ => (lv.clone(), self.coerce(&rv0, &lv.ty)),
         };
+        // Argumen ketiga dievaluasi sebelum membandingkan, seperti argumen lain di acuan (AGI-20261120-05).
+        let (tp, tl) = match args.get(2) {
+            Some(e) => {
+                let t = self.codegen_expr(e, Some(&JrgType::Str))?;
+                let t = if t.ty != JrgType::Str { self.val_to_str(&t)? } else { t };
+                self.split_str(&t)
+            }
+            None => ("null".to_string(), "-1".to_string()),
+        };
         let eqv = self.cmp_binop_pub_entry(&BinaryOp::Eq, &lv_b, &rv, span)?;
         let i1 = self.to_i1(&eqv);
         let fail_lbl = self.fresh_label("aefail.");
@@ -912,14 +921,6 @@ impl Codegen {
         let lt = self.nama_typeof_val(&lv)?;
         let rs = self.val_to_str(&rv0)?;
         let rt = self.nama_typeof_val(&rv0)?;
-        let (tp, tl) = match args.get(2) {
-            Some(e) => {
-                let t = self.codegen_expr(e, Some(&JrgType::Str))?;
-                let t = if t.ty != JrgType::Str { self.val_to_str(&t)? } else { t };
-                self.split_str(&t)
-            }
-            None => ("null".to_string(), "-1".to_string()),
-        };
         self.ensure_extern(
             "declare void @jrg_panic_assert_eq(ptr, i64, ptr, i64, ptr, i64, ptr, i64, ptr, i64) cold nounwind noreturn",
             "jrg_panic_assert_eq",
@@ -1202,8 +1203,34 @@ impl Codegen {
         let lo = self.coerce(&lo0, &v.ty);
         let hi0 = self.codegen_expr(&args[2], Some(&v.ty))?;
         let hi = self.coerce(&hi0, &v.ty);
-        let lowered = self.builtin_minmax_vals(&v, &lo, false)?; // max(v, lo)
-        self.builtin_minmax_vals(&lowered, &hi, true) // min(that, hi)
+        // Seperti acuan (AGI-20261120-05): `lo > hi` ditolak menyebut keduanya, lalu `x < lo` → lo, `x > hi` → hi,
+        // selain itu `x` apa adanya — NaN tetap NaN (`minnum`/`maxnum` dulu membuangnya).
+        if !v.ty.is_float() && !v.ty.is_int() { return Err("`clamp` butuh tipe numerik".into()); }
+        let (lebih, kurang) = if v.ty.is_float() { (("fcmp", "ogt"), ("fcmp", "olt")) }
+            else if v.ty.is_signed_int() { (("icmp", "sgt"), ("icmp", "slt")) } else { (("icmp", "ugt"), ("icmp", "ult")) };
+        let t = v.ty.llvm_ty();
+        let terbalik = self.fresh("clb.");
+        self.emit(format!("{} = {} {} {} {}, {}", terbalik, lebih.0, lebih.1, t, lo.text, hi.text));
+        let (lo_c, hi_c) = (lo.clone(), hi.clone());
+        self.gagal_bila(&terbalik, |cg| {
+            let (Ok(a), Ok(b)) = (cg.do_cast(&lo_c, &JrgType::Str, span), cg.do_cast(&hi_c, &JrgType::Str, span)) else {
+                return cg.panik("math::clamp: batas terbalik");
+            };
+            let tengah = cg.intern_string("`) lebih besar dari hi (`");
+            let isi = cg.str_concat(&a, &tengah).and_then(|x| cg.str_concat(&x, &b));
+            match isi {
+                Ok(isi) => cg.panik_sisip(&format!("math::clamp: batas terbalik — lo (`{}`); cek lagi urutan argumennya, \
+                    harusnya `clamp(x, lo, hi)` dengan lo <= hi", super::codegen_konversi::PENANDA),
+                    &super::codegen_konversi::Cetak::Teks(isi)),
+                Err(_) => cg.panik("math::clamp: batas terbalik"),
+            }
+        });
+        let (bawah, atas, r1, r2) = (self.fresh("clk."), self.fresh("cla."), self.fresh("clr."), self.fresh("clr."));
+        self.emit(format!("{} = {} {} {} {}, {}", bawah, kurang.0, kurang.1, t, v.text, lo.text));
+        self.emit(format!("{} = {} {} {} {}, {}", atas, lebih.0, lebih.1, t, v.text, hi.text));
+        self.emit(format!("{} = select i1 {}, {} {}, {} {}", r1, atas, t, hi.text, t, v.text));
+        self.emit(format!("{} = select i1 {}, {} {}, {} {}", r2, bawah, t, lo.text, t, r1));
+        Ok(Val { text: r2, ty: v.ty.clone() })
     }
 
     fn builtin_minmax_vals(&mut self, a: &Val, b: &Val, want_min: bool) -> Result<Val, String> {
@@ -1274,6 +1301,17 @@ impl Codegen {
             // Tanpa bendera fast-math: NaN harus sampai ke runtime apa adanya.
             self.emit(format!("{} = call double @jrg_sign_f64(double {})", r, v64.text));
             Ok(Val { text: r, ty: JrgType::F64 })
+        } else if v.ty.is_int() {
+            // Di tipenya sendiri, tanpa lewat `i64`: `u64::MAX` dulu dibaca -1, `2^64` dibaca 0 (AGI-20261120-05).
+            let t = v.ty.llvm_ty();
+            let (pos, neg, p, n, r) = (self.fresh("sg."), self.fresh("sg."), self.fresh("sg."), self.fresh("sg."), self.fresh("signi."));
+            self.emit(format!("{} = icmp {} {} {}, 0", pos, if v.ty.is_signed_int() { "sgt" } else { "ugt" }, t, v.text));
+            if v.ty.is_signed_int() { self.emit(format!("{} = icmp slt {} {}, 0", neg, t, v.text)); }
+            else { self.emit(format!("{} = or i1 false, false", neg)); }
+            self.emit(format!("{} = zext i1 {} to {}", p, pos, t));
+            self.emit(format!("{} = zext i1 {} to {}", n, neg, t));
+            self.emit(format!("{} = sub {} {}, {}", r, t, p, n));
+            Ok(Val { text: r, ty: v.ty.clone() })
         } else {
             let v64 = self.coerce_longgar(&v, &JrgType::I64);
             self.ensure_extern("declare i64 @jrg_sign_i64(i64)", "jrg_sign_i64");
@@ -1699,6 +1737,13 @@ impl Codegen {
         if item == "is_empty" && args.len() == 1 {
             return Some((|| {
                 let v = self.codegen_expr(&args[0], Some(&JrgType::Str))?;
+                // Argumen pertama `str::` harus teks, seperti acuan: array/dict dulu dijawab panjangnya (AGI-20261120-05).
+                if !matches!(v.ty, JrgType::Str | JrgType::Rune | JrgType::Any) {
+                    self.panik(&crate::interpreter::pesan_arg_harus_teks("str::is_empty", "argumen pertama", &v.ty.nama_typeof()));
+                    let mati = self.fresh_label("sempty.mati.");
+                    self.start_block(mati);
+                    return Ok(Val { text: "0".to_string(), ty: JrgType::Bool });
+                }
                 let n = self.panjang_koleksi(&v, span)?;
                 let r = self.fresh("sempty.");
                 self.emit(format!("{} = icmp eq i64 {}, 0", r, n.text));

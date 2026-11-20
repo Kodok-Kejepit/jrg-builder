@@ -240,7 +240,7 @@ impl Codegen {
             if !v.ty.is_int() {
                 return Err(super::galat::tandai(span, crate::interpreter::pesan_bukan_bulat("arr::swap", &v.ty.display_name(), None)));
             }
-            ix.push(self.coerce_longgar(&v, &JrgType::I64));
+            ix.push(self.jenuh_i64(&v));
         }
         let (ptr, len) = self.bagian_koleksi_pub(&koleksi, &elem);
         // Kalimatnya dari definisi acuan; angka penanda diganti bita 1 (indeks) dan 2 (panjang).
@@ -264,7 +264,7 @@ impl Codegen {
         if !n.ty.is_int() {
             return Err(super::galat::tandai(span, crate::interpreter::pesan_bukan_bulat(&nama, &n.ty.display_name(), None)));
         }
-        let n = self.coerce_longgar(&n, &JrgType::I64);
+        let n = self.jenuh_i64(&n);
         self.tolak_negatif(&nama, "jumlah", &n);
         let (ptr, len) = self.bagian_koleksi_pub(&koleksi, &elem);
         let lebih = self.fresh("amb.");
@@ -409,6 +409,8 @@ impl Codegen {
         let (koleksi, elem) = self.arg_koleksi(&args[0], "sort", span)?;
         if elem == JrgType::Any { return Ok(self.urut_slice_any(&koleksi)); }
         let (fungsi, tipe_ptr) = match &elem {
+            // `u64` diurutkan tak bertanda: `u64::MAX` dulu jadi -1 dan naik ke depan (AGI-20261120-02).
+            t if t.is_int() && t.int_bits() == Some(64) && !t.is_signed_int() => ("jrg_sort_u64", "i64"),
             t if t.is_int() && t.int_bits() == Some(64) => ("jrg_sort_i64", "i64"),
             JrgType::F64 => ("jrg_sort_f64", "double"),
             JrgType::Str => ("jrg_sort_str", "i8"),
@@ -623,6 +625,11 @@ impl Codegen {
             } else {
                 JrgType::Enum(self.instantiate_option(elem))
             };
+            // Cadangan `get_or` dievaluasi SEBELUM cabang, seperti argumen lain di acuan (AGI-20261120-02).
+            let cadangan = if metode == "get_or" {
+                let d = self.codegen_expr(&args[1], Some(elem))?;
+                Some(self.coerce(&d, elem))
+            } else { None };
             let slot = self.alloca_typed("okslot.", &hasil_ty);
             let l_ada = self.fresh_label("ok.ada.");
             let l_tidak = self.fresh_label("ok.tidak.");
@@ -648,9 +655,8 @@ impl Codegen {
             self.terminate(format!("br label %{}", l_end));
 
             self.start_block(l_tidak);
-            let kosong = if metode == "get_or" {
-                let d = self.codegen_expr(&args[1], Some(elem))?;
-                self.coerce(&d, elem)
+            let kosong = if let Some(d) = cadangan {
+                d
             } else {
                 let en = self.instantiate_option(elem);
                 self.build_enum_unit_variant(&en, "None")?

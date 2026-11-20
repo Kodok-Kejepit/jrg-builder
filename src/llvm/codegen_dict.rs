@@ -629,7 +629,14 @@ impl Codegen {
         self.emit(format!("{} = icmp sge i64 {}, 0", ada, idx));
         let l_ada = self.fresh_label("drada.");
         let l_end = self.fresh_label("drend.");
-        self.terminate(format!("br i1 {}, label %{}, label %{}", ada, l_ada, l_end));
+        // Kunci yang tidak ada: hasilnya tetap dict BARU — dulu penyangga `d` dijawab apa adanya, dan menulis ke
+        // hasilnya mengubah `let d` pemanggil (AGI-20261120-04).
+        let l_tidak = self.fresh_label("drtidak.");
+        self.terminate(format!("br i1 {}, label %{}, label %{}", ada, l_ada, l_tidak));
+        self.start_block(l_tidak);
+        let salinan = self.salin_dalam(&d);
+        self.emit(format!("store %JrgDict {}, ptr {}", salinan.text, slot));
+        self.terminate(format!("br label %{}", l_end));
 
         self.start_block(l_ada);
         self.ensure_extern(

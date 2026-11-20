@@ -186,6 +186,14 @@ pub extern "C" fn jrg_sort_i64(ptr: *mut i64, len: i64) {
     s.sort_unstable();
 }
 
+/// Urutkan sebuah larik `u64` di tempat, tak bertanda.
+#[no_mangle]
+pub extern "C" fn jrg_sort_u64(ptr: *mut u64, len: i64) {
+    if ptr.is_null() || len <= 1 { return; }
+    let s = unsafe { core::slice::from_raw_parts_mut(ptr, len as usize) };
+    s.sort_unstable();
+}
+
 /// Urutkan sebuah larik `f64` di tempat.
 #[no_mangle]
 pub extern "C" fn jrg_sort_f64(ptr: *mut f64, len: i64) {
