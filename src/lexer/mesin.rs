@@ -17,6 +17,7 @@ impl<'src> Lexer<'src> {
             pending:     std::collections::VecDeque::new(),
             comment_depth: 0,
             last_token_auto_semi: false,
+            ulang: false,
             komentar:    Vec::new(),
         }
     }
@@ -568,14 +569,16 @@ impl<'src> Lexer<'src> {
                     self.skip_line_comment();
                     let span = self.span_from(lo);
                     self.komentar.push(Komentar { span, blok: false });
-                    return self.next_token();
+                    self.ulang = true;
+                    return Ok(Token::new(TokenKind::Eof, span));
                 }
                 Some('*') => {
                     self.advance();
                     self.skip_block_comment()?;
                     let span = self.span_from(lo);
                     self.komentar.push(Komentar { span, blok: true });
-                    return self.next_token();
+                    self.ulang = true;
+                    return Ok(Token::new(TokenKind::Eof, span));
                 }
                 _         => TokenKind::Slash,
             },
@@ -706,7 +709,16 @@ impl<'src> Lexer<'src> {
 
     // ── Main dispatch ─────────────────────────────────────────────────────
 
+    /// Satu token bermakna. Baris kosong dan komentar diulang di loop ini, bukan lewat rekursi: ribuan baris kosong
+    /// berturut-turut dulu menghabiskan stack lexer (AGI-20261119-03).
     pub(crate) fn next_token(&mut self) -> Result<Token, LexError> {
+        loop {
+            let t = self.next_token_sekali()?;
+            if !std::mem::take(&mut self.ulang) { return Ok(t); }
+        }
+    }
+
+    fn next_token_sekali(&mut self) -> Result<Token, LexError> {
         // Token yang sudah diantrekan (lihat `pending`) selalu didahulukan.
         if let Some(tok) = self.pending.pop_front() {
             return Ok(tok);
@@ -732,7 +744,8 @@ impl<'src> Lexer<'src> {
                 if self.last_token_auto_semi && !self.berikutnya_menahan_titik_koma() {
                     Ok(Token::new(TokenKind::Semi, self.span_from(lo)))
                 } else {
-                    self.next_token() // skip non-significant newline
+                    self.ulang = true; // newline tak bermakna: dilewati lewat loop `next_token`
+                    Ok(Token::new(TokenKind::Eof, self.span_from(lo)))
                 }
             }
 

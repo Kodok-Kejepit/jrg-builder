@@ -697,7 +697,7 @@ impl Parser {
         let sisa: MatchBody = if self.eat(&TokenKind::KwElse) {
             if self.at_exact(&TokenKind::KwIf) {
                 let lanjut = if matches!(self.peek_kind(1), Some(TokenKind::KwLet)) {
-                    self.parse_if_let()?
+                    self.dengan_sarang(Self::parse_if_let)?
                 } else {
                     Expr::If(Box::new(self.parse_if_stmt()?))
                 };

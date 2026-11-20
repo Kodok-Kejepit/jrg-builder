@@ -112,8 +112,16 @@ impl Parser {
     fn parse_expr_with_bp_inti(&mut self, min_bp: u8) -> Result<Expr, ParseError> {
         let lo = self.span_lo();
         let mut lhs = self.parse_prefix()?;
-
+        // Operator kiri-asosiatif dan postfix membungkus `lhs` di LOOP, bukan rekursi, jadi AST-nya bisa sedalam apa
+        // pun tanpa menaikkan `dalam` — penelusur AST sesudahnya yang meledak (AGI-20261119-03). Tiap bungkus dihitung.
+        let mut bungkus = 0u32;
         loop {
+            bungkus += 1;
+            if self.dalam + bungkus > super::MAKS_SARANG + 1 {
+                return Err(self.error(format!(
+                    "sarang terlalu dalam — lebih dari {} tingkat kurung, blok, atau operator bertumpuk\n\
+                     bantuan: pecah ekspresinya lewat variabel sementara atau fungsi", super::MAKS_SARANG)));
+            }
             // Check for infix operators first (before postfix, to respect bp)
             {
                 let kind = &self.current().kind;

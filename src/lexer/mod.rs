@@ -85,6 +85,8 @@ pub(crate) struct Lexer<'src> {
     comment_depth: u32,
     // Auto-semicolon: insert ';' after certain tokens at newline
     last_token_auto_semi: bool,
+    /// Diminta `next_token` mengulang: baris kosong/komentar dilewati lewat loop, bukan rekursi (AGI-20261119-03).
+    ulang: bool,
     // Rentang tiap komentar yang DILEWATI, dicatat apa adanya.
     komentar: Vec<Komentar>,
 }
