@@ -359,7 +359,8 @@ impl Codegen {
             self.tempat_tiruan_sesudah(&pesan, span)?;
             return Ok(Val { text: "0".into(), ty: JrgType::I64 });
         }
-        Ok(self.coerce_longgar(&iv, &JrgType::I64))
+        // Dijenuhkan, bukan dipotong: `a[2^64]` dulu membaca `a[0]`, `a[u64::MAX]` membaca `a[-1]` (AGI-20261120-14).
+        Ok(self.jenuh_i64(&iv))
     }
 
     // ── places (lvalues) ────────────────────────────────────────────────
@@ -1076,7 +1077,7 @@ impl Codegen {
                 return self.dict_baca(&d, &k, span);
             }
             let iv = self.codegen_expr(idx, Some(&JrgType::I64))?;
-            let iv = self.coerce_longgar(&iv, &JrgType::I64);
+            let iv = self.jenuh_i64(&iv);
             let (tp, tt) = self.get_index_place(&tempat, &dalam, &iv, span)?;
             return Ok(self.load_place(&tp, &tt));
         }
@@ -1398,7 +1399,7 @@ impl Codegen {
             let sisi = if salah(&lo) { "awal" } else { "akhir" };
             if sisi == "akhir" {
                 if let Some(l) = &lo {
-                    let l = self.coerce_longgar(l, &JrgType::I64);
+                    let l = self.jenuh_i64(l);
                     self.emit_slice_bounds_check(&l, panjang, &panjang.text);
                 }
             }
@@ -1407,8 +1408,8 @@ impl Codegen {
             self.tempat_tiruan_sesudah(&pesan, span)?;
             return Ok(None);
         }
-        let lo_v = lo.map(|v| self.coerce_longgar(&v, &JrgType::I64)).unwrap_or(nol);
-        let hi_v = hi.map(|v| self.coerce_longgar(&v, &JrgType::I64)).unwrap_or_else(|| panjang.clone());
+        let lo_v = lo.map(|v| self.jenuh_i64(&v)).unwrap_or(nol);
+        let hi_v = hi.map(|v| self.jenuh_i64(&v)).unwrap_or_else(|| panjang.clone());
         Ok(Some(self.emit_slice_bounds_check(&lo_v, &hi_v, &panjang.text)))
     }
 
@@ -1513,11 +1514,11 @@ impl Codegen {
         self.emit(format!("{} = call i64 @jrg_str_char_count(ptr {}, i64 {})", n, sptr, slen));
 
         let lo_v = match lo {
-            Some(e) => { let v = self.codegen_expr(e, Some(&JrgType::I64))?; self.coerce_longgar(&v, &JrgType::I64) }
+            Some(e) => { let v = self.codegen_expr(e, Some(&JrgType::I64))?; self.jenuh_i64(&v) }
             None => Val { text: "0".into(), ty: JrgType::I64 },
         };
         let hi_v = match hi {
-            Some(e) => { let v = self.codegen_expr(e, Some(&JrgType::I64))?; self.coerce_longgar(&v, &JrgType::I64) }
+            Some(e) => { let v = self.codegen_expr(e, Some(&JrgType::I64))?; self.jenuh_i64(&v) }
             None => Val { text: n.clone(), ty: JrgType::I64 },
         };
         let (lo_v, hi_v) = self.emit_slice_bounds_check(&lo_v, &hi_v, &n);

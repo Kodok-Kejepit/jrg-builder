@@ -94,7 +94,7 @@ impl Interpreter {
         if let Some((n, _)) = crate::interpreter::bentuk_hof_method(method) {
             let punya = match &obj {
                 Value::Array(_) => !matches!(method, "map_err" | "and_then"),
-                Value::Enum { variant, .. } => match method {
+                Value::Enum { variant, type_name, .. } if matches!(type_name.as_str(), "Option" | "Result") => match method {
                     "map" | "and_then" => matches!(variant.as_str(), "Some" | "None" | "Ok" | "Err"),
                     "map_err" => matches!(variant.as_str(), "Ok" | "Err"),
                     _ => false,
@@ -188,6 +188,14 @@ impl Interpreter {
             if let Some(r) = Self::metode_str(s, method, &args) { return r; }
         }
 
+        // Enum milik program yang variannya kebetulan bernama `Ok`/`Some`/…: method `Option`/`Result` bukan miliknya,
+        // seperti di `--vm` (AGI-20261120-09) — dulu `Status::Ok.map(f)` mengubahnya jadi `Status::Ok(())`.
+        if let Value::Enum { type_name, .. } = &obj {
+            if !matches!(type_name.as_str(), "Option" | "Result") && matches!(method, "and_then" | "err" | "expect"
+                | "is_err" | "is_none" | "is_ok" | "is_some" | "map" | "map_err" | "ok" | "unwrap" | "unwrap_err" | "unwrap_or") {
+                return runtime_err!("{}", crate::interpreter::pesan_method_tak_ada(&obj.type_name(), method, "", None));
+            }
+        }
         match (&obj, method) {
             // String built-in methods: satu definisi, di `metode_str`,
             // karena VM memanggil yang sama.

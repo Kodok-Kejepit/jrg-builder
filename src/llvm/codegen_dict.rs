@@ -317,6 +317,17 @@ impl Codegen {
                 }
             }).collect()
         } else { Vec::new() };
+        // Kunci kembar: yang TERAKHIR menang, seperti `jrg_dict_build` saat jalan; kunci bukan literal bisa menimpa apa
+        // pun, jadi tabelnya tidak dipakai (bacaan lewat tag) — AGI-20261120-14.
+        let semua_literal = pasangan.iter().all(|(ke, _)| matches!(ke,
+            Expr::Literal(crate::parser::LitKind::Str(_), _) | Expr::Literal(crate::parser::LitKind::RawStr(_), _)));
+        let tabel_kunci: Vec<(String, JrgType)> = if !semua_literal { Vec::new() } else {
+            let mut t: Vec<(String, JrgType)> = Vec::new();
+            for (k, ty) in tabel_kunci {
+                match t.iter_mut().find(|(n, _)| *n == k) { Some(x) => x.1 = ty, None => t.push((k, ty)) }
+            }
+            t
+        };
 
         let jumlah = pasangan.len();
         let buf = self.buffer_pasangan(&jumlah.to_string(), &vty);

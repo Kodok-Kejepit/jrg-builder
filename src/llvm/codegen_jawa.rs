@@ -71,7 +71,8 @@ impl Codegen {
                          bertipe tunggal, dan menerima nilai lain berarti menyimpan bit yang \
                          ditafsirkan sebagai bilangan", item, v.ty.display_name())));
                 }
-                nilai.push(self.coerce_longgar(&v, &JrgType::I64).text);
+                // Registri 64 bit: yang tidak muat ditolak, bukan disimpan bit bawahnya (AGI-20261120-14).
+                nilai.push(self.ke_i64_terperiksa(&v, &format!("jawa::{}", item)).text);
             }
         }
         // Pegangan diperiksa sesudah semua argumen dievaluasi, seperti acuan.

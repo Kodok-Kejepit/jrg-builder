@@ -657,7 +657,28 @@ struct Panik {
     situs: i32,
 }
 
-static mut PANIK: Panik = Panik { sedang: false, pesan: None, ikut: Vec::new(), situs: 0 };
+/// Per korutin: badan `tangkap` di dalam `defer` yang sedang membereskan panik lain dulu mengambil pesan panik
+/// pemanggilnya, karena keduanya berbagi satu status (AGI-20261120-08).
+static mut PANIK_SEMUA: Vec<(usize, Panik)> = Vec::new();
+/// Situs galat badan Future/Task, dititipkan `mati` ke pengambil hasilnya (yang jalan di korutin lain).
+static mut SITUS_TITIP: i32 = 0;
+
+extern "C" { fn jrg_ko_id() -> usize; }
+
+fn panik_kini() -> &'static mut Panik {
+    let id = unsafe { jrg_ko_id() };
+    let semua = unsafe { &mut *core::ptr::addr_of_mut!(PANIK_SEMUA) };
+    let i = match semua.iter().position(|(k, _)| *k == id) {
+        Some(i) => i,
+        None => { semua.push((id, Panik { sedang: false, pesan: None, ikut: Vec::new(), situs: 0 })); semua.len() - 1 }
+    };
+    &mut semua[i].1
+}
+
+fn ambil_situs() -> i32 {
+    let t = unsafe { core::mem::replace(&mut *core::ptr::addr_of_mut!(SITUS_TITIP), 0) };
+    if t != 0 { t } else { core::mem::replace(&mut panik_kini().situs, 0) }
+}
 
 /// Ditulis IR tepat sebelum panggilan panik di blok dingin; dibaca (lalu dinolkan) saat kalimatnya dicatat.
 #[no_mangle]
@@ -707,7 +728,7 @@ fn bentuk_galat(s: &str, situs: i32) -> String {
 fn eprint_line(args: fmt::Arguments<'_>) {
     let mut s = String::new();
     let _ = s.write_fmt(args);
-    let p = unsafe { &mut *core::ptr::addr_of_mut!(PANIK) };
+    let p = panik_kini();
     if p.pesan.is_none() {
         p.pesan = Some(s);
         p.situs = unsafe { jrg_situs };
@@ -718,10 +739,10 @@ fn eprint_line(args: fmt::Arguments<'_>) {
 /// Ujung tiap panik: jalankan `defer` korutin ini, cetak galatnya, keluar.
 /// Panik dari dalam sebuah `defer` masuk ke sini lagi dan meneruskan sisanya.
 fn mati() -> ! {
-    unsafe { (*core::ptr::addr_of_mut!(PANIK)).sedang = true };
+    panik_kini().sedang = true;
     jrg_tunda_jalankan(0);
     flush_stdout();
-    let p = unsafe { &mut *core::ptr::addr_of_mut!(PANIK) };
+    let p = panik_kini();
     let mut s = p.pesan.take().unwrap_or_default();
     for t in p.ikut.drain(..) {
         s.push_str("\n  catatan: sebuah `defer` juga gagal saat membereskan: ");
@@ -730,7 +751,9 @@ fn mati() -> ! {
     // Badan Future/Task yang gagal menitipkan galatnya ke yang mengambil hasilnya.
     if unsafe { !TAK_GUGUR } {
         p.sedang = false;
+        unsafe { SITUS_TITIP = p.situs };
         unsafe { jrg_masa_gagal(s.as_ptr(), s.len() as i64) };
+        unsafe { SITUS_TITIP = 0 };
         p.sedang = true;
     }
     let situs = core::mem::replace(&mut p.situs, 0);
@@ -1405,7 +1428,7 @@ static mut UJI: (i64, i64) = (0, 0);
 #[no_mangle]
 pub unsafe extern "C" fn jrg_uji_lapor(rc: i32, pp: *const u8, pl: i64, okp: *const u8, okl: i64,
     gp: *const u8, gl: i64, gbp: *const u8, gbl: i64, baris: *const i32, n: *const i32) {
-    let situs = core::mem::replace(&mut (*core::ptr::addr_of_mut!(PANIK)).situs, 0);
+    let situs = ambil_situs();
     let uji = &mut *core::ptr::addr_of_mut!(UJI);
     if rc == 0 {
         uji.0 += 1;
@@ -1431,7 +1454,7 @@ pub struct GalatTangkap { baris: i64, berkas: TeksMentah, kolom: i64, pesan: Tek
 /// dirender `jrgc` (`--> berkas:baris:kolom`), `""`/0/0 kalau tidak ada — aturan `interpreter::tangkap::rekam`.
 #[no_mangle]
 pub unsafe extern "C" fn jrg_tangkap_rekam(p: *const u8, n: i64, out: *mut GalatTangkap) {
-    let situs = core::mem::replace(&mut (*core::ptr::addr_of_mut!(PANIK)).situs, 0);
+    let situs = ambil_situs();
     let pesan = borrow_str(p, n);
     let kalimat = pesan.lines().find(|l| !l.trim().is_empty()).unwrap_or("").trim();
     let (mut berkas, mut baris, mut kolom) = (String::new(), 0i64, 0i64);

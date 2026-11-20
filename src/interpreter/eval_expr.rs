@@ -429,6 +429,12 @@ impl Interpreter {
                     };
                     if lain { return runtime_err!("{}", crate::interpreter::pesan_sebar_keluarga(type_name)); }
                 }
+                // `?` cuma untuk `Option`/`Result`: enum program bervarian `Ok`/`Err` ditolak, seperti `--vm` (AGI-20261120-09).
+                if let Value::Enum { type_name, .. } = &v {
+                    if !matches!(type_name.as_str(), "Option" | "Result") {
+                        return runtime_err!("{}", crate::interpreter::pesan_sebar_bukan_hasil(type_name));
+                    }
+                }
                 match &v {
                     Value::Enum { variant, payload, .. } if variant == "Ok" || variant == "Some" => {
                         Ok(payload.as_deref().cloned().unwrap_or(Value::Unit))

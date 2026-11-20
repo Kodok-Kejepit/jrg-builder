@@ -98,12 +98,29 @@ impl Codegen {
 impl Codegen {
     /// `s.upper(1)`, `"a-b".split()`: jumlah argumen method bawaan yang salah gagal SAAT JALAN
     /// dengan kalimat acuan, sesudah penerima dan argumennya dievaluasi — dulu yang lebih dibuang.
+    /// `Option`/`Result` dari BENTUK ekspresinya: konstruktor, atau `if` yang cabang pertamanya berekor konstruktor.
+    fn keluarga_bentuk(e: &Expr) -> Option<&'static str> {
+        match e {
+            Expr::Call { func, .. } => match &**func {
+                Expr::Ident(n, _) if n == "Some" => Some("Option"),
+                Expr::Ident(n, _) if n == "Ok" || n == "Err" => Some("Result"),
+                _ => None,
+            },
+            Expr::Ident(n, _) if n == "None" => Some("Option"),
+            Expr::If(i) => i.then.tail.as_deref().and_then(Self::keluarga_bentuk),
+            _ => None,
+        }
+    }
+
     pub(crate) fn jumlah_arg_metode_salah(&mut self, obj: &Expr, method: &str, args: &[Expr], expected: Option<&JrgType>, span: Span)
         -> Option<Result<Val, String>> {
         use crate::interpreter::{pesan_arg_metode_skalar, pesan_jumlah_arg_metode};
         let n = args.len();
         let pesan = if matches!(obj, Expr::Array { .. } | Expr::ArrayRepeat { .. }) {
             pesan_jumlah_arg_metode("arr", method, n)
+        } else if let Some(kel) = Self::keluarga_bentuk(obj) {
+            // Penerima yang tipenya belum bisa diintip (`Some(5)`, `if .. { Some(5) } else { None }`) — AGI-20261120-08.
+            pesan_jumlah_arg_metode(kel, method, n)
         } else {
             match self.peek_expr_type(obj)? {
                 JrgType::Str => pesan_jumlah_arg_metode("str", method, n),

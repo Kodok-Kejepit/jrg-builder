@@ -268,6 +268,9 @@ void jrg_ko_spawn(void (*fn)(void *), void *arg) {
 // Goroutine yang belum selesai: selama ada, builtin jembatan dijalankan di thread pembantu.
 int64_t jrg_ko_lain(void) { return jrg_ko_hidup; }
 
+// Identitas korutin yang sedang jalan: status panik runtime dicatat per korutin (AGI-20261120-08).
+uintptr_t jrg_ko_id(void) { return (uintptr_t)jrg_ko_kini; }
+
 void jrg_ko_serah(void) {
     // Yang tidur ikut dibangunkan: penunggu builtin pemblokir memanggil ini berulang-ulang.
     if (jrg_ko_tidur_daftar) jrg_ko_bangunkan();
@@ -285,7 +288,7 @@ void jrg_ko_tidur(int64_t mikro) {
         return;
     }
     JrgKo *k = jrg_ko_kini;
-    k->bangun = jrg_ko_jam() + mikro;
+    { int64_t j = jrg_ko_jam(); k->bangun = mikro > INT64_MAX - j ? INT64_MAX : j + mikro; }
     k->next = jrg_ko_tidur_daftar;
     jrg_ko_tidur_daftar = k;
     jrg_ko_jadwal();
@@ -572,7 +575,9 @@ void jrg_masa_ambil(JrgChan *c, void *out, const char *nama, int64_t nl) {
 // Hasilnya kalau sudah ada dalam `mikro` mikrodetik (0 = tanpa menunggu): 1 diambil, 0 belum.
 int32_t jrg_masa_coba(JrgChan *c, void *out, int64_t mikro, const char *nama, int64_t nl) {
     jrg_masa_sudah(c, nama, nl);
-    int64_t tenggat = jrg_ko_jam() + mikro;
+    // Jenuh, bukan meluap: tenggat raksasa dulu jadi negatif dan menjawab `None` seketika (AGI-20261120-08).
+    int64_t kini_jam = jrg_ko_jam();
+    int64_t tenggat = mikro > INT64_MAX - kini_jam ? INT64_MAX : kini_jam + mikro;
     for (;;) {
         if (c->n > 0) { jrg_chan_recv(c, out, c->esize); jrg_masa_periksa(c); return 1; }
         if (mikro <= 0 || jrg_ko_jam() >= tenggat) {

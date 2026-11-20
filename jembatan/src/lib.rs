@@ -91,7 +91,11 @@ impl Peta {
         if self.tuple {
             return VmValue::tuple((0..self.m.len()).map(|i| self.m.remove(&i.to_string()).unwrap_or(VmValue::Nil)).collect());
         }
-        match self.nama_struct { Some(t) => VmValue::struktur(&t, self.m), None => VmValue::map(self.m) }
+        // Pegangan pustaka asli menyeberang sebagai titipan, tidak pernah dict bertanda: nama pegangan di sini dict
+        // palsu atau struct program bernama sama — diberi label bernomor seperti `ruang_tipe` (AGI-20261120-10).
+        let nama = |t: String| if jrgc::interpreter::galat_index::HANDLE_PUSTAKA.contains(&t.as_str()) {
+            format!("{}{}0", t, jrgc::ruang_tipe::PENANDA) } else { t };
+        match self.nama_struct { Some(t) => VmValue::struktur(&nama(t), self.m), None => VmValue::map(self.m) }
     }
 }
 
@@ -381,7 +385,7 @@ pub unsafe extern "C" fn jrg_jembatan_panggil(
     #[cfg(target_os = "wasi")]
     let _jaga = JagaWasi::masuk();
     let nama = teks(nama as u64, nl as u64);
-    let gagal = |pesan: String| { let (p, l) = bocorkan(&jrgc::terjemah::t(&pesan)); kotak(5, p, l) };
+    let gagal = |pesan: String| { let (p, l) = bocorkan(&jrgc::terjemah::t(&jrgc::ruang_tipe::bersih(&pesan))); kotak(5, p, l) };
     // `::tampil` dan `::typeof`: tampilan dan nama tipe sebuah nilai titipan.
     // `::field`: `x.f` atas nilai titipan (struct milik `jrgc`, mis. `MousePos`).
     if nama == "::field" {
@@ -517,7 +521,7 @@ fn batas_os() -> Option<(usize, usize)> {
 fn batas_os() -> Option<(usize, usize)> { None }
 
 unsafe fn tulis_hasil(nama: &str, hasil: Hasil, out: *mut KotakAny, k: &Kait) -> i32 {
-    let gagal = |pesan: String| { let (p, l) = bocorkan(&jrgc::terjemah::t(&pesan)); kotak(5, p, l) };
+    let gagal = |pesan: String| { let (p, l) = bocorkan(&jrgc::terjemah::t(&jrgc::ruang_tipe::bersih(&pesan))); kotak(5, p, l) };
     match hasil {
         Err(_) => { out.write(gagal(format!("`{}` panik di dalam jrgc — ini bug di jrgc, bukan di programmu", nama))); -1 }
         Ok(None) => { out.write(gagal(format!("`{}` tidak ada di pustaka standar", nama))); -1 }

@@ -2910,4 +2910,22 @@ fn main() {
     wok(re::test(besar, str::repeat("a", 100)), re::test(besar, str::repeat("a", 20) + "z"))
 }
 "#),
+    ("enum program bervarian Ok/Err/Some/None tidak mewarisi method dan `?` Option/Result (AGI-20261120-09)", r#"
+enum Status { Ok, Err(string) }
+enum Choice { Some(int), None }
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn f() { let x = Status::Err("custom")?
+ return 1 }
+fn main() {
+    coba(|| typeof(Status::Err("bad")))
+    coba(|| typeof(Choice::Some(42)))
+    coba(|| Status::Ok.is_ok())
+    coba(|| Status::Ok.unwrap(1, 2, 3))
+    coba(|| Status::Ok.map(|x| x))
+    coba(|| Choice::Some(42).map(|x| x + 1))
+    coba(|| Choice::Some(42).unwrap())
+    coba(|| Status::Ok.foo())
+    coba(|| f())
+}
+"#),
 ];

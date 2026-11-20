@@ -5265,4 +5265,60 @@ pub fn main() {
     wok(JEJAK)
 }
 "#),
+    ("enum program bervarian Ok/Err/Some/None bukan Option/Result (AGI-20261120-09)", r#"
+enum Status { Ok, Err(string) }
+enum Choice { Some(int), None }
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn main() {
+    coba(|| typeof(Status::Err("bad")))
+    coba(|| typeof(Choice::Some(42)))
+    coba(|| Status::Ok.is_ok())
+    coba(|| Status::Ok.unwrap(1, 2, 3))
+    coba(|| Status::Ok.map(|x| x))
+    coba(|| Choice::Some(42).map(|x| x + 1))
+    coba(|| Choice::Some(42).unwrap())
+    coba(|| Status::Ok.foo())
+}
+"#),
+    ("struct program bernama Ptr bukan pegangan pustaka lewat jembatan (AGI-20261120-10)", r#"
+package main
+struct Ptr { pub id: int }
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+pub fn main() {
+    let p = ptr::new(5)
+    coba(|| ptr::get(Ptr { id: 1 }))
+    coba(|| ptr::get(p))
+}
+"#),
+    ("panik milik program tidak menyimpang, kunci literal kembar yang terakhir menang (AGI-20261120-14)", r#"
+package main
+fn panik(m) { wok("panik saya:", m) }
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+pub fn main() {
+    let x = 5
+    if typeof(x) == "int" { panik("x") }
+    wok("lanjut")
+    let a = [10, 20, 30]
+    let d = {"a": 1, "a": "hello"}
+    wok(d["a"], d)
+}
+"#),
+    ("panik per korutin lewat defer+tangkap, tenggat timeout jenuh, aritas method atas konstruktor (AGI-20261120-08)", r#"
+package main
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.baris, g.pesan) } }
+fn bersih() {
+    coba(|| panik("DALAM"))
+}
+fn luar() {
+    defer bersih()
+    panik("LUAR")
+}
+pub fn main() {
+    coba(|| luar())
+    let f = Future::new(|| { time::sleep_ms(50); return 42 })
+    wok(future::timeout(f, 9223372036854775))
+    coba(|| Some(5).unwrap(7))
+    coba(|| (if true { Some(5) } else { None }).is_some(1))
+}
+"#),
 ];

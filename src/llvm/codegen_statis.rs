@@ -9,6 +9,13 @@ use super::types::JrgType;
 
 impl Codegen {
     /// `typeof` di sini memang bawaan: tidak dibayangi lokal maupun fungsi milik program.
+    /// `panik` yang dipanggil adalah bawaan (tidak dibayangi fungsi/closure program) — cuma itu yang menyimpang.
+    pub(crate) fn panik_bawaan(&self, ada_lokal: &dyn Fn(&str) -> bool) -> bool {
+        !ada_lokal("panik") && self.cari_fn_bersarang("panik").is_none()
+            && !self.tables.functions.contains_key(&self.k("panik"))
+            && !self.tables.extern_desk.contains_key("panik")
+    }
+
     fn typeof_bawaan(&self, ada_lokal: &dyn Fn(&str) -> bool) -> bool {
         !ada_lokal("typeof") && self.cari_fn_bersarang("typeof").is_none()
             && !self.tables.functions.contains_key(&self.k("typeof"))

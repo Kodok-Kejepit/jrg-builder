@@ -190,7 +190,8 @@ impl Codegen {
     fn sisa_mati(&self, s: &Stmt, lokal: &Lokal) -> bool {
         let i = match s { Stmt::If(i) => i, Stmt::Expr(e) => match &**e { Expr::If(i) => i, _ => return false }, _ => return false };
         // `return` atau `panik(..)` di ujung cabang yang pasti diambil: blok sesudahnya tidak tercapai.
-        matches!(self.cabang_statis(i, lokal), Some(Some(b)) if super::codegen_statis::blok_menyimpang(b))
+        matches!(self.cabang_statis(i, lokal), Some(Some(b)) if super::codegen_statis::blok_menyimpang(b)
+            && self.panik_bawaan(&|n| lokal.contains_key(n)))
     }
 
     pub(crate) fn telusuri_stmt(

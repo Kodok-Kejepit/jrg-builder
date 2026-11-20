@@ -453,7 +453,8 @@ impl Vm {
         }
 
         // 2. Penerima bawaan yang memang punya HOF ini — aturan varian sama dengan interpreter.
-        let varian = obj.bagian_enum().map(|(_, v, _)| v.to_string());
+        // Cuma `Option`/`Result`: enum program bervarian `Some`/`Ok` tidak mewarisi HOF-nya (AGI-20261120-09).
+        let varian = obj.bagian_enum().filter(|(t, _, _)| matches!(*t, "Option" | "Result")).map(|(_, v, _)| v.to_string());
         let punya = match (&obj, varian.as_deref()) {
             (VmValue::Array(_), _) => !matches!(method, "map_err" | "and_then"),
             (_, Some(v)) => match method {

@@ -243,7 +243,9 @@ impl Codegen {
             if let Some(g) = Self::aritas_bawaan(&qualified, args.len(), span) { return Err(g); }
             if let Some(r) = self.try_builtin_call(&qualified, args, expected, span) { return r; }
 
-            if matches!(item, "Some" | "None" | "Ok" | "Err") {
+            // `Status::Err(..)` milik program bukan `Result::Err` (AGI-20261120-09): cuma kalau `ns` bukan enum program.
+            let enum_program = self.tables.enums.get(ns).is_some_and(|en| en.variants.iter().any(|v| v.name == item));
+            if matches!(item, "Some" | "None" | "Ok" | "Err") && !enum_program {
                 return self.construct_option_result(item, args, expected, span);
             }
             // `Option::unwrap(o)` adalah `o.unwrap()`: satu badan, dua pintu.

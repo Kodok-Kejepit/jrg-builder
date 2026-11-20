@@ -839,6 +839,10 @@ include!("bersama/paritas_llvm.rs");
 // ───────────────────────────────────────────
 
 const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
+    // AGI-20261120-14 (#1113): indeks `u64` di luar 64 bit bertanda — ditolak di luar batas (dulu membaca `a[-1]`),
+    // tapi kalimatnya menyebut `i64::MAX`, bukan angka aslinya.
+    ("indeks u64 raksasa", "package main\npub fn main() {\n let a = [10, 20, 30]\n let b = (9223372036854775807 as u64) * 2 + 1\n wok(a[b])\n}",
+     "di luar batas"),
     // AGI-20261120-05 (#1110): argumen bulat `u64`/`i128` di luar 64 bit bertanda — dulu dibaca -1/0 diam-diam.
     ("math::gcd atas u64 di luar 64 bit bertanda", "package main\npub fn main() {\n let b = (9223372036854775807 as u64) * 2 + 1\n wok(math::gcd(b, 3))\n}",
      "di luar 64 bit bertanda belum didukung"),

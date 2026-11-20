@@ -555,7 +555,10 @@ impl Codegen {
             self.codegen_stmt_block(&ifs.then)?;
             self.pop_scope();
             // `panik` meninggalkan blok mati yang masih terbuka: diakhiri di sini, sisa blok tidak tercapai.
-            if super::codegen_statis::blok_menyimpang(&ifs.then) { self.terminate("unreachable".to_string()); }
+            // `panik` milik program kembali normal: `unreachable` sesudahnya UB (AGI-20261120-14).
+            if super::codegen_statis::blok_menyimpang(&ifs.then) && self.panik_bawaan(&|n| self.lookup_local(n).is_some()) {
+                self.terminate("unreachable".to_string());
+            }
             if self.terminated { self.pop_scope(); return Ok(()); }
             self.terminate(format!("br label %{}", merge));
             self.start_block(merge);
