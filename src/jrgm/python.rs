@@ -114,7 +114,10 @@ pub(crate) fn paket_pip(modul: &str) -> &str {
 pub(crate) fn periksa_entri_pip(entri: &str) -> Result<(), String> {
     let sah = entri.chars().next().is_some_and(|c| c.is_ascii_alphanumeric())
         && entri.chars().all(|c| c.is_ascii_alphanumeric() || "._-[],<>=!~*+ ".contains(c));
-    if sah { return Ok(()); }
+    // `x.tar.gz`/`x.whl` dibaca pip sebagai ARSIP LOKAL di direktori proyek, bukan nama PyPI (AGI-20261119-21).
+    let arsip = [".whl", ".tar.gz", ".tgz", ".tar", ".zip", ".egg", ".tar.bz2", ".tar.xz"].iter()
+        .any(|a| nama_modul(entri).trim().to_ascii_lowercase().ends_with(a));
+    if sah && !arsip { return Ok(()); }
     Err(format!("jrgm: nama paket python `{}` tidak sah — yang diterima nama PyPI, boleh dengan \
                  `[extra]` dan batasan versi (`numpy>=2.0`); url, opsi pip dan penanda `;` tidak",
                 entri.escape_debug()))

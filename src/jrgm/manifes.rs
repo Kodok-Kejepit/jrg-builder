@@ -248,7 +248,17 @@ impl Manifest {
             for (k, v) in &t.isi {
                 let kn = format!("{}.{}", bagian, k);
                 match (bagian.as_str(), k.as_str()) {
-                    ("package", "name") => m.name = teks(v, &kn).map_err(galat)?,
+                    ("package", "name") => {
+                        m.name = teks(v, &kn).map_err(galat)?;
+                        // Nama dipakai sebagai nama berkas keluaran (`target/<nama>`): bukan jalur (AGI-20261119-21).
+                        let n = &m.name;
+                        let sah = !n.is_empty() && n.len() <= 128 && !n.starts_with(['-', '.'])
+                            && n.chars().all(|c| c.is_ascii_alphanumeric() || "_-.".contains(c));
+                        if !sah {
+                            return Err(galat(format!("[package] name {:?} tidak sah — cuma huruf, angka, `_`, `-` dan `.`, \
+                                tidak diawali `-` atau `.`; nama ini jadi nama berkas keluaran, jadi bukan jalur", n)));
+                        }
+                    }
                     ("package", "version") => m.version = teks(v, &kn).map_err(galat)?,
                     ("package", "entry") => entry = teks(v, &kn).map_err(galat)?,
                     ("package", "bahasa" | "language") => m.bahasa = Some(teks(v, &kn).map_err(galat)?),

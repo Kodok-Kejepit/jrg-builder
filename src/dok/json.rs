@@ -79,10 +79,26 @@ pub fn decode(s: &str) -> Result<Value, String> {
 
 // ─── Accessor utilities ───────────────────────────────────────────────
 
+/// Aturan `json::` (AGI-20261119-05) untuk varian `dok::` (AGI-20261119-20): pegangan pustaka bukan objek JSON, dan
+/// field privat struct tidak terlihat dari pustaka — ia tidak tahu method mana yang memanggilnya.
+fn objek_dok(nama: &str, v: &Value) -> Result<(), String> {
+    if let Value::Struct { name, .. } = v {
+        if crate::interpreter::galat_index::HANDLE_PUSTAKA.contains(&name.as_str())
+            && crate::vm::visibilitas::field_dideklarasikan(name).is_none() {
+            return Err(format!("dok::{}: argumen ke-1 adalah pegangan pustaka `{}`, bukan data — kirim datanya, bukan handle-nya", nama, name));
+        }
+    }
+    Ok(())
+}
+fn terbuka_dok(nama_struct: &str, k: &str) -> bool { crate::vm::visibilitas::periksa(nama_struct, k, None).is_ok() }
+
 pub fn json_get(args: &[Value]) -> Result<Value, String> {
+    if let Some(v) = args.get(0) { objek_dok("json_get", v)?; }
     match (args.get(0), args.get(1)) {
-        (Some(Value::Struct { fields, .. }), Some(Value::Str(k))) =>
-            Ok(fields.get(k.as_str()).cloned().map(some_value).unwrap_or_else(none_value)),
+        (Some(Value::Struct { name, fields }), Some(Value::Str(k))) => {
+            if fields.contains_key(k.as_str()) { crate::vm::visibilitas::periksa(name, k, None).map_err(|e| format!("dok::json_get: {}", e))?; }
+            Ok(fields.get(k.as_str()).cloned().map(some_value).unwrap_or_else(none_value))
+        }
         _ => Err("dok::json_get(obj, key)".to_string()),
     }
 }
@@ -94,6 +110,8 @@ pub fn json_set(args: &[Value]) -> Result<Value, String> {
             if crate::interpreter::galat_index::HANDLE_PUSTAKA.contains(&name.as_str()) =>
             Err(crate::interpreter::galat_index::tulis_handle(name, k)),
         (Some(Value::Struct { name, fields }), Some(Value::Str(k)), Some(v)) => {
+            objek_dok("json_set", &args[0])?;
+            crate::vm::visibilitas::periksa(name, k, None).map_err(|e| format!("dok::json_set: {}", e))?;
             let mut new_fields = fields.clone();
             new_fields.insert(String::clone(&k.clone()), v.clone());
             Ok(Value::Struct { name: name.clone(), fields: new_fields })
@@ -104,8 +122,9 @@ pub fn json_set(args: &[Value]) -> Result<Value, String> {
 
 pub fn json_keys(args: &[Value]) -> Result<Value, String> {
     match args.get(0) {
-        Some(Value::Struct { fields, .. }) => {
-            let mut ks: Vec<String> = fields.keys().cloned().collect();
+        Some(v @ Value::Struct { name, fields }) => {
+            objek_dok("json_keys", v)?;
+            let mut ks: Vec<String> = fields.keys().filter(|k| terbuka_dok(name, k)).cloned().collect();
             ks.sort();
             Ok(Value::Array(ks.into_iter().map(Value::teks).collect()))
         }

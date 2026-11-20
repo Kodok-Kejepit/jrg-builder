@@ -2868,4 +2868,46 @@ fn main() {
     coba(|| masukan::buatan_tetikus(masukan::kosong(), [], 0, 0, [1, 2, 3]))
 }
 "#),
+    ("dok::render: tag penutup mentah dan komentar mengikuti HTML5 (AGI-20261119-17)", r#"
+fn coba(t) {
+    match dok::render(t, {"x": "nilai"}) { Ok(s) => wok("OK  ", s), Err(e) => wok("TOLAK", str::substr(e, 0, 60)) }
+}
+fn main() {
+    coba("<script>var a = \"</script\" + \">\"; {{ x }}</script>")
+    coba("<script>var a = 1;</scriptx> {{ x }}</script>")
+    coba("<script>1</script> <p>{{ x }}</p>")
+    coba("<script>1</script\n> <p>{{ x }}</p>")
+    coba("<!--> <script>{{ x }}</script>")
+    coba("<!---> <a onclick=\"{{ x }}\">")
+    coba("<!-- a --!> <script>{{ x }}</script>")
+    coba("<!-- a --> <p>{{ x }}</p>")
+    coba("<!-- <script>{{ x }}</script> -->")
+}
+"#),
+    ("dok::mat_* menolak matriks bergerigi dan ukuran tak sah, dok::json_* menghormati field privat (AGI-20261119-20)", r#"
+struct Akun { pub nama: string, saldo: int }
+fn coba(f) { match tangkap(f) { Ok(v) => wok("ok", v), Err(g) => wok("err", g.pesan) } }
+fn main() {
+    coba(|| dok::mat_mul([[1.0, 2.0], [3.0]], [[1.0], [2.0]]))
+    coba(|| dok::mat_transpose([[1.0, 2.0], [3.0]]))
+    coba(|| dok::mat_new(-1, 2))
+    coba(|| dok::mat_new(100000, 100000))
+    coba(|| dok::mat_get([[1.0]], 18446744073709551616, 0))
+    coba(|| dok::mat_get([[1.0, 2.0]], 0, 1))
+    let a = Akun { nama: "x", saldo: 5 }
+    coba(|| dok::json_keys(a))
+    coba(|| dok::json_get(a, "saldo"))
+    coba(|| dok::json_get(a, "nama"))
+    coba(|| dok::json_set(a, "saldo", 999))
+    coba(|| dok::json_get(ptr::new(1), "id"))
+}
+"#),
+    ("re:: kelas tumpang-tindih dirapikan, kelas besar berulang tidak meledak (AGI-20261119-25)", r#"
+fn main() {
+    wok(re::find_all("[a-cb-ex]+", "zzabcdexyz"), re::test("^[^0-9a-f]+$", "ghz"), re::test("^[^0-9a-f]+$", "gh1"))
+    wok(re::find_all("[\\w-]+", "a-b c_d"), re::test("[\\d\\s]", "x 1"), re::test("^[ -/]$", "a"))
+    let besar = "(" + "[" + str::repeat("b", 3000) + "a]{0,50}){10}z"
+    wok(re::test(besar, str::repeat("a", 100)), re::test(besar, str::repeat("a", 20) + "z"))
+}
+"#),
 ];

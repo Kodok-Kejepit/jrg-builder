@@ -49,7 +49,15 @@ fn vec_to_value(v: Vec<f64>) -> Value { Value::Array(v.into_iter().map(Value::Fl
 
 fn as_matrix(v: &Value, fname: &str) -> Result<Vec<Vec<f64>>, String> {
     match v {
-        Value::Array(rows) => rows.iter().map(|r| isi_vec(r, fname)).collect(),
+        Value::Array(rows) => {
+            let m: Vec<Vec<f64>> = rows.iter().map(|r| isi_vec(r, fname)).collect::<Result<_, _>>()?;
+            // Matriks bergerigi dulu memanikkan `mat_mul`/`mat_transpose` (indeks di luar baris pendek) — AGI-20261119-20.
+            if let Some((i, r)) = m.iter().enumerate().find(|(_, r)| r.len() != m[0].len()) {
+                return Err(format!("{}: baris ke-{} panjangnya {}, baris pertama {} — matriks harus persegi panjang",
+                    fname, i, r.len(), m[0].len()));
+            }
+            Ok(m)
+        }
         other => Err(format!("{}: butuh matriks (array berisi array), dapat `{}`", fname, other.type_name())),
     }
 }
@@ -136,15 +144,34 @@ pub fn vec_angle(args: &[Value]) -> Result<Value, String> {
 
 // ─── Matriks ────────────────────────────────────────────────────────────
 
+/// Ukuran matriks: bukan negatif, dan isinya paling banyak `MAKS_ELEMEN` — dulu `as usize` memotong atau memanik.
+fn ukuran_mat(nama: &str, baris: i128, kolom: i128) -> Result<(usize, usize), String> {
+    if baris < 0 || kolom < 0 { return Err(format!("{}: ukuran tidak boleh negatif, dapat {}x{}", nama, baris, kolom)); }
+    let maks = crate::interpreter::MAKS_ELEMEN;
+    if baris.checked_mul(kolom).map_or(true, |n| n > maks) {
+        return Err(format!("{}: {}x{} melewati batas {} elemen", nama, baris, kolom, maks));
+    }
+    Ok((baris as usize, kolom as usize))
+}
+
+/// Indeks matriks yang ditulis: negatif atau di luar 64 bit tidak pernah dipotong jadi indeks lain.
+fn indeks_mat(nama: &str, a: &[Vec<f64>], i: i128, j: i128) -> Result<(usize, usize), String> {
+    match (usize::try_from(i), usize::try_from(j)) {
+        (Ok(x), Ok(y)) if x < a.len() && y < a[x].len() => Ok((x, y)),
+        _ => Err(format!("{}: index ({}, {}) di luar jangkauan", nama, i, j)),
+    }
+}
+
 pub fn mat_new(args: &[Value]) -> Result<Value, String> {
-    let rows = as_i128(arg(args, 0)).map_err(|e| format!("dok::mat_new: {}", e))?.max(0) as usize;
-    let cols = as_i128(arg(args, 1)).map_err(|e| format!("dok::mat_new: {}", e))?.max(0) as usize;
+    let (rows, cols) = ukuran_mat("dok::mat_new", as_i128(arg(args, 0)).map_err(|e| format!("dok::mat_new: {}", e))?,
+        as_i128(arg(args, 1)).map_err(|e| format!("dok::mat_new: {}", e))?)?;
     let fill = match args.get(2) { Some(v) => as_f64(v).map_err(|e| format!("dok::mat_new: {}", e))?, None => 0.0 };
     Ok(matrix_to_value(vec![vec![fill; cols]; rows]))
 }
 
 pub fn mat_identity(args: &[Value]) -> Result<Value, String> {
-    let n = as_i128(arg(args, 0)).map_err(|e| format!("dok::mat_identity: {}", e))?.max(0) as usize;
+    let n = as_i128(arg(args, 0)).map_err(|e| format!("dok::mat_identity: {}", e))?;
+    let (n, _) = ukuran_mat("dok::mat_identity", n, n)?;
     let mut m = vec![vec![0.0; n]; n];
     for (i, row) in m.iter_mut().enumerate() { row[i] = 1.0; }
     Ok(matrix_to_value(m))
@@ -198,21 +225,20 @@ pub fn mat_transpose(args: &[Value]) -> Result<Value, String> {
 
 pub fn mat_get(args: &[Value]) -> Result<Value, String> {
     let a = as_matrix(arg(args, 0), "dok::mat_get")?;
-    let i = as_i128(arg(args, 1)).map_err(|e| format!("dok::mat_get: {}", e))? as usize;
-    let j = as_i128(arg(args, 2)).map_err(|e| format!("dok::mat_get: {}", e))? as usize;
-    a.get(i).and_then(|r| r.get(j)).map(|v| Value::Float(*v))
-        .ok_or_else(|| format!("dok::mat_get: index ({}, {}) di luar jangkauan", i, j))
+    let i = as_i128(arg(args, 1)).map_err(|e| format!("dok::mat_get: {}", e))?;
+    let j = as_i128(arg(args, 2)).map_err(|e| format!("dok::mat_get: {}", e))?;
+    let (i, j) = indeks_mat("dok::mat_get", &a, i, j)?;
+    Ok(Value::Float(a[i][j]))
 }
 
 pub fn mat_set(args: &[Value]) -> Result<Value, String> {
     let mut a = as_matrix(arg(args, 0), "dok::mat_set")?;
-    let i = as_i128(arg(args, 1)).map_err(|e| format!("dok::mat_set: {}", e))? as usize;
-    let j = as_i128(arg(args, 2)).map_err(|e| format!("dok::mat_set: {}", e))? as usize;
+    let i = as_i128(arg(args, 1)).map_err(|e| format!("dok::mat_set: {}", e))?;
+    let j = as_i128(arg(args, 2)).map_err(|e| format!("dok::mat_set: {}", e))?;
     let v = as_f64(arg(args, 3)).map_err(|e| format!("dok::mat_set: {}", e))?;
-    match a.get_mut(i).and_then(|r| r.get_mut(j)) {
-        Some(cell) => { *cell = v; Ok(matrix_to_value(a)) }
-        None => Err(format!("dok::mat_set: index ({}, {}) di luar jangkauan", i, j)),
-    }
+    let (i, j) = indeks_mat("dok::mat_set", &a, i, j)?;
+    a[i][j] = v;
+    Ok(matrix_to_value(a))
 }
 
 /// Eliminasi Gauss dengan partial pivoting — dipakai bersama oleh

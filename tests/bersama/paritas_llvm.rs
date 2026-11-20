@@ -5065,7 +5065,7 @@ fn main() {
     wok(a)
 }
 "#),
-    ("JSON dan jembatan atas nilai bersarang 20 ribu tingkat, juga di goroutine (AGI-20261118-04)", r#"
+    ("JSON dan jembatan atas nilai bersarang 20 ribu tingkat (AGI-20261118-04)", r#"
 pub fn main() {
     var a = json::parse("1")
     var i = 0
@@ -5073,6 +5073,10 @@ pub fn main() {
     wok(len(json::stringify(a)), len(json::pretty(a, 0)), len(dok::json_encode(a)))
     var d = {"x": [1, {"y": "z"}], "k": 2.5}
     wok(json::pretty(d, 2), json::stringify([d, []]))
+}
+"#),
+    ("JSON dan jembatan atas nilai bersarang 8 ribu tingkat di goroutine (AGI-20261118-04)", r#"
+pub fn main() {
     let ch = make_chan(int, 1)
     spawn |ch: chan int| {
         var b = json::parse("1")
@@ -5082,5 +5086,44 @@ pub fn main() {
     }
     wok(<- ch)
 }
+"#),
+    ("fs::ls/fs::walk atas nama berkas berbaris baru (AGI-20261119-29)", r#"
+fn main() {
+    let d = fs::join(fs::temp_dir(), "jrg_nl_" + str(rand::int(0, 1000000000)))
+    fs::mkdir(d + "/sub")
+    fs::write(d + "/sub/a\n..", "x")
+    fs::write(d + "/sub/b\nx.txt", "y")
+    fs::write(d + "/sub/biasa.txt", "z")
+    let isi = fs::ls(d + "/sub")
+    wok(len(isi), len(fs::walk(d + "/sub")), arr::contains(isi, "a\n.."))
+    for _, n in isi { fs::delete(d + "/sub/" + n) }
+    fs::rmdir(d + "/sub")
+    fs::rmdir(d)
+}
+"#),
+    ("memo jumlah karakter fungsi dibuang saat arena putaran dipulihkan (AGI-20261119-50)", r#"
+fn test_utf8_lalu_ascii() {
+    var i = 0
+    while i < 2 {
+        let s = if i == 0 { "a" + "日" } else { "ab" + "cd" }
+        wok("utf8_first:", i, "s:", s, "len:", len(s))
+        i = i + 1
+    }
+}
+
+fn test_ascii_lalu_utf8() {
+    var j = 0
+    while j < 2 {
+        let s = if j == 0 { "ab" + "cd" } else { "a" + "日" }
+        let n = len(s)
+        let c1 = int(s[1])
+        let c2 = if n > 2 { int(s[2]) } else { -1 }
+        let c3 = if n > 3 { int(s[3]) } else { -1 }
+        wok("ascii_first:", j, "s:", s, "len:", n, "c1:", c1, "c2:", c2, "c3:", c3)
+        j = j + 1
+    }
+}
+fn main() { test_utf8_lalu_ascii()
+ test_ascii_lalu_utf8() }
 "#),
 ];

@@ -296,6 +296,10 @@ fn terima_pesan(k: &Koneksi, aliran: &mut TcpStream, sisa: &mut Vec<u8>, pesanan
                 match f.jenis {
                     Jenis::Ping | Jenis::Pong => {
                         if f.jenis == Jenis::Ping { let _ = k.kirim(&tulis_frame(Jenis::Pong, &f.muatan)); }
+                        // Frame kendali tidak dipegang: anggaran bersama dikembalikan dan tenggat pesan tidak
+                        // ikut diperpanjang olehnya (AGI-20261119-16).
+                        pesanan.sisakan(sisa.len() + gabung.len());
+                        diterima = diterima.saturating_sub(n);
                         if sisa.is_empty() && gabung.is_empty() { mulai = None; diterima = 0; }
                         continue;
                     }

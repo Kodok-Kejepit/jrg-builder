@@ -196,10 +196,19 @@ pub fn minta(metode: &str, url: &str, badan: &[u8], kepala: &[(String, String)],
 /// putus di tengah (atau dipotong penyerang di TLS, yang penutupan tanpa `close_notify`-nya dianggap selesai)
 /// menjawab badan yang lebih pendek tanpa suara, dan byte sesudah badannya ikut tertempel (Fase AMAN-61).
 fn bingkai(mut jawab: Vec<u8>, metode: &str, host: &str) -> Result<Vec<u8>, String> {
-    let Some(p) = jawab.windows(4).position(|w| w == b"\r\n\r\n") else { return Ok(jawab) };
+    // Pemisah yang sama dengan `http::pisah_jawaban` (`\r\n\r\n`, lalu `\n\n`): yang dibaca di sana harus sudah
+    // dibingkai di sini, dan kepala yang tidak pernah selesai adalah jawaban terpotong (AGI-20261119-18).
+    let cari = |pola: &[u8]| jawab.windows(pola.len()).position(|w| w == pola);
+    let (p, lebar) = match cari(b"\r\n\r\n") {
+        Some(p) => (p, 4),
+        None => match cari(b"\n\n") {
+            Some(p) => (p, 2),
+            None => return Err(format!("jawaban dari {} terpotong sebelum kepalanya selesai", host)),
+        },
+    };
     let kepala = String::from_utf8_lossy(&jawab[..p]).to_string();
     let status: u16 = kepala.split_whitespace().nth(1).and_then(|s| s.parse().ok()).unwrap_or(0);
-    let awal = p + 4;
+    let awal = p + lebar;
     if metode.eq_ignore_ascii_case("HEAD") || (100..200).contains(&status) || status == 204 || status == 304 {
         jawab.truncate(awal);
         return Ok(jawab);
@@ -381,7 +390,18 @@ pub fn unduh(url: &str, berkas: &str, agen: &str) -> Result<HasilUnduh, String> 
             if cari("transfer-encoding").map_or(false, |v| v.to_ascii_lowercase().contains("chunked")) {
                 return salin_berpotongan(&mut r, &mut f);
             }
-            match cari("content-length").and_then(|v| v.parse::<u64>().ok()) {
+            // Semua `Content-Length` harus sama dan berupa angka, seperti `bingkai` (AGI-20261119-18).
+            let semua: Vec<String> = kepala.iter().skip(1).filter_map(|l| l.split_once(':'))
+                .filter(|(k, _)| k.trim().eq_ignore_ascii_case("content-length")).map(|(_, v)| v.trim().to_string()).collect();
+            let panjang = match semua.first() {
+                None => None,
+                Some(p) if p.bytes().all(|b| b.is_ascii_digit()) && semua.iter().all(|v| v == p) => p.parse::<u64>().ok(),
+                Some(_) => None,
+            };
+            if !semua.is_empty() && panjang.is_none() {
+                return Err(format!("Content-Length yang tidak sah atau berbeda-beda: {:?}", semua));
+            }
+            match panjang {
                 Some(n) => {
                     let d = std::io::copy(&mut r.by_ref().take(n), &mut f).map_err(|e| crate::host::galat_io(&e))?;
                     if d != n { return Err(format!("unduhan terputus: {} dari {} byte", d, n)); }

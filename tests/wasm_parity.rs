@@ -93,7 +93,10 @@ include!("bersama/paritas_llvm.rs");
 const PENANDA_KORUTIN: &[&str] = &["spawn", "Chan::new", "Future::new", "Task::spawn", "select", "Mutex::new",
     "Atomic::new", "tangkap("];
 /// Kasus konkurensi yang memanggil builtin yang tidak ada di WASI (`proses::`: tanpa proses anak), ditolak di sana.
-const LEWAT_JEMBATAN: &[&str] = &["goroutine tetap mendapat giliran selama main menunggu proses::"];
+const LEWAT_JEMBATAN: &[&str] = &["goroutine tetap mendapat giliran selama main menunggu proses::",
+    // Celah wasm (Bayu, 2026-11-20): WASI tanpa thread pembantu ber-stack besar, jadi penjelajah nilai `jrgc` di
+    // korutin Asyncify kehabisan stack pada 8 000 tingkat — gagal keras ("call stack size exceeded"), bukan diam.
+    "JSON dan jembatan atas nilai bersarang 8 ribu tingkat di goroutine (AGI-20261118-04)"];
 
 #[test]
 fn korutin_lewat_wasm_sama_dengan_interpreter() {

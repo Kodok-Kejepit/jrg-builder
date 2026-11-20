@@ -3018,6 +3018,22 @@ fn dependensi_git_tidak_bisa_disisipi() {
     let pusat2 = terbit("lompat", Some(&format!("[dependencies]\nrahasia = {{ path = \"{}\" }}", luar)));
     let (ok, t) = jalan(&a, &["add", "lompat", "--git", &pusat2, "--version", "0.1.0"]);
     assert!(!ok && t.contains("di luar salinan"), "{}", t);
+    // AGI-20261119-23: paket git tidak menarik repositori LOKAL pemakai, dan tautan simbolik di salinannya ditolak.
+    let pusat3 = terbit("tarik", Some(&format!("[dependencies]\nrahasia2 = {{ git = \"{}\" }}", pusat)));
+    let (ok, t) = jalan(&a, &["add", "tarik", "--git", &pusat3, "--version", "0.1.0"]);
+    assert!(!ok && t.contains("repositori lokal"), "{}", t);
+    let pusat4 = terbit("tautan", Some("[dependencies]\n"));
+    let b = akar.join("tautan");
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(akar.join("luar/rahasia/src/main.jrg"), b.join("src/bocor.jrg")).unwrap();
+        git(&b, &["add", "-A"]);
+        git(&b, &["commit", "-qm", "tautan"]);
+        git(&b, &["tag", "v0.2.0"]);
+        git(&b, &["push", "-q", "origin", "v0.2.0"]);
+        let (ok, t) = jalan(&a, &["add", "tautan", "--git", &pusat4, "--version", "0.2.0"]);
+        assert!(!ok && t.contains("tautan simbolik `src/bocor.jrg`"), "{}", t);
+    }
     let _ = std::fs::remove_dir_all(&akar);
 }
 

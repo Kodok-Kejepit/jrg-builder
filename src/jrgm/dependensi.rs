@@ -36,6 +36,13 @@ fn graf(akar: &Path, dev: bool) -> Result<Vec<Simpul>, String> {
         let mut semua = m.dependencies.clone();
         if dev { semua.extend(m.dev_dependencies.iter().cloned()); }
         for mut d in semua {
+            // Paket dari git tidak boleh menarik repositori LOKAL mesin pemakai (`file://`, jalur) — AGI-20261119-23.
+            if let (Some((url, _)), Some(_)) = (&d.git, batas) {
+                if !super::git::url_jarak_jauh(url) {
+                    return Err(format!("dependency `{}` dari paket git menunjuk repositori lokal `{}`\n  bantuan: \
+                        paket git cuma boleh memakai dependensi git jarak jauh (https, ssh, git)", d.nama, url));
+                }
+            }
             if let Some((url, rev)) = &d.git {
                 d.akar = super::git::siapkan(kunci, &d.nama, url, rev, false)
                     .map_err(|e| format!("dependency `{}`: {}", d.nama, e))?;

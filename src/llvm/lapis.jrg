@@ -755,7 +755,7 @@ fn _nama_isi(teks: string, jumlah: int) -> []string {
         let kosong: []string = []
         return kosong
     }
-    return str::split(teks, "\n")
+    return str::split(teks, "\u0000")
 }
 
 pub fn fs_ls(path: string) -> []string {

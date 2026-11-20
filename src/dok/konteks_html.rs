@@ -41,6 +41,8 @@ pub struct Jejak {
     mentah: String,
     cocok: usize,
     strip: usize,
+    /// Komentar sudah melihat `--!`: `>` berikutnya menutupnya (HTML5 "comment end bang").
+    seru: bool,
     awal_nilai: usize,
     berisi_data: bool,
 }
@@ -48,7 +50,7 @@ pub struct Jejak {
 impl Jejak {
     pub fn baru() -> Jejak {
         Jejak { k: Keadaan::Teks, pos: 0, tag: String::new(), tutup: false, atribut: String::new(),
-                mentah: String::new(), cocok: 0, strip: 0, awal_nilai: 0, berisi_data: false }
+                mentah: String::new(), cocok: 0, strip: 0, seru: false, awal_nilai: 0, berisi_data: false }
     }
 
     /// Baca bagian `out` yang belum dibaca; nilai URL berskema berbahaya diganti di `out`.
@@ -97,9 +99,14 @@ impl Jejak {
                 _ => Teks,
             },
             BukaSeru => if c == b'-' { BukaSeruMin } else if c == b'>' { Teks } else { Deklarasi },
-            BukaSeruMin => if c == b'-' { self.strip = 0; Komentar } else if c == b'>' { Teks } else { Deklarasi },
+            // `<!-->` dan `<!--->` sudah komentar yang tertutup, `--!>` juga menutup (HTML5 §13.2.5.43–52):
+            // `strip` mulai 2 supaya `>` tepat sesudah `<!--`/`<!---` menutup, seperti peramban (AGI-20261119-17).
+            BukaSeruMin => if c == b'-' { self.strip = 2; self.seru = false; Komentar } else if c == b'>' { Teks } else { Deklarasi },
             Komentar => {
-                if c == b'>' && self.strip >= 2 { Teks } else {
+                if c == b'>' && (self.strip >= 2 || self.seru) { Teks }
+                else if c == b'!' && self.strip >= 2 { self.seru = true; self.strip = 0; Komentar }
+                else {
+                    self.seru = false;
                     self.strip = if c == b'-' { self.strip + 1 } else { 0 };
                     Komentar
                 }
@@ -141,15 +148,22 @@ impl Jejak {
             TanpaKutip => if spasi { DalamTag } else if c == b'>' { self.akhir_tag() } else { TanpaKutip },
             Mentah => {
                 let pola = self.mentah.as_bytes();
+                // `</script` baru tag penutup kalau diikuti spasi, `/` atau `>` (HTML5 §13.2.5.17): `</scriptx>`
+                // dan `"</script" + ">"` masih isi skrip bagi peramban (AGI-20261119-17).
+                if self.cocok == pola.len() + 2 {
+                    self.cocok = 0;
+                    if spasi || c == b'/' || c == b'>' {
+                        self.tutup = true;
+                        self.tag = self.mentah.clone();
+                        return self.k = if c == b'>' { self.akhir_tag() } else { DalamTag };
+                    }
+                    if c == b'<' { self.cocok = 1; }
+                    return self.k = Mentah;
+                }
                 let harus = if self.cocok == 0 { b'<' } else if self.cocok == 1 { b'/' } else { pola[self.cocok - 2] };
                 if c.to_ascii_lowercase() == harus {
                     self.cocok += 1;
-                    if self.cocok == pola.len() + 2 {
-                        self.tutup = true;
-                        self.tag = self.mentah.clone();
-                        self.cocok = 0;
-                        NamaTag
-                    } else { Mentah }
+                    Mentah
                 } else {
                     self.cocok = if c == b'<' { 1 } else { 0 };
                     Mentah

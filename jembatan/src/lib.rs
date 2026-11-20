@@ -184,10 +184,9 @@ unsafe impl<T> Send for Kirim<T> {}
 type Tugas = Box<dyn FnOnce() + Send>;
 type Hasil = std::thread::Result<Option<Result<VmValue, String>>>;
 
-/// Panggilan fungsi milik biner yang dititipkan thread lain, dijalankan thread biner selama ia
-/// menunggu builtin pemblokir (`layani`). `AKTIF` menghitung penunggu yang sedang melayani.
-/// `bool`: dititipkan thread pembantu yang menjalankan builtin pemblokir (callback builtin itu sendiri,
-/// dijalankan di tempat); `false`: dari thread lain (koneksi `dok::serve`), jadi korutinnya sendiri.
+/// Panggilan fungsi milik biner yang dititipkan thread lain, dijalankan thread biner selama ia menunggu (`layani`).
+/// `bool`: dari thread pembantu builtin pemblokir (callback-nya, dijalankan di tempat); `false`: dari thread koneksi
+/// `dok::serve`, jadi korutin sendiri. `AKTIF` menghitung penunggu yang sedang melayani.
 static ANTRE: std::sync::OnceLock<(std::sync::mpsc::Sender<Kirim<(bool, Tugas)>>, std::sync::Mutex<std::sync::mpsc::Receiver<Kirim<(bool, Tugas)>>>)> =
     std::sync::OnceLock::new();
 static AKTIF: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);

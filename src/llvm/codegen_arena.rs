@@ -351,6 +351,10 @@ impl Codegen {
         self.terminate(format!("br i1 {}, label %{}, label %{}, !prof !0", b, lambat, usai));
         self.start_block(lambat);
         self.emit(format!("call void @jrg_arena_pulih_ke(i64 {}, i64 {})", nilai[0].1, nilai[1].1));
+        // Alamat yang dipulihkan akan dipakai ulang: memo jumlah karakter fungsi ini menunjuk teks lama (AGI-20261119-50).
+        let (lp, ll, _) = self.memo_lokal();
+        self.emit(format!("store ptr null, ptr {}", lp));
+        self.emit(format!("store i64 -1, ptr {}", ll));
         for k in kap_badan { self.emit(format!("store {{ ptr, i64 }} zeroinitializer, ptr {}", k)); }
         self.terminate(format!("br label %{}", usai));
         self.start_block(usai);

@@ -1141,14 +1141,10 @@ impl Codegen {
         Ok(self.load_place(&eptr, &ety))
     }
 
-    /// Jumlah karakter teks `(sptr, slen)`: memo runtime dibaca langsung di IR, runtime dipanggil cuma kalau
-    /// memonya teks lain. Teks ASCII ⇔ jumlah karakter = panjang bita.
-    pub(crate) fn jumlah_karakter(&mut self, sptr: &str, slen: &str) -> String {
-        // Memo lokal fungsi dulu: di loop `char_at(s, i)` memo global dibaca dan dibandingkan ulang tiap karakter,
-        // karena jalur lambatnya memanggil runtime yang bisa mengubahnya (`string_ops`); yang lokal jadi register.
-        // Aman dengan alasan memo global: teks tidak diubah di tempat dan arena tidak memakai ulang alamat.
+    /// Slot memo `(ptr, panjang bita, jumlah karakter)` fungsi ini, dibuat di blok masuk kalau belum ada.
+    pub(crate) fn memo_lokal(&mut self) -> (String, String, String) {
         let ada = |m: &(String, String, String), baris: &[String]| baris.iter().any(|l| l.starts_with(&format!("  {} =", m.0)));
-        let (lp, ll, ln) = match self.memo_teks_lokal.clone() {
+        match self.memo_teks_lokal.clone() {
             Some(m) if ada(&m, &self.entry_allocas) => m,
             _ => {
                 let m = (self.alloca_raw("tmlp.", "ptr", None), self.alloca_raw("tmll.", "i64", None), self.alloca_raw("tmln.", "i64", None));
@@ -1157,7 +1153,15 @@ impl Codegen {
                 self.memo_teks_lokal = Some(m.clone());
                 m
             }
-        };
+        }
+    }
+
+    /// Jumlah karakter teks `(sptr, slen)`: memo runtime dibaca langsung di IR, runtime dipanggil cuma kalau
+    /// memonya teks lain. Teks ASCII ⇔ jumlah karakter = panjang bita.
+    pub(crate) fn jumlah_karakter(&mut self, sptr: &str, slen: &str) -> String {
+        // Memo lokal dulu: memo global dibaca ulang tiap karakter di loop `char_at` (`string_ops`), yang lokal jadi
+        // register. Alamat yang dipakai ulang sesudah pemulihan arena dibuang `pulihkan_putaran` (AGI-20261119-50).
+        let (lp, ll, ln) = self.memo_lokal();
         let (xp, xl, xn) = (self.fresh("tlp."), self.fresh("tll."), self.fresh("tln."));
         self.emit(format!("{} = load ptr, ptr {}", xp, lp));
         self.emit(format!("{} = load i64, ptr {}", xl, ll));

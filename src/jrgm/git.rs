@@ -104,6 +104,32 @@ fn git(args: &[&str], dir: Option<&Path>) -> Result<String, String> {
     Err(format!("`git {}` gagal: {}", args.join(" "), String::from_utf8_lossy(&out.stderr).trim()))
 }
 
+/// `https://`, `http://`, `ssh://`, `git://`, atau bentuk scp `user@host:jalur` — bukan `file://` atau jalur lokal.
+pub(crate) fn url_jarak_jauh(url: &str) -> bool {
+    let u = url.to_ascii_lowercase();
+    if ["https://", "http://", "ssh://", "git://"].iter().any(|p| u.starts_with(p)) { return true; }
+    // scp: `git@github.com:a/b.git` — ada `@` dan `:` sebelum `/` pertama, tanpa `://`.
+    !u.contains("://") && u.split('/').next().is_some_and(|h| h.contains('@') && h.contains(':'))
+}
+
+/// Tautan simbolik di salinan paket ditolak: `src/x.jrg -> /di/luar` membuat `import` membaca berkas pemakai.
+fn tolak_tautan(akar: &Path) -> Result<(), String> {
+    let mut tumpuk = vec![akar.to_path_buf()];
+    while let Some(d) = tumpuk.pop() {
+        for e in std::fs::read_dir(&d).map_err(|e| crate::host::galat_io(&e))? {
+            let p = e.map_err(|e| crate::host::galat_io(&e))?.path();
+            let md = std::fs::symlink_metadata(&p).map_err(|e| crate::host::galat_io(&e))?;
+            if md.file_type().is_symlink() {
+                let rel = p.strip_prefix(akar).unwrap_or(&p).display().to_string();
+                return Err(format!("paket memuat tautan simbolik `{}` — ditolak, karena tautan bisa menunjuk \
+                    berkas di luar salinan paket", rel));
+            }
+            if md.is_dir() { tumpuk.push(p); }
+        }
+    }
+    Ok(())
+}
+
 /// Cermin telanjang repositori `url` di tembolok, diambil atau diperbarui kalau `segarkan`.
 fn cermin(url: &str, segarkan: bool) -> Result<PathBuf, String> {
     let db = tembolok().join("db").join(format!("{}.git", sidik(url)));
@@ -168,6 +194,7 @@ pub(crate) fn siapkan(kunci: &mut Kunci, nama: &str, url: &str, rev: &str, segar
     if !a.success() || !tar.success() {
         return Err(format!("tidak bisa membuka commit {} dari `{}`", &commit[..12.min(commit.len())], url));
     }
+    if let Err(e) = tolak_tautan(&sementara) { let _ = std::fs::remove_dir_all(&sementara); return Err(e); }
     let _ = std::fs::remove_dir_all(&tujuan);
     std::fs::rename(&sementara, &tujuan).map_err(|e| crate::host::galat_io(&e))?;
     Ok(tujuan)
@@ -260,6 +287,8 @@ pub(crate) fn cmd_publish(dry_run: bool) -> Result<(), String> {
             "jrgm publish: tidak tahu ke mana mendorong — tidak ada remote `origin`\n  bantuan: \
              `git remote add origin <url>`, atau `repositori = \"<url>\"` di [package]".to_string())?,
     };
+    // Tujuan dari manifes orang lain tidak boleh jadi opsi `git push` (`--receive-pack=..`, AGI-20261119-22).
+    super::manifes::periksa_git("repositori", &tujuan, "HEAD").map_err(|e| format!("jrgm publish: {}", e))?;
     super::perintah::cmd_build("dev", None, false, true)?;
     if akar.join("tests").is_dir() { super::perintah::cmd_test(None, false, false, 120)?; }
     let commit = git(&["rev-parse", "HEAD"], Some(&akar))?;
@@ -269,7 +298,7 @@ pub(crate) fn cmd_publish(dry_run: bool) -> Result<(), String> {
         return Ok(());
     }
     git(&["tag", "-a", &tag, "-m", &format!("{} {}", m.name, m.version)], Some(&akar))?;
-    if let Err(e) = git(&["push", "--quiet", &tujuan, &format!("refs/tags/{}", tag)], Some(&akar)) {
+    if let Err(e) = git(&["-c", "protocol.ext.allow=never", "push", "--quiet", "--", &tujuan, &format!("refs/tags/{}", tag)], Some(&akar)) {
         let _ = git(&["tag", "-d", &tag], Some(&akar));
         return Err(format!("jrgm publish: {}\n  catatan: tag lokal `{}` dibuang lagi, jadi publish bisa diulang", e, tag));
     }

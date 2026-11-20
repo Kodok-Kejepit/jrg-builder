@@ -455,11 +455,14 @@ pub fn gabung_aman(dasar: &str, rel: &str) -> Result<String, String> {
         Ok(_) => return Err(format!("folder dasar `{}` bukan folder", dasar)),
         Err(e) => return Err(format!("folder dasar `{}`: {}", dasar, crate::host::galat_io(&e))),
     };
+    // Diperiksa SEBELUM garis miring ekor dibuang: `"/"` dulu jadi `""` lalu menjawab `dasar` (AGI-20261119-26).
+    if !rel.is_empty() {
+        if let Some(alasan) = crate::stdlib::zip::alasan_jalur(rel) {
+            return Err(format!("`{}` ditolak: {}", rel.escape_debug(), alasan));
+        }
+    }
     let inti = rel.strip_suffix('/').unwrap_or(rel);
     if inti.is_empty() { return Ok(dasar.to_string()); }
-    if let Some(alasan) = crate::stdlib::zip::alasan_jalur(rel) {
-        return Err(format!("`{}` ditolak: {}", rel.escape_debug(), alasan));
-    }
     let mut p = PathBuf::from(akar);
     for (i, b) in inti.split('/').enumerate() {
         p.push(b);
@@ -504,6 +507,9 @@ mod uji {
             assert!(e.contains("tujuannya tidak ada"), "{}", e);
         }
         assert!(gabung_aman(dasar.to_str().unwrap(), "../luar").unwrap_err().contains("`..`"));
+        // AGI-20261119-26: `"/"` dulu jadi `""` sesudah garis miring ekornya dibuang, lalu menjawab `dasar`.
+        assert!(gabung_aman(dasar.to_str().unwrap(), "/").is_err());
+        assert!(gabung_aman(dasar.to_str().unwrap(), "asli/").is_ok());
         let _ = std::fs::remove_dir_all(&akar);
     }
 }

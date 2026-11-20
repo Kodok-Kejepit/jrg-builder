@@ -150,9 +150,12 @@ impl Read for Tls {
         // SAFETY: penyangga milik pemanggil, panjangnya dijepit ke c_int.
         let r = unsafe { (s.read)(self.ssl, buf.as_mut_ptr() as P, n) };
         if r > 0 { return Ok(r as usize); }
-        // SSL_ERROR_ZERO_RETURN (6) = ditutup rapi; server yang memutus tanpa close_notify juga dianggap selesai.
+        // SSL_ERROR_ZERO_RETURN (6) = ditutup rapi; EOF tanpa close_notify (SYSCALL dengan r == 0) juga selesai,
+        // seperti Python. SYSCALL dengan r < 0 adalah galat soket (ECONNRESET): bukan akhir jawaban (AGI-20261119-18).
         match unsafe { (s.get_error)(self.ssl, r) } {
-            6 | 5 => Ok(0),
+            6 => Ok(0),
+            5 if r == 0 => Ok(0),
+            5 => Err(std::io::Error::last_os_error()),
             _ => Err(std::io::Error::other(galat_terakhir(s))),
         }
     }
@@ -163,17 +166,47 @@ impl Write for Tls {
         let s = ssl().map_err(std::io::Error::other)?;
         let n = buf.len().min(c_int::MAX as usize) as c_int;
         // SAFETY: penyangga milik pemanggil, panjangnya dijepit ke c_int.
-        let r = unsafe { (s.write)(self.ssl, buf.as_ptr() as *const c_void, n) };
+        let r = tanpa_sigpipe(|| unsafe { (s.write)(self.ssl, buf.as_ptr() as *const c_void, n) });
         if r > 0 { Ok(r as usize) } else { Err(std::io::Error::other(galat_terakhir(s))) }
     }
     fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
 }
 
+/// OpenSSL menulis ke soket lewat `write(2)`: soket yang sudah diputus mengirim SIGPIPE, dan proses yang tidak
+/// mengabaikannya (biner `--emit-llvm`) mati. SIGPIPE dihalangi di thread ini selama `f`, yang tertunda dibuang.
+#[cfg(unix)]
+fn tanpa_sigpipe<R>(f: impl FnOnce() -> R) -> R {
+    // SAFETY: cuma mask sinyal thread ini, dipulihkan sebelum kembali.
+    unsafe {
+        let mut pipa: libc::sigset_t = std::mem::zeroed();
+        let mut lama: libc::sigset_t = std::mem::zeroed();
+        libc::sigemptyset(&mut pipa);
+        libc::sigaddset(&mut pipa, libc::SIGPIPE);
+        let mut tertunda: libc::sigset_t = std::mem::zeroed();
+        libc::sigpending(&mut tertunda);
+        let sudah = libc::sigismember(&tertunda, libc::SIGPIPE) == 1;
+        libc::pthread_sigmask(libc::SIG_BLOCK, &pipa, &mut lama);
+        let hasil = f();
+        libc::sigpending(&mut tertunda);
+        if !sudah && libc::sigismember(&tertunda, libc::SIGPIPE) == 1 {
+            #[cfg(any(target_os = "linux", target_os = "android"))]
+            { let nol = libc::timespec { tv_sec: 0, tv_nsec: 0 }; libc::sigtimedwait(&pipa, std::ptr::null_mut(), &nol); }
+            #[cfg(not(any(target_os = "linux", target_os = "android")))]
+            { let mut s = 0; libc::sigwait(&pipa, &mut s); }
+        }
+        libc::pthread_sigmask(libc::SIG_SETMASK, &lama, std::ptr::null_mut());
+        hasil
+    }
+}
+#[cfg(not(unix))]
+fn tanpa_sigpipe<R>(f: impl FnOnce() -> R) -> R { f() }
+
 impl Drop for Tls {
     fn drop(&mut self) {
         if let Ok(s) = ssl() {
             // SAFETY: pegangan milik struct ini, dibebaskan sekali.
-            unsafe { (s.shutdown)(self.ssl); (s.free)(self.ssl); (s.ctx_free)(self.ctx); }
+            tanpa_sigpipe(|| unsafe { (s.shutdown)(self.ssl) });
+            unsafe { (s.free)(self.ssl); (s.ctx_free)(self.ctx); }
         }
     }
 }

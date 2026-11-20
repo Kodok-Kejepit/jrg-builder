@@ -720,6 +720,8 @@ fn parse_request_dgn<R: BufRead>(reader: &mut R, hitung: &'static AtomicUsize, b
     };
     let path = url_decode_teks(&raw_path).ok_or(SALAH)?;
     if !jalur_satu_ejaan(&raw_path, &path) { return Err(SALAH); }
+    // `/admin/` dan `/admin` satu jalur bagi router, jadi middleware juga harus melihat satu ejaan (AGI-20261119-19).
+    let path = if path.len() > 1 && path.ends_with('/') { path[..path.len() - 1].to_string() } else { path };
     let query = parse_query(&query_string).ok_or(SALAH)?;
 
     let besar: Tolak = (431, "Request Header Fields Too Large");
@@ -1040,6 +1042,7 @@ fn handle_connection(panggil: &mut PemanggilHandler, router_id: u64, mut stream:
     // sebuah middleware otentikasi benar-benar menutupi semuanya.
     let mut pr = pr;
     let badan = std::mem::take(&mut pr.body);
+    let tanpa_badan = badan.is_empty();
     let mut req_val = build_request_value(&pr, badan, Vec::new(), &remote_addr);
     let mut hasil_awal: Option<Value> = None;
     for mw in &router.sebelum {
@@ -1057,7 +1060,8 @@ fn handle_connection(panggil: &mut PemanggilHandler, router_id: u64, mut stream:
     }
 
     // ── Upgrade ke WebSocket ─────────────────────────────────────────
-    if hasil_awal.is_none() && !router.ws.is_empty() {
+    // RFC 6455 §4.1: cuma `GET` tanpa badan; badan yang terlanjur dipesan tidak ikut hidup selama koneksi WS.
+    if hasil_awal.is_none() && !router.ws.is_empty() && pr.method == "GET" && tanpa_badan {
         if let Some(kunci) = super::ws::minta_upgrade(&pr.headers) {
             let jalur = ambil_str(&req_val, "path").unwrap_or_else(|| pr.path.clone());
             let cocok = router.ws.iter()
@@ -1093,7 +1097,9 @@ fn handle_connection(panggil: &mut PemanggilHandler, router_id: u64, mut stream:
     let mut _jaga_berkas: Option<Pesanan> = None;
     let (status, ctype, body, extra_headers) = if let Some(v) = hasil_awal {
         value_to_response(v)
-    } else if let Some(st) = try_serve_static(&router.static_mounts, &path_kini) {
+    } else if let Some(st) = matches!(method_kini.as_str(), "GET" | "HEAD")
+        .then(|| try_serve_static(&router.static_mounts, &path_kini)).flatten() {
+        // Berkas statis cuma untuk GET/HEAD: `POST` ke URL yang kebetulan berkas harus sampai ke route-nya.
         // 2) File statis, supaya route dinamis tidak perlu tahu-menahu soal itu. Tanpa middleware `sesudah` ia
         //    dialirkan dari disk; dengan itu badannya dimuat, di bawah anggaran bersama.
         match st {
@@ -1357,6 +1363,16 @@ mod tes_permintaan {
     }
 
     fn urai(b: &[u8]) -> Result<ParsedRequest, Tolak> { parse_request(&mut std::io::Cursor::new(b)) }
+
+    /// AGI-20261119-19: `/admin/` sampai ke middleware sebagai `/admin`, ejaan yang sama dengan router.
+    #[test]
+    fn garis_miring_ekor_satu_ejaan() {
+        let jalur = |t: &str| urai(format!("GET {} HTTP/1.1\r\nHost: x\r\n\r\n", t).as_bytes()).ok().map(|p| p.path);
+        assert_eq!(jalur("/admin/").as_deref(), Some("/admin"));
+        assert_eq!(jalur("/a/b/?q=1").as_deref(), Some("/a/b"));
+        assert_eq!(jalur("/").as_deref(), Some("/"));
+        assert_eq!(jalur("/admin//"), None);
+    }
     fn kode(b: &[u8]) -> i128 { urai(b).err().map_or(200, |t| t.0) }
 
     #[test]

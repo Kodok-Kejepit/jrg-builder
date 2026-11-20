@@ -1040,7 +1040,7 @@ int64_t jrg_os(int32_t op, const char *ap, int64_t an, const char *bp, int64_t b
             return stat(a, &st) == 0 && S_ISDIR(st.st_mode) ? 0 : -ENOTDIR;
         }
         case 10: return rename(a, jrg_os_cstr(bp, bn)) == 0 ? 0 : -errno;
-        case 11: {  // isi folder, terurut, dipisah baris baru
+        case 11: {  // isi folder, terurut, dipisah NUL: `\n` sah di nama berkas POSIX, NUL tidak (AGI-20261119-29)
             DIR *d = opendir(a);
             if (d == 0) return -errno;
             int64_t kap = 16, n = 0, total = 0;
@@ -1065,7 +1065,7 @@ int64_t jrg_os(int32_t op, const char *ap, int64_t an, const char *bp, int64_t b
             char *buf = jrg_alloc(total + 1, 1);
             int64_t p = 0;
             for (int64_t k = 0; k < n; k++) {
-                if (k > 0) buf[p++] = '\n';
+                if (k > 0) buf[p++] = '\0';
                 memcpy(buf + p, nama[k].ptr, (size_t)nama[k].len);
                 p += nama[k].len;
             }

@@ -8,11 +8,32 @@ pub const MAKS_PROGRAM: usize = 100_000;
 /// Batas sarang grup, seperti Go sesudah CVE-2022-24921: pengurainya rekursif per `(`.
 pub const MAKS_SARANG: usize = 1000;
 
+/// Rentang kelas yang URUT dan tidak tumpang-tindih, dibagi antar-salinan: `x{1000}` atas kelas besar dulu
+/// menyalin seluruh daftar per salinan (ratusan MiB), dan tiap karakter dicocokkan linear (AGI-20261119-25).
+type Kelas = std::sync::Arc<[(char, char)]>;
+
+fn kelas_dari(mut r: Vec<(char, char)>) -> Kelas {
+    r.sort_unstable();
+    let mut hasil: Vec<(char, char)> = Vec::with_capacity(r.len());
+    for (a, b) in r {
+        match hasil.last_mut() {
+            Some(t) if (a as u32) <= (t.1 as u32).saturating_add(1) => { if b > t.1 { t.1 = b; } }
+            _ => hasil.push((a, b)),
+        }
+    }
+    hasil.into()
+}
+
+fn di_kelas(r: &[(char, char)], c: char) -> bool {
+    let i = r.partition_point(|(a, _)| *a <= c);
+    i > 0 && r[i - 1].1 >= c
+}
+
 #[derive(Debug, Clone)]
 enum Node {
     Literal(char),
     AnyChar,
-    Class(Vec<(char, char)>, bool),
+    Class(Kelas, bool),
     Awal,
     Akhir,
     BatasKata(bool),
@@ -26,7 +47,7 @@ enum Node {
 enum Inst {
     Char(char),
     Any,
-    Class(Vec<(char, char)>, bool),
+    Class(Kelas, bool),
     Awal,
     Akhir,
     BatasKata(bool),
@@ -158,12 +179,12 @@ impl<'a> Urai<'a> {
         let c = self.lihat().ok_or("pola berakhir dengan `\\` menggantung")?;
         self.p += 1;
         Ok(match c {
-            'd' => Node::Class(DIGIT.to_vec(), false),
-            'D' => Node::Class(DIGIT.to_vec(), true),
-            'w' => Node::Class(KATA.to_vec(), false),
-            'W' => Node::Class(KATA.to_vec(), true),
-            's' => Node::Class(SPASI.to_vec(), false),
-            'S' => Node::Class(SPASI.to_vec(), true),
+            'd' => Node::Class(kelas_dari(DIGIT.to_vec()), false),
+            'D' => Node::Class(kelas_dari(DIGIT.to_vec()), true),
+            'w' => Node::Class(kelas_dari(KATA.to_vec()), false),
+            'W' => Node::Class(kelas_dari(KATA.to_vec()), true),
+            's' => Node::Class(kelas_dari(SPASI.to_vec()), false),
+            'S' => Node::Class(kelas_dari(SPASI.to_vec()), true),
             'b' => Node::BatasKata(true),
             'B' => Node::BatasKata(false),
             'A' => Node::Awal,
@@ -208,7 +229,7 @@ impl<'a> Urai<'a> {
                 items.push((lo, lo));
             }
         }
-        Ok(Node::Class(items, neg))
+        Ok(Node::Class(kelas_dari(items), neg))
     }
 
     /// Satu butir di dalam `[...]`: sebuah karakter, atau himpunan `\d`/`\w`/`\s`.
@@ -358,7 +379,7 @@ impl Regex {
                     Inst::Match => { hasil = Some((mulai, pos)); break; }
                     Inst::Char(c) => t.get(pos) == Some(c),
                     Inst::Any => t.get(pos).map_or(false, |c| *c != '\n'),
-                    Inst::Class(r, neg) => t.get(pos).map_or(false, |c| r.iter().any(|(a, b)| a <= c && c <= b) != *neg),
+                    Inst::Class(r, neg) => t.get(pos).map_or(false, |c| di_kelas(r, *c) != *neg),
                     _ => false,
                 };
                 if lolos {

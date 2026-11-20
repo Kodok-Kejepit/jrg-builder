@@ -357,11 +357,21 @@ pub mod aman {
 
     /// Buka direktori akar ekstraksi sebagai descriptor berpenjaga. `O_NOFOLLOW` menolak akar yang sendirinya tautan.
     pub fn buka_akar(akar: &Path) -> Result<OwnedFd, String> {
-        let c = CString::new(akar.as_os_str().as_bytes()).map_err(|_| "folder tujuan memuat byte NUL".to_string())?;
+        // `tujuan/` membuat kernel mengikuti tautan di komponen terakhir sebelum `O_NOFOLLOW` berlaku: garis
+        // miring ekornya dibuang dulu (AGI-20261119-26). Induk folder tujuan dipilih program sendiri, jadi diikuti.
+        let mut b = akar.as_os_str().as_bytes();
+        while b.len() > 1 && b.ends_with(b"/") { b = &b[..b.len() - 1]; }
+        let c = CString::new(b).map_err(|_| "folder tujuan memuat byte NUL".to_string())?;
         let fd = unsafe {
             libc::open(c.as_ptr(), libc::O_RDONLY | libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC)
         };
-        if fd < 0 { return Err(format!("membuka folder tujuan: {}", std::io::Error::last_os_error())); }
+        if fd < 0 {
+            let e = std::io::Error::last_os_error();
+            if std::fs::symlink_metadata(std::ffi::OsStr::from_bytes(b)).is_ok_and(|m| m.file_type().is_symlink()) {
+                return Err("folder tujuan adalah tautan simbolik — ditolak, karena isinya akan ditulis ke tempat lain".to_string());
+            }
+            return Err(format!("membuka folder tujuan: {}", crate::host::galat_io(&e)));
+        }
         Ok(unsafe { OwnedFd::from_raw_fd(fd) })
     }
 
@@ -628,6 +638,11 @@ mod tes {
         assert!(r.is_err(), "menulis lewat tautan direktori harus ditolak");
         assert!(r.unwrap_err().contains("tautan simbolik"), "pesannya menyebut tautan");
         assert!(!luar.join("x.bin").exists(), "tidak boleh ada berkas yang lolos ke luar folder tujuan");
+        // AGI-20261119-26: folder tujuan yang sendirinya tautan ditolak juga kalau ditulis dengan garis miring ekor.
+        let mut ekor = tujuan.join("sub").into_os_string();
+        ekor.push("/");
+        let e = aman::buka_akar(std::path::Path::new(&ekor)).err().expect("tautan bergaris miring ekor harus ditolak");
+        assert!(e.contains("tautan simbolik"), "{}", e);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

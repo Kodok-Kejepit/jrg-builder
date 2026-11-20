@@ -299,7 +299,8 @@ impl Isian {
 /// Jalur relatif diawali `-` (`-Wl,-plugin=x.c` di proyek asing) diberi `./`: tanpa itu kompilator membacanya
 /// sebagai OPSI, dan membangun proyek orang lain berarti menjalankan kodenya.
 fn jalur_bukan_opsi(s: &str) -> String {
-    if s.starts_with('-') { format!("./{}", s) } else { s.to_string() }
+    // `@berkas` dibaca cc/clang/javac/rustc sebagai berkas berisi opsi (AGI-20261119-21).
+    if s.starts_with('-') || s.starts_with('@') { format!("./{}", s) } else { s.to_string() }
 }
 
 fn env_tugas(t: &str) -> bool {
@@ -435,14 +436,18 @@ fn wajib(langkah: &[String], m: &Manifest, apa: &str, kunci: &str) -> Result<(),
 }
 
 /// Paket node yang belum terpasang dipasang dulu (`npm install`), seperti `[python] packages`.
-fn siapkan_dependensi(m: &Manifest, r: &Resep, akar: &Path) -> Result<(), String> {
+/// `pasang` = false (`jrgm build`/`check`): tidak memasang apa pun — memasang paket menjalankan skrip pasangnya.
+fn siapkan_dependensi(m: &Manifest, r: &Resep, akar: &Path, pasang: bool) -> Result<(), String> {
     if r.nama == "python" && !m.python_packages.is_empty() {
-        super::python::ensure_python_packages(&m.python_packages, false)?;
+        super::python::pasang_python(&m.python_packages, false, pasang)?;
     }
     if r.nama == "javascript" && !akar.join("node_modules").exists() {
         let ada = std::fs::read_to_string(akar.join("package.json"))
             .map_or(false, |s| s.contains("\"dependencies\"") || s.contains("\"devDependencies\""));
-        if ada {
+        if ada && !pasang {
+            crate::ecetak_t!("[jrgm] `node_modules` belum ada — build tidak memasang paket; `jrgm run`/`jrgm test` \
+                atau `npm install` yang memasangnya");
+        } else if ada {
             let isi = Isian::proyek(m, r, akar);
             jalan_diam(&isi, r.nama, "npm install", "memasang paket node (npm install)")?;
         }
@@ -462,7 +467,7 @@ pub(crate) fn bangun(m: &Manifest, r: &Resep, akar: &Path) -> Result<(), String>
     let l = langkah(m, "bangun", r.bangun);
     wajib(&l, m, "bangun", "bangun")?;
     siapkan_target(akar)?;
-    siapkan_dependensi(m, r, akar)?;
+    siapkan_dependensi(m, r, akar, false)?;
     let isi = Isian::proyek(m, r, akar);
     if l.iter().any(|t| t.contains("{sumber}") || t.contains("{tiap}")) && isi.sumber.is_empty() {
         return Err(format!("jrgm: tidak ada berkas .{} di {}", r.ekstensi.join("/."),
@@ -484,7 +489,7 @@ pub(crate) fn jalan(m: &Manifest, r: &Resep, akar: &Path, args: &[String]) -> Re
         let isi = Isian::proyek(m, r, akar);
         for t in &b { jalan_diam(&isi, r.nama, t, &format!("membangun {} ({})", m.name, r.nama))?; }
     } else {
-        siapkan_dependensi(m, r, akar)?;
+        siapkan_dependensi(m, r, akar, true)?;
     }
     let isi = Isian::proyek(m, r, akar);
     let (akhir, awal) = l.split_last().unwrap();
@@ -497,7 +502,7 @@ pub(crate) fn uji(m: &Manifest, r: &Resep, akar: &Path, saring: Option<&str>) ->
     let l = langkah(m, "uji", r.uji);
     wajib(&l, m, "uji", "uji")?;
     siapkan_target(akar)?;
-    siapkan_dependensi(m, r, akar)?;
+    siapkan_dependensi(m, r, akar, true)?;
     let mut isi = Isian::proyek(m, r, akar);
     if !l.iter().any(|t| t.contains("{uji")) {
         if saring.is_some() { return Err(format!("jrgm: --filter belum ada untuk uji {} (perkakasnya sendiri yang menyaring)", r.nama)); }
