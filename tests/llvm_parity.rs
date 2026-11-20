@@ -839,6 +839,9 @@ include!("bersama/paritas_llvm.rs");
 // ───────────────────────────────────────────
 
 const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
+    // AGI-20261120-06 (#1083): `?` dulu menulis bit `Err` bertipe lain ke tempat `Err` kembalian (SIGSEGV).
+    ("? meneruskan Err berjenis lain", "package main\nfn a() -> Result<int, int> { return Err(42) }\nfn b() -> Result<int, string> { let v = a()?\n return Ok(v) }\npub fn main() { wok(b()) }",
+     "meneruskan `Err` bertipe `int`, sedangkan fungsi ini mengembalikan `Err` bertipe `string`"),
     // Larik nilai fungsi berbeda tipe hasil: dulu ditolak tanpa lokasi dengan "string sebagai int" (pembungkus
     // bawaan dipaksa ke hasil elemen pertama); sekarang di situs pemakai, menyebut tipe fungsinya.
     ("larik fungsi bawaan berbeda tipe hasil",

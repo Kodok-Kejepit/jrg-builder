@@ -209,7 +209,7 @@ impl Codegen {
 
     /// `coerce` yang tidak melapor: pasangan tipe yang mustahil dijawab `None` (galatnya dibuang), karena situs dinamis
     /// mencoba tiap argumen ke tiap parameter dan cuma satu kombinasi yang terpakai saat jalan.
-    fn coerce_diam(&mut self, v: &Val, ke: &JrgType) -> Option<Val> {
+    pub(crate) fn coerce_diam(&mut self, v: &Val, ke: &JrgType) -> Option<Val> {
         let n = self.errors.len();
         let r = self.coerce(v, ke);
         if self.errors.len() > n { self.errors.truncate(n); return None; }

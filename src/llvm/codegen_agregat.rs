@@ -906,6 +906,16 @@ impl Codegen {
             let ret_ty = self.cur_ret_ty();
             match &ret_ty {
                 JrgType::Enum(ren) if self.result_args.contains_key(ren) => {
+                    // `Err` sumber ke `Err` tipe kembalian: jenisnya disamakan dulu. Dulu bit mentah `E1` ditulis ke
+                    // tempat `E2` (SIGSEGV, tulis melewati alloca) karena pointer buram (AGI-20261120-06).
+                    let e2 = self.result_args.get(ren).map(|(_, e)| e.clone()).unwrap();
+                    let errval = match self.coerce_diam(&errval, &e2) {
+                        Some(v) => v,
+                        None => return Err(format!(
+                            "[{}:{}] `?` meneruskan `Err` bertipe `{}`, sedangkan fungsi ini mengembalikan `Err` bertipe `{}` — \
+                             di backend `--emit-llvm` tipe sebuah tempat tetap; ubah dulu galatnya, mis. `x.map_err(|e| ..)?`",
+                            span.lo.0, span.hi.0, e_ty.nama_typeof(), e2.nama_typeof())),
+                    };
                     let rlayout = self.types.enums.get(ren).cloned().unwrap();
                     let rvariant = rlayout.variant("Err").cloned().unwrap();
                     let new_err = self.build_enum_value(ren, &rlayout, &rvariant, &[errval])?;

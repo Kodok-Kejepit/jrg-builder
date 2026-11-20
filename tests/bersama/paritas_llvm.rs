@@ -100,6 +100,15 @@ pub fn main() {
     }
 }
 "#),
+    ("? meneruskan Err sejenis dan lewat map_err", r#"package main
+fn a() -> Result<int, string> { return Err("x") }
+fn b() -> Result<int, string> { let v = a()?
+ return Ok(v + 1) }
+fn n() -> Result<int, int> { return Err(42) }
+fn m() -> Result<int, string> { let v = n().map_err(|e| "kode " + str(e))?
+ return Ok(v) }
+pub fn main() { wok(b(), m()) }
+"#),
     // K6 (2026-11-18): `json::merge` antara struct dan dict yang muat di tata letak struct-nya.
     ("json::merge struct dan dict", r#"package main
 struct P { pub x: int, pub y: int }
