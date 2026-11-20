@@ -387,6 +387,8 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
      "a collecting parameter (`name...`) must be the last one — after it no arguments are left for other parameters"),
     ("`?` meneruskan `Err` bertipe `{}`, sedangkan fungsi ini mengembalikan `Err` bertipe `{}` — di backend `--emit-llvm` tipe sebuah tempat tetap; ubah dulu galatnya, mis. `x.map_err(|e| ..)?`",
      "`?` passes on an `Err` of type `{}`, while this function returns an `Err` of type `{}` — under the `--emit-llvm` backend a place has a fixed type; convert the error first, e.g. `x.map_err(|e| ..)?`"),
+    ("`struct {}` milik program ini bertabrakan dengan rekaman `{}` yang dijawab `tangkap` (baris: int, berkas: string, kolom: int, pesan: string) — ganti nama struct-nya",
+     "this program's `struct {}` collides with the `{}` record that `tangkap` returns (baris: int, berkas: string, kolom: int, pesan: string) — rename the struct"),
     ("`!==` bukan bentuk JRG — tulis `!=`; perbandingan JRG sudah ketat soal tipe",
      "`!==` is not JRG — write `!=`; JRG comparison is already strict about type"),
     ("badan di JRG selalu dibuka kurung kurawal `{ .. }`, bukan titik dua `:` seperti Python — `if syarat { .. }`, `fn f() { .. }`, `for i in 0..n { .. }`",

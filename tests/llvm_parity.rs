@@ -839,6 +839,9 @@ include!("bersama/paritas_llvm.rs");
 // ───────────────────────────────────────────
 
 const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
+    // AGI-20261120-16 (#1085): `struct Galat` milik program dulu dipakai sebagai tempat rekaman `tangkap` (stack overflow).
+    ("struct Galat milik program bertabrakan dengan rekaman tangkap", "package main\nstruct Galat { kode: int }\npub fn main() {\n let r = tangkap(|| { panik(\"x\") })\n wok(r)\n}",
+     "bertabrakan dengan rekaman `Galat` yang dijawab `tangkap`"),
     // AGI-20261120-06 (#1083): `?` dulu menulis bit `Err` bertipe lain ke tempat `Err` kembalian (SIGSEGV).
     ("? meneruskan Err berjenis lain", "package main\nfn a() -> Result<int, int> { return Err(42) }\nfn b() -> Result<int, string> { let v = a()?\n return Ok(v) }\npub fn main() { wok(b()) }",
      "meneruskan `Err` bertipe `int`, sedangkan fungsi ini mengembalikan `Err` bertipe `string`"),

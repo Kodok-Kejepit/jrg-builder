@@ -165,6 +165,17 @@ impl Codegen {
         let m = self.masa_baru_dgn(std::slice::from_ref(&fexpr), false, false, span)?;
         let JrgType::Masa(t, _) = m.ty.clone() else { return Err("tangkap: bukan tugas".to_string()) };
         let t = *t;
+        // `struct Galat` milik program yang tata letaknya bukan rekaman `tangkap` (nama DAN tipe field) dulu dipakai
+        // sebagai tempat rekaman itu: runtime menulis 48 bita ke alloca yang lebih kecil (AGI-20261120-16).
+        if let Some(l) = self.types.structs.get(crate::interpreter::tangkap::NAMA) {
+            let persis = l.fields.iter().map(|(n, t)| (n.as_str(), t.clone())).eq([("baris", JrgType::I64),
+                ("berkas", JrgType::Str), ("kolom", JrgType::I64), ("pesan", JrgType::Str)]);
+            if !persis {
+                return Err(super::galat::tandai(span, format!(
+                    "`struct {0}` milik program ini bertabrakan dengan rekaman `{0}` yang dijawab `tangkap` (baris: int, \
+                     berkas: string, kolom: int, pesan: string) — ganti nama struct-nya", crate::interpreter::tangkap::NAMA)));
+            }
+        }
         let galat = self.daftar_galat();
         let slot = self.alloca_typed("tkh.", &t);
         if t != JrgType::Unit { self.emit(format!("store {} zeroinitializer, ptr {}", t.llvm_ty(), slot)); }
@@ -189,7 +200,8 @@ impl Codegen {
     /// Tata letak `Galat` (rekaman `tangkap`), didaftarkan sekali: dari `tangkap` atau dari anotasi `Galat`.
     pub(crate) fn daftar_galat(&mut self) -> JrgType {
         let nama = crate::interpreter::tangkap::NAMA.to_string();
-        let milik_tangkap = |s: &super::types::StructLayout| s.fields.iter().map(|(n, _)| n.as_str()).eq(["baris", "berkas", "kolom", "pesan"]);
+        let milik_tangkap = |s: &super::types::StructLayout| s.fields.iter().map(|(n, t)| (n.as_str(), t.clone())).eq([
+            ("baris", JrgType::I64), ("berkas", JrgType::Str), ("kolom", JrgType::I64), ("pesan", JrgType::Str)]);
         if self.types.structs.get(&nama).is_some_and(milik_tangkap) { return JrgType::Struct(nama); }
         self.types.register_struct(super::types::StructLayout { name: nama.clone(), fields: vec![
             ("baris".to_string(), JrgType::I64), ("berkas".to_string(), JrgType::Str),
