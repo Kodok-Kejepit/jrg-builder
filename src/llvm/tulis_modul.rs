@@ -88,7 +88,9 @@ impl Codegen {
             .map(|v| super::modul::tampil(&v.name).to_string()).collect();
         let fungsi: HashSet<String> = self.tables.functions.keys()
             .map(|k| super::modul::tampil(k).to_string())
-            .chain(self.tables.impls.values().flat_map(|m| m.keys().cloned())).collect();
+            .chain(self.tables.impls.values().flat_map(|m| m.keys().cloned()))
+            // Dibayangi lokal (`let murni = || { g[0] = 9 }`): bukan fungsi itu, jadi tidak diketahui (AGI-20261120-23).
+            .filter(|n| self.lookup_local(n).is_none()).collect();
         let j = jejak(&format!("{:?}", e), &var_modul, &fungsi);
         j.tulis || j.buta || j.sebut.iter().any(|s| penulis.contains(s))
     }

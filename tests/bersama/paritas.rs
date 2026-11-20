@@ -2928,4 +2928,30 @@ fn main() {
     coba(|| f())
 }
 "#),
+    ("wokwok::det atas NaN/tak hingga bukan 0 (AGI-20261120-15)", r#"
+fn main() {
+    wok(wokwok::det(wokwok::array([[0.0 / 0.0]])), wokwok::det(wokwok::array([[1.0 / 0.0]])))
+    wok(wokwok::det(wokwok::array([[1.0, 0.0 / 0.0], [2.0, 3.0]])), wokwok::det(wokwok::array([[1.0, 2.0], [2.0, 4.0]])))
+}
+"#),
+    ("str::format dengan { literal, kombinator Option/Result memeriksa argumennya (AGI-20261120-11)", r#"
+fn main() {
+ wok(str::format("{\"x\": {}}", 5))
+ wok(str::format("a { b {}", 1))
+ wok(str::format("{{}}", 2))
+ wok(str::format("{x} {}", 3))
+ main2()
+}
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn main2() {
+ coba(|| Some(1).xor(42))
+ coba(|| None.xor(42))
+ coba(|| None.or(42))
+ coba(|| Some(1).and(42))
+ coba(|| Err(1).or(42))
+ coba(|| Ok(1).and(42))
+ coba(|| Some(1).or(None))
+ coba(|| Ok(1).and(Ok(2)))
+}
+"#),
 ];

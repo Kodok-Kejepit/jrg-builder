@@ -3,6 +3,14 @@
 // `Option_m`/`Result_m`; kalimat gagalnya menyebut method yang ditulis pemakai.
 package opsi
 
+// Argumen yang harus `Option`/`Result` diperiksa di dua cabang, bukan cuma yang membacanya (AGI-20261120-11).
+fn _keluarga<V>(metode: string, keluarga: string, v: V) {
+    let t = typeof(v)
+    if t != "enum:" + keluarga {
+        panik("method `" + metode + "` butuh `" + keluarga + "` sebagai argumen ke-1, dapat `" + t + "`")
+    }
+}
+
 fn _fungsi<F>(metode: string, ke: int, f: F) {
     let t = typeof(f)
     if t != "function" && t != "closure" && t != "native_fn" && !str::starts_with(t, "enum_ctor:") {
@@ -18,6 +26,7 @@ pub fn Option_unwrap_or_else<T>(o: Option<T>, f: fn() -> T) -> T {
 }
 
 pub fn Option_or<T>(o: Option<T>, lain: Option<T>) -> Option<T> {
+    _keluarga("or", "Option", lain)
     match o { Some(v) => Some(v), None => lain }
 }
 
@@ -27,10 +36,12 @@ pub fn Option_or_else<T>(o: Option<T>, f: fn() -> Option<T>) -> Option<T> {
 }
 
 pub fn Option_and<T, U>(o: Option<T>, lain: Option<U>) -> Option<U> {
+    _keluarga("and", "Option", lain)
     match o { Some(_) => lain, None => None }
 }
 
 pub fn Option_xor<T>(o: Option<T>, lain: Option<T>) -> Option<T> {
+    _keluarga("xor", "Option", lain)
     match o {
         Some(v) => match lain { Some(_) => None, None => Some(v) },
         None => lain,
@@ -108,6 +119,7 @@ pub fn Result_unwrap_or_else<T, E>(r: Result<T, E>, f: fn(E) -> T) -> T {
 }
 
 pub fn Result_or<T, E, F>(r: Result<T, E>, lain: Result<T, F>) -> Result<T, F> {
+    _keluarga("or", "Result", lain)
     match r { Ok(v) => Ok(v), Err(_) => lain }
 }
 
@@ -117,6 +129,7 @@ pub fn Result_or_else<T, E, F>(r: Result<T, E>, f: fn(E) -> Result<T, F>) -> Res
 }
 
 pub fn Result_and<T, U, E>(r: Result<T, E>, lain: Result<U, E>) -> Result<U, E> {
+    _keluarga("and", "Result", lain)
     match r { Ok(_) => lain, Err(e) => Err(e) }
 }
 

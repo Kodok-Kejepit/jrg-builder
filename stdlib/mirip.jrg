@@ -63,6 +63,7 @@ pub fn saran(kata, daftar, batas) {
 
 /// Satu saran terdekat, atau `None`; batasnya sepertiga panjang kata (paling sedikit 1), seperti saran ejaan `jrgc`.
 pub fn terdekat(kata, daftar) {
+    if typeof(kata) != "string" { panik(«mirip: kata harus teks, dapat `${typeof(kata)}`») }
     let b = math::max(1, len(str::chars(kata)) / 3)
     let s = saran(kata, daftar, b)?
     return Ok(s.first())

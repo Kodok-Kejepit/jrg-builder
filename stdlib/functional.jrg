@@ -104,6 +104,7 @@ pub fn apply_n(f, n, x) {
 pub fn until(f, syarat, x, batas) {
     _wajib_fungsi("functional::until", 1, f)
     _wajib_fungsi("functional::until", 2, syarat)
+    if typeof(batas) != "int" || batas < 0 { panik("functional::until: batas harus bilangan bulat tidak negatif, dapat " + str(batas)) }
     var v = x
     var i = 0
     while i < batas {

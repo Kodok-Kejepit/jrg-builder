@@ -15,6 +15,7 @@ fn _t(nama, t) {
         panik(nama + ": `t` harus angka, dapat `" + typeof(t) + "`")
     }
     let k = t as float
+    if math::is_nan(k) { panik(nama + ": `t` NaN") }
     if k < 0.0 { return 0.0 }
     if k > 1.0 { return 1.0 }
     return k
@@ -71,7 +72,7 @@ pub struct Tween { pub dari: float, pub ke: float, pub durasi: float, pub waktu:
 /// Tween baru. `durasi` harus positif.
 pub fn baru(dari, ke, durasi, kurva: fn(float) -> float) {
     if typeof(durasi) != "int" && typeof(durasi) != "float" { panik("tween::baru: `durasi` harus angka") }
-    if durasi <= 0 { panik("tween::baru: `durasi` harus positif, dapat " + str(durasi)) }
+    if (typeof(durasi) != "int" && typeof(durasi) != "float") || !(durasi > 0) || !math::is_finite(durasi as float) { panik("tween::baru: `durasi` harus positif, dapat " + str(durasi)) }
     _wajib_fungsi("tween::baru", kurva)
     return Tween { dari: dari as float, ke: ke as float, durasi: durasi as float, kurva: kurva }
 }

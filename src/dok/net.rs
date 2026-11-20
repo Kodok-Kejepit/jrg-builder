@@ -394,7 +394,8 @@ pub fn udp_send_to(args: &[Value]) -> Result<Value, String> {
     let data = data_kirim(args.get(3).unwrap_or(&Value::Nil), "dok::udp_send_to", 4)?;
 
     match get_udp(id) {
-        Some(sock) => match sock.send_to(&data, (host, port)) {
+        // `[::1]` ditulis berkurung seperti di `udp_bind`/`tcp_listen`; resolver menerimanya tanpa kurung (AGI-20261120-15).
+        Some(sock) => match sock.send_to(&data, (host.strip_prefix('[').and_then(|h| h.strip_suffix(']')).unwrap_or(&host), port)) {
             Ok(n) => Ok(ok_value(Value::Int(n as i128))),
             Err(e) => Ok(err_value(format!("dok::udp_send_to: {}", crate::host::galat_io(&e)))),
         },

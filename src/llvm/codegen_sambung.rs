@@ -133,7 +133,8 @@ impl Codegen {
         let nilai_slot = self.alloca_typed("tbn.", &JrgType::Any);
         self.emit(format!("store %JrgAny {}, ptr {}", vk.text, nilai_slot));
         let slot = match wadah {
-            Expr::Ident(nama, _) => self.lookup_local(nama).ok_or("lokal bertag hilang")?.0,
+            Expr::Ident(nama, _) if self.lookup_local(nama).is_some() => self.lookup_local(nama).ok_or("lokal bertag hilang")?.0,
+            Expr::Ident(..) => self.get_place(wadah)?.0,
             _ => {
                 // Kunci antara yang hilang ditunjuk di tempat antaranya, seperti acuan.
                 let lama = self.masuk_span(wadah.span());

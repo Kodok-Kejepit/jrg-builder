@@ -749,6 +749,10 @@ impl Codegen {
                     self.satukan(&p.ty, &v.ty, &generik, &mut subst);
                 }
                 arg_vals[i] = Some(v);
+            } else {
+                // Argumen parameter bertipe juga diturunkan di posisinya: dulu sesudah semua yang tak bertipe, jadi
+                // `f(tick(1), tick(2))` atas `fn f(a: int, b)` menjalankan `tick(2)` lebih dulu (AGI-20261120-07).
+                arg_vals[i] = Some(self.codegen_expr(&args[i], concrete_tys[i].as_ref())?);
             }
         }
         // Parameter tipe yang cuma muncul di tipe KEMBALIAN (`fn baru<T>() -> Kotak<T>`) diikat
@@ -822,16 +826,17 @@ impl Codegen {
         }
         let mut subst = TypeSubst::new();
         self.ikat_diri(self_ty_name, &mut subst);
-        for (i, (p, a)) in decl.params.iter().zip(args.iter()).enumerate() {
-            if matches!(p.ty, TypeExpr::Inferred) {
-                let v = self.codegen_expr(a, None)?;
-                subst.insert(format!("$param{}", i), v.ty.clone());
-            }
-        }
+        // Satu lintasan, urut tulis: argumen parameter tanpa anotasi dulu diturunkan DUA kali (efek sampingnya
+        // jalan dua kali) dan sebelum argumen yang bertipe (AGI-20261120-07).
         let mut final_args = Vec::with_capacity(args.len());
         for (i, (p, a)) in decl.params.iter().zip(args.iter()).enumerate() {
+            let v = if matches!(p.ty, TypeExpr::Inferred) {
+                let v = self.codegen_expr(a, None)?;
+                subst.insert(format!("$param{}", i), v.ty.clone());
+                Some(v)
+            } else { None };
             let pty = self.tipe_param(p, i, &subst)?;
-            let v = self.codegen_expr(a, Some(&pty))?;
+            let v = match v { Some(v) => v, None => self.codegen_expr(a, Some(&pty))? };
             let v = self.coerce(&v, &pty);
             let v = if self.boleh_pinjam(decl, i, a, &v.ty) { v } else { self.ambil_milik(a, v)? };
             final_args.push((pty.clone(), v));
@@ -1179,6 +1184,16 @@ impl Codegen {
     /// tempat `x` tanpa menyalinnya.
     pub(crate) fn call_method_impl_dgn(&mut self, self_ty_name: &str, decl: &FnDecl, self_ptr: &str, self_ty: &JrgType, args: &[Expr], milik: bool, span: Span) -> Result<Val, String> {
         let rest_params = &decl.params[1..];
+        // Parameter pengumpul dikemas seperti `call_named_function`: `h.jumlah([10, 20])` dulu menyerahkan
+        // larik itu sendiri sebagai `xs` (`len(xs)` 2, bukan 1) — AGI-20261120-22.
+        let args_kemas: Vec<Expr>;
+        let args: &[Expr] = if rest_params.last().is_some_and(|p| p.is_variadic) && args.len() + 1 >= rest_params.len() {
+            let tetap = rest_params.len() - 1;
+            let mut v: Vec<Expr> = args[..tetap].to_vec();
+            v.push(Expr::Array { elems: args[tetap..].to_vec(), span });
+            args_kemas = v;
+            &args_kemas
+        } else { args };
         if rest_params.len() != args.len() {
             return Err(format!("[{}:{}] method `{}.{}` butuh {} argumen, diberi {}", span.lo.0, span.hi.0, self_ty_name, decl.name, rest_params.len(), args.len()));
         }
@@ -1219,6 +1234,10 @@ impl Codegen {
                 // `codegen_function` menelusuri `decl.params` yang lengkap.
                 subst.insert(format!("$param{}", i + 1), v.ty.clone());
                 siap[i] = Some(v);
+            } else {
+                // Urut tulis, seperti `call_named_function` (AGI-20261120-07).
+                let pty = self.tipe_param(p, i + 1, &subst)?;
+                siap[i] = Some(self.codegen_expr(a, Some(&pty))?);
             }
         }
         let mut final_args = Vec::new();

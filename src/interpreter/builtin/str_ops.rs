@@ -455,6 +455,13 @@ impl SegmenFormat {
                 sisa = "";
                 break;
             };
+            // `{` lain sebelum `}`: yang ini teks biasa, pemindaian lanjut dari `{` berikutnya — `{"x": {}}` dulu
+            // dibaca satu placeholder berisi `"x": {` (AGI-20261120-11).
+            if let Some(lain) = ekor[1..rel].find('{') {
+                teks.push_str(&ekor[..lain + 1]);
+                sisa = &ekor[lain + 1..];
+                continue;
+            }
             let isi = &ekor[1..rel];
             if isi.is_empty() {
                 if !teks.is_empty() { keluar.push(SegmenFormat::Teks(std::mem::take(&mut teks))); }

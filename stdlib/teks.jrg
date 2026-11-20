@@ -14,10 +14,10 @@ pub struct Teks {
 
 /// Bungkus apa saja jadi `Teks`.
 pub fn dari(x) {
-    let t = typeof(x)
-    if t == "array" { return Teks { isi: x, dari_teks: false } }
-    if t == "string" { return Teks { isi: str::chars(x), dari_teks: true } }
-    if t == "struct:Teks" { return x }
+    // `typeof(x) == ".."` langsung, supaya LLVM melipat cabangnya (AGI-20261120-19).
+    if typeof(x) == "array" { return Teks { isi: x, dari_teks: false } }
+    if typeof(x) == "string" { return Teks { isi: str::chars(x), dari_teks: true } }
+    if typeof(x) == "struct:Teks" { return x }
     return Teks { isi: [x], dari_teks: false }
 }
 

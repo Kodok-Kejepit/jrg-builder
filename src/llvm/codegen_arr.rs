@@ -165,6 +165,11 @@ impl Codegen {
                 _ => None,
             };
             let v = self.codegen_expr(e, harap.as_ref())?;
+            // Nilai bertag dibuka sebagai array bertag (yang bukan array gagal saat jalan), seperti `arg_koleksi` —
+            // dulu ditolak menyebut penanda internal `<any: ..>` (AGI-20261120-23).
+            let v = if v.ty == JrgType::Any {
+                match self.buka_terperiksa(&v, &JrgType::Slice(Box::new(JrgType::Any))) { Some(b) => b, None => v }
+            } else { v };
             if !matches!(v.ty, JrgType::Array(_, _) | JrgType::Slice(_)) {
                 return Err(super::galat::tandai(span,
                     crate::interpreter::pesan_sebar_bukan_array(&v.ty.nama_typeof())));

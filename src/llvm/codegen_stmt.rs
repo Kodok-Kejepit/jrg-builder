@@ -418,6 +418,10 @@ impl Codegen {
                 if self.lookup_local(nama).is_some_and(|(_, t)| t == JrgType::Any) && !self.tangkapan.contains(nama) {
                     return self.tulis_indeks_bertag(obj, index, nilai, *span);
                 }
+                // `var` modul bertag juga (AGI-20261120-13): dulu ditolak "tidak bisa index nilai bertag".
+                if self.lookup_local(nama).is_none() && self.var_global.get(&self.k(nama)).is_some_and(|g| g.1 == JrgType::Any) {
+                    return self.tulis_indeks_bertag(obj, index, nilai, *span);
+                }
             } else if matches!(**obj, Expr::Index { .. } | Expr::Field { .. })
                 && self.akar_lokal_polos(obj) && self.tempat_bertag(obj) {
                 return self.tulis_indeks_bertag(obj, index, nilai, *span);

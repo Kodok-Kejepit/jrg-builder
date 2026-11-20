@@ -423,6 +423,14 @@ pub unsafe extern "C" fn jrg_jembatan_panggil(
         };
         return match r { Ok(v) => { out.write(ke_any(&v, k)); 0 } Err(e) => { out.write(gagal(e)); -1 } };
     }
+    // `==` atas nilai titipan (hasil `dok::json_decode`, `wokwok::`): isinya, bukan alamat kotaknya (AGI-20261120-20).
+    if nama == "::sama" && n == 2 {
+        let (a, b) = match (dari_any(&*args, k), dari_any(&*args.add(1), k)) {
+            (Ok(a), Ok(b)) => (a, b),
+            (Err(e), _) | (_, Err(e)) => { out.write(gagal(e)); return -1; }
+        };
+        return match a.vm_eq(&b) { Ok(s) => { out.write(kotak(1, s as u64, 0)); 0 } Err(e) => { out.write(gagal(e)); -1 } };
+    }
     if nama == "::tampil" || nama == "::typeof" {
         DALAM.with(|d| d.set(0));
         let v = match dari_any(&*args, k) { Ok(v) => v, Err(e) => { out.write(gagal(e)); return -1; } };

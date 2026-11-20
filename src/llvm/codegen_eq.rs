@@ -140,7 +140,14 @@ impl Codegen {
             cg.start_block(lanjut);
         };
         match ty {
-            JrgType::Unit | JrgType::Nil => Ok(()),
+            // `()`/`nil` tidak punya urutan, seperti di dua mesin lain — dulu dianggap sama dan lolos (AGI-20261120-20).
+            JrgType::Unit | JrgType::Nil => {
+                let n = ty.nama_typeof();
+                self.panik(&crate::interpreter::pesan_banding(&n, &n));
+                let lanjut = self.fresh_label("bk.mati.");
+                self.start_block(lanjut);
+                Ok(())
+            }
             t if t.is_int() || matches!(t, JrgType::Bool | JrgType::Rune) => {
                 let (pl, pg) = if t.is_signed_int() { ("slt", "sgt") } else { ("ult", "ugt") };
                 let (lt, gt) = (self.fresh("bkl."), self.fresh("bkg."));
@@ -381,14 +388,37 @@ impl Codegen {
                 let l_num = self.fresh_label("anyeq.num.");
                 let l_flt = self.fresh_label("anyeq.flt.");
                 let l_tolak = self.fresh_label("anyeq.tolak.");
+                let l_tit = self.fresh_label("anyeq.tit.");
                 self.terminate(format!(
                     "switch i32 {}, label %{} [ i32 {}, label %{} i32 {}, label %{} \
-                     i32 {}, label %{} i32 {}, label %{} i32 {}, label %{} ]",
+                     i32 {}, label %{} i32 {}, label %{} i32 {}, label %{} i32 9, label %{} ]",
                     lt.text, l_num, TAG_STR, l_str, TAG_FLOAT, l_flt,
-                    TAG_SLICE, l_tolak, TAG_DICT, l_tolak, TAG_BURAM, l_bur));
+                    TAG_SLICE, l_tolak, TAG_DICT, l_tolak, TAG_BURAM, l_bur, l_tit));
 
                 let lv = Val { text: lval.to_string(), ty: JrgType::Any };
                 let rv = Val { text: rval.to_string(), ty: JrgType::Any };
+
+                // Titipan `jrgc` (tag 9): dibandingkan isinya oleh jembatan, bukan alamat kotaknya (AGI-20261120-20).
+                self.start_block(l_tit);
+                let pasangan = self.alloca_raw("anyeqtp.", "[2 x %JrgAny]", None);
+                for (i, v) in [&lv, &rv].iter().enumerate() {
+                    let p = self.fresh("anyeqtq.");
+                    self.emit(format!("{} = getelementptr [2 x %JrgAny], ptr {}, i64 0, i64 {}", p, pasangan, i));
+                    self.emit(format!("store %JrgAny {}, ptr {}", v.text, p));
+                }
+                let keluar = self.alloca_typed("anyeqto.", &JrgType::Any);
+                let teks = self.intern_string("::sama");
+                let (np, nl) = self.split_str(&teks);
+                self.ensure_extern("declare i32 @jrg_jembatan(ptr, i64, ptr, i64, ptr)", "jrg_jembatan");
+                let r = self.fresh("anyeqtr.");
+                self.emit(format!("{} = call i32 @jrg_jembatan(ptr {}, i64 {}, ptr {}, i64 2, ptr {})", r, np, nl, pasangan, keluar));
+                let mp = self.fresh("anyeqtm.");
+                self.emit(format!("{} = getelementptr %JrgAny, ptr {}, i32 0, i32 1, i64 0", mp, keluar));
+                let hasil = self.load_place(&mp, &JrgType::I64);
+                let bit = self.fresh("anyeqtb.");
+                self.emit(format!("{} = and i64 {}, 255", bit, hasil.text));
+                self.kumpul_sama(slot, &JrgType::I64, &bit, "1", span)?;
+                self.terminate(format!("br label %{}", l_gab));
 
                 self.start_block(l_str);
                 let ls = self.buka_any(&lv, &JrgType::Str, span)?;

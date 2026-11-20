@@ -5321,4 +5321,88 @@ pub fn main() {
     coba(|| (if true { Some(5) } else { None }).is_some(1))
 }
 "#),
+    ("for atas batas bertipe beda, slice yang ditulis badannya, indeks var modul bertag (AGI-20261120-13)", r#"
+package main
+var g = 0
+pub fn main() {
+    var cnt = 0
+    for i in (0 as u8)..(300 as i64) { cnt += 1 }
+    wok("cnt", cnt)
+    var xs: []int = [10, 20, 30]
+    var seen = []
+    for i, v in xs {
+        if i == 0 { xs[1] = 999 }
+        seen = arr::push(seen, v)
+    }
+    wok(seen, xs)
+    g = [1, "x"]
+    g[0] = 99
+    wok(g)
+}
+"#),
+    ("== atas titipan jrgc membandingkan isi, () tidak punya urutan (AGI-20261120-20)", r#"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn main() {
+    wok(dok::json_decode("{\"x\": 1}").unwrap() == dok::json_decode("{\"x\": 1}").unwrap())
+    wok(dok::json_decode("{\"x\": 1}").unwrap() == dok::json_decode("{\"x\": 2}").unwrap())
+    wok(wokwok::array([1, 2]) == wokwok::array([1, 2]))
+    coba(|| ((), 1) < ((), 2))
+}
+"#),
+    ("argumen dievaluasi sekali dan urut tulis, expect berpesan bukan teks (AGI-20261120-07)", r#"
+package main
+var N = 0
+fn tick(s, v) { N = N + 1; wok("tick", s, N); return v }
+struct S { pub a: int }
+impl S { pub fn make(x) { return S { a: x } } }
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+pub fn main() {
+    let s = S::make(tick("static", 7))
+    wok(s.a, N)
+    let o: Option<int> = None
+    coba(|| o.expect(123))
+    let r: Result<int, string> = Err("boom")
+    coba(|| r.expect(456))
+    kedua()
+}
+fn free_mix(a: int, b) { return a + b }
+impl S { pub fn mix(self, a: int, b) { return a + b + self.a } }
+fn kedua() {
+    wok(free_mix(tick("free_1", 1), tick("free_2", 2)))
+    let s = S { a: 0 }
+    wok(s.mix(tick("meth_1", 10), tick("meth_2", 20)))
+}
+"#),
+    ("nama fungsi yang dibayangi closure lokal tidak dianggap murni (AGI-20261120-23)", r#"
+package main
+var g = [10, 20]
+fn murni() { return [30] }
+pub fn main() {
+    let murni = || { g[0] = 99
+        return [30] }
+    let h = g + murni()
+    wok(h, g)
+}
+"#),
+    ("sebar array atas nilai bertag (AGI-20261120-23)", r#"
+fn main() {
+ var x = 0
+ x = [1, "a"]
+ wok([0, ...x, 30])
+}
+"#),
+    ("method leluhur menang atas default trait, pengumpul method dikemas (AGI-20261120-22)", r#"
+struct Induk { pub a: int = 1 }
+impl Induk { pub fn sapa(self) -> string { return "dari Induk" } }
+trait Sapa { fn sapa(self) -> string { return "dari trait Sapa" } }
+struct Anak : Induk { pub b: int = 2 }
+impl Sapa for Anak {}
+struct H { pub a: int }
+impl H { pub fn jumlah(self, xs...) -> int { return self.a + len(xs) } }
+fn main() {
+    wok(Anak {}.sapa())
+    let h = H { a: 10 }
+    wok(h.jumlah([10, 20, 30]), h.jumlah(), h.jumlah(1, 2, 3))
+}
+"#),
 ];

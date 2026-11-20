@@ -99,8 +99,13 @@ impl GlobalTables {
         let mut tunggu = Vec::new();
         for (tipe, tr) in std::mem::take(&mut self.impl_trait) {
             let Some(daftar) = self.default_trait.get(&tr).cloned() else { tunggu.push((tipe, tr)); continue };
+            // Method `impl` milik leluhur menang atas default trait, seperti acuan (AGI-20261120-22).
+            let leluhur: Vec<String> = self.silsilah(&tipe).into_iter().skip(1).collect();
+            let dari_leluhur = |n: &str, impls: &HashMap<String, HashMap<String, Rc<FnDecl>>>| leluhur.iter()
+                .any(|l| impls.get(l).is_some_and(|m| m.contains_key(n)));
+            let pakai: Vec<_> = daftar.into_iter().filter(|f| !dari_leluhur(&f.name, &self.impls)).collect();
             let bucket = self.impls.entry(tipe).or_insert_with(HashMap::new);
-            for f in daftar {
+            for f in pakai {
                 bucket.entry(f.name.clone()).or_insert(f);
             }
         }

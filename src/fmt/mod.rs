@@ -247,6 +247,10 @@ fn aturan_celah(prev: Option<&TokenKind>, cur: Option<&TokenKind>, cur_komentar:
     if matches!(c, ColonColon) && !kepala_jalur(p) {
         return aturan_celah(prev, Some(&Ident(String::new())), false);
     }
+    // `t.0 .1`: spasi antara bulat dan `.` dipertahankan — dirapatkan, `0 .1` jadi literal `0.1` (AGI-20261120-11).
+    if matches!(p, IntLit(..)) && matches!(c, Dot) {
+        return Celah::Pertahankan;
+    }
     // Tidak pernah ada spasi di sekitar penyambung nama.
     if matches!(p, Dot | ColonColon | DotDotDot) || matches!(c, Dot | ColonColon) {
         return Celah::Larang;

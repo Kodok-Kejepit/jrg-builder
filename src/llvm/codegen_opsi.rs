@@ -183,6 +183,8 @@ impl Codegen {
             "expect" => {
                 if args.len() != 1 { return Err(format!("[{}:{}] `expect` butuh 1 argumen (pesan)", span.lo.0, span.hi.0)); }
                 let msg = self.codegen_expr(&args[0], Some(&JrgType::Str))?;
+                // Pesan bukan teks ditampilkan, seperti acuan — dulu IR-nya rusak dan `clang` gagal (AGI-20261120-07).
+                let msg = if msg.ty == JrgType::Str { msg } else { self.val_to_str(&msg)? };
                 let tagv = self.get_tag(optr, &ety);
                 let cmp = self.fresh("ope.");
                 self.emit(format!("{} = icmp eq i32 {}, 1", cmp, tagv));
@@ -291,6 +293,8 @@ impl Codegen {
             "expect" => {
                 if args.len() != 1 { return Err(format!("[{}:{}] `expect` butuh 1 argumen (pesan)", span.lo.0, span.hi.0)); }
                 let msg = self.codegen_expr(&args[0], Some(&JrgType::Str))?;
+                // Pesan bukan teks ditampilkan, seperti acuan — dulu IR-nya rusak dan `clang` gagal (AGI-20261120-07).
+                let msg = if msg.ty == JrgType::Str { msg } else { self.val_to_str(&msg)? };
                 let tagv = self.get_tag(optr, &ety);
                 let cmp = self.fresh("ree.");
                 self.emit(format!("{} = icmp eq i32 {}, 1", cmp, tagv));

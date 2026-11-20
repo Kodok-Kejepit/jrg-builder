@@ -258,8 +258,9 @@ pub fn each(daftar, f) {
 ///
 /// Tidak ada padanannya di `arr::`.
 pub fn step_by(daftar, n) {
-    if n <= 0 {
-        return Err("step_by: langkah harus lebih dari 0, dapat " + str::to_string(n))
+    // Gagal, bukan `Err`: jalur sukses menjawab array, satu fungsi tidak menjawab dua tipe (AGI-20261120-19).
+    if typeof(n) != "int" || n <= 0 {
+        panik("step_by: langkah harus bilangan bulat lebih dari 0, dapat " + str::to_string(n))
     }
     var keluar = []
     for i, x in daftar { if i % n == 0 { keluar = arr::push(keluar, x) } }
@@ -324,7 +325,7 @@ pub fn skip(daftar, n) {
 /// Array sepanjang `n` yang isinya `f(0)`, `f(1)`, … `f(n-1)`.
 pub fn tabulate(n, f) {
     _wajib_fungsi("iterator::tabulate", 2, f)
-    if n < 0 { return Err("tabulate: panjang tidak boleh negatif, dapat " + str::to_string(n)) }
+    if typeof(n) != "int" || n < 0 { panik("tabulate: panjang harus bilangan bulat tidak negatif, dapat " + str::to_string(n)) }
     var keluar = []
     // `for x in arr` memberi INDEKS; bentuk dua-nama memberi nilainya.
     for _, i in range(0, n) { keluar = arr::push(keluar, f(i)) }
@@ -358,12 +359,24 @@ pub fn reverse(daftar) {
     return keluar
 }
 
+/// Kunci `min_by`/`max_by` yang bisa dibandingkan.
+fn _kunci_terbanding(siapa, k) {
+    if typeof(k) == "float" && math::is_nan(k) { panik(siapa + ": kuncinya NaN, jadi urutannya tidak terdefinisi") }
+    return k
+}
+
 /// Elemen terkecil menurut `f`, sebagai `Option`.
 pub fn min_by(daftar, f) {
     _wajib_fungsi("iterator::min_by", 2, f)
     if len(daftar) == 0 { return Option::None }
+    // Kunci dihitung sekali per elemen; NaN tidak terbanding, seperti `arr::min` (AGI-20261120-19).
     var terbaik = daftar[0]
-    for _, x in daftar { if f(x) < f(terbaik) { terbaik = x } }
+    var kunci = _kunci_terbanding("iterator::min_by", f(terbaik))
+    for _, x in daftar {
+        let k = _kunci_terbanding("iterator::min_by", f(x))
+        if k < kunci { terbaik = x
+            kunci = k }
+    }
     return Option::Some(terbaik)
 }
 
@@ -371,8 +384,14 @@ pub fn min_by(daftar, f) {
 pub fn max_by(daftar, f) {
     _wajib_fungsi("iterator::max_by", 2, f)
     if len(daftar) == 0 { return Option::None }
+    // Kunci dihitung sekali per elemen; NaN tidak terbanding, seperti `arr::max` (AGI-20261120-19).
     var terbaik = daftar[0]
-    for _, x in daftar { if f(x) > f(terbaik) { terbaik = x } }
+    var kunci = _kunci_terbanding("iterator::max_by", f(terbaik))
+    for _, x in daftar {
+        let k = _kunci_terbanding("iterator::max_by", f(x))
+        if k > kunci { terbaik = x
+            kunci = k }
+    }
     return Option::Some(terbaik)
 }
 

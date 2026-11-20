@@ -174,6 +174,10 @@ pub fn det(a: &Nd) -> Hasil<Nd> {
         return Err(format!("wokwok::det: butuh matriks persegi, dapat {}x{}", r, c));
     }
     let v = a.f64_data();
+    // NaN/tak hingga tidak boleh tampil sebagai matriks singular (`0.0`) — AGI-20261120-15.
+    if v.iter().any(|x| !x.is_finite()) {
+        return Ok(Nd::skalar_f64(if r == 1 { v[0] } else { f64::NAN }));
+    }
     match lu(&v, r) {
         // Singular berarti determinannya memang nol — itu jawaban yang
         // benar, bukan kegagalan.

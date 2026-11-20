@@ -1085,7 +1085,7 @@ impl Codegen {
 
     /// Tipe bulat terkecil yang memuat semua nilai `a` dan `b` yang BERBEDA tipe; `None`
     /// kalau sama, bukan bilangan bulat, atau butuh lebih dari 128 bit.
-    fn int_bersama(a: &JrgType, b: &JrgType) -> Option<JrgType> {
+    pub(crate) fn int_bersama(a: &JrgType, b: &JrgType) -> Option<JrgType> {
         if a == b || !a.is_int() || !b.is_int() { return None; }
         let (ba, bb) = (a.int_bits()?, b.int_bits()?);
         if a.is_signed_int() == b.is_signed_int() {

@@ -24,7 +24,12 @@ impl Codegen {
                 Some(e) => self.codegen_expr(e, Some(&lo_v.ty))?,
                 None => return Err("range tanpa batas atas tidak didukung".into()),
             };
-            let hi_v = self.coerce(&hi_v, &lo_v.ty);
+            // Dua batas bertipe bulat lain disamakan ke tipe yang memuat keduanya, bukan `hi` dipotong ke tipe `lo`
+            // (`(0 as u8)..300` dulu berputar 44 kali) — AGI-20261120-13.
+            let (lo_v, hi_v) = match Self::int_bersama(&lo_v.ty, &hi_v.ty) {
+                Some(t) => (self.coerce_longgar(&lo_v, &t), self.coerce_longgar(&hi_v, &t)),
+                None => { let h = self.coerce(&hi_v, &lo_v.ty); (lo_v, h) }
+            };
             return self.codegen_counting_loop(vars, lo_v, hi_v, *inclusive, body, label);
         }
         self.slot_bulat_gagal = None;
@@ -37,6 +42,11 @@ impl Codegen {
             && crate::interpreter::capture::blok_cuma_membaca(body, &vars[1])
             && !crate::interpreter::capture::blok_menulis(body, Self::nama_akar(iter).unwrap_or(""));
         if iv.ty == JrgType::Any { return self.for_bertag(vars, &iv, body, label); }
+        // Badan yang menulis ke yang diiterasi melihat salinan awalnya, seperti acuan (AGI-20261120-13).
+        let iv = if matches!(iv.ty, JrgType::Slice(_))
+            && crate::interpreter::capture::blok_menulis(body, Self::nama_akar(iter).unwrap_or("\u{0}")) {
+            self.salin_slice(&iv)
+        } else { iv };
         self.for_atas(vars, iv, body, label, menumpang)
     }
 

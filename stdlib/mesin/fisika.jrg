@@ -20,7 +20,7 @@ fn _angka(nama, ke, v) {
 pub fn kotak(x, y, w, h) {
     let lw = _angka("fisika::kotak", 3, w)
     let lh = _angka("fisika::kotak", 4, h)
-    if lw < 0.0 || lh < 0.0 { panik("fisika::kotak: lebar dan tinggi tidak boleh negatif") }
+    if !(lw >= 0.0) || !(lh >= 0.0) || !math::is_finite(lw) || !math::is_finite(lh) { panik("fisika::kotak: lebar dan tinggi tidak boleh negatif") }
     return Kotak { x: _angka("fisika::kotak", 1, x), y: _angka("fisika::kotak", 2, y), w: lw, h: lh }
 }
 
@@ -28,7 +28,7 @@ pub fn kotak(x, y, w, h) {
 pub fn lingkaran(pusat, r) {
     if typeof(pusat) != "struct:Vek2" { panik("fisika::lingkaran: pusat harus `Vek2`, dapat `" + typeof(pusat) + "`") }
     let jr = _angka("fisika::lingkaran", 2, r)
-    if jr < 0.0 { panik("fisika::lingkaran: jari-jari tidak boleh negatif") }
+    if !(jr >= 0.0) || !math::is_finite(jr) { panik("fisika::lingkaran: jari-jari tidak boleh negatif") }
     return Lingkaran { pusat: pusat, r: jr }
 }
 

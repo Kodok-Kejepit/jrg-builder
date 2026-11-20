@@ -30,7 +30,8 @@ impl Codegen {
             self.panik_statis(&crate::sinkron::pesan_bukan_int(siapa, &v.ty.nama_typeof()));
             return Ok(Val { text: "0".into(), ty: JrgType::I64 });
         }
-        Ok(self.coerce_longgar(&v, &JrgType::I64))
+        // `Atomic` LLVM 64 bit: yang tidak muat ditolak, bukan disimpan bit bawahnya (AGI-20261120-11).
+        Ok(self.ke_i64_terperiksa(&v, siapa))
     }
 
     fn sinkron_pegangan(&mut self, v: Val, kunci: bool, siapa: &str, span: Span) -> Result<Val, String> {

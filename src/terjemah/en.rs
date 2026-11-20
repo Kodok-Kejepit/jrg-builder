@@ -1526,6 +1526,11 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
      "the result of `**` = {} does not fit `{}` on the LLVM backend (the other two engines compute in 128 bits) — run without `--emit-llvm`, or use `int`"),
     ("`{}` atas bilangan {} di luar 64 bit bertanda belum didukung backend `--emit-llvm` — jalankan tanpa `--emit-llvm`",
      "`{}` on the number {} outside 64-bit signed is not supported by the `--emit-llvm` backend yet — run without `--emit-llvm`"),
+    ("method `{}` butuh `{}` sebagai argumen ke-1, dapat `{}`", "method `{}` needs an `{}` as argument 1, got `{}`"),
+    ("step_by: langkah harus bilangan bulat lebih dari 0, dapat ", "step_by: the step must be an integer greater than 0, got "),
+    ("tabulate: panjang harus bilangan bulat tidak negatif, dapat ", "tabulate: the length must be a non-negative integer, got "),
+    ("functional::until: batas harus bilangan bulat tidak negatif, dapat ", "functional::until: the limit must be a non-negative integer, got "),
+    ("iterator::{}: kuncinya NaN, jadi urutannya tidak terdefinisi", "iterator::{}: the key is NaN, so the order is undefined"),
     ("error: nada `{}` tidak ada. yang tersedia: ",
      "error: the tone `{}` does not exist. available: "),
 
