@@ -341,9 +341,9 @@ impl Parser {
             (k1, k2),
             (Some(TokenKind::StringLit(_)), Some(TokenKind::Colon))
                 | (Some(TokenKind::RawStringLit(_)), Some(TokenKind::Colon))
-                | (Some(TokenKind::Ident(_)), Some(TokenKind::Colon))
                 | (Some(TokenKind::IntLit(_)), Some(TokenKind::Colon))
-        )
+        ) || matches!((k1, k2), (Some(TokenKind::Ident(n)), Some(TokenKind::Colon)) if !n.starts_with('\''))
+        // `{ 'luar: loop { .. } }` itu blok berlabel, bukan dict (AGI-20261119-04): label terbaca `Ident("'luar")`.
     }
 
     /// `{"nama": "budi", "umur": 17}` — literal dict.
@@ -608,6 +608,8 @@ impl Parser {
 
         let mut nama = Vec::new();
         kumpul_nama_pola(&l.pattern, &mut nama);
+        let mut ber_mut = Vec::new();
+        super::nama_mut_pola(&l.pattern, &mut ber_mut);
 
         // Tanpa nama terikat, tidak ada yang perlu keluar dari `match` —
         // jadi ia cukup jadi statement.
@@ -628,12 +630,12 @@ impl Parser {
         // Satu nama keluar apa adanya; beberapa nama dibungkus tuple, karena
         // `let (a, b) = …` memang sudah bisa membongkarnya.
         let (pola_kiri, nilai_arm) = if nama.len() == 1 {
-            (Pattern::Ident { name: nama[0].clone(), is_mut: false, span },
+            (Pattern::Ident { name: nama[0].clone(), is_mut: ber_mut.contains(&nama[0]), span },
              Expr::Ident(nama[0].clone(), span))
         } else {
             (Pattern::Tuple {
                 elems: nama.iter().map(|n| Pattern::Ident {
-                    name: n.clone(), is_mut: false, span }).collect(),
+                    name: n.clone(), is_mut: ber_mut.contains(n), span }).collect(),
                 span,
              },
              Expr::Tuple {
@@ -761,6 +763,13 @@ impl Parser {
         let mut else_ifs = Vec::new();
         let mut else_ = None;
         while self.eat(&TokenKind::KwElse) {
+            // `if c { } else if let P = e { }`: sisanya diurai `parse_if_let` dan jadi blok `else` (AGI-20261119-04).
+            if self.at_exact(&TokenKind::KwIf) && matches!(self.peek_kind(1), Some(TokenKind::KwLet)) {
+                let s0 = self.span_lo();
+                let e = self.dengan_sarang(Self::parse_if_let)?;
+                else_ = Some(Block { stmts: Vec::new(), tail: Some(Box::new(e)), span: self.merge_span(s0) });
+                break;
+            }
             if self.at_exact(&TokenKind::KwIf) {
                 self.advance();
                 let (ei_init, ei_cond) = self.parse_if_init_and_cond()?;

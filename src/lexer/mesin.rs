@@ -590,11 +590,12 @@ impl<'src> Lexer<'src> {
                 Some('&') => { self.advance(); TokenKind::AndAnd }
                 Some('=') => { self.advance(); TokenKind::AndEq }
                 Some('^') => { self.advance(); TokenKind::AndCaret }
-                Some('m') if self.peek() == Some('u') => {
-                    // &mut
+                // `&mut` cuma kalau kata `mut` UTUH: `a&mutex` dan `a&mu` itu `&` bitwise (AGI-20261119-04).
+                Some('m') if self.peek() == Some('u') && self.peek2() == Some('t')
+                    && !self.chars.get(self.char_pos + 3).is_some_and(|c| UnicodeXID::is_xid_continue(*c)) => {
                     self.advance(); // m
                     self.advance(); // u
-                    if self.current() == Some('t') { self.advance(); }
+                    self.advance(); // t
                     TokenKind::AmpMut
                 }
                 _         => TokenKind::Amp,

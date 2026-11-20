@@ -152,7 +152,13 @@ impl Parser {
     pub(crate) fn parse_fn_params(&mut self) -> Result<Vec<FnParam>, ParseError> {
         let mut params = Vec::new();
         while !self.at_exact(&TokenKind::RParen) {
-            params.push(self.parse_fn_param()?);
+            let p = self.parse_fn_param()?;
+            // Parameter pengumpul harus TERAKHIR: `fn f(a..., b)` dulu diterima lalu `a` diam-diam jadi biasa.
+            if params.last().is_some_and(|q: &FnParam| q.is_variadic) {
+                return Err(self.error_di("parameter pengumpul (`nama...`) harus yang terakhir — sesudahnya tidak ada \
+                    argumen yang tersisa untuk parameter lain".to_string(), p.span));
+            }
+            params.push(p);
             if !self.eat(&TokenKind::Comma) { break; }
         }
         periksa_urutan_default(&params)?;

@@ -1395,6 +1395,19 @@ fn kumpul_tipe_ekspr(e: &Expr, generik: &[String], keluar: &mut Vec<(String, Spa
 }
 
 /// Nama yang diikat sebuah pola, dalam URUTAN KEMUNCULAN.
+/// Nama yang diikat sebagai `mut` di pola: `let (mut a, b) = .. else` dulu kehilangan `mut`-nya (AGI-20261119-04).
+pub(crate) fn nama_mut_pola(p: &Pattern, keluar: &mut Vec<String>) {
+    match p {
+        Pattern::Ident { name, is_mut: true, .. } => keluar.push(name.clone()),
+        Pattern::Binding { inner, .. } | Pattern::Ref { inner, .. } => nama_mut_pola(inner, keluar),
+        Pattern::Tuple { elems, .. } => { for e in elems { nama_mut_pola(e, keluar) } }
+        Pattern::Struct { fields, .. } => { for f in fields { nama_mut_pola(&f.pat, keluar) } }
+        Pattern::Enum { inner: Some(i), .. } => nama_mut_pola(i, keluar),
+        Pattern::Array { before, after, .. } => { for e in before.iter().chain(after) { nama_mut_pola(e, keluar) } }
+        _ => {}
+    }
+}
+
 fn kumpul_nama_pola(p: &Pattern, keluar: &mut Vec<String>) {
     match p {
         Pattern::Ident { name, .. } => {

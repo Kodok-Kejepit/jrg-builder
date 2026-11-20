@@ -450,7 +450,8 @@ impl Parser {
                 let mut anotasi = None;
                 if self.at_exact(&TokenKind::Arrow) {
                     self.advance();
-                    anotasi = self.parse_type().ok();
+                    // Galat tipe tidak ditelan, dan anotasinya ikut ke AST (dulu `.ok()` + `ret: None`, AGI-20261119-04).
+                    anotasi = Some(self.parse_type()?);
                 }
                 let keluarga_luar = std::mem::replace(&mut self.keluarga, Keluarga::dari_anotasi(anotasi.as_ref()));
                 let body = (|| -> Result<Box<Expr>, ParseError> { Ok(Box::new(if self.at_exact(&TokenKind::LBrace) {
@@ -462,7 +463,7 @@ impl Parser {
                 })) })();
                 self.keluarga = keluarga_luar;
                 let body = body?;
-                Ok(Expr::Closure { params, is_move: false, ret: None, body: body.into(), span: self.merge_span(lo) })
+                Ok(Expr::Closure { params, is_move: false, ret: anotasi, body: body.into(), span: self.merge_span(lo) })
             }
             // Rust-style closure: |params| expr  or  move |params| expr
             TokenKind::Or | TokenKind::OrOr => {
