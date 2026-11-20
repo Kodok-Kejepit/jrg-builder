@@ -13,6 +13,13 @@ const RUANG_MURNI: &[&str] = &["math", "str"];
 /// Bawaan yang MENAMPILKAN argumennya (bisa memanggil `to_string` milik program).
 const MERENDER: &[&str] = &["str", "wok", "wok_", "str::format", "str::pad_left", "str::pad_right", "str::center",
     "str::ljust", "str::rjust", "str::to_string"];
+/// Method bawaan atas teks/larik/angka yang cuma MEMBACA atau mengembalikan nilai baru — tidak pernah menyimpan
+/// argumennya ke tempat yang hidup lebih lama dari putaran. Penerima yang tipenya belum diketahui hanya boleh memanggil ini.
+const METODE_MURNI: &[&str] = &["len", "is_empty", "upper", "lower", "trim", "trim_start", "trim_end", "contains",
+    "starts_with", "ends_with", "char_at", "index_of", "find", "replace", "repeat", "split", "chars", "reverse",
+    "substr", "abs", "floor", "ceil", "round", "sqrt", "min", "max", "pow", "to_int", "to_float", "to_string",
+    "first", "last", "get", "get_or", "join", "has", "keys", "values", "count", "sum", "format", "pad_left",
+    "pad_right", "center", "is_some", "is_none", "is_ok", "is_err", "unwrap_or"];
 /// Method milik program yang dipanggil operator atau tampilan (`interpreter::operator`, hook `to_string`).
 const HOOK: &[&str] = &["to_string", "add", "sub", "mul", "div", "rem", "pow", "bit_and", "bit_or", "bit_xor", "shl",
     "shr", "neg", "not", "bit_not", "eq", "cmp"];
@@ -210,7 +217,10 @@ impl Codegen {
 
     fn expr_bersih(&mut self, e: &Expr) -> bool {
         match e {
-            Expr::Literal(..) | Expr::Ident(..) | Expr::Range { .. } => true,
+            Expr::Literal(..) | Expr::Ident(..) => true,
+            // Batas rentang bisa memanggil fungsi yang menyimpan ke luar putaran (AGI-20261118-11).
+            Expr::Range { lo, hi, .. } => lo.as_ref().map_or(true, |x| self.expr_bersih(x))
+                && hi.as_ref().map_or(true, |x| self.expr_bersih(x)),
             Expr::Unary { expr, .. } | Expr::Cast { expr, .. } | Expr::Field { obj: expr, .. } => self.expr_bersih(expr),
             Expr::Binary { lhs, rhs, .. } => self.expr_bersih(lhs) && self.expr_bersih(rhs)
                 && (!self.ada_hook() || (self.tampil_polos(lhs) && self.tampil_polos(rhs))),
@@ -244,8 +254,11 @@ impl Codegen {
                     let calon: Vec<(String, std::rc::Rc<FnDecl>)> = self.tables.impls.iter()
                         .filter_map(|(t, m)| m.get(method).map(|f| (format!("{}::{}", t, method), f.clone()))).collect();
                     let dasar = self.expr_bersih(obj) && args.iter().all(|x| self.expr_bersih(x) && self.tampil_polos(x));
+                    // Method BAWAAN: cuma yang terbukti tidak menyimpan argumennya ke luar putaran; `send` ke channel luar
+                    // dulu lolos lalu teksnya tertimpa putaran berikutnya (AGI-20261118-11). Yang tak dikenal = tidak bersih.
                     if calon.is_empty() {
-                        return dasar && (!self.ada_hook() || !matches!(method.as_str(), "to_string" | "format" | "pad_left" | "pad_right" | "center"));
+                        return dasar && METODE_MURNI.contains(&method.as_str())
+                            && (!self.ada_hook() || !matches!(method.as_str(), "to_string" | "format" | "pad_left" | "pad_right" | "center"));
                     }
                     return dasar && calon.iter().all(|(n, f)| self.fungsi_bersih(n, f));
                 }
@@ -290,11 +303,13 @@ impl Codegen {
         let kunci = self.k(n);
         if let Some(&b) = self.fungsi_bersih_memo.get(&kunci) { return b; }
         self.fungsi_bersih_memo.insert(kunci.clone(), true);
-        let ok = match &*f.body {
-            FnBody::Block(b) => self.blok_bersih(b, false),
-            FnBody::Expr(e) => self.expr_bersih(e),
-            FnBody::Abstrak => false,
-        };
+        // Nilai default parameter dihitung di dalam fungsinya, jadi ikut diperiksa (AGI-20261118-11).
+        let ok = f.params.iter().all(|p| p.default.as_ref().map_or(true, |d| self.expr_bersih(d)))
+            && match &*f.body {
+                FnBody::Block(b) => self.blok_bersih(b, false),
+                FnBody::Expr(e) => self.expr_bersih(e),
+                FnBody::Abstrak => false,
+            };
         self.fungsi_bersih_memo.insert(kunci, ok);
         ok
     }

@@ -31,6 +31,75 @@ pub fn main() {
     wok(len(t[a:b]), len(t[a:a]), len(u[a:]), len(t[b:]))
 }
 "#),
+    // AGI-20261118-11 (#1071): badan loop yang menyimpan ke luar putaran dulu dianggap "bersih", arena dipulihkan dan
+    // nilainya tertimpa (SIGSEGV, pesan channel tertimpa). Sekarang batas rentang, default parameter dan method diperiksa.
+    ("arena: batas rentang yang menyimpan ke luar putaran", r#"package main
+
+var log: []string = []
+
+fn bocor(i: int) -> int {
+    let s = "iter_" + str(i) + "_aman"
+    log = arr::push(log, s)
+    return 1
+}
+
+pub fn main() {
+    var n = 0
+    while n < 5 {
+        for _ in 0..bocor(n) {
+            let sampah = "XXXXXXXXXXXX_" + str(n)
+            let _ = len(sampah)
+        }
+        n += 1
+    }
+    for i, s in log {
+        wok(i, s)
+    }
+}
+"#),
+    ("arena: nilai default parameter yang menyimpan ke luar putaran", r#"package main
+
+var log: []string = []
+
+fn catat(k: int) -> int {
+    let s = "def_" + str(k)
+    log = arr::push(log, s)
+    return k
+}
+
+fn f(x: int = catat(99)) -> int {
+    return x
+}
+
+pub fn main() {
+    var n = 0
+    while n < 4 {
+        let r = f()
+        let sampah = "YYYYYYYYYYYY_" + str(n)
+        let _ = len(sampah) + r
+        n += 1
+    }
+    for i, s in log {
+        wok(i, s)
+    }
+}
+"#),
+    ("arena: send ke channel luar lewat alias lokal", r#"pub fn main() {
+    let ch = make_chan(string, 10)
+    var n = 0
+    while n < 5 {
+        let local_ch = ch
+        let s = "chan_" + str(n) + "_msg"
+        local_ch.send(s)
+        let sampah = "ZZZZZZZZZZZZZ_" + str(n)
+        let _ = len(sampah)
+        n += 1
+    }
+    for i in 0..5 {
+        wok(i, <-ch)
+    }
+}
+"#),
     // K6 (2026-11-18): `json::merge` antara struct dan dict yang muat di tata letak struct-nya.
     ("json::merge struct dan dict", r#"package main
 struct P { pub x: int, pub y: int }
