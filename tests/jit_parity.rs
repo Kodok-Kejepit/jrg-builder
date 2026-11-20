@@ -4609,3 +4609,50 @@ fn jir_struct_disisipkan_sama_dengan_vm() {
         assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
     }
 }
+
+/// Langkah 108: struct berbayangan — dibawa antar putaran loop, diteruskan dan dikembalikan method yang disisipkan,
+/// dibaca per field tanpa dibangun; ditulis/dibaca utuh/dikembalikan dari dua percabangan mewujudkannya; nilai yang
+/// jenis fieldnya berubah tengah jalan menggagalkan penjaga tepi masuk (deopt), jawabannya tetap sama dengan VM.
+const JIR_STRUCT_BAYANG: &str = r#"package main
+struct P { pub x: f64, pub y: f64, pub n: int }
+struct Q { pub a: int, pub b: f64 }
+impl P {
+    fn maju(self, d: f64) -> P { return P { x: self.x + d, y: self.y * 0.5 + self.x, n: self.n + 1 } }
+    fn energi(self) -> f64 { return self.x * self.x + self.y }
+}
+fn gabung(a: P, b: P) -> f64 { return a.x + b.y + (a.n + b.n) as f64 }
+fn pilih(c: bool, a: f64) -> P {
+    if c { return P { x: a, y: 0.0, n: 1 } }
+    return P { x: 0.0, y: a, n: 2 }
+}
+pub fn main() {
+    var t: f64 = 0.0
+    for r in 0..40 {
+        var p: P = P { x: r as f64, y: 1.0, n: r }
+        for s in 0..300 {
+            p = p.maju(0.01)
+            if s % 97 == 0 { p.x = p.x + 1.0 }
+        }
+        let q = p.maju(0.5)
+        let w = pilih(r % 2 == 0, t * 0.001)
+        t = t + gabung(p, q) + p.energi() + q.x + w.x + w.y
+        if r % 13 == 0 { wok(p.x, p.n, w.n) }
+    }
+    var z: Q = Q { a: 1, b: 2.0 }
+    for i in 0..700 {
+        z = Q { a: z.a + 1, b: z.b * 1.0001 }
+        if i == 350 { z.b = 7 }
+    }
+    wok(t, z.a, z.b)
+}
+"#;
+
+#[test]
+fn jir_struct_bayangan_sama_dengan_vm() {
+    let v = jalankan(JIR_STRUCT_BAYANG, &["--vm"], &[]);
+    assert!(v.sukses, "{}{}", v.stdout, v.stderr);
+    for env in [&[JIR][..], &[JIR, STRES][..], &[JIR, STRES, ACAK][..], &[JIR, ACAK][..], &[][..]] {
+        let j = jalankan(JIR_STRUCT_BAYANG, &["--jit"], env);
+        assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
+    }
+}

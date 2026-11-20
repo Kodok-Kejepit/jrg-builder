@@ -30,6 +30,9 @@ fn _ambil(data, j) {
             var digit = true
             for _, r in str::chars(k) { if !(str(r) >= "0" && str(r) <= "9") { digit = false } }
             if !digit { return Err(«array dibaca dengan `${k}` — indeks array berupa angka») }
+            // Digit yang tak mungkin jadi indeks nyata ditolak SEBELUM diubah jadi bilangan: `str::to_int` gagal di atas 128 bit
+            // dan itu berhenti dengan galat, bukan `Err` (AGI-20261119-08).
+            if len(k) > 18 { return Err(«indeks `${k}` di luar array berisi ${len(v)}») }
             let n = str::to_int(k)
             if str(n) != k || n >= len(v) { return Err(«indeks `${k}` di luar array berisi ${len(v)}») }
             v = v[n]

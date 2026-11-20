@@ -34,6 +34,20 @@ fn test_xss_tidak_lolos() {
     assert_eq(h("[x](javascript:alert(1))"), "<p>x</p>")
 }
 
+/// AGI-20261119-06: `_tautan` jalan dua kali (gambar lalu tautan) atas teks yang sama; kurung di dalam atribut yang baru
+/// ditulis dibaca lintasan kedua sebagai tautan baru dan menyuntikkan atribut. Keluaran persisnya dikunci: tiap tag hanya
+/// memuat `src`/`alt` (gambar) atau `href` (tautan), dan kata `onerror=` yang tersisa adalah teks biasa di luar tag.
+fn test_kurung_di_atribut_tidak_jadi_tautan() {
+    assert_eq(h("![x](x/[a)b](onerror=alert(1)//)"), "<p><img src=\"x/%5Ba\" alt=\"x\">b](onerror=alert(1)//)</p>")
+    assert_eq(h("![a](/p/[q)r](onclick=alert(1)//)"), "<p><img src=\"/p/%5Bq\" alt=\"a\">r](onclick=alert(1)//)</p>")
+    assert_eq(h("![[x](y)](/i.png)"), "<p><img src=\"y\" alt=\"&#91;x\">](/i.png)</p>")
+    assert_eq(h("![x](/a/(b)c](onmouseover=alert(1)//)"), "<p>![x](/a/(b)c](onmouseover=alert(1)//)</p>")
+    assert_eq(h("[![x](/a/[b)c](onerror=alert(1)//)](https://a)"),
+        "<p><a href=\"onerror=alert%281%29//\"><img src=\"/a/%5Bb\" alt=\"x\">c</a>](https://a)</p>")
+    assert_eq(h("![x](x/[a)"), "<p><img src=\"x/%5Ba\" alt=\"x\"></p>")
+    assert_eq(h("![a [b]](/i.png)"), "<p><img src=\"/i.png\" alt=\"a &#91;b&#93;\"></p>")
+}
+
 fn test_masukan_jahat_tetap_linear() {
     for _, pola in ["[", "[a](", "(((", "![x](", "[a](((((("] {
         let t0 = time::now_ms()

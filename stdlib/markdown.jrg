@@ -106,8 +106,8 @@ fn _tautan(s, gambar) {
         match _url_aman(str::join(cs[b + 2:c], "")) {
             Some(u0) => {
                 // `*` di atribut akan dibaca penanda miring sesudahnya: tulis bentuk yang tidak bisa disalahartikan.
-                let u = str::replace(u0, "*", "%2A")
-                let alt = str::replace(label, "*", "&#42;")
+                let u = _tanpa_kurung(str::replace(u0, "*", "%2A"), true)
+                let alt = _tanpa_kurung(str::replace(label, "*", "&#42;"), false)
                 if gambar {
                     if str::starts_with(str::lower(u), "mailto:") { o = arr::push(o, label) } else { o = arr::push(o, «<img src="${u}" alt="${alt}">») }
                 } else {
@@ -121,6 +121,14 @@ fn _tautan(s, gambar) {
     }
     o = arr::push(o, str::join(cs[dari:], ""))
     return str::join(o, "")
+}
+
+/// Kurung siku dan bulat di dalam atribut yang baru ditulis: dikodekan, supaya lintasan `_tautan` berikutnya (tautan
+/// dipindai SESUDAH gambar di teks yang sama) tidak membacanya sebagai sintaks tautan baru di tengah atribut — dulu
+/// `![x](x/[a)b](onerror=alert(1)//)` menyuntikkan atribut `onerror`. `url` = persen, selain itu entitas.
+fn _tanpa_kurung(t, url) {
+    let k = url $ ["%5B", "%5D", "%28", "%29"] : ["&#91;", "&#93;", "&#40;", "&#41;"]
+    return str::replace(str::replace(str::replace(str::replace(t, "[", k[0]), "]", k[1]), "(", k[2]), ")", k[3])
 }
 
 fn _sebaris(s) {

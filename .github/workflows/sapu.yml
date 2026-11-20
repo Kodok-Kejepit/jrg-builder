@@ -43,6 +43,24 @@ jobs:
           exit $rc
         shell: bash
 
+      # Aset mesin Praktik hasil build CI, diunduh ke `docs/aset/` tanpa membangun wasm di laptop.
+      - name: Simpan aset Praktik
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: praktik-aset
+          path: docs/aset/jrg-web.js
+          if-no-files-found: warn
+
+      # Biner `jrgc` hasil build CI: diunduh untuk uji paritas, pembanding acak dan ukuran tanpa membangun di laptop.
+      - name: Simpan biner jrgc
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jrgc-biner
+          path: target/release/jrgc
+          if-no-files-found: warn
+
       - name: Simpan log sapuan
         if: always()
         uses: actions/upload-artifact@v4

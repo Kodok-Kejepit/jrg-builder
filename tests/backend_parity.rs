@@ -175,6 +175,16 @@ fn konformans_semantik_nilai_jalan_di_dua_backend() {
 
 /// Program yang WAJIB ditolak oleh KEDUA backend, dengan alasan yang sama.
 const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
+    ("pecahan heksadesimal dijelaskan", "package main\npub fn main() { wok(0x1p1) }", "pecahan heksadesimal", "pecahan heksadesimal"),
+    // 2026-11-19 (AGI-20261119-05): `json::get`/`has`/`keys`/`values`/`merge` melihat handle pustaka, enum dan field privat
+    // sebagai dict biasa — memalsukan id handle orang lain, menimpa field privat, merusak tipe enum.
+    ("json::merge memalsukan handle pustaka", "package main\npub fn main() { let mine = ptr::new(\"a\")\n let forged = json::merge(mine, {\"id\": 1})\n wok(ptr::get(forged)) }", "adalah pegangan pustaka `ptr`", "adalah pegangan pustaka `ptr`"),
+    ("json::get membaca id handle pustaka", "package main\npub fn main() { let mine = ptr::new(\"a\")\n wok(json::get(mine, \"id\")) }", "adalah pegangan pustaka `ptr`", "adalah pegangan pustaka `ptr`"),
+    ("json::keys atas enum", "package main\npub fn main() { wok(json::keys(Option::Some(42))) }", "harus dict atau struct", "harus dict atau struct"),
+    ("json::merge merusak enum", "package main\npub fn main() { wok(json::merge(Option::Some(42), {\"x\": 1})) }", "harus dict atau struct", "harus dict atau struct"),
+    ("json::get membaca field privat", "package main\nstruct Akun { pub nama: string, _saldo: int }\nfn buat(n: string, s: int) -> Akun { return Akun { nama: n, _saldo: s } }\npub fn main() { let a = buat(\"budi\", 100)\n wok(json::get(a, \"_saldo\")) }", "bersifat private", "bersifat private"),
+    ("json::has atas field privat", "package main\nstruct Akun { pub nama: string, _saldo: int }\nfn buat(n: string, s: int) -> Akun { return Akun { nama: n, _saldo: s } }\npub fn main() { let a = buat(\"budi\", 100)\n wok(json::has(a, \"_saldo\")) }", "bersifat private", "bersifat private"),
+    ("json::merge menimpa field privat", "package main\nstruct Akun { pub nama: string, _saldo: int }\nfn buat(n: string, s: int) -> Akun { return Akun { nama: n, _saldo: s } }\npub fn main() { let a = buat(\"budi\", 100)\n wok(json::merge(a, {\"_saldo\": 999999})) }", "bersifat private", "bersifat private"),
     // 2026-11-18 (Bayu, parser pintar): bentuk dari bahasa lain dijawab padanan JRG-nya, bukan galat generik.
     ("class jadi struct/enum/trait", "package main\nclass Foo { }\n", "`class` bukan bentuk JRG", "`class` bukan bentuk JRG"),
     ("interface jadi trait", "package main\ninterface X { }\n", "`interface` bukan bentuk JRG", "`interface` bukan bentuk JRG"),
@@ -2419,6 +2429,23 @@ fn divergensi_yang_diketahui_masih_akurat() {
         kabar_baik.len(),
         kabar_baik.join("\n")
     );
+}
+
+/// AGI-20261119-05: `json::*` atas struct menyembunyikan field privat dan tetap melayani yang sah — `merge` struct dengan
+/// dict dua arah, field privat tetap milik struct-nya (dibaca method-nya) — sama di interpreter dan `--vm`.
+#[test]
+fn json_atas_struct_menyembunyikan_field_privat_di_dua_mesin() {
+    let src = "package main\nstruct Akun { pub nama: string, _saldo: int }\nimpl Akun { fn saldo(self) -> int { return self._saldo } }\n\
+        fn buat(n: string, s: int) -> Akun { return Akun { nama: n, _saldo: s } }\n\
+        pub fn main() {\n let a = buat(\"budi\", 100)\n wok(json::keys(a), json::values(a), json::has(a, \"nama\"))\n\
+        let b = json::merge(a, {\"nama\": \"ani\", \"baru\": 1})\n wok(b.nama, b.saldo(), json::keys(b))\n\
+        let c = json::merge({\"k\": 1}, a)\n wok(json::keys(c), typeof(c), c.saldo())\n}\n";
+    let i = jalankan_keluaran_penuh(src, false);
+    let v = jalankan_keluaran_penuh(src, true);
+    assert_eq!(i, v, "dua mesin harus sama");
+    assert!(!i.contains("_saldo"), "field privat bocor lewat keys/values:\n{i}");
+    assert!(i.contains("ani 100"), "merge struct+dict kehilangan field privat atau nilai baru:\n{i}");
+    assert!(i.contains("Akun 100"), "merge dict+struct harus bertipe struct dan menjaga field privatnya:\n{i}");
 }
 
 /// Inti suite ini: program di `PARITAS` harus berjalan di DUA backend dan
@@ -8258,6 +8285,31 @@ class Titik(val x: Double, val y: Double) {
             assert!(i.contains(harus), "hilang `{}` dari:\n{}", harus, i.trim());
         }
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// AGI-20261118-10: JNI tidak memeriksa jenis argumen objek, jadi `Date` ke parameter `Integer` dulu dibaca di
+    /// offset yang salah (jawaban karangan atau SIGSEGV). Sekarang ditolak lewat `IsInstanceOf`, di dua mesin.
+    #[test]
+    fn objek_java_kelas_lain_ditolak_sebelum_jni() {
+        if !Command::new("java").arg("-version").output().map(|o| o.status.success()).unwrap_or(false) {
+            eprintln!("LEWAT: `java` tidak ada");
+            return;
+        }
+        let src = "package main\n\
+             fn buka(r) { return r.unwrap_or(nil) }\n\
+             pub fn main() {\n\
+             wok(jvm::mulai([]))\n\
+             let n = buka(jvm::baru(\"java.lang.Integer\", \"(I)V\", [5]))\n\
+             let m = buka(jvm::baru(\"java.lang.Integer\", \"(I)V\", [9]))\n\
+             let d = buka(jvm::baru(\"java.util.Date\", \"()V\", []))\n\
+             wok(jvm::panggil(n, \"compareTo\", \"(Ljava/lang/Integer;)I\", [m]))\n\
+             wok(jvm::panggil(n, \"compareTo\", \"(Ljava/lang/Integer;)I\", [d]))\n\
+             }\n";
+        let i = jalankan_keluaran_penuh(src, false);
+        let v = jalankan_keluaran_penuh(src, true);
+        assert_eq!(i, v, "dua mesin harus sama");
+        assert!(i.contains("Ok(-1)"), "pembanding sah hilang:\n{i}");
+        assert!(i.contains("butuh objek `java.lang.Integer`, dapat objek `java.util.Date`"), "{i}");
     }
 
     /// Kegagalan classpath yang paling sering: `kotlin-stdlib.jar` lupa

@@ -45,7 +45,11 @@ impl Tabel {
     }
 }
 
-fn nama_jalur(k: &[String]) -> String { kutip(&k.iter().map(|s| tulis_kunci(s)).collect::<Vec<_>>().join(".")) }
+fn nama_jalur(k: &[String]) -> String { kutip(&jalur_tulis(k)) }
+
+/// Jalur tabel UTUH untuk ditulis ke keluaran TOML: `nama_jalur` memotong teks di atas 64 karakter dan mengubah karakter
+/// samar jadi sintaks Rust, itu untuk pesan galat dan merusak header `[..]` (AGI-20261119-07).
+fn jalur_tulis(k: &[String]) -> String { k.iter().map(|s| tulis_kunci(s)).collect::<Vec<_>>().join(".") }
 
 /// `[a.b]` (atau `[[a.b]]` kalau `aot`): induk dibuat implisit, ujungnya dibuat sekali saja.
 fn tetapkan_tabel(akar: &mut Tabel, k: &[String], aot: bool) -> Result<(), String> {
@@ -641,12 +645,12 @@ fn tulis_tabel(f: &crate::interpreter::Field, jalur: &mut Vec<String>, o: &mut S
         let v = &f[k.as_str()];
         jalur.push(k.to_string());
         if let Some(anak) = dict_dari(v) {
-            o.push_str(&format!("\n[{}]\n", nama_jalur(jalur)));
+            o.push_str(&format!("\n[{}]\n", jalur_tulis(jalur)));
             tulis_tabel(anak, jalur, o, dalam + 1)?;
         } else if array_tabel(v) {
             if let Value::Array(a) = v {
                 for x in a.iter() {
-                    o.push_str(&format!("\n[[{}]]\n", nama_jalur(jalur)));
+                    o.push_str(&format!("\n[[{}]]\n", jalur_tulis(jalur)));
                     tulis_tabel(dict_dari(x).unwrap(), jalur, o, dalam + 2)?;
                 }
             }

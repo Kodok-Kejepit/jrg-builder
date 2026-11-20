@@ -202,7 +202,7 @@ pub enum Inst {
 
 /// Pembantu `lambat` yang dipanggil lewat `Inst::Pembantu`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Pb { Field, Pola, PolaLokal, Payload, PayloadLokal, MuatGlobal, SimpanGlobal, Indeks, Baca, BacaPecahan, Tulis, JenisSama, PayloadJenisSama, PayloadPanjang, Karakter, KarakterLokal, PayloadAngkaLokal, FieldLokal }
+pub enum Pb { Field, Pola, PolaLokal, Payload, PayloadLokal, MuatGlobal, SimpanGlobal, Indeks, Baca, BacaPecahan, Tulis, JenisSama, PayloadJenisSama, PayloadPanjang, Karakter, KarakterLokal, PayloadAngkaLokal, FieldLokal, BukaStruktur }
 
 /// Argumen `Inst::Pembantu`: konstanta 64/32 bit atau isi native (bit `i64`).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -216,13 +216,18 @@ pub enum Uji { BukanNol, Sama(i64), Negatif }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Hasil { Bulat, Bool, Pecahan }
 
+/// Struct berbayangan yang dikembalikan sebuah callee: alamat `SitusBangun`-nya, slot pecahan, dan isi field-nya urut bentuk.
+#[derive(Clone, Debug, PartialEq)]
+pub struct BayangKembali { pub situs: i64, pub apung: u64, pub isi: Vec<Nilai> }
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Akhir {
     Lompat { ke: Blok, args: Vec<Nilai> },
     Cabang { kondisi: Nilai, ya: Blok, ya_args: Vec<Nilai>, tidak: Blok, tidak_args: Vec<Nilai> },
     Kembali { nilai: Nilai, hasil: Hasil },
-    /// Hasil milik VM di posisi `pos` (`BERHASIL_NILAI`).
-    KembaliNilai { pos: usize },
+    /// Hasil milik VM di posisi `pos` (`BERHASIL_NILAI`). `bayang` = hasilnya struct berbayangan yang belum dibangun:
+    /// penyisip meneruskannya sebagai bayangan tanpa membangunnya (penurun biasa menuliskannya dulu lewat `Wujud`).
+    KembaliNilai { pos: usize, bayang: Option<Box<BayangKembali>> },
     /// `ReturnNil` (`BERHASIL_UNIT`).
     KembaliUnit,
     /// Titik keluar: VM menjalankan instruksi `keadaan.ip`.
@@ -354,7 +359,8 @@ impl fmt::Display for Fungsi {
                 Some(Akhir::Cabang { kondisi, ya, ya_args, tidak, tidak_args }) =>
                     writeln!(f, "  cabang {kondisi} ? {ya}({}) : {tidak}({})", daftar(ya_args), daftar(tidak_args))?,
                 Some(Akhir::Kembali { nilai, hasil }) => writeln!(f, "  kembali {nilai} ({hasil:?})")?,
-                Some(Akhir::KembaliNilai { pos }) => writeln!(f, "  kembali posisi {pos}")?,
+                Some(Akhir::KembaliNilai { pos, bayang: None }) => writeln!(f, "  kembali posisi {pos}")?,
+                Some(Akhir::KembaliNilai { pos, bayang: Some(b) }) => writeln!(f, "  kembali posisi {pos} (struct berbayangan: {})", daftar(&b.isi))?,
                 Some(Akhir::KembaliUnit) => writeln!(f, "  kembali ()")?,
                 Some(Akhir::CabangVm { ip, tujuan, .. }) => writeln!(f, "  cabang-vm @{ip} ? {}({}) : {}({})",
                     tujuan[0].0, daftar(&tujuan[0].1), tujuan[1].0, daftar(&tujuan[1].1))?,

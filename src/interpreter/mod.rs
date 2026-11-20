@@ -504,6 +504,9 @@ fn galat_item(s: Signal) -> RuntimeError {
                         parent: sd.parent.clone(),
                         fields: sd.fields.clone(),
                     }));
+                    // Registri visibilitas PROSES yang sama dengan kompilator VM: pustaka yang dipanggil lewat jembatan
+                    // (`json::keys`, ...) bertanya padanya field mana yang privat. Dulu cuma VM yang mengisinya.
+                    crate::vm::visibilitas::pasang_dari_deklarasi(std::iter::once(sd));
                 }
 
                 // Enums were previously parsed but completely inert at runtime: no variant

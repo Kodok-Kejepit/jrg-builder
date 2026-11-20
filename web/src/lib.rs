@@ -1,4 +1,4 @@
-// web/src/lib.rs — pintu JavaScript ke interpreter JRG yang sama dengan `jrgc`.
+// web/src/lib.rs — pintu JavaScript ke VM bytecode JRG yang sama dengan `jrgc --vm` (dulu interpreter pohon).
 // Keluaran program mengalir lewat impor `jrg.tulis` (lihat `src/host.rs`);
 // yang dikembalikan di sini cuma kode keluarnya.
 
@@ -29,7 +29,7 @@ pub extern "C" fn jrg_jalankan(p: *mut u8, n: usize) -> i32 {
             .or_else(|| info.payload().downcast_ref::<String>().cloned())
             .unwrap_or_default();
         host::galat_baris(&format!(
-            "interpreter berhenti tak wajar di peramban: {}. Biasanya karena programnya \
+            "mesin JRG berhenti tak wajar di peramban: {}. Biasanya karena programnya \
              memakai sesuatu yang tidak ada di peramban (thread, berkas, jaringan); kalau \
              bukan, ini bug di jrgc", pesan));
     }));
@@ -46,8 +46,10 @@ pub extern "C" fn jrg_jalankan(p: *mut u8, n: usize) -> i32 {
         pipa::laporkan_galat_parse(&galat, false, &peta);
         return 1;
     }
-    match jrgc::interpreter::interpret(&ast) {
+    // VM bytecode: lebih cepat dari interpreter pohon, dan jawabannya sama (dikunci `backend_parity`). Thread yang
+    // tidak bisa dibuat di peramban membuat `di_stack_lega` menjalankannya di tempat.
+    match jrgc::vm::run_file_with_paths(&ast, Vec::new(), false, false) {
         Ok(()) => 0,
-        Err(e) => { diag::laporkan_runtime(&mut peta, &e); 1 }
+        Err(e) => { diag::laporkan_vm(&mut peta, &e); 1 }
     }
 }

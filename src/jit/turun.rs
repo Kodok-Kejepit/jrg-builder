@@ -99,7 +99,7 @@ pub struct ImporLambat {
     pub taruh: FuncId, pub ambil: FuncId, pub simpan: FuncId, pub pola: FuncId, pub payload: FuncId,
     pub pola_lokal: FuncId, pub payload_lokal: FuncId, pub payload_angka: FuncId, pub pola_pilih: FuncId, pub buka_lokal: FuncId, pub field_lokal: FuncId, pub field_banyak: FuncId, pub metode_tukar: FuncId, pub metode_lokal: FuncId, pub karakter_lokal: FuncId, pub konteks_mentah: FuncId, pub masuk_ringan: FuncId, pub keluar_ringan: FuncId, pub karakter: FuncId, pub bangun: FuncId, pub baca_pecahan: FuncId, pub jenis_sama: FuncId, pub panjang: FuncId, pub panjang_lokal: FuncId,
     pub payload_jenis_sama: FuncId, pub payload_panjang: FuncId, pub keluar_ringan_angka: FuncId, pub teks_bulat: FuncId,
-    pub tambah_nilai: FuncId, pub keluar_ringan_nilai: FuncId, pub ubah_baca: FuncId, pub ubah_tulis: FuncId, pub ubah_tulis_lokal: FuncId, pub ubah_siap: FuncId,
+    pub tambah_nilai: FuncId, pub keluar_ringan_nilai: FuncId, pub ubah_baca: FuncId, pub ubah_tulis: FuncId, pub ubah_tulis_lokal: FuncId, pub ubah_siap: FuncId, pub buka_struktur: FuncId,
     pub iter_ada: FuncId, pub maju: FuncId, pub langkah_cabang: FuncId, pub sebar: FuncId, pub wujud_varian: FuncId,
     pub pindah: FuncId, pub muat_global: FuncId, pub simpan_global: FuncId, pub indeks: FuncId, pub field: FuncId,
     pub masuk: FuncId, pub keluar: FuncId, pub salin: FuncId, pub tukar: FuncId, pub cek_metode: FuncId,

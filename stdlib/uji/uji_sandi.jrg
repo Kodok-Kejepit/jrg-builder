@@ -25,3 +25,14 @@ fn test_kekuatan() {
     assert_eq(sandi::kekuatan("abcdefgh"), 37)
     assert(sandi::kekuatan("kuda-lompat-tinggi-sekali") > sandi::kekuatan("Ab1!"))
 }
+
+/// AGI-20261119-08: spasi dibuang sebelum deret/pengulangan diperiksa, jadi sandi spasi saja dulu `Ok`.
+fn test_sandi_isi_spasi_ditolak() {
+    for _, x in ["        ", "                ", "a       ", "ab      "] {
+        let r = sandi::periksa(x, "")
+        assert(r.is_err(), «"${x}" harus ditolak»)
+        assert(str::contains(r.unwrap_err(), "terlalu sedikit isi"), r.unwrap_err())
+    }
+    assert(sandi::periksa("kuda hijau minum teh", "").is_ok())
+    assert(sandi::periksa("8 karakt", "").is_ok())
+}

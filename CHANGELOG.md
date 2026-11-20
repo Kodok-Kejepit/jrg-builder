@@ -103,6 +103,15 @@ mungkin terjadi; semuanya dicatat di bagian **Memutus**.
   `Option<Option<...>>` dan pola `(((...)))` puluhan ribu tingkat dulu menghabiskan stack pengurai; sekarang ditolak di
   256 tingkat dengan pesan yang sama di semua mesin, seperti ekspresi.
 - **`wasm::muat` menolak berkas `.wasm` rusak dengan pesan**, tidak lagi berhenti mendadak.
+- **`wokwok::` tidak lagi berhenti mendadak pada beberapa bentuk array.** `where` dengan kondisi yang di-broadcast
+  membaca tiap operand di posisi yang benar (dulu berhenti, atau membaca posisi yang salah), `reverse` dan reduksi per
+  sumbu atas sumbu berukuran 0 menjawab array kosong, dan `reshape` menolak bentuk yang hasil kalinya meluap atau lebih
+  dari 32 dimensi.
+- **`jvm::` memeriksa kelas objek sebelum diserahkan ke Java.** Objek kelas lain ditolak dengan pesan, bukan jawaban
+  karangan atau JVM yang mati; objek yang dilepas `jvm::lepas` dari goroutine lain tidak lagi bisa terhapus selagi
+  sebuah panggilan memakainya.
+- **`jrgm lsp` tidak lagi mati oleh pesan rusak**: JSON yang bersarang sangat dalam ditolak, pratinjau galat tidak
+  memotong karakter UTF-8, dan literal seperti `true` diperiksa hurufnya.
 - **`http::hanya_publik(true)` menolak lebih banyak bentuk alamat internal IPv6**: alamat yang membawa IPv4 lewat SIIT
   (`::ffff:0:a.b.c.d`), NAT64 lokal (`64:ff9b:1::/48`), Teredo (`2001::/32`), `2001:db8::/32` dan `100::/64`.
 

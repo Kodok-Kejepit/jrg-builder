@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Mesin Praktik JRG di situs (`docs/aset/jrg-web.js`): `tulis` menulis asetnya,
-`periksa` memastikan ia masih interpreter yang sama dengan `jrgc`."""
+`periksa` memastikan VM di peramban menjawab sama dengan `jrgc` (interpreter, jadi diuji lintas mesin)."""
 import base64, hashlib, json, os, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
@@ -34,7 +34,7 @@ def tulis():
     fungsi = pekerja[pekerja.index("function pekerjaJrg"):].strip()
     ASET.write_text(
         "// docs/aset/jrg-web.js — DIBANGUN `perkakas/bangun_praktik.sh`; jangan disunting.\n"
-        "// Interpreter JRG yang sama dengan `jrgc` (crate `web/`), dalam WebAssembly.\n"
+        "// VM JRG yang sama dengan `jrgc --vm` (crate `web/`), dalam WebAssembly.\n"
         "window.JRG_WEB = {\n"
         f'  sidik: "{sidik()}",\n'
         f"  pekerja: {fungsi},\n"
@@ -64,6 +64,8 @@ KHUSUS = [
     ("import std", 'import "std/set"\npub fn main() { let s = set::from([1, 2, 2]); wok(s.len()) }'),
     ("assert_eq array", 'assert_eq([1, 2], [1, 2])\nwok("lulus")'),
     ("rekursi sedang", 'fn f(n) { return n == 0 $ 0 : 1 + f(n - 1) }\nwok(f(300))'),
+    # VM tidak berekursi di stack peramban, jadi 5000 tingkat jalan seperti di `jrgc` (dulu interpreter berhenti).
+    ("rekursi dalam", 'fn f(n) { return n == 0 $ 0 : 1 + f(n - 1) }\npub fn main() { wok(f(5000)) }'),
     ("acak dalam rentang", 'let x = rand::int(1, 6)\nwok(x >= 1 && x <= 6, typeof(rand::float()))'),
     ("jam", 'let t = time::now()\nwok(typeof(t), t > 1700000000)'),
     ("galat konversi", 'wok("mulai")\nwok(int("abc"))'),
@@ -85,7 +87,6 @@ HARUS_DI_WEB = [
     ("goroutine", 'pub fn main() {\n    spawn { wok(1) }\n}', "butuh thread"),
     ("Future", 'pub fn main() {\n    let f = Future::new(|| 1)\n    wok(future::await(f))\n}', "butuh thread"),
     ("masukan", 'pub fn main() {\n    let s = tok()\n    wok(s)\n}', "tidak ada masukan dari keyboard"),
-    ("rekursi dalam", 'fn f(n) { return n == 0 $ 0 : 1 + f(n - 1) }\npub fn main() { wok(f(5000)) }', "sebab:rekursi"),
     ("kanvas ke berkas", 'let c = Canvas::new(4, 4)\nc.save_png("a.png")', "tidak didukung di sistem ini"),
 ]
 
@@ -135,7 +136,7 @@ DI_PERAMBAN = [
     ('pub fn main() {\n    wok(int("abc"))\n}',
      lambda h: h["kode"] == 1 and "--> praktik.jrg:2:9" in h["teks"] and "^^^" in h["teks"]),
     ('pub fn main() {\n    spawn { wok(1) }\n}', lambda h: ("butuh thread" in h["teks"] or "needs threads" in h["teks"]) and "praktik.jrg:2:5" in h["teks"]),
-    ('fn f(n) { return n == 0 $ 0 : 1 + f(n - 1) }\npub fn main() { wok(f(5000)) }', lambda h: h["sebab"] == "rekursi"),
+    ('fn f(n) { return n == 0 $ 0 : 1 + f(n - 1) }\npub fn main() { wok(f(5000)) }', lambda h: h["kode"] == 0 and h["teks"] == "5000\n"),
 ]
 
 SUNTIKAN = """<script src="../aset/praktik.js"></script>

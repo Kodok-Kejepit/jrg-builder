@@ -445,7 +445,7 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 <header class="kepala">
   <button class="tombol-ikon tombol-menu" type="button" aria-label="Open navigation" data-aksi="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="merek" href="../index.html" aria-label="JRG++ beranda"><img class="terang-saja" src="../aset/logo.webp?v=afbdbf5a27" alt="JRG++" width="131" height="34"><img class="gelap-saja" src="../aset/logo-gelap.webp?v=767f2b287e" alt="JRG++" width="131" height="34"></a>
   <nav class="situs" aria-label="Site"><a class="aktif" aria-current="page" href="../web_dokumentasi/index.html">Docs</a><a href="../matematika_x_jrg/index.html">Math × JRG</a><a href="../profil.html">Profile</a></nav>
-  <span class="versi">v0.6.0</span>
+  <span class="versi">v0.6.1</span>
   <div class="kepala-kanan">
     <button class="tombol-cari" type="button" data-aksi="cari" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
     <a class="tombol-bahasa" href="../id/web_dokumentasi/diagnostik.html" hreflang="id" lang="id" aria-label="Bahasa Indonesia">ID</a>
@@ -492,7 +492,7 @@ jrgc f.jrg --sopan          <span class="k-kom"> # no greeting at all</span></co
 <div class="tabel"><table><thead><tr><th>Case</th><th>In JRG</th></tr></thead><tbody><tr><td>index out of range</td><td>an error, never clamped</td></tr><tr><td><code>int</code> overflow</td><td>an error, never wraps</td></tr><tr><td><code>300 as u8</code>, <code>int(&quot;abc&quot;)</code></td><td>an error</td></tr><tr><td>searching for something that is not there</td><td><code>Option::None</code>, never <code>-1</code></td></tr><tr><td><code>x = 5</code> on a name that does not exist</td><td>an error, no new variable is created</td></tr><tr><td>a built-in called with too few or too many arguments</td><td>an error, showing its signature</td></tr><tr><td>an <code>Err</code> leaving <code>main</code></td><td>reported, exit code 1</td></tr></tbody></table></div>
 </article>
 <nav class="langkah" aria-label="Page sequence"><a class="ke-kiri" href="memori.html"><small>Previous</small><strong>Memory model</strong></a><a class="ke-kanan" href="benchmark.html"><small>Next</small><strong>Benchmark</strong></a></nav>
-<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.0</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
+<footer class="kaki"><span class="kaki-merek"><img class="terang-saja" src="../aset/logo-kaki.webp?v=369d5dcefb" alt="JRG++" width="155" height="40"><img class="gelap-saja" src="../aset/logo-kaki-gelap.webp?v=92a39b6b1f" alt="JRG++" width="155" height="40"><span>version 0.6.1</span></span><span><a href="../web_dokumentasi/pasang.html">Install</a> · <a href="../web_dokumentasi/rilis.html">Release notes</a> · <a href="../profil.html">Profile</a> · <a href="https://github.com/Kodok-Kejepit/jrg">Source code</a> · <a href="https://whatsapp.com/channel/0029Vb8hf0IJP218v3nO263U" rel="noopener">WhatsApp channel</a></span></footer>
 </main>
 <nav class="di-halaman" aria-label="On this page"><p>On this page</p><ol><li><a href="#the-shape-of-a-message">The shape of a message</a></li><li><a href="#language">Language</a></li><li><a href="#tone">Tone</a></li><li><a href="#for-editors-and-ci">For editors and CI</a></li><li><a href="#no-silent-wrong-results">No silent wrong results</a></li></ol></nav>
 </div>
@@ -500,7 +500,7 @@ jrgc f.jrg --sopan          <span class="k-kom"> # no greeting at all</span></co
   <input type="search" placeholder="Search the docs and the course…" aria-label="Search term">
   <ol class="hasil-cari"></ol>
 </div></div>
-<script defer src="../aset/cari.js?v=6c40d0d7bc"></script>
+<script defer src="../aset/cari.js?v=e9324ec878"></script>
 <script defer src="../aset/situs.js?v=2fc59264e1"></script>
 </body>
 </html>

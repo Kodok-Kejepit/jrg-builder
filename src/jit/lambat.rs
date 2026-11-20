@@ -1092,15 +1092,15 @@ impl RantaiPola {
 
 /// Tabel varian satu fungsi JIR (bayangan varian, JIR-3b): penanda = indeks. `konst` = alamat konstanta chunk varian
 /// tanpa payload (disalin, bukan dibangun ulang), 0 kalau tidak ada. Ditambah saat kompilasi, dibaca saat jalan.
-/// Entri: nama, jumlah isi payload, konstanta, dan bit slot payload yang pecahan (`apung`).
-pub struct TabelVarian(pub std::sync::RwLock<Vec<(&'static crate::vm::value::NamaVarian, Option<usize>, usize, u64)>>);
+/// Entri: nama, jumlah isi, konstanta, bit slot pecahan (`apung`), dan alamat `SitusBangun` kalau penandanya STRUCT (0 = varian).
+pub struct TabelVarian(pub std::sync::RwLock<Vec<(&'static crate::vm::value::NamaVarian, Option<usize>, usize, u64, usize)>>);
 
 /// Varian berbayangan di posisi `pos` yang isi stack VM-nya basi (penanda `tag` di bit `basi`) ditulis dari
 /// penanda dan payload-nya (`isi`, bit `pecahan` = isi pecahan; bit 63 = cuma payload tuple-nya); penanda lain =
 /// isinya sudah benar.
 pub extern "C" fn wujud_varian(pos: i64, tabel: *const TabelVarian, tag: i64, basi: i64, pecahan: i64, isi: *const i64) {
     if (basi as u64 >> tag) & 1 == 0 { return; }
-    let (nama, payload, konst, apung) = unsafe { &*tabel }.0.read().unwrap_or_else(|p| p.into_inner())[tag as usize];
+    let (nama, payload, konst, apung, struktur) = unsafe { &*tabel }.0.read().unwrap_or_else(|p| p.into_inner())[tag as usize];
     // Jenis tiap isi milik variannya (tabel); `pecahan` cuma membawa bit 63 (payload tuple saja).
     let _ = pecahan & !(1 << 63);
     let skalar = |k: usize| {
@@ -1109,6 +1109,24 @@ pub extern "C" fn wujud_varian(pos: i64, tabel: *const TabelVarian, tag: i64, ba
     };
     let v = if pecahan < 0 {
         VmValue::tuple((0..payload.unwrap_or(0)).map(skalar).collect())
+    } else if struktur != 0 {
+        // Struct berbayangan: dibangun dari isi field-nya, urut bentuknya (`SitusBangun::Struktur`).
+        let (SitusBangun::Struktur(label, bentuk) | SitusBangun::StrukturUlang(label, bentuk)) = (unsafe { &*(struktur as *const SitusBangun) })
+            else { unreachable!("tabel menyimpan alamat situs struct") };
+        let n = payload.unwrap_or(0);
+        // Struct basi dari wujud sebelumnya masih di slot dan tak dibagi: isinya ditimpa di tempat, tanpa alokasi.
+        let (vm, basis) = konteks();
+        if let Some(VmValue::Map(m)) = vm.stack.get_mut(basis + pos as usize) {
+            let sama = matches!((&m.label, label), (crate::vm::value::Label::Struct(a), crate::vm::value::Label::Struct(b)) if Arc::ptr_eq(a, b) || a == b);
+            if let (true, Some(crate::vm::peta::IsiPeta::Rapat { bentuk: b, nilai })) = (sama, crate::vm::value::Peta::isi_tunggal(m)) {
+                if Arc::ptr_eq(b, bentuk) && nilai.len() == n {
+                    for (k, x) in nilai.iter_mut().enumerate() { *x = skalar(k); }
+                    return;
+                }
+            }
+        }
+        let isi: Vec<VmValue> = (0..n).map(skalar).collect();
+        VmValue::Map(crate::vm::value::Peta::struktur_arc(label.clone(), Arc::clone(bentuk), isi))
     } else if konst != 0 { unsafe { &*(konst as *const VmValue) }.clone() } else {
         VmValue::varian_nama(nama, match payload {
             None => None,
@@ -1118,6 +1136,37 @@ pub extern "C" fn wujud_varian(pos: i64, tabel: *const TabelVarian, tag: i64, ba
     };
     let (vm, basis) = konteks();
     *sediakan(vm, basis, pos as usize) = v;
+}
+
+/// Field ke-`k` lokal `slot`, kalau lokal itu struct berbentuk `situs` (label DAN bentuk sama) dan field-nya bulat
+/// (`pecahan` = 0) atau pecahan (`pecahan` = 1) yang muat: bit-nya ditulis ke `keluar`. 0 = berhasil, 1 = bukan (deopt).
+/// Dipakai di tepi masuk loop untuk membuka struct VM jadi bayangan (`bangun::buka_untuk_tepi`).
+pub extern "C" fn buka_struktur(slot: i64, situs: *const SitusBangun, k: i64, pecahan: i64, keluar: *mut i64) -> i32 {
+    let (vm, basis) = konteks();
+    let (SitusBangun::Struktur(label, bentuk) | SitusBangun::StrukturUlang(label, bentuk)) = (unsafe { &*situs }) else { return 1 };
+    let Some(VmValue::Map(m)) = vm.stack.get_mut(basis + slot as usize) else { return 1 };
+    let sama = match (&m.label, label) {
+        (crate::vm::value::Label::Struct(a), crate::vm::value::Label::Struct(b)) => Arc::ptr_eq(a, b) || a == b,
+        _ => false,
+    };
+    if !sama { return 1; }
+    let ambil = |isi: &crate::vm::peta::IsiPeta| -> Option<i64> {
+        let crate::vm::peta::IsiPeta::Rapat { bentuk: b, nilai } = isi else { return None };
+        if !Arc::ptr_eq(b, bentuk) { return None; }
+        match (nilai.get(k as usize)?, pecahan) {
+            (VmValue::Int(n), 0) => i64::try_from(*n).ok(),
+            (VmValue::Float(x), 1) => Some(x.to_bits() as i64),
+            _ => None,
+        }
+    };
+    let n = match crate::vm::value::Peta::isi_tunggal(m) {
+        Some(isi) => ambil(isi),
+        None => ambil(&m.lock().unwrap_or_else(|p| p.into_inner())),
+    };
+    match n {
+        Some(n) => { unsafe { *keluar = n }; 0 }
+        None => 1,
+    }
 }
 
 /// Rantai lengan atas lokal `slot`: indeks lengan pertama yang cocok, banyaknya lengan kalau tidak ada,

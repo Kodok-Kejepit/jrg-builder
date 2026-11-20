@@ -216,14 +216,33 @@ pub fn petakan_v4(a) {
 
 const _GOLONGAN4 = [["0.0.0.0/8", "tak-ditentukan"], ["127.0.0.0/8", "loopback"], ["10.0.0.0/8", "privat"],
     ["172.16.0.0/12", "privat"], ["192.168.0.0/16", "privat"], ["169.254.0.0/16", "link-local"],
-    ["100.64.0.0/10", "cgnat"], ["224.0.0.0/4", "multicast"], ["240.0.0.0/4", "cadangan"]]
+    ["100.64.0.0/10", "cgnat"], ["192.0.0.0/24", "cadangan"], ["198.18.0.0/15", "cadangan"],
+    ["224.0.0.0/4", "multicast"], ["240.0.0.0/4", "cadangan"]]
 const _GOLONGAN6 = [["::/128", "tak-ditentukan"], ["::1/128", "loopback"], ["fc00::/7", "privat"],
-    ["fe80::/10", "link-local"], ["ff00::/8", "multicast"]]
+    ["fe80::/10", "link-local"], ["fec0::/10", "privat"], ["ff00::/8", "multicast"], ["2001::/32", "cadangan"],
+    ["2001:db8::/32", "cadangan"], ["100::/64", "cadangan"], ["64:ff9b:1::/48", "cadangan"]]
+
+fn _v4_dari(hi, lo) { return Alamat { versi: 4, bagian: [hi / 256, hi % 256, lo / 256, lo % 256] } }
+
+/// IPv4 yang terselip di IPv6, dinilai sebagai IPv4-nya (sama dengan `http::hanya_publik`): `::a.b.c.d`, `::ffff:a.b.c.d`,
+/// SIIT `::ffff:0:a.b.c.d` (RFC 6145), NAT64 `64:ff9b::/96` (RFC 6052) dan 6to4 `2002::/16`. `::` dan `::1` bukan salah satunya.
+fn _v4_terselip(a) {
+    if a.versi != 6 { return None }
+    let g = a.bagian
+    if g[0] == 0 && g[1] == 0 && g[2] == 0 && g[3] == 0 && g[4] == 0 {
+        if g[5] == 65535 { return Some(_v4_dari(g[6], g[7])) }
+        if g[5] == 0 && !(g[6] == 0 && g[7] <= 1) { return Some(_v4_dari(g[6], g[7])) }
+    }
+    if g[0] == 0 && g[1] == 0 && g[2] == 0 && g[3] == 0 && g[4] == 65535 && g[5] == 0 { return Some(_v4_dari(g[6], g[7])) }
+    if g[0] == 100 && g[1] == 65435 && g[2] == 0 && g[3] == 0 && g[4] == 0 && g[5] == 0 { return Some(_v4_dari(g[6], g[7])) }
+    if g[0] == 8194 { return Some(_v4_dari(g[1], g[2])) }
+    return None
+}
 
 /// Golongan alamat: `loopback`, `privat`, `link-local`, `cgnat`, `multicast`, `tak-ditentukan`, `cadangan`, `siaran`,
 /// atau `publik`. IPv4 di dalam IPv6 digolongkan menurut IPv4-nya (`::ffff:127.0.0.1` adalah `loopback`).
 pub fn golongan(a) {
-    match petakan_v4(a) {
+    match _v4_terselip(a) {
         Some(v4) => { return golongan(v4) }
         None => {}
     }

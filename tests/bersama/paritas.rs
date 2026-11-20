@@ -2,6 +2,22 @@
 // dibaca `backend_parity.rs` dan `llvm_parity.rs` lewat `include!`, jadi satu tabel dua tes.
 
 const PARITAS: &[(&str, &str)] = &[
+    // AGI-20261119-01 (#1076): prefiks basis dilepas tepat sekali — `0x0b1` dulu diam-diam `1`, `0x0b` dan `0Xff` ditolak.
+    ("literal bulat: prefiks basis tepat sekali, huruf besar sah", "package main\npub fn main() { wok(0x0b1, 0x0b0b1, 0x0b0a, 0x0_b1, 0x0b, 0Xff, 0O77, 0B101, 0b0_1) }"),
+    // AGI-20261119-07: header `[..]` ditulis dengan jalur UTUH — dulu jalur di atas 64 karakter dipotong jadi `40…12 (N karakter)`
+    // dan karakter tak terlihat jadi `\u{200b}` (sintaks Rust), jadi `toml::stringify` menulis TOML yang rusak.
+    ("toml::stringify: header tabel panjang dan bertanda samar kembali utuh lewat toml::parse", r#"package main
+pub fn main() {
+    let panjang = str::repeat("abcdefghij", 8)
+    let samar = "a" + str(rune(8203)) + "b"
+    var d = {"aot": [{"n": 1}, {"n": 2}]}
+    d = dict::set(d, panjang, {"x": 1, "dalam": {"y": 2}})
+    d = dict::set(d, samar, {"z": 3})
+    let t = toml::stringify(d).unwrap()
+    wok(str::contains(t, "[" + panjang + "]"), str::contains(t, "…"), str::contains(t, "\\u{"))
+    wok(toml::parse(t).unwrap() == d)
+}
+"#),
     // Pembaca berkas bertahap: baris `\r\n`, baris akhir tanpa `\n`, potongan, `None`/kosong di ujung, galatnya.
     ("fs::open dan pembaca bertahap", r#"package main
 pub fn main() {

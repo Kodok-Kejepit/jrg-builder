@@ -7,6 +7,33 @@ use std::sync::Arc;
 use std::collections::HashMap;
 
 /// Pasangan key/value sebuah map, DIURUTKAN menurut key.
+/// Objek untuk `json::get`/`has`/`keys`/`values`/`merge`: dict, atau struct milik program. Pegangan pustaka (`Ptr`, `DokDb`, …)
+/// dan enum juga `Map` di VM, tapi membaca atau menimpanya memalsukan id milik orang lain dan merusak tipenya (AGI-20261119-05).
+fn objek<'a>(nama: &str, ke: usize, v: Option<&'a VmValue>, pakai: &str) -> Result<&'a Arc<crate::vm::value::Peta>, String> {
+    let Some(VmValue::Map(m)) = v else { return Err(pakai.to_string()) };
+    match &m.label {
+        crate::vm::value::Label::Dict => Ok(m),
+        crate::vm::value::Label::Struct(t) => {
+            if crate::interpreter::galat_index::HANDLE_PUSTAKA.contains(&t.as_ref())
+                && crate::vm::visibilitas::field_dideklarasikan(t).is_none() {
+                return Err(format!("json::{}: argumen ke-{} adalah pegangan pustaka `{}`, bukan data — kirim datanya, bukan handle-nya", nama, ke, t));
+            }
+            Ok(m)
+        }
+        crate::vm::value::Label::Enum { .. } => Err(format!(
+            "json::{}: argumen ke-{} harus dict atau struct, dapat `{}`", nama, ke, v.map_or(String::new(), |x| x.type_name_penuh()))),
+    }
+}
+
+/// Field `k` terlihat dari luar: dict selalu, struct hanya kalau field-nya tidak privat. Pustaka tidak tahu method mana yang
+/// memanggilnya, jadi ia melihat apa yang dilihat kode di luar tipe itu.
+fn terbuka(m: &crate::vm::value::Peta, k: &str) -> bool {
+    match &m.label {
+        crate::vm::value::Label::Struct(t) => crate::vm::visibilitas::periksa(t, k, None).is_ok(),
+        _ => true,
+    }
+}
+
 fn pasangan_terurut(
     g: &crate::vm::value::IsiPeta,
 ) -> Vec<(&String, &VmValue)> {
@@ -65,11 +92,13 @@ pub fn register(vm: &mut Vm) {
         Ok(Str(Arc::new(stringify_pretty(val, 0, indent)?)))
     });
 
-    vm.def("json::get", |a| match (a.get(0), a.get(1)) {
-        (Some(Map(m)), Some(Str(k))) =>
-            // `Option`: kunci ber-isi `null` dan kunci yang tidak ada dulu sama-sama `nil`.
-            Ok(m.lock().unwrap().get(k.as_str()).cloned().map(VmValue::some).unwrap_or_else(VmValue::none)),
-        _ => Err("json::get(obj, key)".to_string()),
+    vm.def("json::get", |a| {
+        let m = objek("get", 1, a.get(0), "json::get(obj, key)")?;
+        let Some(Str(k)) = a.get(1) else { return Err("json::get(obj, key)".to_string()) };
+        // Field privat tidak dibaca dari luar tipenya: kalimat yang sama dengan `x.f`.
+        if let crate::vm::value::Label::Struct(t) = &m.label { crate::vm::visibilitas::periksa(t, k, None)?; }
+        // `Option`: kunci ber-isi `null` dan kunci yang tidak ada dulu sama-sama `nil`.
+        Ok(m.lock().unwrap().get(k.as_str()).cloned().map(VmValue::some).unwrap_or_else(VmValue::none))
     });
 
     // Menjawab objek BARU, seperti `dict::set`. Dulu ia menulis ke peta
@@ -84,50 +113,68 @@ pub fn register(vm: &mut Vm) {
         _ => Err("json::set(obj, key, val)".to_string()),
     });
 
-    vm.def("json::has", |a| match (a.get(0), a.get(1)) {
-        (Some(Map(m)), Some(Str(k))) =>
-            Ok(Bool(m.lock().unwrap().contains_key(k.as_str()))),
-        _ => Err("json::has(obj, key)".to_string()),
+    vm.def("json::has", |a| {
+        let m = objek("has", 1, a.get(0), "json::has(obj, key)")?;
+        let Some(Str(k)) = a.get(1) else { return Err("json::has(obj, key)".to_string()) };
+        if let crate::vm::value::Label::Struct(t) = &m.label { crate::vm::visibilitas::periksa(t, k, None)?; }
+        Ok(Bool(m.lock().unwrap().contains_key(k.as_str())))
     });
 
-    vm.def("json::keys", |a| match a.get(0) {
-        Some(Map(m)) => {
-            let g = m.lock().unwrap();
-            let ks: Vec<VmValue> = pasangan_terurut(&g).into_iter()
-                .map(|(k, _)| Str(Arc::new(k.clone())))
-                .collect();
-            Ok(Array(Arc::new(std::sync::Mutex::new(ks))))
-        }
-        _ => Err("json::keys(obj)".to_string()),
+    vm.def("json::keys", |a| {
+        let m = objek("keys", 1, a.get(0), "json::keys(obj)")?;
+        let g = m.lock().unwrap();
+        let ks: Vec<VmValue> = pasangan_terurut(&g).into_iter()
+            .filter(|(k, _)| terbuka(m, k))
+            .map(|(k, _)| Str(Arc::new(k.clone())))
+            .collect();
+        Ok(Array(Arc::new(std::sync::Mutex::new(ks))))
     });
 
-    vm.def("json::values", |a| match a.get(0) {
-        Some(Map(m)) => {
-            // Urutannya harus SAMA dengan `json::keys`, supaya `keys[i]` dan `values[i]`
-            // benar-benar sepasang.
-            let g = m.lock().unwrap();
-            let vs: Vec<VmValue> = pasangan_terurut(&g).into_iter()
-                .map(|(_, v)| v.clone())
-                .collect();
-            Ok(Array(Arc::new(std::sync::Mutex::new(vs))))
-        }
-        _ => Err("json::values(obj)".to_string()),
+    vm.def("json::values", |a| {
+        let m = objek("values", 1, a.get(0), "json::values(obj)")?;
+        // Urutannya harus SAMA dengan `json::keys` (termasuk saringan field privat), supaya `keys[i]` dan `values[i]`
+        // benar-benar sepasang.
+        let g = m.lock().unwrap();
+        let vs: Vec<VmValue> = pasangan_terurut(&g).into_iter()
+            .filter(|(k, _)| terbuka(m, k))
+            .map(|(_, v)| v.clone())
+            .collect();
+        Ok(Array(Arc::new(std::sync::Mutex::new(vs))))
     });
 
-    vm.def("json::merge", |a| match (a.get(0), a.get(1)) {
-        (Some(Map(a_map)), Some(Map(b_map))) => {
-            let mut merged = a_map.lock().unwrap().clone();
-            for (k, v) in b_map.lock().unwrap().iter() {
-                merged.insert(k.clone(), v.clone());
-            }
-            // Label mengikuti aturan kuncinya: milik `b` menang kalau ia bukan dict.
-            let label = match &b_map.label {
-                crate::vm::value::Label::Dict => a_map.label.clone(),
-                lain => lain.clone(),
-            };
-            Ok(Map(Arc::new(crate::vm::value::Peta::dari_isi(label, merged))))
+    vm.def("json::merge", |a| {
+        use crate::vm::value::Label;
+        let a_map = objek("merge", 1, a.get(0), "json::merge(a, b)")?;
+        let b_map = objek("merge", 2, a.get(1), "json::merge(a, b)")?;
+        // Label mengikuti aturan kuncinya: milik `b` menang kalau ia bukan dict.
+        let label = match &b_map.label {
+            Label::Dict => a_map.label.clone(),
+            lain => lain.clone(),
+        };
+        let sama_tipe = match (&a_map.label, &label) {
+            (Label::Dict, Label::Dict) => true,
+            (Label::Struct(x), Label::Struct(y)) => x == y,
+            _ => false,
+        };
+        // Isi `a` utuh kalau hasilnya bertipe sama (field privatnya tetap miliknya) atau `a` dict; selain itu cuma yang
+        // terbuka: struct bertipe lain tidak membawa field privatnya ke tipe yang tidak mendeklarasikannya.
+        let mut merged = if sama_tipe || matches!(a_map.label, Label::Dict) {
+            a_map.lock().unwrap().clone()
+        } else {
+            let g = a_map.lock().unwrap();
+            let mut baru = crate::vm::value::IsiPeta::tabel(g.len(), false);
+            for (k, v) in g.iter() { if terbuka(a_map, k) { baru.insert(k.clone(), v.clone()); } }
+            baru
+        };
+        let b_struct = matches!(b_map.label, Label::Struct(_));
+        for (k, v) in b_map.lock().unwrap().iter() {
+            // Field privat milik `b` sendiri ikut terbawa (hasilnya bertipe `b`, jadi tetap terjaga); selain itu field privat
+            // tipe hasil tidak ditimpa dari luar (AGI-20261119-05).
+            let milik_b = b_struct && !terbuka(b_map, k);
+            if !milik_b { if let Label::Struct(t) = &label { crate::vm::visibilitas::periksa(t, k, None)?; } }
+            merged.insert(k.clone(), v.clone());
         }
-        _ => Err("json::merge(a, b)".to_string()),
+        Ok(Map(Arc::new(crate::vm::value::Peta::dari_isi(label, merged))))
     });
 }
 

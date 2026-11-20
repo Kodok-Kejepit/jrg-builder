@@ -531,7 +531,9 @@ impl Vm {
             });
 
         if let Err(e) = hasil {
-            return Err(super::vm::VmError::new(format!("{}: tidak bisa membuat thread: {}", nama, e)));
+            // Kalimat yang sama dengan interpreter (`tugas.rs`): di peramban tidak ada thread sama sekali.
+            return Err(super::vm::VmError::new(crate::host::tanpa_thread(&format!("`{}::new`", tipe), &e)
+                .unwrap_or_else(|| format!("{}: tidak bisa membuat thread: {}", nama, e))));
         }
 
         let mut map = std::collections::HashMap::new();

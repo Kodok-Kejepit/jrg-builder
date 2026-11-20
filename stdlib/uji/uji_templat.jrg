@@ -38,3 +38,12 @@ fn test_linear() {
     assert_eq(len(templat::isi(t, data()).unwrap()), 3000 * 5)
     assert(time::now_ms() - t0 < 20000)
 }
+
+/// AGI-20261119-08: indeks array berdigit sangat panjang jadi `Err`, bukan galat `str::to_int` yang menghentikan program.
+fn test_indeks_array_raksasa_jadi_err() {
+    let r = templat::isi("{{ a.9999999999999999999999999999999999999999 }}", {"a": [1]})
+    assert(r.is_err(), "harus Err")
+    assert(str::contains(r.unwrap_err(), "di luar array berisi 1"), r.unwrap_err())
+    assert(templat::isi("{{ a.0 }}", {"a": [7]}).unwrap() == "7")
+    assert(templat::isi("{{ a.1 }}", {"a": [7]}).is_err())
+}

@@ -105,7 +105,7 @@ pub fn turunkan(
             (Pb::PayloadLokal, il.payload_lokal), (Pb::MuatGlobal, il.muat_global), (Pb::SimpanGlobal, il.simpan_global),
             (Pb::Indeks, il.indeks), (Pb::Baca, impor.baca), (Pb::BacaPecahan, il.baca_pecahan), (Pb::Tulis, impor.tulis),
             (Pb::JenisSama, il.jenis_sama), (Pb::PayloadJenisSama, il.payload_jenis_sama), (Pb::PayloadPanjang, il.payload_panjang),
-            (Pb::Karakter, il.karakter), (Pb::KarakterLokal, il.karakter_lokal), (Pb::PayloadAngkaLokal, il.payload_angka), (Pb::FieldLokal, il.field_lokal)].into_iter().map(|(p, id)| (p, m.declare_func_in_func(id, b.func))).collect(),
+            (Pb::Karakter, il.karakter), (Pb::KarakterLokal, il.karakter_lokal), (Pb::PayloadAngkaLokal, il.payload_angka), (Pb::FieldLokal, il.field_lokal), (Pb::BukaStruktur, il.buka_struktur)].into_iter().map(|(p, id)| (p, m.declare_func_in_func(id, b.func))).collect(),
         tulis_lebar: m.declare_func_in_func(il.tulis_lebar, b.func), buka_lebar: m.declare_func_in_func(il.buka_lebar, b.func),
         sebar: m.declare_func_in_func(il.sebar, b.func), pola_pilih: m.declare_func_in_func(il.pola_pilih, b.func),
         wujud_varian: m.declare_func_in_func(il.wujud_varian, b.func),
@@ -188,7 +188,7 @@ pub fn turunkan(
                 p.b.ins().brif(c, blok[ya.0 as usize], &ya_a, blok[tidak.0 as usize], &tidak_a);
             }
             Akhir::Kembali { nilai, hasil } => p.kembali(*nilai, *hasil),
-            Akhir::KembaliNilai { pos } => {
+            Akhir::KembaliNilai { pos, .. } => {
                 let v = p.b.ins().iconst(types::I64, *pos as i64);
                 p.b.ins().store(MemFlagsData::trusted(), v, p.keluar, 0);
                 p.pulang_status(BERHASIL_NILAI);

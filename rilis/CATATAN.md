@@ -1,4 +1,4 @@
-JRG 0.6.1 meningkatkan keamanan: lima celah yang ditemukan lewat audit ditutup, ditambah pesan galat yang menuntun
+JRG 0.6.1 meningkatkan keamanan: delapan celah yang ditemukan lewat audit ditutup, ditambah pesan galat yang menuntun
 pendatang dari bahasa lain, deteksi kebuntuan, dan tiga puluh method baru atas `Option`/`Result`. Dua perubahan bisa
 membuat program lama berperilaku lain, dan pesan galat sekarang berbahasa Inggris secara bawaan; daftarnya di bawah.
 
@@ -13,6 +13,15 @@ membuat program lama berperilaku lain, dan pesan galat sekarang berbahasa Inggri
 - **Anotasi tipe dan pola yang bersarang sangat dalam ditolak** di 256 tingkat, tidak lagi mematikan `jrgc` karena
   stack habis (`[][]...int`, `Option<Option<...>>`, `(((...)))`).
 - **`wasm::muat` menolak berkas `.wasm` rusak dengan pesan**, tidak lagi berhenti mendadak.
+- **`wokwok::` tidak lagi berhenti mendadak pada beberapa bentuk array.** `where` dengan kondisi yang di-broadcast
+  membaca tiap operand di posisi yang benar (dulu berhenti, atau membaca posisi yang salah), `reverse` dan reduksi per
+  sumbu atas sumbu berukuran 0 menjawab array kosong, dan `reshape` menolak bentuk yang hasil kalinya meluap atau lebih
+  dari 32 dimensi.
+- **`jvm::` memeriksa kelas objek sebelum diserahkan ke Java.** Objek kelas lain ditolak dengan pesan, bukan jawaban
+  karangan atau JVM yang mati; objek yang dilepas `jvm::lepas` dari goroutine lain tidak lagi bisa terhapus selagi
+  sebuah panggilan memakainya.
+- **`jrgm lsp` tidak lagi mati oleh pesan rusak**: JSON yang bersarang sangat dalam ditolak, pratinjau galat tidak
+  memotong karakter UTF-8, dan literal seperti `true` diperiksa hurufnya.
 - **`http::hanya_publik(true)` menolak lebih banyak bentuk alamat internal IPv6**: SIIT (`::ffff:0:a.b.c.d`), NAT64
   lokal, Teredo, `2001:db8::/32` dan `100::/64`.
 

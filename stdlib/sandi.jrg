@@ -52,6 +52,10 @@ pub fn periksa(sandi, nama) {
     }
     let kecil = str::lower(sandi)
     let rapat = str::replace(kecil, " ", "")
+    // Spasi dibuang sebelum deret dan pengulangan diperiksa, jadi sandi yang isinya spasi saja lolos semua pemeriksaan.
+    // Spasi tetap dihitung dalam panjang (`8 karakt` sah), tapi isinya harus ada: paling sedikit separuh batas (AGI-20261119-08).
+    let isi = len(str::chars(rapat))
+    if isi < MIN / 2 { return Err(«terlalu sedikit isi: ${isi} karakter selain spasi, paling sedikit ${MIN / 2}») }
     if arr::contains(_PASARAN, kecil) || arr::contains(_PASARAN, rapat) { return Err("termasuk sandi pasaran yang dicoba lebih dulu oleh penyerang") }
     if _deret(str::chars(rapat)) { return Err("deret atau pengulangan satu karakter (`aaaa`, `1234`, `abcd`)") }
     if _ulangan(rapat) { return Err("pola pendek yang diulang (`abcabcabc`)") }

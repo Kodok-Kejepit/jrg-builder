@@ -881,16 +881,21 @@ impl<'src> Lexer<'src> {
                 msg: format!("angka imajiner `{}i` tidak sah", text), span })?;
             return Ok(Token::new(TokenKind::ImaginaryLit(v), span));
         }
+        if is_float && radix == 16 {
+            return Err(LexError { span, msg: format!(
+                "pecahan heksadesimal `{}` belum didukung JRG — tulis pecahan desimal (`2.0`), atau bilangan bulat \
+                 heksadesimal lalu `as float` (`0x10 as float`)", text) });
+        }
         if is_float {
             let v: f64 = text.parse().map_err(|_| LexError {
                 msg: format!("angka pecahan `{}` tidak sah", text), span })?;
             return Ok(Token::new(TokenKind::FloatLit(v), span));
         }
-        let v = u128::from_str_radix(
-            text.trim_start_matches("0x").trim_start_matches("0o")
-                .trim_start_matches("0b"),
-            radix
-        ).map_err(|_| LexError {
+        // Tepat SATU prefiks sesuai basisnya: `trim_start_matches` berantai dulu membuang `0b` lagi sesudah `0x`
+        // (`b` digit heksa sah), jadi `0x0b1` diam-diam terbaca `1` (AGI-20261119-01).
+        let pref = match radix { 16 => "0x", 8 => "0o", 2 => "0b", _ => "" };
+        let digit = text.strip_prefix(pref).or_else(|| text.strip_prefix(&pref.to_uppercase())).unwrap_or(&text);
+        let v = u128::from_str_radix(digit, radix).map_err(|_| LexError {
             msg: format!("angka bulat `{}` tidak sah", text), span })?;
         Ok(Token::new(TokenKind::IntLit(v), span))
     }

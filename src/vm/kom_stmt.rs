@@ -455,7 +455,10 @@ impl Compiler {
                 for (_, slot) in &captures {
                     self.chunk.emit_arg(OpCode::LoadLocal, *slot as u32);
                 }
+                // Galat `Spawn` (thread tak bisa dibuat, misalnya di peramban) menunjuk pernyataan `spawn`-nya.
+                let lama = self.chunk.masuk_span(ss.span);
                 self.chunk.emit_arg(OpCode::Spawn, captures.len() as u32);
+                self.chunk.pulih_span(lama);
                 self.chunk.emit(OpCode::Pop);
             }
 
