@@ -399,7 +399,7 @@ pub fn unduh(url: &str, berkas: &str, agen: &str) -> Result<HasilUnduh, String> 
                 Some(_) => None,
             };
             if !semua.is_empty() && panjang.is_none() {
-                return Err(format!("Content-Length yang tidak sah atau berbeda-beda: {:?}", semua));
+                return Err(format!("Content-Length {:?} tidak sah atau berbeda-beda", semua));
             }
             match panjang {
                 Some(n) => {

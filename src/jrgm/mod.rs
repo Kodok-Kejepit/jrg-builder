@@ -306,9 +306,9 @@ mod tes {
             assert!(e.contains(pesan), "{:?}: {}", isi, e);
         }
         // Dulu salah baca: `\"` di teks, `,` di dalam tabel sebaris, `[dependencies.z]`; `kode = 3` tetap sah.
-        let m = manifes::Manifest::parse_from_str("[package]\nname = \"a\\\"b\"\n[dependencies]\nk = { path = \"../a,b\" }\n\
+        let m = manifes::Manifest::parse_from_str("[package]\nrepositori = \"a\\\"b\"\n[dependencies]\nk = { path = \"../a,b\" }\n\
             [dependencies.z]\npath = \"../z\"\n[android]\nkode = 3\n", p).unwrap();
-        assert_eq!(m.name, "a\"b");
+        assert_eq!(m.repositori.as_deref(), Some("a\"b"));
         assert_eq!(m.dependencies.iter().map(|d| d.akar.clone()).collect::<Vec<_>>(), vec![p.join("../a,b"), p.join("../z")]);
         assert_eq!(m.android.kode.as_deref(), Some("3"));
         let m = manifes::Manifest::parse_from_str("[dependencies]\nb = { git = \"https://x\", version = \"1.0.0-rc.1\" }\n", p).unwrap();

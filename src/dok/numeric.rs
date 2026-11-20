@@ -146,7 +146,7 @@ pub fn vec_angle(args: &[Value]) -> Result<Value, String> {
 
 /// Ukuran matriks: bukan negatif, dan isinya paling banyak `MAKS_ELEMEN` — dulu `as usize` memotong atau memanik.
 fn ukuran_mat(nama: &str, baris: i128, kolom: i128) -> Result<(usize, usize), String> {
-    if baris < 0 || kolom < 0 { return Err(format!("{}: ukuran tidak boleh negatif, dapat {}x{}", nama, baris, kolom)); }
+    if baris < 0 || kolom < 0 { return Err(format!("{}: ukuran {}x{} tidak boleh negatif", nama, baris, kolom)); }
     let maks = crate::interpreter::MAKS_ELEMEN;
     if baris.checked_mul(kolom).map_or(true, |n| n > maks) {
         return Err(format!("{}: {}x{} melewati batas {} elemen", nama, baris, kolom, maks));
