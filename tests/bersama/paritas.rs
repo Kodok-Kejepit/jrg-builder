@@ -2857,4 +2857,15 @@ pub fn main() {
     wok("lanjut")
 }
 "#),
+    ("std/mesin menolak NaN, dt negatif dan klik bukan bool (AGI-20261120-21)", r#"
+import "std/mesin/sprite"
+import "std/mesin/masukan"
+fn coba(f) { match tangkap(f) { Ok(v) => wok("ok"), Err(g) => wok(g.pesan) } }
+fn main() {
+    coba(|| sprite::animasi([1, 2], math::NAN, true))
+    coba(|| sprite::animasi([1, 2], 10, true).maju(-0.4))
+    coba(|| sprite::animasi([1, 2], 10, true).maju(0.25).petak())
+    coba(|| masukan::buatan_tetikus(masukan::kosong(), [], 0, 0, [1, 2, 3]))
+}
+"#),
 ];

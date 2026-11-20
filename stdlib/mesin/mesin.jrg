@@ -60,7 +60,7 @@ impl<K> Game<K> {
     }
     /// Game yang sama dengan langkah waktu tetap `dt` detik (bawaan 1/60).
     pub fn dengan_dt(self, dt) -> Game<K> {
-        if (typeof(dt) != "int" && typeof(dt) != "float") || dt <= 0 {
+        if (typeof(dt) != "int" && typeof(dt) != "float") || !(dt > 0) || !math::is_finite(dt as float) {
             panik("mesin::dengan_dt: `dt` harus angka positif, dapat " + str(dt))
         }
         var g = self

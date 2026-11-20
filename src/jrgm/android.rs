@@ -245,7 +245,7 @@ fn tulis_kunci_ke_manifes(akar: &Path, alias: &str) -> Result<(), String> {
         }
         None => format!("{}\n[android]\n{}\n", isi.trim_end(), baris),
     };
-    std::fs::write(&p, baru).map_err(|e| format!("tidak bisa tulis jrgm.toml: {}", crate::host::galat_io(&e)))
+    super::tulis_utuh(std::path::Path::new(&p), baru).map_err(|e| format!("tidak bisa tulis jrgm.toml: {}", crate::host::galat_io(&e)))
 }
 
 fn adb_keluaran(adb: &Path, args: &[&str]) -> Result<String, String> {

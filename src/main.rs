@@ -157,17 +157,17 @@ struct Cli {
     #[arg(long = "bahasa", alias = "language", value_name = "KODE", help_heading = "Diagnostik")]
     bahasa: Option<String>,
 
-    /// Nada pesan galat: sopan|galak|judes|hangat|cool|lawak
+    /// Nada pesan galat: sopan|galak|judes|hangat|cool|lawak (atau polite|fierce|sassy|warm|cool|funny)
     #[arg(long = "nada", value_name = "NAMA", help_heading = "Diagnostik")]
     nada: Option<String>,
 
     /// Tanpa sapaan di atas pesan galat (sama dengan --nada=sopan)
-    #[arg(long = "sopan", conflicts_with_all = ["galak", "nada"],
+    #[arg(long = "sopan", visible_alias = "polite", conflicts_with_all = ["galak", "nada"],
           help_heading = "Diagnostik")]
     sopan: bool,
 
     /// Sama dengan --nada=galak
-    #[arg(long = "galak", conflicts_with_all = ["sopan", "nada"],
+    #[arg(long = "galak", visible_alias = "fierce", conflicts_with_all = ["sopan", "nada"],
           help_heading = "Diagnostik")]
     galak: bool,
 
@@ -698,7 +698,7 @@ fn utama() {
             None => {
                 epesan!(
                     "error: nada `{}` tidak ada. yang tersedia: {}",
-                    n, diag::Nada::SEMUA.join(", ")
+                    n, diag::Nada::daftar()
                 );
                 keluar(2);
             }

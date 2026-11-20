@@ -405,7 +405,7 @@ pub(crate) fn cmd_add(name: &str, version: Option<&str>, git: Option<&str>, rev:
     } else {
         format!("{}\n{}\n{}", isi.trim_end(), bagian, baris)
     };
-    std::fs::write(&manifes, baru)
+    super::tulis_utuh(&manifes, baru)
         .map_err(|e| format!("jrgm add: tidak bisa tulis `jrgm.toml`: {}", crate::host::galat_io(&e)))?;
 
     // Graf diperiksa SESUDAH menulis, dan kegagalannya dilaporkan — sebuah
@@ -447,7 +447,7 @@ pub(crate) fn cmd_remove(name: &str) -> Result<(), String> {
         return Err(format!("jrgm remove: `{}` tidak ditulis sebagai satu baris `{} = {{ .. }}` di \
             `[dependencies]` — buang bagiannya sendiri; `jrgm.toml` tidak diubah", name, name));
     }
-    std::fs::write(&manifes, baru)
+    super::tulis_utuh(&manifes, baru)
         .map_err(|e| format!("jrgm remove: tidak bisa tulis `jrgm.toml`: {}", crate::host::galat_io(&e)))?;
     crate::cetak_t!("membuang `{}`", name);
     Ok(())

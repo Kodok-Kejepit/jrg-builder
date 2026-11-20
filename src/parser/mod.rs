@@ -434,6 +434,7 @@ impl Parser {
         self.sisipkan_warna(&imports, &mut items);
         let file = ParsedFile { package, imports, items, span: self.merge_span(lo) };
         self.periksa_impl_lengkap(&file);
+        self.periksa_field_warisan(&file);
         self.periksa_nama_bound(&file);
         self.periksa_nama_tipe(&file);
         self.periksa_mutabilitas(&file);
@@ -557,6 +558,7 @@ impl Parser {
             span: self.merge_span(lo),
         };
         self.periksa_impl_lengkap(&file);
+        self.periksa_field_warisan(&file);
         self.periksa_nama_bound(&file);
         self.periksa_nama_tipe(&file);
         self.periksa_mutabilitas(&file);
@@ -932,6 +934,42 @@ impl Parser {
         if let FnBody::Block(b) = &*fd.body { kumpul_tipe_blok(b, generik, keluar); }
     }
 
+    /// Field warisan yang dideklarasikan ulang di anak harus bertipe SAMA: method induk membaca
+    /// field itu dengan tipe induknya. Cuma induk di berkas yang sama yang terlihat di sini.
+    pub(crate) fn periksa_field_warisan(&mut self, file: &ParsedFile) {
+        use std::collections::HashMap;
+        let structs: HashMap<&str, &StructDecl> = file.items.iter().filter_map(|it| match it {
+            Item::Struct(sd) => Some((sd.name.as_str(), sd)), _ => None }).collect();
+        let normal = |t: &TypeExpr| -> Option<String> {
+            match t { TypeExpr::Inferred | TypeExpr::Error(_) => return None, _ => {} }
+            let n = nama_tipe(t);
+            Some(match n.as_str() { "f64" => "float".into(), "str" => "string".into(), _ => n })
+        };
+        for item in &file.items {
+            let Item::Struct(anak) = item else { continue };
+            let mut induk = anak.parent.as_ref().and_then(|p| structs.get(p.as_str()).copied());
+            let mut dilihat = 0;
+            while let Some(sd) = induk {
+                dilihat += 1;
+                if dilihat > 64 || sd.name == anak.name { break; }
+                let generik = |d: &StructDecl, t: &TypeExpr| matches!(t, TypeExpr::Named(nt)
+                    if d.generics.params.iter().any(|g| g.name == nt.name));
+                for fa in &anak.fields {
+                    let Some(fi) = sd.fields.iter().find(|f| f.name == fa.name) else { continue };
+                    if generik(anak, &fa.ty) || generik(sd, &fi.ty) { continue; }
+                    if let (Some(ta), Some(ti)) = (normal(&fa.ty), normal(&fi.ty)) {
+                        if ta != ti {
+                            self.errors.push(ParseError {
+                                msg: pesan_field_warisan_tipe(&fa.name, &anak.name, &ta, &sd.name, &ti),
+                                span: fa.span });
+                        }
+                    }
+                }
+                induk = sd.parent.as_ref().and_then(|p| structs.get(p.as_str()).copied());
+            }
+        }
+    }
+
     /// Tiap `impl Trait for Tipe` wajib menyediakan semua method ABSTRAK milik
     /// traitnya.
     pub(crate) fn periksa_impl_lengkap(&mut self, file: &ParsedFile) {
@@ -1234,6 +1272,12 @@ fn nama_generik(g: &GenericParams) -> Vec<String> {
 }
 
 /// Kalimat untuk `impl` yang tidak mengisi method abstrak trait-nya.
+pub fn pesan_field_warisan_tipe(field: &str, anak: &str, ta: &str, induk: &str, ti: &str) -> String {
+    format!("field `{}` di `{}` bertipe `{}`, padahal induknya `{}` mendeklarasikannya `{}` — method warisan \
+             membaca field itu sebagai `{}`; tulis tipe yang sama, atau pakai nama field lain",
+        field, anak, ta, induk, ti, ti)
+}
+
 pub fn pesan_impl_kurang(nama_trait: &str, tipe: &str, daftar: &str) -> String {
     format!(
         "`impl {} for {}` belum menyediakan method yang diwajibkan trait-nya: {} \

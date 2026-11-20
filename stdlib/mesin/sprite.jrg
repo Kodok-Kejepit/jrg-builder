@@ -60,7 +60,7 @@ pub fn animasi(bingkai, fps, ulang) {
     if typeof(bingkai) != "array" || len(bingkai) == 0 {
         panik("sprite::animasi: daftar bingkai harus array yang tidak kosong")
     }
-    if (typeof(fps) != "int" && typeof(fps) != "float") || fps <= 0 {
+    if (typeof(fps) != "int" && typeof(fps) != "float") || !(fps > 0) || !math::is_finite(fps as float) {
         panik("sprite::animasi: fps harus angka positif, dapat " + str(fps))
     }
     if typeof(ulang) != "bool" { panik("sprite::animasi: `ulang` harus bool, dapat `" + typeof(ulang) + "`") }
@@ -70,6 +70,9 @@ pub fn animasi(bingkai, fps, ulang) {
 impl Animasi {
     /// Animasi yang dimajukan `dt` detik.
     pub fn maju(self, dt) {
+        if (typeof(dt) != "int" && typeof(dt) != "float") || !(dt >= 0) || !math::is_finite(dt as float) {
+            panik("sprite::Animasi::maju: `dt` harus angka >= 0, dapat " + str(dt))
+        }
         var a = self
         a.waktu = self.waktu + (dt as float)
         return a

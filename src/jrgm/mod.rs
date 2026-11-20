@@ -43,7 +43,7 @@ pub fn utama(argumen: Vec<String>) {
             None => {
                 crate::ecetak_t!(
                     "error: nada `{}` tidak ada. yang tersedia: {}",
-                    n, crate::diag::Nada::SEMUA.join(", ")
+                    n, crate::diag::Nada::daftar()
                 );
                 process::exit(2);
             }
@@ -161,6 +161,19 @@ fn singkatan_bahasa(mut a: Vec<String>) -> Vec<String> {
         }
     }
     a
+}
+
+/// Menulis `jrgm.toml`/`jrgm.lock` utuh atau tidak sama sekali: berkas sementara di folder yang
+/// sama, `fsync`, lalu `rename` — proses yang mati di tengah tidak meninggalkan manifes terpotong.
+pub(crate) fn tulis_utuh(p: &std::path::Path, isi: impl AsRef<[u8]>) -> std::io::Result<()> {
+    use std::io::Write;
+    let nama = p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let sementara = p.with_file_name(format!(".{}.jrgm-{}", nama, std::process::id()));
+    let hasil = std::fs::File::create(&sementara)
+        .and_then(|mut f| { f.write_all(isi.as_ref())?; f.sync_all() })
+        .and_then(|_| std::fs::rename(&sementara, p));
+    if hasil.is_err() { let _ = std::fs::remove_file(&sementara); }
+    hasil
 }
 
 // ─── Tes unit ──────────────────────────────────────────────────────────────

@@ -68,7 +68,7 @@ impl Kunci {
             let t = crate::stdlib::toml::tulis_teks;
             s.push_str(&format!("{} = {}\n", t(&format!("{} @ {}", u, r)), t(c)));
         }
-        std::fs::write(&self.berkas, s).map_err(|e| format!("jrgm.lock: {}", crate::host::galat_io(&e)))?;
+        super::tulis_utuh(&self.berkas, s).map_err(|e| format!("jrgm.lock: {}", crate::host::galat_io(&e)))?;
         self.berubah = false;
         Ok(())
     }

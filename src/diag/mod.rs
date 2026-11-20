@@ -204,12 +204,12 @@ impl Nada {
     /// Nama yang dipakai di CLI dan variabel lingkungan.
     pub fn dari_nama(s: &str) -> Option<Nada> {
         match s.trim().to_ascii_lowercase().as_str() {
-            "sopan"  => Some(Nada::Sopan),
-            "galak"  => Some(Nada::Galak),
-            "judes"  => Some(Nada::Judes),
-            "hangat" => Some(Nada::Hangat),
-            "cool"   => Some(Nada::Cool),
-            "lawak"  => Some(Nada::Lawak),
+            "sopan"  | "polite" => Some(Nada::Sopan),
+            "galak"  | "fierce" => Some(Nada::Galak),
+            "judes"  | "sassy"  => Some(Nada::Judes),
+            "hangat" | "warm"   => Some(Nada::Hangat),
+            "cool"              => Some(Nada::Cool),
+            "lawak"  | "funny"  => Some(Nada::Lawak),
             _ => None,
         }
     }
@@ -222,6 +222,13 @@ impl Nada {
     /// Semua nama yang sah — dipakai pesan error CLI supaya daftarnya
     /// punya satu sumber, bukan disalin ke tiap tempat yang menyebutnya.
     pub const SEMUA: [&'static str; 6] = ["sopan", "galak", "judes", "hangat", "cool", "lawak"];
+    /// Nama Inggris tiap nada, sejajar dengan `SEMUA` (`cool` sama di dua bahasa).
+    pub const SEMUA_EN: [&'static str; 6] = ["polite", "fierce", "sassy", "warm", "cool", "funny"];
+    /// Daftar untuk pesan "nada tidak ada": nama Indonesia/Inggris berpasangan.
+    pub fn daftar() -> String {
+        Self::SEMUA.iter().zip(Self::SEMUA_EN).map(|(i, e)| if *i == e { i.to_string() } else { format!("{}/{}", i, e) })
+            .collect::<Vec<_>>().join(", ")
+    }
 }
 
 /// Nada bawaan JRG, dan ini keputusan desain — bukan setelan yang kebetulan

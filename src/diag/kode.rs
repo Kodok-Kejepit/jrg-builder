@@ -417,6 +417,9 @@ wok(b)
             let nada = Nada::dari_nama(n).unwrap_or_else(|| panic!("`{}` tidak dikenali", n));
             assert_eq!(nada.nama(), n);
         }
+        for (i, e) in Nada::SEMUA.iter().zip(Nada::SEMUA_EN) {
+            assert_eq!(Nada::dari_nama(e), Nada::dari_nama(i), "nama Inggris `{}` harus nada `{}`", e, i);
+        }
         assert!(Nada::dari_nama("HANGAT").is_some(), "nama nada harus tidak peka besar-kecil");
         assert!(Nada::dari_nama("hanget").is_none(), "salah ketik harus ditolak, bukan diterima");
     }

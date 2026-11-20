@@ -28,7 +28,7 @@ impl Sistem {
     /// hidup `umur` detik, berwarna `warna`.
     pub fn pancar(self, n, pos, sudut, sebar, laju, umur, warna) {
         if typeof(n) != "int" || n < 0 { panik("partikel::pancar: jumlah harus bilangan bulat >= 0, dapat " + str(n)) }
-        if umur <= 0 { panik("partikel::pancar: umur harus positif, dapat " + str(umur)) }
+        if (typeof(umur) != "int" && typeof(umur) != "float") || !(umur > 0) || !math::is_finite(umur as float) { panik("partikel::pancar: umur harus positif, dapat " + str(umur)) }
         if typeof(warna) != "struct:Warna" {
             panik("partikel::pancar: warna harus `Warna` (mis. `warna::rgb(...)`), dapat `" + typeof(warna) + "`")
         }

@@ -43,6 +43,11 @@ pub fn buatan_tetikus(sebelum: Masukan, ditahan, x, y, klik) -> Masukan {
     if typeof(klik) != "array" || len(klik) != 3 {
         panik("masukan::buatan_tetikus: klik harus [kiri, kanan, tengah], dapat `" + typeof(klik) + "`")
     }
+    for i, b in klik {
+        if typeof(b) != "bool" {
+            panik("masukan::buatan_tetikus: klik[" + str(i) + "] harus bool, dapat `" + typeof(b) + "`")
+        }
+    }
     let kini = _daftar("masukan::buatan_tetikus", ditahan)
     return _dari_selisih(sebelum, kini, vek::baru(x, y), klik)
 }

@@ -5045,4 +5045,24 @@ pub fn main() {
     wok(a, r)
 }
 "#),
+    ("penugasan banyak sasaran: tempat `[..]`/`.f` dicari sesudah semua sisi kanan (AGI-20261120-21)", r#"
+struct P { pub x: int, pub y: string }
+fn main() {
+    var arr = [1, 2]
+    var i = 0
+    arr[i], arr[i] = { i = 1; 10 }, 20
+    wok(arr, i)
+    var j = 0
+    var b = [0, 0, 0]
+    j, b[j] = 2, 7
+    wok(b, j)
+    var p = P { x: 1, y: "a" }
+    var d = {"k": 1}
+    p.x, p.y, d["k"] = p.x + 5, "b" + p.y, d["k"] * 3
+    wok(p.x, p.y, d)
+    var a = [1, 2, 3]
+    a[0], a[2] = a[2], a[0]
+    wok(a)
+}
+"#),
 ];

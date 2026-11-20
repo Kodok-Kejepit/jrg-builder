@@ -46,16 +46,16 @@ pub(crate) struct Cli {
     pub(crate) command: JrgmCommand,
 
     /// Nada diagnostik SOPAN — buang baris sapaan di atas tiap error.
-    #[arg(long = "sopan", global = true, conflicts_with_all = ["galak", "nada"])]
+    #[arg(long = "sopan", visible_alias = "polite", global = true, conflicts_with_all = ["galak", "nada"])]
     pub(crate) sopan: bool,
 
-    /// Pilih nada diagnostik: sopan, galak, judes, hangat, cool, lawak.
+    /// Pilih nada diagnostik: sopan, galak, judes, hangat, cool, lawak (atau polite, fierce, sassy, warm, cool, funny).
     #[arg(long = "nada", global = true, value_name = "NAMA")]
     pub(crate) nada: Option<String>,
 
     /// Nada GALAK — ini sudah bawaan, jadi flag ini cuma dipakai kalau
     /// `JRG_SOPAN` di lingkungan sedang mematikannya.
-    #[arg(long = "galak", global = true)]
+    #[arg(long = "galak", visible_alias = "fierce", global = true)]
     pub(crate) galak: bool,
 }
 
