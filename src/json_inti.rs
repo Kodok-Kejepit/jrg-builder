@@ -281,40 +281,63 @@ pub const JALAN_PECAHAN: &str = "saring dulu dengan `math::is_finite(x)`, atau g
 
 /// Tulis pohon `Json`: rapat kalau `indent` `None`, selain itu rapi dengan lebar itu.
 pub fn tulis(j: &Json, indent: Option<usize>, dalam: usize) -> Result<String, String> {
-    let rapat = |x: &Json| tulis(x, None, 0);
-    match j {
-        Json::Null => Ok("null".to_string()),
-        Json::Bool(b) => Ok(b.to_string()),
-        Json::Int(n) => Ok(n.to_string()),
-        Json::Float(f) => sandi_pecahan(*f).ok_or_else(|| pesan_tak_bisa(&format!("{}", f), JALAN_PECAHAN)),
-        Json::Str(s) => Ok(sandi_teks(s)),
-        Json::Arr(a) => match indent {
-            None => {
-                let isi: Result<Vec<String>, String> = a.iter().map(rapat).collect();
-                Ok(format!("[{}]", isi?.join(",")))
+    // Iteratif: kedalaman berapa pun tidak memakan stack (biner LLVM, korutin 1 MiB).
+    enum Kerja<'a> { Nilai(&'a Json, usize), Teks(String) }
+    let mut out = String::new();
+    let mut tumpuk = alloc::vec![Kerja::Nilai(j, dalam)];
+    while let Some(k) = tumpuk.pop() {
+        let (j, dalam) = match k { Kerja::Teks(t) => { out.push_str(&t); continue } Kerja::Nilai(j, d) => (j, d) };
+        match j {
+            Json::Null => out.push_str("null"),
+            Json::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
+            Json::Int(n) => out.push_str(&n.to_string()),
+            Json::Float(f) => out.push_str(&sandi_pecahan(*f).ok_or_else(|| pesan_tak_bisa(&format!("{}", f), JALAN_PECAHAN))?),
+            Json::Str(s) => out.push_str(&sandi_teks(s)),
+            Json::Arr(a) if a.is_empty() => out.push_str("[]"),
+            Json::Obj(o) if o.is_empty() => out.push_str("{}"),
+            Json::Arr(a) => {
+                let (buka, antara, tutup) = bingkai(indent, dalam, '[', ']');
+                tumpuk.push(Kerja::Teks(tutup));
+                for (i, x) in a.iter().enumerate().rev() {
+                    tumpuk.push(Kerja::Nilai(x, dalam + 1));
+                    tumpuk.push(Kerja::Teks(if i == 0 { buka.clone() } else { antara.clone() }));
+                }
             }
-            Some(_) if a.is_empty() => Ok("[]".to_string()),
-            Some(n) => {
-                let (pad, dlm) = (" ".repeat(dalam * n), " ".repeat((dalam + 1) * n));
-                let mut isi = Vec::new();
-                for x in a { isi.push(format!("{}{}", dlm, tulis(x, indent, dalam + 1)?)); }
-                Ok(format!("[\n{}\n{}]", isi.join(",\n"), pad))
+            Json::Obj(o) => {
+                let (buka, antara, tutup) = bingkai(indent, dalam, '{', '}');
+                let titik = if indent.is_some() { ": " } else { ":" };
+                tumpuk.push(Kerja::Teks(tutup));
+                for (i, (kunci, v)) in o.iter().enumerate().rev() {
+                    tumpuk.push(Kerja::Nilai(v, dalam + 1));
+                    let awal = if i == 0 { &buka } else { &antara };
+                    tumpuk.push(Kerja::Teks(format!("{}{}{}", awal, sandi_teks(kunci), titik)));
+                }
             }
-        },
-        Json::Obj(o) => match indent {
-            None => {
-                let mut isi = Vec::new();
-                for (k, v) in o { isi.push(format!("{}:{}", sandi_teks(k), rapat(v)?)); }
-                Ok(format!("{{{}}}", isi.join(",")))
-            }
-            Some(_) if o.is_empty() => Ok("{}".to_string()),
-            Some(n) => {
-                let (pad, dlm) = (" ".repeat(dalam * n), " ".repeat((dalam + 1) * n));
-                let mut isi = Vec::new();
-                for (k, v) in o { isi.push(format!("{}{}: {}", dlm, sandi_teks(k), tulis(v, indent, dalam + 1)?)); }
-                Ok(format!("{{\n{}\n{}}}", isi.join(",\n"), pad))
-            }
-        },
+        }
+    }
+    Ok(out)
+}
+
+/// Pembuka (dengan indentasi elemen pertama), pemisah antar-elemen, dan penutup sebuah wadah.
+fn bingkai(indent: Option<usize>, dalam: usize, b: char, t: char) -> (String, String, String) {
+    match indent {
+        None => (b.to_string(), ",".to_string(), t.to_string()),
+        Some(n) => {
+            let (pad, dlm) = (" ".repeat(dalam * n), " ".repeat((dalam + 1) * n));
+            (format!("{}\n{}", b, dlm), format!(",\n{}", dlm), format!("\n{}{}", pad, t))
+        }
+    }
+}
+
+/// Melepas pohon tanpa rekursi: `Drop` bawaan menurun satu bingkai per tingkat.
+pub fn lepas(j: Json) {
+    let mut tumpuk = alloc::vec![j];
+    while let Some(x) = tumpuk.pop() {
+        match x {
+            Json::Arr(a) => tumpuk.extend(a),
+            Json::Obj(o) => tumpuk.extend(o.into_iter().map(|(_, v)| v)),
+            _ => {}
+        }
     }
 }
 

@@ -1498,8 +1498,9 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
      "if it did not go through C code (`extern`), this is a defect in the LLVM backend; try running with --vm"),
     ("kemungkinan batas memori JRGC_BATAS_MEMORI ({} MiB) terlewati; selain itu, ",
      "the JRGC_BATAS_MEMORI memory limit ({} MiB) was probably exceeded; otherwise, "),
-    ("field `{}` di `{}` bertipe `{}`, padahal induknya `{}` mendeklarasikannya `{}` — method warisan membaca field itu sebagai `{}`; tulis tipe yang sama, atau pakai nama field lain",
-     "field `{}` of `{}` has type `{}`, but its parent `{}` declares it as `{}` — inherited methods read that field as `{}`; write the same type, or use another field name"),
+    ("`{}` membayangi field induknya dengan tipe lain: {} — method warisan yang membaca field itu dengan tipe induknya tidak bisa diturunkan untuk `{}` di backend `--emit-llvm`; tulis method itu di `impl {}`, atau jalankan tanpa `--emit-llvm`",
+     "`{}` shadows its parent's field with another type: {} — an inherited method that reads that field with the parent's type cannot be lowered for `{}` on the `--emit-llvm` backend; write that method in `impl {}`, or run without `--emit-llvm`"),
+    ("`{}` (`{}` di `{}`, `{}` di `{}`)", "`{}` (`{}` in `{}`, `{}` in `{}`)"),
     ("error: nada `{}` tidak ada. yang tersedia: ",
      "error: the tone `{}` does not exist. available: "),
 

@@ -839,6 +839,9 @@ include!("bersama/paritas_llvm.rs");
 // ───────────────────────────────────────────
 
 const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
+    // AGI-20261120-21 (#1089): method warisan atas field yang dibayangi anak dengan tipe lain — celah, disebut sebabnya.
+    ("method warisan atas field induk yang dibayangi tipe lain", "package main\nstruct Induk { pub x: int }\nimpl Induk { pub fn baca(self) -> int { self.x + 1 } }\nstruct Anak : Induk { pub x: string }\npub fn main() { wok(Anak { x: \"halo\" }.baca()) }",
+     "membayangi field induknya dengan tipe lain"),
     // AGI-20261120-16 (#1085): `struct Galat` milik program dulu dipakai sebagai tempat rekaman `tangkap` (stack overflow).
     ("struct Galat milik program bertabrakan dengan rekaman tangkap", "package main\nstruct Galat { kode: int }\npub fn main() {\n let r = tangkap(|| { panik(\"x\") })\n wok(r)\n}",
      "bertabrakan dengan rekaman `Galat` yang dijawab `tangkap`"),
@@ -2165,6 +2168,11 @@ pub fn main() {{
   dok::router_get(r, "/u/:id", |req: DokRequest| dok::text("id=" + req.params["id"]))
   dok::router_post(r, "/gema", |req| dok::text(str(len(req.body))))
   dok::router_get(r, "/x", |req| [1][5])
+  let ch = make_chan(int, 1)
+  dok::router_get(r, "/lambat", |req| {{ time::sleep_ms(1500); dok::text("lambat") }})
+  dok::router_get(r, "/cepat", |req| dok::text("cepat"))
+  dok::router_get(r, "/tunggu", |req| {{ let v = <- ch; dok::text("dapat " + str(v)) }})
+  dok::router_get(r, "/isi", |req| {{ ch <- 42; dok::text("terisi") }})
   dok::serve(r, {})
 }}
 "#, port);
@@ -2209,6 +2217,18 @@ pub fn main() {{
                 minta(port, &get("/hilang")),
                 minta(port, "POST /gema HTTP/1.1\r\nHost: x\r\nContent-Length: 3\r\n\r\nabc"),
             ]);
+            // Handler yang menunggu (tidur, channel) tidak menahan handler lain (AGI-20261118-03).
+            let (lambat, cepat, tunggu) = std::thread::scope(|sc| {
+                let l = sc.spawn(|| minta(port, &get("/lambat")));
+                let t = sc.spawn(|| minta(port, &get("/tunggu")));
+                std::thread::sleep(Duration::from_millis(200));
+                let mulai = Instant::now();
+                let c = minta(port, &get("/cepat"));
+                let cepat = format!("{} {}", c, mulai.elapsed() < Duration::from_millis(1000));
+                let _ = minta(port, &get("/isi"));
+                (l.join().unwrap(), cepat, t.join().unwrap())
+            });
+            jawab.as_mut().unwrap().extend([lambat, cepat, tunggu]);
             drop(anak);
             break;
         }
@@ -2216,7 +2236,8 @@ pub fn main() {{
         hasil.push(jawab.expect("server tidak pernah siap di lima port"));
     }
     assert_eq!(hasil[0], ["200 hai 1", "200 hai 2", "200 id=77", "500 handler error",
-                          "404 404 Not Found: GET /hilang", "200 3"], "jawaban acuan");
+                          "404 404 Not Found: GET /hilang", "200 3", "200 lambat", "200 cepat true",
+                          "200 dapat 42"], "jawaban acuan");
     assert_eq!(hasil[0], hasil[1], "--emit-llvm menjawab beda dari acuan");
 }
 

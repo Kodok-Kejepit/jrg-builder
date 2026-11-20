@@ -325,6 +325,7 @@ name = "jrg_jembatan"
 version = "0.6.1"
 dependencies = [
  "jrgc",
+ "libc",
 ]
 
 [[package]]

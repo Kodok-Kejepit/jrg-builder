@@ -24,6 +24,8 @@ pub struct Kait {
     serah: extern "C" fn(),
     /// Jumlah goroutine yang belum selesai.
     lain: extern "C" fn() -> i64,
+    /// `fn(arg)` jadi korutin baru di biner (`jrg_ko_spawn`).
+    luncur: extern "C" fn(extern "C" fn(*mut u8), *mut u8),
 }
 
 const LANGKAH: i64 = 40;
@@ -56,9 +58,47 @@ unsafe fn teks<'a>(p: u64, n: u64) -> &'a str {
     std::str::from_utf8(std::slice::from_raw_parts(p as *const u8, n as usize)).unwrap_or("")
 }
 
-unsafe fn dari_any(a: &KotakAny, k: &Kait) -> Result<VmValue, String> {
+std::thread_local! {
+    /// Kedalaman sarang terdalam yang dilihat `dari_any` terakhir di thread ini.
+    static DALAM: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+/// Argumen sedalam ini dijalankan di thread pembantu ber-stack besar: penjelajah nilai `jrgc`
+/// cuma bisa pindah stack sendiri di thread yang puncaknya tercatat (AGI-20261118-04).
+const SARANG_DALAM: usize = 1000;
+
+enum Rakit { Arr(Vec<VmValue>, *const KotakAny, usize, usize), Map(Peta, *const u8, usize, usize, String) }
+#[derive(Default)]
+struct Peta { m: HashMap<String, VmValue>, nama_struct: Option<String>, nama_enum: Option<String>, varian: Option<String>, tuple: bool }
+
+impl Peta {
+    fn isi(&mut self, nama: String, nilai: VmValue) {
+        if nama == TANDA_STRUCT {
+            if let VmValue::Str(t) = &nilai { self.nama_struct = Some(t.to_string()); return; }
+        }
+        if nama == TANDA_TUPLE { self.tuple = true; return; }
+        if nama == TANDA_ENUM || nama == TANDA_VARIAN {
+            if let VmValue::Str(t) = &nilai {
+                if nama == TANDA_ENUM { self.nama_enum = Some(t.to_string()) } else { self.varian = Some(t.to_string()) }
+                return;
+            }
+        }
+        self.m.insert(nama, nilai);
+    }
+    fn jadi(mut self) -> VmValue {
+        if let (Some(e), Some(v)) = (&self.nama_enum, &self.varian) {
+            return VmValue::varian(e, v, self.m.remove(TANDA_ISI));
+        }
+        if self.tuple {
+            return VmValue::tuple((0..self.m.len()).map(|i| self.m.remove(&i.to_string()).unwrap_or(VmValue::Nil)).collect());
+        }
+        match self.nama_struct { Some(t) => VmValue::struktur(&t, self.m), None => VmValue::map(self.m) }
+    }
+}
+
+/// Daun langsung jadi nilai; array/dict mendorong bingkainya dan menjawab `None`.
+unsafe fn turun(a: &KotakAny, k: &Kait, tumpuk: &mut Vec<Rakit>, simpan: &mut Vec<Box<KotakAny>>) -> Result<Option<VmValue>, String> {
     let pola = "nilai bertipe `\u{1}` tidak bisa diserahkan ke builtin ini dari backend `--emit-llvm`";
-    Ok(match a.tag & 255 {
+    Ok(Some(match a.tag & 255 {
         0 => VmValue::Nil,
         8 => VmValue::Unit,
         1 => VmValue::Bool(a.a & 255 != 0),
@@ -69,53 +109,64 @@ unsafe fn dari_any(a: &KotakAny, k: &Kait) -> Result<VmValue, String> {
         6 => {
             let mut s = *a;
             if a.tag != KATA_ARRAY { (k.any_ubah)(a, KATA_ARRAY, &mut s, pola.as_ptr(), pola.len() as i64); }
-            let p = s.a as *const KotakAny;
-            VmValue::array((0..s.b as usize).map(|i| dari_any(&*p.add(i), k)).collect::<Result<_, _>>()?)
+            tumpuk.push(Rakit::Arr(Vec::with_capacity(s.b as usize), s.a as *const KotakAny, s.b as usize, 0));
+            return Ok(None);
         }
         7 => {
             let mut s = *a;
             if a.tag != KATA_DICT { (k.any_ubah)(a, KATA_DICT, &mut s, pola.as_ptr(), pola.len() as i64); }
-            let p = s.a as *const u8;
-            let mut m = HashMap::new();
-            let mut nama_struct: Option<String> = None;
-            let (mut nama_enum, mut varian): (Option<String>, Option<String>) = (None, None);
-            let mut tuple = false;
-            for i in 0..s.b as usize {
-                let pas = p.add(i * LANGKAH as usize);
-                let kunci = &*(pas as *const Dua);
-                let nama = teks(kunci.ptr as u64, kunci.len as u64).to_string();
-                let nilai = dari_any(&*(pas.add(16) as *const KotakAny), k)?;
-                if nama == TANDA_STRUCT {
-                    if let VmValue::Str(t) = &nilai { nama_struct = Some(t.to_string()); continue; }
-                }
-                if nama == TANDA_TUPLE { tuple = true; continue; }
-                if nama == TANDA_ENUM || nama == TANDA_VARIAN {
-                    if let VmValue::Str(t) = &nilai {
-                        if nama == TANDA_ENUM { nama_enum = Some(t.to_string()) } else { varian = Some(t.to_string()) }
-                        continue;
-                    }
-                }
-                m.insert(nama, nilai);
-            }
-            if let (Some(e), Some(v)) = (nama_enum, varian) {
-                return Ok(VmValue::varian(&e, &v, m.remove(TANDA_ISI)));
-            }
-            if tuple {
-                return Ok(VmValue::tuple((0..m.len()).map(|i| m.remove(&i.to_string()).unwrap_or(VmValue::Nil)).collect()));
-            }
-            match nama_struct { Some(t) => VmValue::struktur(&t, m), None => VmValue::map(m) }
+            tumpuk.push(Rakit::Map(Peta::default(), s.a as *const u8, s.b as usize, 0, String::new()));
+            return Ok(None);
         }
         TAG_TITIPAN => (*(a.a as *const VmValue)).clone(),
         TAG_FUNGSI => fungsi_program(a.a as *const u8, k),
         TAG_BURAM if k.buram.is_some() => {
-            let mut o = kotak(0, 0, 0);
-            (k.buram.unwrap())(a, &mut o);
+            let mut o = Box::new(kotak(0, 0, 0));
+            (k.buram.unwrap())(a, &mut *o);
             if o.tag & 255 == TAG_BURAM { return Err(PESAN_MILIK_PROGRAM.to_string()); }
-            dari_any(&o, k)?
+            let r = turun(&o, k, tumpuk, simpan);
+            simpan.push(o);
+            return r;
         }
         // Struct/tuple/enum/fungsi milik program: tidak punya bentuk di sisi `jrgc`.
         _ => return Err(PESAN_MILIK_PROGRAM.to_string()),
-    })
+    }))
+}
+
+/// Iteratif: nilai bersarang berapa pun dalam tidak menghabiskan stack korutin biner (AGI-20261118-04).
+unsafe fn dari_any(akar: &KotakAny, k: &Kait) -> Result<VmValue, String> {
+    let (mut tumpuk, mut simpan) = (Vec::new(), Vec::new());
+    let mut naik = turun(akar, k, &mut tumpuk, &mut simpan)?;
+    let mut dalam = tumpuk.len();
+    loop {
+        dalam = dalam.max(tumpuk.len());
+        if let Some(v) = naik.take() {
+            match tumpuk.last_mut() {
+                None => { DALAM.with(|d| d.set(d.get().max(dalam))); return Ok(v); }
+                Some(Rakit::Arr(isi, ..)) => isi.push(v),
+                Some(Rakit::Map(peta, _, _, _, nama)) => peta.isi(std::mem::take(nama), v),
+            }
+        }
+        let anak: Option<*const KotakAny> = match tumpuk.last_mut() {
+            Some(Rakit::Arr(_, p, n, i)) if *i < *n => { *i += 1; Some(p.add(*i - 1)) }
+            Some(Rakit::Map(_, p, n, i, nama)) if *i < *n => {
+                let pas = p.add(*i * LANGKAH as usize);
+                *i += 1;
+                let kunci = &*(pas as *const Dua);
+                *nama = teks(kunci.ptr as u64, kunci.len as u64).to_string();
+                Some(pas.add(16) as *const KotakAny)
+            }
+            _ => None,
+        };
+        naik = match anak {
+            Some(c) => turun(&*c, k, &mut tumpuk, &mut simpan)?,
+            None => match tumpuk.pop() {
+                Some(Rakit::Arr(isi, ..)) => Some(VmValue::array(isi)),
+                Some(Rakit::Map(peta, ..)) => Some(peta.jadi()),
+                None => unreachable!(),
+            },
+        };
+    }
 }
 
 type Adaptor = unsafe extern "C" fn(*const u8, *const KotakAny, i64, *mut KotakAny) -> i32;
@@ -135,11 +186,15 @@ type Hasil = std::thread::Result<Option<Result<VmValue, String>>>;
 
 /// Panggilan fungsi milik biner yang dititipkan thread lain, dijalankan thread biner selama ia
 /// menunggu builtin pemblokir (`layani`). `AKTIF` menghitung penunggu yang sedang melayani.
-static ANTRE: std::sync::OnceLock<(std::sync::mpsc::Sender<Kirim<Tugas>>, std::sync::Mutex<std::sync::mpsc::Receiver<Kirim<Tugas>>>)> =
+/// `bool`: dititipkan thread pembantu yang menjalankan builtin pemblokir (callback builtin itu sendiri,
+/// dijalankan di tempat); `false`: dari thread lain (koneksi `dok::serve`), jadi korutinnya sendiri.
+static ANTRE: std::sync::OnceLock<(std::sync::mpsc::Sender<Kirim<(bool, Tugas)>>, std::sync::Mutex<std::sync::mpsc::Receiver<Kirim<(bool, Tugas)>>>)> =
     std::sync::OnceLock::new();
 static AKTIF: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
-fn antre() -> &'static (std::sync::mpsc::Sender<Kirim<Tugas>>, std::sync::Mutex<std::sync::mpsc::Receiver<Kirim<Tugas>>>) {
+std::thread_local! { static MELAYANI: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+
+fn antre() -> &'static (std::sync::mpsc::Sender<Kirim<(bool, Tugas)>>, std::sync::Mutex<std::sync::mpsc::Receiver<Kirim<(bool, Tugas)>>>) {
     ANTRE.get_or_init(|| { let (tx, rx) = std::sync::mpsc::channel(); (tx, std::sync::Mutex::new(rx)) })
 }
 
@@ -177,7 +232,7 @@ unsafe fn fungsi_program(kotak_fn: *const u8, k: &Kait) -> VmValue {
         let (rtx, rrx) = std::sync::mpsc::channel::<Kirim<Result<VmValue, String>>>();
         let (m, args) = (*m, Kirim(args.to_vec()));
         let tugas: Tugas = Box::new(move || { let a = args; let _ = rtx.send(Kirim(jalankan_fungsi(m, &a.0))); });
-        if antre().0.send(Kirim(tugas)).is_err() {
+        if antre().0.send(Kirim((MELAYANI.with(|m| m.get()), tugas))).is_err() {
             return Err("thread biner `--emit-llvm` sudah berhenti melayani".to_string());
         }
         rrx.recv().map(|r| r.0).unwrap_or_else(|_| Err("handler di thread biner `--emit-llvm` tidak menjawab".to_string()))
@@ -196,12 +251,19 @@ fn kerjakan(t: Tugas) {
     let t = match siap { Some(tx) => match tx.send(t) { Ok(()) => return, Err(e) => e.0 }, None => t };
     let (tx, rx) = std::sync::mpsc::channel::<Tugas>();
     let _ = tx.send(t);
-    std::thread::spawn(move || {
+    // Ber-stack `jrgc` dan tercatat: penjelajah nilai di builtinnya bisa pindah stack sendiri.
+    let _ = std::thread::Builder::new().stack_size(jrgc::interpreter::Interpreter::INTERPRETER_STACK_SIZE).spawn(move || {
+        jrgc::interpreter::catat_puncak_stack();
         while let Ok(t) = rx.recv() {
             t();
             NGANGGUR.lock().unwrap_or_else(|p| p.into_inner()).push(tx.clone());
         }
     });
+}
+
+extern "C" fn jalan_tugas(p: *mut u8) {
+    let t = unsafe { Box::from_raw(p as *mut Tugas) };
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(t));
 }
 
 fn layani(nama: &str, masuk: Vec<VmValue>, k: &Kait) -> Hasil {
@@ -210,13 +272,20 @@ fn layani(nama: &str, masuk: Vec<VmValue>, k: &Kait) -> Hasil {
     AKTIF.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     kerjakan(Box::new(move || {
         let m = masuk;
+        MELAYANI.with(|x| x.set(true));
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| jrgc::vm::panggil_bawaan(&nama, &m.0)));
+        MELAYANI.with(|x| x.set(false));
         let _ = tx.send(Kirim(r));
     }));
     let hasil = loop {
         // Kuncinya dilepas sebelum tugasnya jalan: tugas itu boleh masuk `layani` lagi.
         let tugas = antre().1.lock().unwrap_or_else(|p| p.into_inner()).try_recv().ok();
-        if let Some(t) = tugas { (t.0)(); continue; }
+        // Handler dari thread koneksi jadi korutin sendiri: yang menunggu (`ws_recv`, `sleep`, channel)
+        // memberi giliran ke handler lain, bukan menumpuk `layani` di atas stack-nya (AGI-20261118-03).
+        if let Some(Kirim((milik, t))) = tugas {
+            if milik { t(); } else { (k.luncur)(jalan_tugas, Box::into_raw(Box::new(t)) as *mut u8); }
+            continue;
+        }
         (k.serah)();
         match rx.recv_timeout(std::time::Duration::from_micros(300)) {
             Ok(r) => break r.0,
@@ -228,36 +297,64 @@ fn layani(nama: &str, masuk: Vec<VmValue>, k: &Kait) -> Hasil {
     hasil
 }
 
-unsafe fn ke_any(v: &VmValue, k: &Kait) -> KotakAny {
-    match v {
-        VmValue::Nil => kotak(0, 0, 0),
-        VmValue::Unit => kotak(8, 0, 0),
-        VmValue::Bool(b) => kotak(1, *b as u64, 0),
-        VmValue::Int(n) => match i64::try_from(*n) {
-            Ok(x) => kotak(2, x as u64, 0),
-            Err(_) => titip(v),
-        },
-        VmValue::Float(f) => kotak(3, f.to_bits(), 0),
-        VmValue::Rune(c) => kotak(4, *c as u64, 0),
-        VmValue::Str(s) => { let (p, n) = bocorkan(s); kotak(5, p, n) }
-        VmValue::Array(a) => {
-            let isi = a.lock().unwrap_or_else(|p| p.into_inner());
-            let buf = (k.alloc)((isi.len().max(1) * 24) as i64, 8) as *mut KotakAny;
-            for (i, x) in isi.iter().enumerate() { buf.add(i).write(ke_any(x, k)); }
-            kotak(KATA_ARRAY, buf as u64, isi.len() as u64)
-        }
-        VmValue::Map(m) if matches!(m.label, Label::Dict) => {
-            let isi = m.lock().unwrap_or_else(|p| p.into_inner());
-            let mut d = Dua { ptr: std::ptr::null_mut(), len: 0 };
-            for (kunci, x) in isi.iter() {
-                let (kp, kl) = bocorkan(kunci);
-                let nilai = ke_any(x, k);
-                let pas = (k.dict_tempat)(&mut d, LANGKAH, 8, kp as *const u8, kl as i64);
-                (pas.add(16) as *mut KotakAny).write(nilai);
+enum Tulis { Arr(Vec<VmValue>, *mut KotakAny, usize), Dict(Vec<(String, VmValue)>, Box<Dua>, usize) }
+
+/// Iteratif seperti `dari_any`: hasil `py::eval` bersarang dalam tidak menghabiskan stack.
+unsafe fn ke_any(akar: &VmValue, k: &Kait) -> KotakAny {
+    let daun = |v: &VmValue, tumpuk: &mut Vec<Tulis>| -> Option<KotakAny> {
+        Some(match v {
+            VmValue::Nil => kotak(0, 0, 0),
+            VmValue::Unit => kotak(8, 0, 0),
+            VmValue::Bool(b) => kotak(1, *b as u64, 0),
+            VmValue::Int(n) => match i64::try_from(*n) {
+                Ok(x) => kotak(2, x as u64, 0),
+                Err(_) => titip(v),
+            },
+            VmValue::Float(f) => kotak(3, f.to_bits(), 0),
+            VmValue::Rune(c) => kotak(4, *c as u64, 0),
+            VmValue::Str(s) => { let (p, n) = bocorkan(s); kotak(5, p, n) }
+            VmValue::Array(a) => {
+                let isi = a.lock().unwrap_or_else(|p| p.into_inner()).clone();
+                let buf = (k.alloc)((isi.len().max(1) * 24) as i64, 8) as *mut KotakAny;
+                tumpuk.push(Tulis::Arr(isi, buf, 0));
+                return None;
             }
-            kotak(KATA_DICT, d.ptr as u64, d.len as u64)
+            VmValue::Map(m) if matches!(m.label, Label::Dict) => {
+                let isi: Vec<(String, VmValue)> = m.lock().unwrap_or_else(|p| p.into_inner())
+                    .iter().map(|(kunci, x)| (kunci.to_string(), x.clone())).collect();
+                tumpuk.push(Tulis::Dict(isi, Box::new(Dua { ptr: std::ptr::null_mut(), len: 0 }), 0));
+                return None;
+            }
+            lain => titip(lain),
+        })
+    };
+    let mut tumpuk: Vec<Tulis> = Vec::new();
+    let mut naik = daun(akar, &mut tumpuk);
+    loop {
+        if let Some(x) = naik.take() {
+            match tumpuk.last_mut() {
+                None => return x,
+                Some(Tulis::Arr(_, buf, i)) => { buf.add(*i - 1).write(x); }
+                Some(Tulis::Dict(isi, d, i)) => {
+                    let (kp, kl) = bocorkan(&isi[*i - 1].0);
+                    let pas = (k.dict_tempat)(&mut **d, LANGKAH, 8, kp as *const u8, kl as i64);
+                    (pas.add(16) as *mut KotakAny).write(x);
+                }
+            }
         }
-        lain => titip(lain),
+        let anak: Option<VmValue> = match tumpuk.last_mut() {
+            Some(Tulis::Arr(isi, _, i)) if *i < isi.len() => { *i += 1; Some(isi[*i - 1].clone()) }
+            Some(Tulis::Dict(isi, _, i)) if *i < isi.len() => { *i += 1; Some(isi[*i - 1].1.clone()) }
+            _ => None,
+        };
+        naik = match anak {
+            Some(v) => daun(&v, &mut tumpuk),
+            None => match tumpuk.pop() {
+                Some(Tulis::Arr(isi, buf, _)) => Some(kotak(KATA_ARRAY, buf as u64, isi.len() as u64)),
+                Some(Tulis::Dict(_, d, _)) => Some(kotak(KATA_DICT, d.ptr as u64, d.len as u64)),
+                None => unreachable!(),
+            },
+        };
     }
 }
 
@@ -324,8 +421,10 @@ pub unsafe extern "C" fn jrg_jembatan_panggil(
         return match r { Ok(v) => { out.write(ke_any(&v, k)); 0 } Err(e) => { out.write(gagal(e)); -1 } };
     }
     if nama == "::tampil" || nama == "::typeof" {
+        DALAM.with(|d| d.set(0));
         let v = match dari_any(&*args, k) { Ok(v) => v, Err(e) => { out.write(gagal(e)); return -1; } };
-        let t = if nama == "::tampil" { v.to_string() } else {
+        let lega = DALAM.with(|d| d.get()) > SARANG_DALAM;
+        let t = if nama == "::tampil" { if lega { tampil_lega(&v) } else { v.to_string() } } else {
             // Lewat builtin `typeof` yang sama dengan `--vm`, bukan nama tipe internalnya.
             match jrgc::vm::panggil_bawaan("typeof", &[v.clone()]) {
                 Some(Ok(VmValue::Str(t))) => t.to_string(),
@@ -336,18 +435,27 @@ pub unsafe extern "C" fn jrg_jembatan_panggil(
         out.write(kotak(5, p, l));
         return 0;
     }
+    DALAM.with(|d| d.set(0));
     let masuk: Vec<VmValue> = match (0..n as usize).map(|i| dari_any(&*args.add(i), k)).collect() {
         Ok(m) => m,
         Err(e) => { out.write(gagal(e)); return -1; }
     };
+    // FFI (`py::` dan kawan-kawan) sudah semahal IPC ke worker-nya, dan hasilnya bisa bersarang dalam: selalu
+    // di thread pembantu ber-stack `jrgc`, seperti thread interpreter di mesin acuan.
+    let ffi = ["py::", "js::", "php::", "lua::"].iter().any(|p| nama.starts_with(p));
+    let dalam = ffi || DALAM.with(|d| d.get()) > SARANG_DALAM;
     // Selama ada goroutine lain atau yang melayani (server), panggilan apa pun bisa menunggu
     // sesuatu yang harus jalan di korutin lain: `proses::`, `http::`, `dok::http_get` ke server sendiri.
     let ramai = AKTIF.load(std::sync::atomic::Ordering::SeqCst) > 0 || (k.lain)() > 0;
     // WASI tanpa thread (`--emit-wasm`): semuanya di thread biner; yang memblokir ditolak builtinnya sendiri.
-    if !cfg!(target_os = "wasi") && (pemblokir(nama) || (ramai && !nama.starts_with("::"))) {
+    if !cfg!(target_os = "wasi") && (pemblokir(nama) || dalam || (ramai && !nama.starts_with("::"))) {
         let hasil = layani(nama, masuk, k);
         return tulis_hasil(nama, hasil, out, k);
     }
+    // Jalur langsung = thread utama biner: batas stack-nya dipasang supaya penjelajah nilai `jrgc`
+    // (hasil `py::eval` bersarang dalam, JSON) pindah stack sebelum habis (AGI-20261118-04).
+    let lama = stack_utama().map(|(p, u)| jrgc::interpreter::pasang_stack_luar(p, u));
+    let _pulih = Pulih(lama);
     // `::extern`: argumen pertamanya deskripsi `extern fn`-nya, sisanya argumen panggilannya.
     // `::metode`: argumen pertamanya nama method, lalu penerima dan argumennya.
     let hasil = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match (nama, masuk.first()) {
@@ -362,6 +470,52 @@ pub unsafe extern "C" fn jrg_jembatan_panggil(
     }));
     tulis_hasil(nama, hasil, out, k)
 }
+
+/// Tampilan nilai bersarang dalam: di thread ber-stack `jrgc` yang tercatat, bukan di stack korutin biner.
+fn tampil_lega(v: &VmValue) -> String {
+    if cfg!(target_os = "wasi") { return v.to_string(); }
+    let v = Kirim(v.clone());
+    std::thread::scope(|s| {
+        let h = std::thread::Builder::new().stack_size(jrgc::interpreter::Interpreter::INTERPRETER_STACK_SIZE)
+            .spawn_scoped(s, move || { let v = v; jrgc::interpreter::catat_puncak_stack(); Kirim(v.0.to_string()) });
+        match h { Ok(h) => h.join().map(|t| t.0).unwrap_or_default(), Err(_) => String::new() }
+    })
+}
+
+struct Pulih(Option<(usize, usize)>);
+impl Drop for Pulih {
+    fn drop(&mut self) { if let Some((p, u)) = self.0 { jrgc::interpreter::pasang_stack_luar(p, u); } }
+}
+
+/// Puncak dan ukuran stack thread ini (thread utama biner), dengan sisa 64 KiB untuk bingkai biner sendiri.
+fn stack_utama() -> Option<(usize, usize)> {
+    std::thread_local! { static BATAS: std::cell::OnceCell<Option<(usize, usize)>> = const { std::cell::OnceCell::new() }; }
+    BATAS.with(|b| *b.get_or_init(|| batas_os().map(|(p, u)| (p, u.saturating_sub(64 * 1024)))))
+}
+
+#[cfg(any(target_os = "linux", target_os = "android"))]
+fn batas_os() -> Option<(usize, usize)> {
+    unsafe {
+        let mut attr: libc::pthread_attr_t = std::mem::zeroed();
+        if libc::pthread_getattr_np(libc::pthread_self(), &mut attr) != 0 { return None; }
+        let (mut alamat, mut ukuran): (*mut libc::c_void, usize) = (std::ptr::null_mut(), 0);
+        let r = libc::pthread_attr_getstack(&attr, &mut alamat, &mut ukuran);
+        libc::pthread_attr_destroy(&mut attr);
+        if r != 0 || ukuran == 0 { return None; }
+        Some((alamat as usize + ukuran, ukuran))
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn batas_os() -> Option<(usize, usize)> {
+    unsafe {
+        let t = libc::pthread_self();
+        Some((libc::pthread_get_stackaddr_np(t) as usize, libc::pthread_get_stacksize_np(t)))
+    }
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "android", target_os = "macos")))]
+fn batas_os() -> Option<(usize, usize)> { None }
 
 unsafe fn tulis_hasil(nama: &str, hasil: Hasil, out: *mut KotakAny, k: &Kait) -> i32 {
     let gagal = |pesan: String| { let (p, l) = bocorkan(&jrgc::terjemah::t(&pesan)); kotak(5, p, l) };

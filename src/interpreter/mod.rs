@@ -179,6 +179,14 @@ pub struct Interpreter {
 thread_local! {
     /// Alamat dekat puncak stack thread ber-stack `INTERPRETER_STACK_SIZE`; 0 = tidak tercatat.
     static PUNCAK_STACK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Ukuran stack yang tercatat; 0 = `INTERPRETER_STACK_SIZE`.
+    static UKURAN_STACK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Stack thread yang tidak dibuat `jrgc` (thread utama biner `--emit-llvm`): puncak dan ukurannya dicatat
+/// pemanggil; jawabannya catatan lama, untuk dipulihkan sesudahnya.
+pub fn pasang_stack_luar(puncak: usize, ukuran: usize) -> (usize, usize) {
+    (PUNCAK_STACK.with(|c| c.replace(puncak)), UKURAN_STACK.with(|c| c.replace(ukuran)))
 }
 
 /// Dipanggil paling awal di tiap thread yang dibuat dengan `INTERPRETER_STACK_SIZE`.
@@ -203,7 +211,7 @@ pub fn di_stack_lega<R: Send>(f: impl FnOnce() -> R + Send) -> R {
 /// `Some(true)` kalau stack thread ini tinggal seperdelapan; `None` kalau puncaknya tidak tercatat.
 /// Rekursi dibatasi sumber daya, seperti di LLVM — bukan angka karangan.
 pub fn stack_menipis() -> Option<bool> {
-    let ukuran = Interpreter::INTERPRETER_STACK_SIZE;
+    let ukuran = match UKURAN_STACK.with(|c| c.get()) { 0 => Interpreter::INTERPRETER_STACK_SIZE, n => n };
     stack_terpakai().map(|t| t > ukuran - ukuran / 8)
 }
 

@@ -222,6 +222,8 @@ pub struct Codegen {
     /// Tambahan yang ditempelkan ke pesan `coerce` yang gagal, dipasang oleh
     /// situs yang tahu konteksnya.
     pub(crate) catatan_koersi: Option<String>,
+    /// Catatan fungsi yang sedang diturunkan: penerimanya membayangi field induk dengan tipe lain.
+    pub(crate) catatan_bayang: Option<String>,
     /// Menyala selama `coerce_longgar`: jenis boleh berganti.
     pub(crate) koersi_longgar: bool,
     /// `var` tingkat modul yang dideklarasikan `[]` dan tipe elemennya TIDAK bisa
@@ -400,6 +402,7 @@ impl Codegen {
             tulis_antara: false,
             rantai_hasil: Vec::new(),
             catatan_koersi: None,
+            catatan_bayang: None,
             koersi_longgar: false,
             var_kosong_tak_tersimpulkan: Vec::new(),
             fn_bersarang: Vec::new(),
@@ -555,6 +558,10 @@ impl Codegen {
     pub(crate) fn lapor_koersi(&mut self, msg: impl Into<String>) {
         let mut msg: String = msg.into();
         if let Some(c) = self.catatan_koersi.clone() {
+            msg.push('\n');
+            msg.push_str(&c);
+        }
+        if let Some(c) = self.catatan_bayang.clone() {
             msg.push('\n');
             msg.push_str(&c);
         }

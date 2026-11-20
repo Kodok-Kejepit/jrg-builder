@@ -2676,8 +2676,11 @@ mod json_llvm {
         hasil
     }
 
-    unsafe fn dari_any(a: &KotakAny) -> Json {
-        match a.tag & 255 {
+    enum Bingkai { Arr(Vec<Json>, *const KotakAny, usize, usize), Obj(Vec<(String, Json)>, *mut u8, usize, usize, String) }
+
+    /// Daun langsung jadi `Json`; array/dict mendorong bingkainya dan menjawab `None`.
+    unsafe fn turun(a: &KotakAny, tumpuk: &mut Vec<Bingkai>) -> Option<Json> {
+        Some(match a.tag & 255 {
             1 => Json::Bool(a.a & 255 != 0),
             2 => Json::Int(a.a as i64 as i128),
             3 => Json::Float(f64::from_bits(a.a)),
@@ -2685,25 +2688,51 @@ mod json_llvm {
             5 => Json::Str(borrow_str(a.a as *const u8, a.b as i64).to_string()),
             6 => {
                 let s = seragamkan(a, KATA_ARRAY);
-                let p = s.a as *const KotakAny;
-                let mut isi = Vec::with_capacity(s.b as usize);
-                for i in 0..s.b as usize { isi.push(dari_any(&*p.add(i))); }
-                Json::Arr(isi)
+                tumpuk.push(Bingkai::Arr(Vec::with_capacity(s.b as usize), s.a as *const KotakAny, s.b as usize, 0));
+                return None;
             }
             7 => {
                 let s = seragamkan(a, KATA_DICT);
-                let p = s.a as *mut u8;
-                jrg_dict_rapikan(p, s.b as i64, LANGKAH);
-                let mut isi = Vec::with_capacity(s.b as usize);
-                for i in 0..s.b as usize {
-                    let pas = p.add(i * LANGKAH as usize);
-                    let kunci = &*(pas as *const Dua);
-                    isi.push((borrow_str(kunci.ptr, kunci.len).to_string(), dari_any(&*(pas.add(16) as *const KotakAny))));
-                }
-                Json::Obj(isi)
+                jrg_dict_rapikan(s.a as *mut u8, s.b as i64, LANGKAH);
+                tumpuk.push(Bingkai::Obj(Vec::with_capacity(s.b as usize), s.a as *mut u8, s.b as usize, 0, String::new()));
+                return None;
             }
             0 | 8 => Json::Null,
             _ => gagal("nilai ini (struct, tuple, enum, fungsi, atau handle) tidak punya padanan JSON di backend `--emit-llvm`".to_string()),
+        })
+    }
+
+    /// Iteratif (AGI-20261118-04): nilai bersarang berapa pun dalam tidak menghabiskan stack korutin.
+    unsafe fn dari_any(akar: &KotakAny) -> Json {
+        let mut tumpuk: Vec<Bingkai> = Vec::new();
+        let mut naik = turun(akar, &mut tumpuk);
+        loop {
+            if let Some(j) = naik.take() {
+                match tumpuk.last_mut() {
+                    None => return j,
+                    Some(Bingkai::Arr(v, ..)) => v.push(j),
+                    Some(Bingkai::Obj(v, _, _, _, kunci)) => v.push((core::mem::take(kunci), j)),
+                }
+            }
+            let anak: Option<*const KotakAny> = match tumpuk.last_mut() {
+                Some(Bingkai::Arr(_, p, n, i)) if *i < *n => { *i += 1; Some(p.add(*i - 1)) }
+                Some(Bingkai::Obj(_, p, n, i, kunci)) if *i < *n => {
+                    let pas = p.add(*i * LANGKAH as usize);
+                    *i += 1;
+                    let d = &*(pas as *const Dua);
+                    *kunci = borrow_str(d.ptr, d.len).to_string();
+                    Some(pas.add(16) as *const KotakAny)
+                }
+                _ => None,
+            };
+            naik = match anak {
+                Some(c) => turun(&*c, &mut tumpuk),
+                None => match tumpuk.pop() {
+                    Some(Bingkai::Arr(v, ..)) => Some(Json::Arr(v)),
+                    Some(Bingkai::Obj(v, ..)) => Some(Json::Obj(v)),
+                    None => unreachable!(),
+                },
+            };
         }
     }
 
@@ -2724,7 +2753,9 @@ mod json_llvm {
         }
         let j = unsafe { dari_any(&*a) };
         let lebar = if rapi == 0 { None } else { Some(indent as usize) };
-        match json_inti::tulis(&j, lebar, 0) {
+        let hasil = json_inti::tulis(&j, lebar, 0);
+        json_inti::lepas(j);
+        match hasil {
             Ok(t) => unsafe { emit_string(t, out_ptr, out_len) },
             Err(e) => gagal(e),
         }

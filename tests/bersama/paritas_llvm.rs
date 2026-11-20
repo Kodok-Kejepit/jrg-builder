@@ -5065,4 +5065,22 @@ fn main() {
     wok(a)
 }
 "#),
+    ("JSON dan jembatan atas nilai bersarang 20 ribu tingkat, juga di goroutine (AGI-20261118-04)", r#"
+pub fn main() {
+    var a = json::parse("1")
+    var i = 0
+    while i < 20000 { a = [a]; i = i + 1 }
+    wok(len(json::stringify(a)), len(json::pretty(a, 0)), len(dok::json_encode(a)))
+    var d = {"x": [1, {"y": "z"}], "k": 2.5}
+    wok(json::pretty(d, 2), json::stringify([d, []]))
+    let ch = make_chan(int, 1)
+    spawn |ch: chan int| {
+        var b = json::parse("1")
+        var j = 0
+        while j < 8000 { b = [b]; j = j + 1 }
+        ch <- len(json::stringify(b)) + len(dok::json_encode(b))
+    }
+    wok(<- ch)
+}
+"#),
 ];
