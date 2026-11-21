@@ -168,6 +168,8 @@ pub struct Codegen {
     pub(crate) pop_pindah: Option<String>,
     /// `(a, r)`: `a = r[0]` sesudah pop berbagi itu boleh memindah `r.0`, karena sisa blok cuma membaca `r[1]`.
     pub(crate) pop_tugas_pindah: Option<(String, String)>,
+    /// `var x: T` tanpa nilai nol di pernyataan ini terbukti diisi sebelum disebut (`isi_pasti`).
+    pub(crate) var_isi_terbukti: bool,
     pub(crate) finished_blocks: Vec<(String, Vec<String>)>,
     pub(crate) terminated: bool,
     pub(crate) loop_stack: Vec<LoopCtx>,
@@ -416,6 +418,7 @@ impl Codegen {
             memo_teks_lokal: None,
             pop_pindah: None,
             pop_tugas_pindah: None,
+            var_isi_terbukti: false,
             finished_blocks: Vec::new(),
             terminated: false,
             loop_stack: Vec::new(),

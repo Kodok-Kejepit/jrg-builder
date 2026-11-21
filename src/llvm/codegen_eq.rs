@@ -248,8 +248,16 @@ impl Codegen {
                 putus(self, lt, gt);
                 Ok(())
             }
-            lain => Err(super::galat::tandai(span, format!(
-                "backend LLVM belum bisa mengurutkan tipe `{}` — cuma `==` dan `!=`", lain.display_name()))),
+            // Tipe tanpa urutan (enum, `Option`, struct, dict, fungsi): gagal saat jalan dengan kalimat acuan,
+            // jadi `[] < []` dan keluaran sebelumnya tetap seperti di dua mesin lain.
+            lain => {
+                let n = self.nama_acuan(lain);
+                self.panik(&crate::interpreter::pesan_banding(&n, &n));
+                let lanjut = self.fresh_label("bk.mati.");
+                self.start_block(lanjut);
+                let _ = span;
+                Ok(())
+            }
         }
     }
 

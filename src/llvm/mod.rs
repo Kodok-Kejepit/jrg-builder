@@ -64,6 +64,7 @@ pub use situs::isi_situs;
 pub mod modul;
 pub mod generik;
 mod codegen_tumbuh;
+mod isi_pasti;
 mod codegen_statis;
 mod codegen_sambung;
 pub mod uji;

@@ -5652,4 +5652,58 @@ fn main() {
     wok(jumlah, <-selesai)
 }
 "#),
+    ("urutan atas tipe tanpa urutan gagal saat jalan dengan kalimat acuan; tuple yang putus sebelumnya menjawab", r#"
+struct P { x: int }
+enum E { A, B }
+fn pesan(r: Result<bool, Galat>) -> string {
+    match r { Ok(v) => str(v), Err(g) => g.pesan }
+}
+fn main() {
+    wok("awal")
+    let e: []Option<int> = []
+    wok(e < e)
+    wok(pesan(tangkap(|| Some(1) < Some(2))))
+    wok(pesan(tangkap(|| [E::A] < [E::B])))
+    wok(pesan(tangkap(|| P { x: 1 } < P { x: 2 })))
+    wok(pesan(tangkap(|| (0, Some(2)) < (1, Some(3)))))
+    wok(pesan(tangkap(|| (1, Some(2)) >= (1, Some(3)))))
+}
+"#),
+    ("method Option atas None telanjang dengan closure berisi Option<int> (adaptor fungsi mengotakkan isinya)", r#"
+fn main() {
+  wok(None.or_else(|| Some(9)))
+  wok(Some(2).or_else(|| Some(9)))
+  let o = None
+  wok(o.or_else(|| Some("x")))
+  wok(None.map(|x| x + 1))
+  wok(None.and_then(|x| Some(x * 2)))
+  wok(Some(4).and_then(|x| Some(x * 2)))
+  wok(None.unwrap_or_else(|| 7))
+}
+"#),
+    ("var struct/enum/Option tanpa nilai awal yang terbukti diisi sebelum disebut (semua cabang if/else, lalu closure)", r#"
+struct D { pub x: int }
+enum Warna { Merah, Hijau }
+fn main() {
+  var d: D
+  var w: Warna
+  var o: Option<string>
+  let n = len("abc")
+  if n > 5 {
+    d = D { x: 1 }
+    w = Warna::Merah
+  } else if n > 2 {
+    d = D { x: 2 }
+    w = Warna::Hijau
+  } else {
+    d = D { x: 3 }
+    w = Warna::Merah
+  }
+  o = Some("z")
+  let f = || d.x * 10
+  wok(f(), w, o)
+  d = D { x: 7 }
+  wok(d.x)
+}
+"#),
 ];

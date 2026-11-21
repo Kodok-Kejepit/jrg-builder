@@ -975,14 +975,9 @@ const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
      "tidak muat di `int` backend LLVM"),
     ("literal tidak muat di anotasinya", "package main\npub fn main() { let x: u8 = 300\n wok(x) }",
      "tidak muat di `u8`"),
-    // Tahap 5: dulu DIVERGENSI — LLVM mengarang `D {x: 0}`, `Some(0)`, varian pertama.
-    // 2026-11-18: dibaca SEBELUM diisi kini ditolak acuan juga (`DITOLAK_INTERP_DAN_LLVM`); yang tersisa di sini
-    // bentuk sah: diisi dulu, baru dibaca — LLVM masih menolak deklarasinya.
-    ("var struct tanpa nilai awal, diisi lalu dibaca", "package main\nstruct D { x: int = 5 }\npub fn main() { var a: D\n a = D {}\n wok(a) }",
-     "tidak punya nilai nol"),
-    ("var Option tanpa nilai awal, diisi lalu dibaca", "package main\npub fn main() { var a: Option<int>\n a = Some(2)\n wok(a) }",
-     "tidak punya nilai nol"),
-    ("var enum tanpa nilai awal, diisi lalu dibaca", "package main\nenum Warna { Merah, Hijau }\npub fn main() { var a: Warna\n a = Warna::Hijau\n wok(a) }",
+    // "var struct/Option/enum tanpa nilai awal, diisi lalu dibaca" dulu di sini — sejak #1153 LLVM menerimanya
+    // kalau terbukti diisi sebelum disebut (`isi_pasti`), kasusnya di `PARITAS_LLVM`. Yang tidak terbukti:
+    ("var tanpa nilai awal, diisi di satu cabang saja", "package main\nstruct D { pub x: int }\npub fn main() { var a: D\n if len(\"ab\") < 5 { a = D { x: 1 } }\n wok(a.x) }",
      "tidak punya nilai nol"),
     // "extern C: fungsi sebagai argumen" (sampai Fase FUNGSI-JEMBATAN) dan
     // "urutan pada array" (sampai Fase UMUM) dulu di sini.

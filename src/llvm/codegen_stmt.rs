@@ -201,11 +201,13 @@ impl Codegen {
                 // Tipe tanpa nilai nol yang jelas (struct, Option, enum, …) bernilai `nil` di
                 // acuan; LLVM tidak punya `nil` untuknya dan dulu mengarang nilai.
                 if let Some(te) = &v.ty {
-                    if crate::parser::nilai_nol(te, v.span).is_none() {
+                    // Terbukti diisi sebelum disebut: tempatnya tidak pernah terbaca, nol apa pun boleh.
+                    if crate::parser::nilai_nol(te, v.span).is_none() && !std::mem::take(&mut self.var_isi_terbukti) {
                         return Err(super::galat::tandai(v.span, format!(
                             "`var {}` tanpa nilai awal bertipe yang tidak punya nilai nol — dua mesin lain \
-                             menolaknya saat DIBACA sebelum diisi, dan backend LLVM v1 belum bisa mencatat \
-                             \"belum diisi\". Beri nilai awal, atau jalankan tanpa `--emit-llvm`", v.name)));
+                             menolaknya saat DIBACA sebelum diisi, dan backend LLVM cuma menerimanya kalau \
+                             terbukti diisi sebelum disebut (`x = ..` langsung, atau di semua cabang `if`/`else`). \
+                             Beri nilai awal, atau jalankan tanpa `--emit-llvm`", v.name)));
                     }
                 }
                 let t = expected.clone().unwrap_or(JrgType::I64);

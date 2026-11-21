@@ -87,7 +87,16 @@ impl Codegen {
         }
         // Fungsi ke fungsi beda tipe yang menyebut nilai bertag: dibungkus adaptor.
         if let (JrgType::Fn(p1, r1), JrgType::Fn(p2, r2)) = (&v.ty, target) {
-            let bisa = |a: &JrgType, b: &JrgType| a == b || *a == JrgType::Any || *b == JrgType::Any
+            // `Option<T>` lawan `Option<bertag>` juga: `coerce` di adaptor mengotakkan atau membuka isinya.
+            let opsi = |a: &JrgType, b: &JrgType| match (a, b) {
+                (JrgType::Enum(x), JrgType::Enum(y)) => match (self.option_args.get(x), self.option_args.get(y)) {
+                    (Some(tx), Some(ty)) => (*tx == JrgType::Any) != (*ty == JrgType::Any)
+                        && super::codegen_any::tag_untuk(if *tx == JrgType::Any { ty } else { tx }).is_some(),
+                    _ => false,
+                },
+                _ => false,
+            };
+            let bisa = |a: &JrgType, b: &JrgType| a == b || *a == JrgType::Any || *b == JrgType::Any || opsi(a, b)
                 || matches!((a, b), (JrgType::Array(x, _), JrgType::Slice(y)) if super::codegen_any::luruh(x) == **y || **y == JrgType::Any);
             if p1.len() == p2.len() && p1.iter().zip(p2.iter()).all(|(a, b)| bisa(a, b)) && (bisa(r1, r2) || **r2 == JrgType::Unit) {
                 return self.adaptasi_fungsi(v, target);

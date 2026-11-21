@@ -131,6 +131,10 @@ impl Codegen {
     /// Penanda pop berbagi untuk pernyataan ke-`i`, dan untuk penugasan `a = r[0]` sesudahnya kalau sisa blok cuma
     /// membaca `r[1]`/`r.1`. Dipasang ulang tiap pernyataan, jadi blok bersarang tidak mewarisinya.
     pub(crate) fn tandai_pop_pindah(&mut self, stmts: &[Stmt], i: usize, ekor: Option<&Expr>) {
+        self.var_isi_terbukti = match &stmts[i] {
+            Stmt::Var(v) if v.init.is_none() => super::isi_pasti::terbukti(&stmts[i + 1..], ekor, &v.name),
+            _ => false,
+        };
         self.pop_pindah = crate::interpreter::capture::pindah_sebelum_ditimpa(&stmts[i], stmts.get(i + 1));
         let sebelum = if i > 0 { crate::interpreter::capture::pindah_sebelum_ditimpa(&stmts[i - 1], stmts.get(i)) } else { None };
         self.pop_tugas_pindah = sebelum.and_then(|a| {
