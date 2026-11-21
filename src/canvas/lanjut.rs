@@ -110,6 +110,21 @@ impl<'a> Kuas<'a> {
 
     /// Garis dengan anti-alias (Xiaolin Wu).
     pub fn garis_aa(&mut self, x0: f32, y0: f32, x1: f32, y1: f32, col: Colour) {
+        // Garis yang jauh melewati kanvas dipotong dulu di ruang pemakai (lewat invers transformasinya); garis normal
+        // tidak tersentuh. Dulu `x += 1.0` macet di 2^24 dan berputar selamanya (AGI-20261119-09).
+        let (mut x0, mut y0, mut x1, mut y1) = (x0, y0, x1, y1);
+        let (w, h) = (self.fb.width as f32, self.fb.height as f32);
+        if (x1 - x0).abs().max((y1 - y0).abs()) > 4.0 * (w + h) + 4096.0 {
+            let Some(balik) = self.st.trafo.balik() else { return };
+            let sudut = [(-2.0, -2.0), (w + 2.0, -2.0), (-2.0, h + 2.0), (w + 2.0, h + 2.0)].map(|(x, y)| balik.terapkan(x, y));
+            let kiri = sudut.iter().map(|p| p.0).fold(f32::INFINITY, f32::min) as f64;
+            let kanan = sudut.iter().map(|p| p.0).fold(f32::NEG_INFINITY, f32::max) as f64;
+            let atas = sudut.iter().map(|p| p.1).fold(f32::INFINITY, f32::min) as f64;
+            let bawah = sudut.iter().map(|p| p.1).fold(f32::NEG_INFINITY, f32::max) as f64;
+            let Some((a, b, c, d)) = super::pena::potong_garis(x0 as f64, y0 as f64, x1 as f64, y1 as f64, kiri, atas, kanan, bawah)
+            else { return };
+            (x0, y0, x1, y1) = (a as f32, b as f32, c as f32, d as f32);
+        }
         let curam = (y1 - y0).abs() > (x1 - x0).abs();
         let (mut x0, mut y0, mut x1, mut y1) = if curam { (y0, x0, y1, x1) } else { (x0, y0, x1, y1) };
         if x0 > x1 { std::mem::swap(&mut x0, &mut x1); std::mem::swap(&mut y0, &mut y1); }
@@ -138,12 +153,14 @@ impl<'a> Kuas<'a> {
         let xpxl2 = xend2;
         let ypxl2 = yend2.floor();
 
-        let mut x = xpxl1 + 1.0;
-        while x < xpxl2 {
+        // Penghitung bulat: `f32 + 1.0` berhenti bertambah di 2^24.
+        let mut xi = xpxl1 as i64 + 1;
+        while (xi as f32) < xpxl2 {
+            let x = xi as f32;
             taruh(self, x, antar.floor(), 1.0 - antar.fract());
             taruh(self, x, antar.floor() + 1.0, antar.fract());
             antar += gradien;
-            x += 1.0;
+            xi += 1;
         }
         taruh(self, xpxl2, ypxl2, (1.0 - yend2.fract()) * xgap2);
         taruh(self, xpxl2, ypxl2 + 1.0, yend2.fract() * xgap2);
@@ -226,7 +243,8 @@ impl<'a> Kuas<'a> {
         let r = rx.abs().max(ry.abs());
         let n = ((r * 0.8) as usize).clamp(12, 512);
         let rentang = akhir - mulai;
-        let n = ((n as f32 * (rentang.abs() / std::f32::consts::TAU)).ceil() as usize).max(3);
+        // Dijepit: sudut finite raksasa (`1e30`) dulu membuat `collect` panik "capacity overflow" (AGI-20261119-09).
+        let n = ((n as f32 * (rentang.abs() / std::f32::consts::TAU)).ceil() as usize).clamp(3, 8192);
         (0..=n).map(|i| {
             let t = mulai + rentang * i as f32 / n as f32;
             (cx + rx * t.cos(), cy + ry * t.sin())

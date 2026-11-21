@@ -729,7 +729,7 @@ pub fn canvas_update(handle: &CanvasHandle) -> CanvasResult<bool> {
             (std::mem::take(&mut b.ditekan), b.ditahan.clone(), b.tetikus, b.tombol_tetikus)
         };
         // `Escape` menutup, sama dengan jendela `"tab"`.
-        if tahan.contains("Escape") { inner.is_open = false; return Ok(false); }
+        if tahan.contains("Escape") { inner.is_open = false; inner.web = None; return Ok(false); }
         inner.keys.pressed.extend(tekan);
         ditahan.extend(tahan);
         if !ada_masukan { inner.mouse_x = tetikus.0; inner.mouse_y = tetikus.1; inner.mouse_btns = tombol; }
@@ -969,7 +969,11 @@ pub fn dispatch_canvas_method(
     };
     let get_f = |idx: usize| -> Result<f32, Signal> {
         match args.get(idx) {
-            Some(v) => angka_f64(v).map(|f| f as f32).map_err(|e| tolak(idx, e)),
+            // Finite di 64 bit tapi tak hingga di 32 bit (`1e40`) ditolak, bukan jadi tak hingga diam-diam.
+            Some(v) => angka_f64(v).and_then(|f| {
+                let g = f as f32;
+                if g.is_finite() { Ok(g) } else { Err(format!("angka `{}` terlalu besar untuk kanvas (pecahan 32 bit)", f)) }
+            }).map_err(|e| tolak(idx, e)),
             None => Ok(0.0),
         }
     };
@@ -1006,6 +1010,8 @@ pub fn dispatch_canvas_method(
             let new_title = get_str(0);
             lock!(inner, mut);
             inner.title = new_title.clone();
+            #[cfg(not(target_arch = "wasm32"))]
+            if let Some(w) = &inner.web { w.bersama.lock().unwrap_or_else(|p| p.into_inner()).judul = new_title.clone(); }
             #[cfg(feature = "canvas")]
             if let Some(ref j) = inner.window {
                 j.judul(&new_title);
@@ -1016,6 +1022,9 @@ pub fn dispatch_canvas_method(
         "close" => {
             lock!(inner, mut);
             inner.is_open = false;
+            // Pelayan mode `web` ikut berhenti dan portnya dilepas (dulu hidup sampai proses berakhir).
+            #[cfg(not(target_arch = "wasm32"))]
+            { inner.web = None; }
             #[cfg(feature = "canvas")]
             { inner.window = None; }
             Ok(Value::Unit)
@@ -1251,8 +1260,13 @@ pub fn dispatch_canvas_method(
             let (fw, fh) = (inner.width as f32, inner.height as f32);
             let g = &mut *inner;
             let mut p = pena!(g);
-            for c in 0..=cols { let x = (c * cw) as f32; p.garis(x, 0.0, x, fh, col); }
-            for r in 0..=rows { let y = (r * ch) as f32; p.garis(0.0, y, fw, y, col); }
+            // Garis yang jatuh di luar kanvas tidak dihitung satu per satu: `cols = 1e8` dulu berputar lama sekali,
+            // dan `c * cw` meluap (AGI-20261119-09).
+            let sampai = |n: i32, sel: i32, ukuran: f32| -> i64 {
+                if n < 0 { -1 } else if sel <= 0 { 0 } else { (n as i64).min((ukuran as i64) / sel as i64 + 1) }
+            };
+            for c in 0..=sampai(cols, cw, fw) { let x = (c * cw as i64) as f32; p.garis(x, 0.0, x, fh, col); }
+            for r in 0..=sampai(rows, ch, fh) { let y = (r * ch as i64) as f32; p.garis(0.0, y, fw, y, col); }
             Ok(Value::Unit)
         }
 
@@ -1374,7 +1388,8 @@ pub fn dispatch_canvas_method(
             if args.len() < 4 { cerr!("clip butuh 4 arg: (x,y,w,h)"); }
             let (x, y, w, h) = (get_i(0)?, get_i(1)?, get_i(2)?, get_i(3)?);
             lock!(inner, mut);
-            inner.st.potong = Some((x, y, x + w, y + h));
+            // Jenuh, bukan meluap jadi negatif dan diam-diam memblokir semua gambar (AGI-20261119-09).
+            inner.st.potong = Some((x, y, x.saturating_add(w), y.saturating_add(h)));
             Ok(Value::Unit)
         }
         "clip_reset" => { lock!(inner, mut); inner.st.potong = None; Ok(Value::Unit) }

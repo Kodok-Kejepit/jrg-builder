@@ -62,10 +62,10 @@ pub fn baca(data: &[u8]) -> Result<(usize, usize, Vec<u32>), String> {
                 if lebar == 0 || tinggi == 0 {
                     return Err("PNG berukuran nol".into());
                 }
-                // Sama seperti panjang frame WebSocket: angkanya datang dari
-                // berkas, jadi ia dibatasi SEBELUM dipakai mengalokasi.
-                if lebar.saturating_mul(tinggi) > 64 * 1024 * 1024 {
-                    return Err(format!("PNG {}x{} terlalu besar", lebar, tinggi));
+                // Angkanya datang dari berkas, jadi dibatasi SEBELUM dipakai mengalokasi, dengan batas yang sama dengan
+                // `Canvas::new` (`MAKS_ELEMEN`): dulu 4× lebih longgar, PNG berpalet 1-bit 8 KB meminta 256 MB (AGI-20261119-11).
+                if (lebar as i128).saturating_mul(tinggi as i128) > crate::interpreter::MAKS_ELEMEN {
+                    return Err(format!("PNG {}x{} terlalu besar (paling banyak {} piksel)", lebar, tinggi, crate::interpreter::MAKS_ELEMEN));
                 }
             }
             j if j == &b"PLTE"[..] => {
@@ -241,5 +241,36 @@ fn ambil_indeks(baris: &[u8], x: usize, kedalaman: u8) -> usize {
         4 => ((baris[x / 2] >> if x % 2 == 0 { 4 } else { 0 }) & 0x0F) as usize,
         2 => ((baris[x / 4] >> (6 - 2 * (x % 4))) & 0x03) as usize,
         _ => ((baris[x / 8] >> (7 - (x % 8))) & 0x01) as usize,
+    }
+}
+
+#[cfg(test)]
+mod tes {
+    use super::*;
+
+    /// PNG minimal yang cuma memuat IHDR: pemeriksaan ukuran terjadi sebelum bagian lain dibaca.
+    fn cuma_ihdr(lebar: u32, tinggi: u32) -> Vec<u8> {
+        let mut ihdr = Vec::new();
+        ihdr.extend_from_slice(&lebar.to_be_bytes());
+        ihdr.extend_from_slice(&tinggi.to_be_bytes());
+        ihdr.extend_from_slice(&[1, 3, 0, 0, 0]);
+        let mut potongan = b"IHDR".to_vec();
+        potongan.extend_from_slice(&ihdr);
+        let mut o = vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
+        o.extend_from_slice(&13u32.to_be_bytes());
+        o.extend_from_slice(&potongan);
+        o.extend_from_slice(&crc32(&potongan).to_be_bytes());
+        o
+    }
+
+    /// AGI-20261119-11: batas piksel PNG sama dengan `Canvas::new`, bukan 4× lebih longgar.
+    #[test]
+    fn ukuran_png_dibatasi_seperti_canvas_new() {
+        let galat = baca(&cuma_ihdr(8192, 4096)).unwrap_err();
+        assert!(galat.contains("terlalu besar") && galat.contains("paling banyak 16777216"), "{galat}");
+        // Persis di batas lolos pemeriksaan ukuran (gagal belakangan karena tak ada data gambar, bukan karena ukuran).
+        let galat = baca(&cuma_ihdr(4096, 4096)).unwrap_err();
+        assert!(!galat.contains("terlalu besar"), "{galat}");
+        assert!(baca(&cuma_ihdr(67_108_864, 1)).unwrap_err().contains("terlalu besar"));
     }
 }

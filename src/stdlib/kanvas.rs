@@ -56,7 +56,8 @@ pub fn register(vm: &mut Vm) {
         {
             let mut inner = handle.lock().map_err(|e|
                 format!("Canvas::load_png: canvas lock: {}", e))?;
-            inner.fb.pixels.copy_from_slice(&piksel);
+            // Dipindah, bukan disalin: sebuah penyangga nol seukuran kanvas diganti dan dilepas, tanpa salinan kedua.
+            inner.fb.pixels = piksel;
         }
         Ok(VmValue::Canvas(handle))
     });

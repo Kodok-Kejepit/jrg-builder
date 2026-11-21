@@ -5,7 +5,14 @@
 use std::collections::HashSet;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+
+/// Sambungan yang dilayani bersamaan dan batas waktunya: satu klien yang diam tidak boleh membekukan layanan (AGI-20261119-10).
+const MAKS_SAMBUNGAN: usize = 32;
+const TENGGAT_BACA: Duration = Duration::from_secs(5);
+const TENGGAT_KEPALA: Duration = Duration::from_secs(10);
 
 /// Keadaan yang dibagi antara kanvas dan utas pelayan.
 #[derive(Default)]
@@ -24,6 +31,22 @@ pub struct Bersama {
 pub struct Web {
     pub bersama: Arc<Mutex<Bersama>>,
     pub alamat: String,
+    henti: Arc<AtomicBool>,
+    port: u16,
+}
+
+impl Web {
+    /// Hentikan pelayan: utasnya keluar dan `TcpListener` ditutup, jadi port bebas. Dipanggil `Drop`, `canvas::close` dan `Escape`.
+    pub fn tutup(&self) {
+        if self.henti.swap(true, Ordering::SeqCst) { return; }
+        // `accept` menunggu sambungan baru: satu sambungan ke diri sendiri membangunkannya supaya utasnya melihat tanda henti.
+        let a = std::net::SocketAddr::from(([127, 0, 0, 1], self.port));
+        let _ = TcpStream::connect_timeout(&a, Duration::from_millis(500));
+    }
+}
+
+impl Drop for Web {
+    fn drop(&mut self) { self.tutup(); }
 }
 
 impl Web {
@@ -38,10 +61,22 @@ impl Web {
         }));
         let b = bersama.clone();
         let nomor = dengar.local_addr().map(|a| a.port()).unwrap_or(port);
+        let henti = Arc::new(AtomicBool::new(false));
+        let (h, aktif) = (henti.clone(), Arc::new(AtomicUsize::new(0)));
         std::thread::Builder::new().name("jrg-kanvas-web".into())
-            .spawn(move || { for s in dengar.incoming().flatten() { let _ = layani(s, &b, nomor); } })
+            .spawn(move || {
+                for s in dengar.incoming().flatten() {
+                    if h.load(Ordering::SeqCst) { break; }
+                    // Tiap sambungan di utasnya sendiri dan berbatas: klien yang menetes tidak menahan yang lain.
+                    if aktif.fetch_add(1, Ordering::SeqCst) >= MAKS_SAMBUNGAN { aktif.fetch_sub(1, Ordering::SeqCst); continue; }
+                    let (b2, a2) = (b.clone(), aktif.clone());
+                    let lahir = std::thread::Builder::new().name("jrg-kanvas-web-k".into())
+                        .spawn(move || { let _ = layani(s, &b2, nomor); a2.fetch_sub(1, Ordering::SeqCst); });
+                    if lahir.is_err() { aktif.fetch_sub(1, Ordering::SeqCst); }
+                }
+            })
             .map_err(|e| format!("mode `web`: utas pelayan tidak bisa dibuat: {}", crate::host::galat_io(&e)))?;
-        Ok(Web { bersama, alamat })
+        Ok(Web { bersama, alamat, henti, port: nomor })
     }
 
     /// Salin bingkai ARGB ke penyangga RGBA yang diminta peramban.
@@ -71,10 +106,14 @@ fn asal_sah(kepala: &str, port: u16) -> bool {
 }
 
 fn layani(mut s: TcpStream, b: &Arc<Mutex<Bersama>>, port: u16) -> std::io::Result<()> {
-    // Kepala permintaan bisa datang dalam beberapa potong: dibaca sampai baris kosongnya.
+    s.set_read_timeout(Some(TENGGAT_BACA))?;
+    s.set_write_timeout(Some(TENGGAT_BACA))?;
+    let batas = Instant::now() + TENGGAT_KEPALA;
+    // Kepala permintaan bisa datang dalam beberapa potong: dibaca sampai baris kosongnya, dalam batas waktu.
     let mut buf = Vec::with_capacity(512);
     let mut potong = [0u8; 1024];
     while !buf.windows(4).any(|w| w == b"\r\n\r\n") && buf.len() < 8192 {
+        if Instant::now() > batas { return Ok(()); }
         let n = s.read(&mut potong)?;
         if n == 0 { break; }
         buf.extend_from_slice(&potong[..n]);
@@ -105,7 +144,10 @@ fn layani(mut s: TcpStream, b: &Arc<Mutex<Bersama>>, port: u16) -> std::io::Resu
         }
         "/tetikus" => {
             let mut g = b.lock().unwrap_or_else(|p| p.into_inner());
-            g.tetikus = (param("x").parse().unwrap_or(0.0), param("y").parse().unwrap_or(0.0));
+            // `"NaN"` dan `"inf"` lolos `parse::<f32>()`; primitif kanvas menolaknya dengan galat fatal, jadi satu permintaan
+            // `GET /tetikus?x=NaN` mematikan programnya (AGI-20261119-10). Yang tak terhingga atau tak masuk akal dijadikan 0.
+            let angka = |k: &str| param(k).parse::<f32>().ok().filter(|v| v.is_finite() && v.abs() <= 1.0e8).unwrap_or(0.0);
+            g.tetikus = (angka("x"), angka("y"));
             let tombol: u8 = param("b").parse().unwrap_or(0);
             g.tombol_tetikus = [tombol & 1 != 0, tombol & 2 != 0, tombol & 4 != 0];
             drop(g);

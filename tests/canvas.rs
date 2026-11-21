@@ -1223,6 +1223,57 @@ mod mode_kanvas {
         assert_eq!(k.trim(), "tombol A: true", "keluaran: {}{}", k, String::from_utf8_lossy(&out.stderr));
     }
 
+    /// AGI-20261119-10: klien yang menahan sambungan tidak membekukan layanan, `GET /tetikus?x=NaN` tidak mematikan program,
+    /// dan `canvas::close` melepas port (dulu pelayan hidup sampai proses berakhir).
+    #[test]
+    fn web_klien_macet_nan_dan_close_melepas_port() {
+        use std::io::BufRead;
+        let d = bersama::dir_unik("jrg-kanvas-web2");
+        std::fs::create_dir_all(&d).unwrap();
+        std::fs::write(d.join("w.jrg"), "let c = Canvas::new(3, 2, \"Web\", \"web\")\n\
+            var n = 0\nwhile n < 400 && canvas::update(c) {\n time::sleep_ms(10)\n n = n + 1\n}\n\
+            wok(\"tetikus:\", canvas::get_mouse_pos(c))\ncanvas::close(c)\ntime::sleep_ms(4000)\nwok(\"selesai\")\n").unwrap();
+        let port = 48100 + (std::process::id() % 90) as u16;
+        let mut anak = Command::new(jrgc()).arg("w.jrg").arg("--sopan").current_dir(&d)
+            .env("JRG_KANVAS_PORT", port.to_string()).env_remove("DISPLAY").env_remove("WAYLAND_DISPLAY")
+            .stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped())
+            .spawn().expect("jalankan");
+        for _ in 0..100 {
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            if std::net::TcpStream::connect(("127.0.0.1", port)).is_ok() { break; }
+        }
+        // Klien yang membuka sambungan dan mengirim kepala tak lengkap, lalu diam.
+        let mut macet = std::net::TcpStream::connect(("127.0.0.1", port)).expect("sambung");
+        macet.write_all(b"GET / HTTP/1.1\r\n").unwrap();
+        let mulai = std::time::Instant::now();
+        let mut s = std::net::TcpStream::connect(("127.0.0.1", port)).expect("sambung kedua");
+        s.set_read_timeout(Some(std::time::Duration::from_secs(4))).unwrap();
+        write!(s, "GET /bingkai HTTP/1.1\r\nHost: 127.0.0.1:{}\r\n\r\n", port).unwrap();
+        let mut jawab = Vec::new();
+        let hasil = s.read_to_end(&mut jawab);
+        let lama = mulai.elapsed();
+        assert!(hasil.is_ok() && String::from_utf8_lossy(&jawab).starts_with("HTTP/1.1 200"),
+                "permintaan lain harus dilayani selagi satu klien diam: {:?} {}", hasil, String::from_utf8_lossy(&jawab));
+        assert!(lama < std::time::Duration::from_secs(3), "dilayani sesudah {:?}", lama);
+        // Tetikus tak terhingga: ditolak jadi 0, bukan dibawa ke program.
+        http(port, "/tetikus?x=NaN&y=inf&b=1");
+        http(port, "/tetikus?x=-inf&y=1e40&b=0");
+        drop(macet);
+        let mut keluar = std::io::BufReader::new(anak.stdout.take().expect("stdout"));
+        let mut baris = String::new();
+        let mut semua = String::new();
+        while keluar.read_line(&mut baris).unwrap_or(0) > 0 { semua.push_str(&baris); if baris.starts_with("tetikus:") { break; } baris.clear(); }
+        // Sesudah `close` pelayan berhenti dan port lepas, walau prosesnya masih hidup 4 detik lagi.
+        std::thread::sleep(std::time::Duration::from_millis(600));
+        let masih_buka = std::net::TcpStream::connect(("127.0.0.1", port)).is_ok();
+        let _ = anak.kill();
+        let sisa = anak.wait_with_output().expect("tunggu");
+        let _ = std::fs::remove_dir_all(&d);
+        let galat = String::from_utf8_lossy(&sisa.stderr).to_string();
+        assert!(semua.starts_with("tetikus:") && !semua.contains("NaN") && !semua.contains("inf"), "tetikus: {}{}", semua, galat);
+        assert!(!masih_buka, "port harus lepas sesudah canvas::close");
+    }
+
     /// Tanpa layar sentuh: nol jari, nomor jari asing DITOLAK (bukan dijawab 0,0), di dua mesin.
     #[test]
     fn sentuhan_tanpa_layar_di_dua_mesin() {

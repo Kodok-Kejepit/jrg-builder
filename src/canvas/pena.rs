@@ -44,15 +44,27 @@ impl<'a> Pena<'a> {
         }
     }
 
+    /// Batas langkah sebelum garis dipotong ke kanvas: garis normal tetap digambar persis seperti dulu.
+    fn batas_langkah(&self) -> i64 { 4 * (self.fb.width + self.fb.height) as i64 + 4096 }
+
     fn garis_bulat(&mut self, x0: i32, y0: i32, x1: i32, y1: i32, col: Colour) {
+        // Selisih di 64 bit, dan garis yang ujungnya jauh di luar kanvas dipotong dulu: `draw_line(c, 0, 0, MIN, 1)`
+        // dulu meluap (panik di debug, loop tanpa akhir di release) — AGI-20261119-09.
+        let (mut x0, mut y0, mut x1, mut y1) = (x0 as i64, y0 as i64, x1 as i64, y1 as i64);
+        if (x1 - x0).abs().max((y1 - y0).abs()) > self.batas_langkah() {
+            let (w, h) = (self.fb.width as f64, self.fb.height as f64);
+            let Some((a, b, c, d)) = potong_garis(x0 as f64, y0 as f64, x1 as f64, y1 as f64, -2.0, -2.0, w + 1.0, h + 1.0)
+            else { return };
+            (x0, y0, x1, y1) = (a.round() as i64, b.round() as i64, c.round() as i64, d.round() as i64);
+        }
         let (mut x, mut y) = (x0, y0);
         let dx = (x1 - x0).abs();
         let dy = -(y1 - y0).abs();
-        let sx: i32 = if x0 < x1 { 1 } else { -1 };
-        let sy: i32 = if y0 < y1 { 1 } else { -1 };
+        let sx: i64 = if x0 < x1 { 1 } else { -1 };
+        let sy: i64 = if y0 < y1 { 1 } else { -1 };
         let mut err = dx + dy;
         loop {
-            self.plot(x, y, col);
+            self.plot(x as i32, y as i32, col);
             if x == x1 && y == y1 { break; }
             let e2 = 2 * err;
             if e2 >= dy { if x == x1 { break; } err += dy; x += sx; }
@@ -105,8 +117,17 @@ impl<'a> Pena<'a> {
     pub fn lingkaran(&mut self, cx: f32, cy: f32, r: i32, col: Colour) {
         match self.ragam() {
             Ragam::Geser(e, f) => {
-                let (cx, cy) = (Self::bulat(cx, e), Self::bulat(cy, f));
-                if r <= 0 { self.plot(cx, cy, col); return; }
+                let (cxi, cyi) = (Self::bulat(cx, e), Self::bulat(cy, f));
+                if r <= 0 { self.plot(cxi, cyi, col); return; }
+                // Jari-jari raksasa: dulu O(r) langkah tanpa batas; kini segmen yang dipotong ke kanvas.
+                if r as i64 > self.batas_langkah() {
+                    let t = Kuas::elips_titik(cx + e, cy + f, r as f32, r as f32, 0.0, std::f32::consts::TAU);
+                    for w in t.windows(2) {
+                        self.garis_bulat(w[0].0.floor() as i32, w[0].1.floor() as i32, w[1].0.floor() as i32, w[1].1.floor() as i32, col);
+                    }
+                    return;
+                }
+                let (cx, cy) = (cxi, cyi);
                 let (mut x, mut y) = (0i32, r);
                 let mut d = 3 - 2 * r;
                 self.delapan(cx, cy, x, y, col);
@@ -136,6 +157,17 @@ impl<'a> Pena<'a> {
             Ragam::Geser(e, f) => {
                 let (cx, cy) = (Self::bulat(cx, e), Self::bulat(cy, f));
                 if r <= 0 { self.plot(cx, cy, col); return; }
+                // Jari-jari raksasa: diisi per baris kanvas, bukan O(r) langkah (AGI-20261119-09).
+                if r as i64 > self.batas_langkah() {
+                    let (cx, cy, r) = (cx as i64, cy as i64, r as i64);
+                    let (w, h) = (self.fb.width as i64, self.fb.height as i64);
+                    for y in (cy - r).max(0)..=(cy + r).min(h - 1) {
+                        let dy = (y - cy) as f64;
+                        let separuh = ((r as f64) * (r as f64) - dy * dy).max(0.0).sqrt() as i64;
+                        for x in (cx - separuh).max(0)..=(cx + separuh).min(w - 1) { self.plot(x as i32, y as i32, col); }
+                    }
+                    return;
+                }
                 let (mut x, mut y) = (0i32, r);
                 let mut d = 3 - 2 * r;
                 self.garis_datar(cx, cy, x, y, col);
@@ -157,7 +189,8 @@ impl<'a> Pena<'a> {
     fn garis_datar(&mut self, cx: i32, cy: i32, x: i32, y: i32, col: Colour) {
         for (ax, ay, lebar) in [(cx - x, cy + y, 2 * x), (cx - x, cy - y, 2 * x),
                                 (cx - y, cy + x, 2 * y), (cx - y, cy - x, 2 * y)] {
-            for px in ax..ax + lebar { self.plot(px, ay, col); }
+            let lebar_fb = self.fb.width as i32;
+            for px in ax.max(-1)..(ax + lebar).min(lebar_fb + 1) { self.plot(px, ay, col); }
         }
     }
 
@@ -173,10 +206,14 @@ impl<'a> Pena<'a> {
                 let mut q = [(0i32, 0i32); 3];
                 for (i, &(x, y)) in p.iter().enumerate() { q[i] = (Self::bulat(x, e), Self::bulat(y, f)); }
                 q.sort_by_key(|t| t.1);
-                let ((ax, ay), (bx, by), (cx, cy)) = (q[0], q[1], q[2]);
+                // Selisih di 64 bit dan baris/kolom dijepit ke kanvas: dulu `cy - ay` meluap atau berputar miliaran
+                // baris (AGI-20261119-09). Piksel yang tergambar sama, `plot` memang membuang yang di luar.
+                let q64 = q.map(|(x, y)| (x as i64, y as i64));
+                let ((ax, ay), (bx, by), (cx, cy)) = (q64[0], q64[1], q64[2]);
                 let total = cy - ay;
                 if total == 0 { return; }
-                for y in ay..=cy {
+                let (wfb, hfb) = (self.fb.width as i64, self.fb.height as i64);
+                for y in ay.max(-1)..=cy.min(hfb) {
                     let kedua = y >= by;
                     let seg = if kedua { cy - by } else { by - ay };
                     let seg = if seg == 0 { 1 } else { seg };
@@ -186,7 +223,7 @@ impl<'a> Pena<'a> {
                     let mut xb = if kedua { bx as f32 + (cx - bx) as f32 * beta }
                                  else { ax as f32 + (bx - ax) as f32 * beta };
                     if xa > xb { std::mem::swap(&mut xa, &mut xb); }
-                    for x in (xa as i32)..=(xb as i32) { self.plot(x, y, col); }
+                    for x in (xa as i64).max(-1)..=(xb as i64).min(wfb) { self.plot(x as i32, y as i32, col); }
                 }
             }
             Ragam::Umum => {
@@ -228,8 +265,14 @@ impl<'a> Pena<'a> {
         match self.ragam() {
             Ragam::Geser(e, f) => {
                 let (ox, oy) = (Self::bulat(dx, e), Self::bulat(dy, f));
-                for v in 0..h {
-                    for u in 0..w {
+                // Cuma bagian yang jatuh di kanvas: `w = h = 2e9` dulu berputar miliaran kali (AGI-20261119-09).
+                let (wfb, hfb) = (self.fb.width as i64, self.fb.height as i64);
+                let v0 = (-(oy as i64)).max(0).min(h as i64) as i32;
+                let v1 = (hfb - oy as i64).max(0).min(h as i64) as i32;
+                let u0 = (-(ox as i64)).max(0).min(w as i64) as i32;
+                let u1 = (wfb - ox as i64).max(0).min(w as i64) as i32;
+                for v in v0..v1 {
+                    for u in u0..u1 {
                         if let Some(c) = ambil(u, v) { self.plot(ox + u, oy + v, c); }
                     }
                 }
@@ -257,4 +300,19 @@ impl<'a> Pena<'a> {
             }
         }
     }
+}
+
+
+/// Potong garis ke kotak [x0,x1]x[y0,y1] (Liang–Barsky); `None` kalau seluruhnya di luar.
+pub(crate) fn potong_garis(ax: f64, ay: f64, bx: f64, by: f64, x0: f64, y0: f64, x1: f64, y1: f64)
+    -> Option<(f64, f64, f64, f64)>
+{
+    let (dx, dy) = (bx - ax, by - ay);
+    let (mut t0, mut t1) = (0.0f64, 1.0f64);
+    for (p, q) in [(-dx, ax - x0), (dx, x1 - ax), (-dy, ay - y0), (dy, y1 - ay)] {
+        if p == 0.0 { if q < 0.0 { return None; } continue; }
+        let r = q / p;
+        if p < 0.0 { if r > t1 { return None; } if r > t0 { t0 = r; } } else { if r < t0 { return None; } if r < t1 { t1 = r; } }
+    }
+    Some((ax + t0 * dx, ay + t0 * dy, ax + t1 * dx, ay + t1 * dy))
 }

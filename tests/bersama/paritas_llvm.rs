@@ -5585,4 +5585,24 @@ pub fn main() {
     wok([1, { defer wok("tunda di larik"); 2 }])
 }
 "#),
+    ("kanvas: sudut raksasa, garis/segitiga/lingkaran/grid raksasa tidak panik atau macet, clip jenuh (AGI-20261119-09)", r#"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok"), Result::Err(g) => wok("err", g.pesan) } }
+fn main() {
+    let c = Canvas::new(4, 4, "uji")
+    coba(|| c.draw_arc(2.0, 2.0, 2.0, 0.0, 1e30, 0xFFFFFF))
+    coba(|| c.draw_arc(2.0, 2.0, 2.0, 0.0, 1e40, 0xFFFFFF))
+    coba(|| c.line_aa(16777216.0, 0.0, 16777220.0, 0.0, 0xFFFFFF))
+    coba(|| c.draw_line(0, 0, -2147483648, 1, 0xFFFFFF))
+    coba(|| c.clip(2, 2, 2147483647, 2147483647))
+    c.draw_pixel(3, 3, 0xFF0000)
+    wok(c.get_pixel(3, 3))
+    c.clip_reset()
+    coba(|| c.fill_triangle(0, -2147483648, 2, 0, 4, 2147483647, 0xFFFFFF))
+    coba(|| c.fill_circle(0, 0, 2000000000, 0x00FF00))
+    coba(|| c.draw_circle(0, 0, 2000000000, 0x00FF00))
+    coba(|| c.draw_grid(100000000, 1, 100, 1, 0xFFFFFF))
+    coba(|| c.draw_grid(-3, -3, 0, 0, 0xFFFFFF))
+    wok(c.get_pixel(1, 1))
+}
+"#),
 ];
