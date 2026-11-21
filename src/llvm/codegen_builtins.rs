@@ -1673,6 +1673,11 @@ impl Codegen {
         if matches!(item, "sub" | "substring" | "slice") && matches!(args.len(), 1 | 2 | 3) {
             return Some((|| {
                 let v = self.codegen_expr(&args[0], Some(&JrgType::Str))?;
+                // Nilai bertag dibuka sebagai teks (yang bukan teks gagal saat jalan) — dulu ditolak menyebut penanda
+                // internal `<any: ..>` (AGI-20261120-24).
+                let v = if v.ty == JrgType::Any {
+                    match self.buka_terperiksa(&v, &JrgType::Str) { Some(b) => b, None => v }
+                } else { v };
                 if v.ty != JrgType::Str {
                     return Err(super::galat::tandai(span, crate::interpreter::pesan_arg_harus_teks(
                         nama, "argumen pertama", &v.ty.nama_typeof())));

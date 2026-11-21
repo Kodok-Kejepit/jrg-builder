@@ -65,6 +65,8 @@ pub fn parse(teks) {
 fn _bisa_ditulis(apa, s, kunci) {
     if _kendali(s) || str::contains(s, "\t") { return Err(«${apa} ${_kutip(s)} memuat karakter kendali») }
     if s != str::trim(s) { return Err(«${apa} ${_kutip(s)} berspasi di ujung — akan hilang saat dibaca ulang») }
+    // `parse` membuang BOM di awal teks, jadi kunci berawalan BOM tidak kembali utuh (AGI-20261119-33).
+    if str::starts_with(s, "\uFEFF") { return Err(«${apa} ${_kutip(s)} diawali BOM — akan hilang saat dibaca ulang») }
     if kunci {
         if s == "" || str::contains(s, "=") || str::starts_with(s, "[") || str::starts_with(s, ";") || str::starts_with(s, "#") {
             return Err(«${apa} ${_kutip(s)} tidak bisa ditulis sebagai kunci INI»)

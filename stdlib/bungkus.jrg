@@ -79,8 +79,18 @@ pub fn teks(t, lebar) { return str::join(baris(t, lebar), "\n") }
 pub fn potong(t, lebar) {
     _periksa(lebar, "potong")
     if term::lebar(t) <= lebar { return t }
-    let p = _potong_kata(t, lebar - 1)
-    return lebar == 1 $ "…" : p[0] + "…"
+    // Karakter yang tidak muat sisa lebar ikut dibuang, juga yang pertama: `potong("日本語", 2)` dulu `日…`, 3 kolom
+    // (AGI-20261119-45).
+    let cs = arr::map(str::chars(t), |r| str(r))
+    let w = term::lebar_tiap(t)
+    var kini = ""
+    var lk = 0
+    for i, c in cs {
+        if lk + w[i] > lebar - 1 { break }
+        kini = kini + c
+        lk = lk + w[i]
+    }
+    return kini + "…"
 }
 
 /// Tambah awalan (mis. `"  "` atau `"> "`) di depan tiap baris yang tidak kosong.

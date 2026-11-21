@@ -67,6 +67,7 @@ pub fn split(s) {
         } else if c == "\\" {
             if i + 1 >= len(cs) { return Err("`\\` di ujung tanpa karakter yang diloloskan") }
             let e = str(cs[i + 1])
+            if e == "\u0000" { return Err(«karakter NUL di posisi ${i + 1}») }
             if e != "\n" {
                 kini = kini + e
                 ada = true

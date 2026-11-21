@@ -99,7 +99,9 @@ fn _atom(u) -> Result<(_Urai, float), string> {
     let tk = _lihat(u)
     if tk[0] == "angka" {
         u.i += 1
-        return Ok((u, str::to_float(tk[1])))
+        // Literal dan variabel lewat `_cek` juga, seperti hasil operasi (AGI-20261119-33).
+        let v = _cek(str::to_float(tk[1]), tk[2])?
+        return Ok((u, v))
     }
     if tk[0] == "op" && tk[1] == "(" {
         u.i += 1
@@ -132,7 +134,8 @@ fn _atom(u) -> Result<(_Urai, float), string> {
         let v = u.vars[tk[1]]
         let t = typeof(v)
         if t != "int" && t != "float" { return Err(«nama `${tk[1]}` bernilai `${t}`, bukan bilangan») }
-        return Ok((u, v as float))
+        let f = _cek(v as float, tk[2])?
+        return Ok((u, f))
     }
     if tk[0] == "akhir" { return Err("rumus berakhir di tengah — kurang angka atau nama") }
     return Err(«`${tk[1]}` di posisi ${tk[2]} tidak diharapkan di sini»)

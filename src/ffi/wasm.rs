@@ -377,7 +377,7 @@ pub struct Mesin {
     sisa_langkah: u64,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum Jenis { Blok, Loop, If }
 
 struct Label { jenis: Jenis, arity: usize, tinggi: usize, mulai: usize, akhir: usize }
@@ -449,7 +449,14 @@ impl Mesin {
             return Err("fungsi wasm selesai tanpa cukup nilai hasil".to_string());
         }
         let mulai = stack.len() - hasil_arity;
-        Ok(stack.split_off(mulai))
+        let hasil = stack.split_off(mulai);
+        // Pemeriksa tipe modul belum ada; yang keluar ke JRG minimal bertipe seperti deklarasinya (AGI-20261120-25).
+        for (v, t) in hasil.iter().zip(tf.hasil.iter()) {
+            if v.tipe() != *t {
+                return Err(format!("fungsi wasm mengembalikan {} padahal tipenya {} — modulnya tidak sah", v.tipe().nama(), t.nama()));
+            }
+        }
+        Ok(hasil)
     }
 }
 
@@ -645,10 +652,18 @@ impl Mesin {
                 0x05 => {
                     // Akhir cabang `then`: lompat ke `end` milik blok ini.
                     let l = label.last().ok_or("`else` tanpa `if`")?;
+                    if l.jenis != Jenis::If { return Err("`else` di dalam `block`/`loop`, bukan `if` — modulnya tidak sah".to_string()); }
                     r.i = l.akhir;
                 }
                 0x0b => {
-                    if label.pop().is_none() { return Ok(()); }
+                    match label.pop() {
+                        None => return Ok(()),
+                        // Blok yang selesai meninggalkan tepat `arity` nilai di atas tingginya (AGI-20261120-25).
+                        Some(l) if stack.len() != l.tinggi + l.arity => return Err(format!(
+                            "akhir blok wasm meninggalkan {} nilai, padahal tipenya {} — modulnya tidak sah",
+                            stack.len().saturating_sub(l.tinggi), l.arity)),
+                        Some(_) => {}
+                    }
                 }
                 0x0c => { let l = r.u32v()? as usize; cabang(stack, &mut label, l, &mut r)?; }
                 0x0d => {
@@ -698,12 +713,16 @@ impl Mesin {
                 0x21 => {
                     let i = r.u32v()? as usize;
                     let v = stack.pop().ok_or("stack wasm kosong")?;
-                    *lokal.get_mut(i).ok_or_else(|| format!("local.set {} tidak ada", i))? = v;
+                    let slot = lokal.get_mut(i).ok_or_else(|| format!("local.set {} tidak ada", i))?;
+                    if slot.tipe() != v.tipe() { return Err(format!("local.set {}: {} ke lokal {}", i, v.tipe().nama(), slot.tipe().nama())); }
+                    *slot = v;
                 }
                 0x22 => {
                     let i = r.u32v()? as usize;
                     let v = *stack.last().ok_or("stack wasm kosong")?;
-                    *lokal.get_mut(i).ok_or_else(|| format!("local.tee {} tidak ada", i))? = v;
+                    let slot = lokal.get_mut(i).ok_or_else(|| format!("local.tee {} tidak ada", i))?;
+                    if slot.tipe() != v.tipe() { return Err(format!("local.tee {}: {} ke lokal {}", i, v.tipe().nama(), slot.tipe().nama())); }
+                    *slot = v;
                 }
                 0x23 => {
                     let i = r.u32v()? as usize;
@@ -716,6 +735,9 @@ impl Mesin {
                         .ok_or_else(|| format!("global {} tidak ada", i))?;
                     if !bisa_ubah {
                         return Err(format!("global {} bukan `mut`, tidak bisa diubah", i));
+                    }
+                    if self.global[i].tipe() != v.tipe() {
+                        return Err(format!("global.set {}: {} ke global {}", i, v.tipe().nama(), self.global[i].tipe().nama()));
                     }
                     self.global[i] = v;
                 }

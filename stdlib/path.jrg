@@ -56,11 +56,8 @@ pub fn parent(p) {
 /// Ekstensi TANPA titiknya, `None` kalau tidak ada. Berkas tersembunyi (`.bashrc`) tidak dihitung berekstensi.
 pub fn extension(p) {
     let nama = basename(p)
-    // Titik di posisi 0 berarti berkas tersembunyi (`.bashrc`), bukan ekstensi.
-    match str::index_of(nama, ".") {
-        None => return Option::None,
-        Some(i) => if i < 1 { return Option::None },
-    }
+    // Titik TERAKHIR di posisi 0 berarti berkas tersembunyi (`.bashrc`); `.config.json` berekstensi `json`, sama dengan
+    // aturan `stem`/`with_extension` (AGI-20261119-33).
     var akhir = -1
     for j, c in nama {
         if c == '.' { akhir = j }

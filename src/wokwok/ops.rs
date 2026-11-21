@@ -198,6 +198,17 @@ pub fn biner(a: &Nd, b: &Nd, op: Biner) -> Hasil<Nd> {
         return Nd::baru(Buf::Bool(out), shape);
     }
 
+    // Dua buffer bulat dibandingkan sebagai bulat: lewat `f64`, `2^53` dan `2^53 + 1` dulu "sama" (AGI-20261120-25).
+    if op.pembanding() && gabung_tipe(&a.buf, &b.buf) <= Tipe::I64 {
+        let (x, y) = (i64_data(a), i64_data(b));
+        let (ia, ib) = (peta_broadcast(&a.shape, &shape, total), peta_broadcast(&b.shape, &shape, total));
+        let banding = |p: i64, q: i64| match op {
+            Biner::Sama => p == q, Biner::Beda => p != q, Biner::Kurang_ => p < q,
+            Biner::KurangSama => p <= q, Biner::Lebih => p > q, _ => p >= q,
+        };
+        let out: Vec<bool> = (0..total).map(|i| banding(x[ia[i]], y[ib[i]])).collect();
+        return Nd::baru(Buf::Bool(out), shape);
+    }
     if op.pembanding() {
         let (x, y) = (a.f64_pinjam(), b.f64_pinjam());
         let mut out = vec![false; total];

@@ -143,10 +143,13 @@ fn teks(s: &str, b: &[u8], pos: &mut usize) -> Result<String, String> {
     loop {
         // Bita biasa disalin per potongan UTF-8 utuh, bukan bita demi bita.
         let mulai = *pos;
-        while *pos < b.len() && b[*pos] != b'"' && b[*pos] != b'\\' { *pos += 1; }
+        while *pos < b.len() && b[*pos] != b'"' && b[*pos] != b'\\' && b[*pos] >= 0x20 { *pos += 1; }
         keluar.push_str(s.get(mulai..*pos).unwrap_or(""));
         match b.get(*pos) {
             None => return Err("teks tidak ditutup dengan `\"`".to_string()),
+            // RFC 8259 §7: karakter kendali di dalam teks harus diloloskan (AGI-20261119-42).
+            Some(&c) if c < 0x20 => return Err(format!(
+                "karakter kendali U+{:04X} di dalam teks JSON harus diloloskan (`\\n`, `\\u{:04x}`)", c, c)),
             Some(b'"') => { *pos += 1; return Ok(keluar); }
             Some(_) => {
                 *pos += 1;

@@ -1531,6 +1531,9 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
     ("tabulate: panjang harus bilangan bulat tidak negatif, dapat ", "tabulate: the length must be a non-negative integer, got "),
     ("functional::until: batas harus bilangan bulat tidak negatif, dapat ", "functional::until: the limit must be a non-negative integer, got "),
     ("iterator::{}: kuncinya NaN, jadi urutannya tidak terdefinisi", "iterator::{}: the key is NaN, so the order is undefined"),
+    ("`host` `{}` memuat `:` — port ditulis di field `port`; IPv6 diapit `[ ]`", "`host` `{}` contains `:` — the port goes in the `port` field; IPv6 is written inside `[ ]`"),
+    ("`port` `{}` bukan angka 0 sampai 65535", "`port` `{}` is not a number from 0 to 65535"),
+    ("karakter kendali U+{} di dalam teks JSON harus diloloskan (`\\n`, `\\u{}`)", "the control character U+{} inside a JSON string must be escaped (`\\n`, `\\u{}`)"),
     ("error: nada `{}` tidak ada. yang tersedia: ",
      "error: the tone `{}` does not exist. available: "),
 

@@ -113,7 +113,8 @@ impl Tabel {
             potong = arr::push(potong, sel)
             k = k + 1
         }
-        return str::trim_end(str::join(potong, pemisah))
+        // Tanpa memangkas ujung: `kotak()` butuh bantalan kolom terakhir supaya garis kanannya lurus (AGI-20261119-45).
+        return str::join(potong, pemisah)
     }
 
     /// Tabel polos: kolom dipisah dua spasi, kepala digarisbawahi.
@@ -124,11 +125,11 @@ impl Tabel {
         var k = 0
         while k < len(lebar) { kanan = arr::push(kanan, self._kanan_kah(sel, k))  k = k + 1 }
 
-        var keluar = [self._susun(sel[0], lebar, kanan, "  ")]
+        var keluar = [str::trim_end(self._susun(sel[0], lebar, kanan, "  "))]
         keluar = arr::push(keluar, str::join(arr::map(lebar, |l| str::repeat("-", l)), "  "))
         var i = 1
         while i < len(sel) {
-            keluar = arr::push(keluar, self._susun(sel[i], lebar, kanan, "  "))
+            keluar = arr::push(keluar, str::trim_end(self._susun(sel[i], lebar, kanan, "  ")))
             i = i + 1
         }
         return str::join(keluar, "\n")

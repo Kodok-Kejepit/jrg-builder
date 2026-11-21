@@ -14,8 +14,11 @@ fn _kunci_sah(k) {
     return true
 }
 
-fn _nilai(no, v) {
+fn _nilai(no, mentah) {
+    let v = str::trim_start(mentah)
     if v == "" { return Ok("") }
+    // `#` sesudah spasi adalah komentar, juga kalau nilainya kosong.
+    if str::starts_with(v, "#") && len(v) < len(mentah) { return Ok("") }
     let q = v[0:1]
     if q == "'" || q == "\"" {
         let cs = arr::map(str::chars(v), |r| str(r))
@@ -63,7 +66,7 @@ pub fn parse(teks) {
         }
         var t = str::trim(baris)
         if t == "" || str::starts_with(t, "#") { continue }
-        if str::starts_with(t, "export ") { t = str::trim_start(t[7:]) }
+        if str::starts_with(t, "export ") || str::starts_with(t, "export\t") { t = str::trim_start(t[7:]) }
         let Some(k) = str::index_of(t, "=") else { return Err(«baris ${no}: harusnya `KUNCI=nilai`») }
         let kunci = str::trim(t[0:k])
         if !_kunci_sah(kunci) {
@@ -71,7 +74,8 @@ pub fn parse(teks) {
             return Err(«baris ${no}: kunci ${s} tidak sah — huruf ASCII, angka dan `_`, tidak diawali angka»)
         }
         if dict::has(hasil, kunci) { return Err(«baris ${no}: kunci `${kunci}` ditulis dua kali») }
-        hasil[kunci] = _nilai(no, str::trim(t[k + 1:]))?
+        // Teks mentah sesudah `=`: `KEY= #komentar` butuh spasinya untuk dikenali komentar (AGI-20261119-45).
+        hasil[kunci] = _nilai(no, t[k + 1:])?
     }
     return Ok(hasil)
 }

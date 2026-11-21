@@ -99,6 +99,21 @@ fn _heks(n) {
 }
 
 // Nilai logfmt: dikutip kalau kosong atau memuat spasi, `=` atau `"`; selalu di-escape.
+/// Karakter yang tidak boleh tampil mentah di log (sama dengan daftar `_lolos`) jadi `\uXXXX` — sah di dalam teks JSON.
+fn _lolos_unicode(s) {
+    var o = ""
+    for _, r in str::chars(s) {
+        let k = r as int
+        if k == 127 || (k >= 0x200B && k <= 0x200F) || (k >= 0x202A && k <= 0x202E) || (k >= 0x2066 && k <= 0x2069) || k == 0xFEFF || k == 0x2028 || k == 0x2029 {
+            let h = _heks(k)
+            o = o + "\\u" + str::repeat("0", 4 - len(h)) + h
+        } else {
+            o = o + str(r)
+        }
+    }
+    return o
+}
+
 fn _nilai(v) {
     let s = str(v)
     let l = _lolos(s)
@@ -121,12 +136,15 @@ pub fn baris(p, t, pesan, field) {
         d["tingkat"] = t
         d["nama"] = p.nama
         d["pesan"] = str(pesan)
-        for k, v in field { d[k] = v }
-        // `json::stringify` sudah meloloskan kendali; U+2028/U+2029 ikut diloloskan untuk pembaca JavaScript.
-        return Some(str::replace(str::replace(json::stringify(d), "\u2028", "\\u2028"), "\u2029", "\\u2029"))
+        // NaN/tak hingga tidak punya bentuk JSON: ditulis sebagai teksnya, bukan menggagalkan `stringify` (AGI-20261119-45).
+        for k, v in field { d[k] = (typeof(v) == "float" && !math::is_finite(v)) $ str(v) : v }
+        // `json::stringify` meloloskan kendali C0; pengubah arah, lebar-nol, DEL dan U+2028/9 diloloskan di sini, seperti
+        // format teks (AGI-20261119-45).
+        return Some(_lolos_unicode(json::stringify(d)))
     }
     var s = p.waktu $ w + " " : ""
-    s = s + str::upper(t) + " " + _lolos(p.nama) + " " + _nilai(pesan)
+    // Nama lewat `_nilai`: `"app role=admin"` dulu menyisipkan field logfmt palsu (AGI-20261119-45).
+    s = s + str::upper(t) + " " + _nilai(p.nama) + " " + _nilai(pesan)
     for k, v in field { s = s + " " + k + "=" + _nilai(v) }
     return Some(s)
 }

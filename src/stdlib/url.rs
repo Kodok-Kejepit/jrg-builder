@@ -173,7 +173,8 @@ pub fn urai(s: &str) -> Result<Urai, String> {
     if s.is_empty() { return Err("URL kosong".into()); }
     periksa_huruf(s)?;
     let n = panjang_skema(s).ok_or_else(|| format!(
-        "`{}` tidak berskema (`http:`, `https:`, ...) — URL relatif digabung dengan dasarnya lewat `url::join`", s))?;
+        "`{}` tidak berskema (`http:`, `https:`, ...) — URL relatif digabung dengan dasarnya lewat `url::join`",
+        kutip(&samarkan_userinfo(s))))?;
     let skema = s[..n].to_ascii_lowercase();
     let mut sisa = &s[n + 1..];
     let mut fragmen = None;
@@ -231,7 +232,8 @@ pub fn urai(s: &str) -> Result<Urai, String> {
         jalur
     } else {
         if istimewa(&skema) {
-            return Err(format!("`{}:` harus diikuti `//` dan nama host — `{}` dibaca berbeda oleh tiap pengurai", kutip(skema), kutip(s)));
+            return Err(format!("`{}:` harus diikuti `//` dan nama host — `{}` dibaca berbeda oleh tiap pengurai",
+                kutip(skema), kutip(&samarkan_userinfo(s))));
         }
         sisa
     };
@@ -403,6 +405,17 @@ fn u_build(a: &[Value]) -> Result<Value, String> {
         larang("pengguna", &pengguna, ":@/?#[]")?;
         larang("sandi", &sandi, "@/?#[]")?;
         larang("host", &host, "@/?#\\")?;
+        // `host: "a:6379"` memilih port, `port: "80@evil.com"` memilih host — dua-duanya ditolak (AGI-20261119-39).
+        if let Some(h) = &host {
+            if h.contains(':') && !(h.starts_with('[') && h.ends_with(']')) {
+                return Err(format!("`host` `{}` memuat `:` — port ditulis di field `port`; IPv6 diapit `[ ]`", kutip(h)));
+            }
+        }
+        if let Some(p) = &port {
+            if p.is_empty() || !p.bytes().all(|b| b.is_ascii_digit()) || p.parse::<u32>().map_or(true, |n| n > 65535) {
+                return Err(format!("`port` `{}` bukan angka 0 sampai 65535", kutip(p)));
+            }
+        }
         larang("query", &query, "#")?;
         larang("fragmen", &fragmen, "#")?;
         larang("jalur", &Some(jalur.clone()), "?#")?;

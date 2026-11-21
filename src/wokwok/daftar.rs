@@ -30,10 +30,11 @@ pub fn ke_nd<'a>(v: &'a VmValue, konteks: &str) -> Hasil<std::borrow::Cow<'a, Nd
             let mut rata = Vec::new();
             let mut tipe = Tipe::Bool;
             ratakan(v, 0, &mut bentuk, &mut rata, &mut tipe, konteks)?;
+            // Bulat dibawa sebagai `i64` sampai ujung: lewat `f64` dulu, `2^53 + 1` jadi `2^53` (AGI-20261120-25).
             let buf = match tipe {
-                Tipe::Bool => Buf::Bool(rata.iter().map(|&x| x != 0.0).collect()),
-                Tipe::I64 => Buf::I64(rata.iter().map(|&x| x as i64).collect()),
-                Tipe::F64 => Buf::F64(rata),
+                Tipe::Bool => Buf::Bool(rata.iter().map(|x| matches!(x, Isi::B(true))).collect()),
+                Tipe::I64 => Buf::I64(rata.iter().map(|x| match x { Isi::I(n) => *n, Isi::B(b) => *b as i64, Isi::F(f) => *f as i64 }).collect()),
+                Tipe::F64 => Buf::F64(rata.iter().map(|x| match x { Isi::I(n) => *n as f64, Isi::B(b) => *b as i64 as f64, Isi::F(f) => *f }).collect()),
             };
             Nd::baru(buf, bentuk).map(Cow::Owned)
         }
@@ -48,10 +49,14 @@ pub fn ke_nd<'a>(v: &'a VmValue, konteks: &str) -> Hasil<std::borrow::Cow<'a, Nd
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 enum Tipe { Bool, I64, F64 }
 
+/// Satu elemen apa adanya, sebelum tipe buffer-nya diputuskan.
+#[derive(Clone, Copy)]
+enum Isi { B(bool), I(i64), F(f64) }
+
 /// Ratakan array bersarang sambil memeriksa bahwa bentuknya PERSEGI.
 fn ratakan(
     v: &VmValue, level: usize,
-    bentuk: &mut Vec<usize>, keluar: &mut Vec<f64>, tipe: &mut Tipe,
+    bentuk: &mut Vec<usize>, keluar: &mut Vec<Isi>, tipe: &mut Tipe,
     konteks: &str,
 ) -> Hasil<()> {
     match v {
@@ -69,15 +74,15 @@ fn ratakan(
             for x in isi.iter() { ratakan(x, level + 1, bentuk, keluar, tipe, konteks)?; }
             Ok(())
         }
-        VmValue::Float(x) => { *tipe = (*tipe).max(Tipe::F64); keluar.push(*x); Ok(()) }
+        VmValue::Float(x) => { *tipe = (*tipe).max(Tipe::F64); keluar.push(Isi::F(*x)); Ok(()) }
         VmValue::Int(n) => {
             let n = i64::try_from(*n).map_err(|_| format!(
                 "{}: {} kelewat besar buat array numerik (64 bit)", konteks, n))?;
             *tipe = (*tipe).max(Tipe::I64);
-            keluar.push(n as f64);
+            keluar.push(Isi::I(n));
             Ok(())
         }
-        VmValue::Bool(b) => { keluar.push(if *b { 1.0 } else { 0.0 }); Ok(()) }
+        VmValue::Bool(b) => { keluar.push(Isi::B(*b)); Ok(()) }
         lain => Err(format!(
             "{}: ada `{}` di dalam datanya — isi array numerik harus angka atau bool",
             konteks, lain.type_name()

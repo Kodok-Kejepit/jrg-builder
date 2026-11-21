@@ -73,7 +73,12 @@ impl<T> Antrean<T> {
             g.penunggu_kirim += 1;
             // Tunggu sampai ada penerima, lalu taruh dan tunggu ia mengambil.
             while g.buf.is_empty() && g.penunggu_terima == 0 && !g.tertutup {
-                g = match self.tunggu(&self.temu, g, &mut jaga) { Ok(g) => g, Err(e) => return Err(e) };
+                g = match self.tunggu(&self.temu, g, &mut jaga) {
+                    Ok(g) => g,
+                    // Kebuntuan yang ditangkap `tangkap`: penghitungnya dikembalikan, kalau tidak `try_recv`
+                    // sesudahnya menunggu pengirim yang tidak ada (AGI-20261119-41).
+                    Err(e) => { self.isi.lock().unwrap_or_else(|p| p.into_inner()).penunggu_kirim -= 1; return Err(e) }
+                };
             }
             if g.tertutup {
                 g.penunggu_kirim -= 1;
@@ -86,7 +91,11 @@ impl<T> Antrean<T> {
             self.temu.notify_all();
             self.tak_kosong.notify_all();
             while !g.buf.is_empty() && !g.tertutup {
-                g = match self.tunggu(&self.temu, g, &mut jaga) { Ok(g) => g, Err(e) => return Err(e) };
+                g = match self.tunggu(&self.temu, g, &mut jaga) {
+                    Ok(g) => g,
+                    // Nilai yang tak pernah diambil ditarik lagi: kirimnya gagal, ia tidak boleh muncul belakangan.
+                    Err(e) => { self.isi.lock().unwrap_or_else(|p| p.into_inner()).buf.pop_back(); return Err(e) }
+                };
             }
             return Ok(());
         }
@@ -143,7 +152,10 @@ impl<T> Antrean<T> {
             g.penunggu_terima += 1;
             self.temu.notify_all();
             while g.buf.is_empty() && !g.tertutup {
-                g = self.tunggu(&self.temu, g, &mut jaga)?;
+                g = match self.tunggu(&self.temu, g, &mut jaga) {
+                    Ok(g) => g,
+                    Err(e) => { self.isi.lock().unwrap_or_else(|p| p.into_inner()).penunggu_terima -= 1; return Err(e) }
+                };
             }
             g.penunggu_terima -= 1;
             let keluar = g.buf.pop_front();

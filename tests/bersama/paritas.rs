@@ -2954,4 +2954,98 @@ fn main2() {
  coba(|| Ok(1).and(Ok(2)))
 }
 "#),
+    ("wokwok:: bulat di atas 2^53 tetap persis: array, pembanding, argmax, argsort (AGI-20261120-25)", r#"
+fn main() {
+    wok(wokwok::array([9007199254740993]), wokwok::array([9223372036854775806]))
+    let k = wokwok::array([[true, false], [false, true]])
+    wok(wokwok::where(k, wokwok::array([[10, 20]]), wokwok::array([[100], [200]])))
+    let a = wokwok::add(wokwok::array([9007199254740992]), wokwok::array([0]))
+    let b = wokwok::add(wokwok::array([9007199254740992]), wokwok::array([1]))
+    wok(wokwok::eq(a, b), wokwok::lt(a, b))
+    wok(wokwok::argmax(wokwok::array([9007199254740992, 9007199254740993])), wokwok::argsort(wokwok::array([9007199254740993, 9007199254740992])))
+}
+"#),
+    ("url::build menolak port/host yang memilih host atau port lain, url::parse menyamarkan sandi di galat (AGI-20261119-39)", r#"
+fn main() {
+    wok(url::build({"skema": "http", "host": "trusted.com", "port": "80@evil.com:8443", "jalur": "/api"}))
+    wok(url::build({"skema": "https", "host": "internal.svc:6379", "jalur": "/cmd"}))
+    wok(url::build({"skema": "http", "host": "[::1]", "port": "8080", "jalur": "/x"}))
+    wok(url::parse("//alice:SUPERSECRET@host"))
+    wok(url::parse("http:alice:SUPERSECRET@host"))
+}
+"#),
+    ("dok::password_verify menolak bentuk hash lain, dok::render tidak membaca field privat (AGI-20261119-40)", r#"
+fn sandi_uji() {
+ let h = dok::password_hash("rahasia")
+ wok(dok::password_verify("rahasia", h), dok::password_verify("salah", h), dok::password_needs_rehash(h))
+ wok(dok::password_verify("x", "pbkdf2$sha256$1000$$AA"), dok::password_needs_rehash("pbkdf2$sha256$600000$$AA"))
+}
+struct Akun { pub nama: string, sandi: string }
+fn main() {
+ sandi_uji()
+ let a = Akun { nama: "budi", sandi: "rahasia" }
+ wok(dok::render("{{ nama }}|{{ sandi }}|{{ a.sandi }}|{{ a.nama }}", dict { nama: "x", a: a }))
+ wok(dok::render("{{ nama }}-{{ sandi }}", a))
+}
+"#),
+    ("channel tanpa penyangga tetap sehat sesudah kebuntuan ditangkap (AGI-20261119-41)", r#"
+fn main() {
+    let ch2 = Chan::new(0)
+    let r2 = tangkap(|| { ch2.send(99) })
+    wok(r2.is_err())
+    wok(ch2.try_recv())
+    let ch1 = Chan::new(0)
+    let r1 = tangkap(|| { <-ch1 })
+    wok(r1.is_err())
+    wok(ch1.try_send(5))
+}
+"#),
+    ("std/shlex, glob, path, ini: NUL lewat \\, jalur absolut, ekstensi dotfile, BOM (AGI-20261119-33)", r#"
+import "std/shlex"
+import "std/glob"
+import "std/uang"
+import "std/hitung"
+import "std/path"
+import "std/ini"
+fn main() {
+    wok(shlex::split("a\\\u0000b").is_err())
+    wok(glob::cocok("etc/*", "/etc/passwd"), glob::cocok("etc/*", "etc/passwd"))
+    wok(path::extension(".config.json"), path::extension(".bashrc"), path::stem(".config.json"))
+    wok(ini::stringify({"": {"\uFEFFa": "1"}}).is_err())
+}
+"#),
+    ("std/csv, dotenv, bungkus, log: kutip, komentar nilai kosong, lebar lebar, log json (AGI-20261119-45)", r#"
+import "std/csv"
+import "std/dotenv"
+import "std/bungkus"
+import "std/log"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn main() {
+    coba(|| csv::parse("\"unclosed,still"))
+    coba(|| csv::parse("a\"b,c\"d"))
+    coba(|| csv::parse("a,b\rc,d"))
+    coba(|| csv::parse("a,b\r\nc,\"x\r\ny\"\r\n"))
+    env_uji()
+    potong_uji()
+    log_uji()
+}
+
+fn env_uji() {
+ wok(dotenv::parse("A= #komentar\nB=#bukan\nexport\tC=3\nD = \"x y\" # k\nE=nilai # k"))
+}
+
+fn potong_uji() {
+ wok(bungkus::potong("日本語", 2), bungkus::potong("日本語", 3), bungkus::potong("abcdef", 4), bungkus::potong("ab", 1))
+}
+
+fn log_uji() {
+    var p = log::baru("app role=admin")
+    p.waktu = false
+    wok(log::baris(p, "info", "masuk", dict::new()))
+    var j = log::baru("app")
+    j.waktu = false
+    j.format = "json"
+    wok(log::baris(j, "info", "a\u202Eb", {"x": 0.0 / 0.0}))
+}
+"#),
 ];

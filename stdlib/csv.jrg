@@ -39,6 +39,8 @@ pub fn parse_with(teks, pemisah) {
         }
 
         if c == '"' {
+            // Kutip cuma membuka sel: `a"b,c"d` dulu menelan komanya diam-diam (AGI-20261119-45).
+            if len(buf) > 0 { panik(«csv: kutip di tengah sel tak berkutip (sesudah `${buf}`) — kutip seluruh selnya dan gandakan kutip di dalamnya») }
             dikutip = true
             ada_isi = true
             i = i + 1
@@ -53,7 +55,9 @@ pub fn parse_with(teks, pemisah) {
             continue
         }
 
-        if c == '\n' {
+        // `\r\n` dan `\r` sendirian sama-sama akhir baris; dulu `\r` dibuang dan `a,b\rc,d` jadi satu baris.
+        if c == '\n' || c == '\r' {
+            if c == '\r' && i + 1 < n { if cs[i + 1] == '\n' { i = i + 1 } }
             sel = arr::push(sel, buf)
             baris = arr::push(baris, sel)
             sel = []
@@ -63,16 +67,12 @@ pub fn parse_with(teks, pemisah) {
             continue
         }
 
-        if c == '\r' {
-            i = i + 1
-            continue
-        }
-
         buf = buf + c
         ada_isi = true
         i = i + 1
     }
 
+    if dikutip { panik("csv: kutip yang dibuka tidak pernah ditutup") }
     // Baris terakhir tanpa baris-baru penutup tetap sebuah baris. Berkas
     // yang berakhir dengan baris-baru TIDAK menghasilkan baris kosong
     // tambahan — itu bedanya dengan `str::split(teks, "\n")`.

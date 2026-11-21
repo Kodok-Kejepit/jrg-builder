@@ -44,7 +44,8 @@ impl FileWatcher {
         if let Ok(rd) = std::fs::read_dir(dir) {
             for e in rd.flatten() {
                 let p = e.path();
-                if p.is_dir() && !hidden(&p) { self.watch_dir(&p); }
+                // Folder lewat `file_type` (tidak mengikuti tautan): `ln -s . a` dulu ditelusuri eksponensial (AGI-20261119-42).
+                if e.file_type().is_ok_and(|t| t.is_dir()) && !hidden(&p) { self.watch_dir(&p); }
                 else if p.extension().and_then(|x| x.to_str()) == Some("jrg") {
                     if let Some(s) = FileState::read(&p) { self.states.insert(p, s); }
                 }
@@ -60,7 +61,7 @@ impl FileWatcher {
         if let Ok(rd) = std::fs::read_dir(dir) {
             for e in rd.flatten() {
                 let p = e.path();
-                if p.is_dir() && !hidden(&p) { self.refresh(&p); }
+                if e.file_type().is_ok_and(|t| t.is_dir()) && !hidden(&p) { self.refresh(&p); }
                 else if p.extension().and_then(|x| x.to_str()) == Some("jrg") {
                     if !self.states.contains_key(&p) {
                         if let Some(s) = FileState::read(&p) { self.states.insert(p, s); }

@@ -5405,4 +5405,11 @@ fn main() {
     wok(h.jumlah([10, 20, 30]), h.jumlah(), h.jumlah(1, 2, 3))
 }
 "#),
+    ("str::sub/substring/slice atas nilai bertag (AGI-20261120-24)", r#"
+fn main() {
+ var x = 0
+ x = "halo dunia"
+ wok(str::sub(x, 0, 4), str::substring(x, 5), str::slice(x, 1, 3))
+}
+"#),
 ];

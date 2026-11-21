@@ -28,6 +28,19 @@ fn render_arg(v: Option<&Value>, nama: &str) -> Result<String, String> {
     }
 }
 
+/// Field yang boleh dibaca template: field privat struct dan isi pegangan pustaka tidak terlihat dari pustaka,
+/// aturan yang sama dengan `json::`/`dok::json_*` (AGI-20261119-40).
+fn ladang_template<'a>(v: &'a Value, nama: &str) -> Option<&'a Value> {
+    if let Value::Struct { name, .. } = v {
+        if name != "dict" {
+            if crate::interpreter::galat_index::HANDLE_PUSTAKA.contains(&name.as_str())
+                && crate::vm::visibilitas::field_dideklarasikan(name).is_none() { return None; }
+            if crate::vm::visibilitas::periksa(name, nama, None).is_err() { return None; }
+        }
+    }
+    ladang(v, nama)
+}
+
 fn ladang<'a>(v: &'a Value, nama: &str) -> Option<&'a Value> {
     match v {
         Value::Struct { fields, .. } => fields.get(nama),
@@ -307,6 +320,9 @@ pub fn password_hash(args: &[Value]) -> Result<Value, String> {
         "pbkdf2$sha256${}${}${}", putaran, b64url(&garam), b64url(&hash))))
 }
 
+/// Bentuk yang `password_hash` tulis: garam 16 sampai 64 bita, hash 32 bita.
+fn hash_sah(garam: &[u8], hash: &[u8]) -> bool { garam.len() >= 16 && garam.len() <= 64 && hash.len() == 32 }
+
 /// `dok::password_verify(kata, hash)` → bool.
 pub fn password_verify(args: &[Value]) -> Result<Value, String> {
     let kata = teks_arg(args.get(0), "dok::password_verify", "kata sandinya")?;
@@ -320,6 +336,9 @@ pub fn password_verify(args: &[Value]) -> Result<Value, String> {
     let (Ok(garam), Ok(harusnya)) = (b64url_balik(bagian[3]), b64url_balik(bagian[4])) else {
         return Ok(Value::Bool(false));
     };
+    // Bentuk `password_hash` persis: garam 16 bita, hash 32 bita. Hash panjang dulu memperbanyak blok PBKDF2 (CPU tanpa
+    // batas), hash 1 bita cocok 1 banding 256 (AGI-20261119-40).
+    if !hash_sah(&garam, &harusnya) { return Ok(Value::Bool(false)); }
     let hitung = pbkdf2(kata.as_bytes(), &garam, putaran, harusnya.len().max(1));
     Ok(Value::Bool(sama_waktu_tetap(&hitung, &harusnya)))
 }
@@ -338,7 +357,10 @@ pub fn password_needs_rehash(args: &[Value]) -> Result<Value, String> {
         None => PUTARAN_BAWAAN,
     };
     let bagian: Vec<&str> = simpan.split('$').collect();
-    let tersimpan = (bagian.len() == 5 && bagian[0] == "pbkdf2" && bagian[1] == "sha256")
+    // Hash yang bentuknya tidak sah juga perlu diringkas ulang: ia tidak akan pernah cocok (AGI-20261119-40).
+    let bentuk = bagian.len() == 5 && matches!((b64url_balik(bagian[3]), b64url_balik(bagian[4])),
+        (Ok(g), Ok(h)) if hash_sah(&g, &h));
+    let tersimpan = (bentuk && bagian[0] == "pbkdf2" && bagian[1] == "sha256")
         .then(|| bagian[2].parse::<u32>().ok()).flatten();
     Ok(Value::Bool(tersimpan != Some(sasaran)))
 }
@@ -466,9 +488,9 @@ fn cari(data: &[(&str, Value)], konteks: &Value, jalur: &str) -> Option<Value> {
     let mut bagian = jalur.split('.');
     let pertama = bagian.next()?;
     let mut kini = data.iter().rev().find(|(k, _)| *k == pertama).map(|(_, v)| v.clone())
-        .or_else(|| ladang(konteks, pertama).cloned())?;
+        .or_else(|| ladang_template(konteks, pertama).cloned())?;
     for b in bagian {
-        kini = ladang(&kini, b).cloned()?;
+        kini = ladang_template(&kini, b).cloned()?;
     }
     Some(kini)
 }

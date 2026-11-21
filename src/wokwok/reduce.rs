@@ -85,6 +85,12 @@ pub fn semua(a: &Nd, r: Reduksi) -> Hasil<Nd> {
         };
     }
     if r.indeks() {
+        // Bulat diurutkan sebagai bulat (AGI-20261120-25); yang pertama dari nilai kembar, seperti jalur pecahan.
+        if let Buf::I64(v) = &a.buf {
+            let ambil = |i: usize, j: usize| if r == Reduksi::ArgMin { v[j] < v[i] } else { v[j] > v[i] };
+            let i = (1..v.len()).fold(0usize, |t, j| if ambil(t, j) { j } else { t });
+            return Ok(Nd::skalar_i64(i as i64));
+        }
         let v = a.f64_pinjam();
         let i = posisi_ekstrem(&v, r == Reduksi::ArgMin)
             .ok_or_else(|| format!("wokwok::{}: semua elemennya NaN", r.nama()))?;
@@ -279,6 +285,12 @@ pub fn urutkan(a: &Nd) -> Hasil<Nd> {
 
 /// Posisi-posisi yang akan mengurutkan array ini.
 pub fn urutan_indeks(a: &Nd) -> Hasil<Nd> {
+    if let Buf::I64(v) = &a.buf {
+        let mut idx: Vec<usize> = (0..v.len()).collect();
+        idx.sort_by_key(|&i| v[i]);
+        let n = idx.len();
+        return Nd::baru(Buf::I64(idx.into_iter().map(|i| i as i64).collect()), vec![n]);
+    }
     let v = a.f64_data();
     let mut idx: Vec<usize> = (0..v.len()).collect();
     idx.sort_by(|&i, &j| v[i].partial_cmp(&v[j]).unwrap_or_else(|| {

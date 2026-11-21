@@ -170,6 +170,8 @@ fn _cocok_nama(tok, nama) {
 
 /// Cocokkan pola yang sudah dikompilasi dengan jalur relatif (`a/b/c.jrg`).
 pub fn cocok_pola(k, jalur) {
+    // Pola relatif tidak cocok dengan jalur absolut atau bersegmen kosong, seperti `kompilasi` menolaknya (AGI-20261119-33).
+    if str::starts_with(jalur, "/") || str::contains(jalur, "//") { return false }
     let nama = arr::filter(str::split(jalur, "/"), |s| s != "")
     let p = k.bagian
     let n = len(nama)

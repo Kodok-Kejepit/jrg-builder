@@ -100,7 +100,8 @@ impl Uang {
         var keluar = []
         var i = 0
         while i < n {
-            let tambahan = i < sisa $ 1 : 0
+            // Sisa negatif dibagi dengan tanda yang sama: `-10 / 3` dulu kehilangan satu unit (AGI-20261119-33).
+            let tambahan = sisa >= 0 $ (i < sisa $ 1 : 0) : (i < -sisa $ -1 : 0)
             keluar = arr::push(keluar, Uang { unit: dasar + tambahan, desimal: self.desimal })
             i = i + 1
         }
