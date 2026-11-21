@@ -883,11 +883,13 @@ typedef struct {
     int64_t (*lain)(void);
     void (*luncur)(void (*)(void *), void *);
     uintptr_t (*id)(void);
+    int64_t (*siap_lain)(void);
 } JrgKait;
 void jrg_ko_serah(void);
 int64_t jrg_ko_lain(void);
 void jrg_ko_spawn(void (*fn)(void *), void *arg);
 uintptr_t jrg_ko_aktor(void);
+int64_t jrg_ko_siap_lain(void);
 
 // Dipancarkan codegen kalau ada isi buram yang bisa sampai ke jembatan (`jrg_buram_jembatan_isi`).
 __attribute__((weak)) void jrg_buram_jembatan_isi(const JrgAny *, JrgAny *);
@@ -903,7 +905,7 @@ void jrg_jembatan_lepas(const JrgAny *v) {
 
 // Hasil: 0 nilai biasa, 1 `Some`/`Ok`, 2 `None`, 3 `Err`; kegagalan builtinnya menghentikan program.
 int32_t jrg_jembatan(const char *nama, int64_t nl, const JrgAny *args, int64_t n, JrgAny *out) {
-    static const JrgKait kait = { jrg_alloc, jrg_dict_tempat, jrg_any_ubah, jrg_buram_jembatan_isi, jrg_ko_serah, jrg_ko_lain, jrg_ko_spawn, jrg_ko_aktor };
+    static const JrgKait kait = { jrg_alloc, jrg_dict_tempat, jrg_any_ubah, jrg_buram_jembatan_isi, jrg_ko_serah, jrg_ko_lain, jrg_ko_spawn, jrg_ko_aktor, jrg_ko_siap_lain };
     // Pustakanya tidak ditautkan: program ini tidak pernah memanggil builtin lewat jembatan,
     // jadi nilai titipan tidak mungkin ada — yang sampai ke sini tag yang tak dikenal.
     if (jrg_jembatan_panggil == 0) {

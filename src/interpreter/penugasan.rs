@@ -276,28 +276,27 @@ impl Interpreter {
         tgt: &Expr,
         env: &mut Env,
     ) -> Result<(String, Vec<Langkah>), Signal> {
-        let mut steps: Vec<Langkah> = Vec::new();
+        // Jalur dikumpulkan dari luar ke dalam, lalu indeksnya DIHITUNG dari kiri ke kanan seperti tiga mesin lain —
+        // dulu dihitung sambil mengumpulkan, jadi `g[a()][b()]` menjalankan `b()` sebelum `a()` (AGI-20261120-03).
+        let mut jalur: Vec<&Expr> = Vec::new();
         let mut kini = tgt;
         let root = loop {
             match kini {
                 Expr::Ident(name, _) => break name.clone(),
-                Expr::Index { obj, idx, .. } => {
-                    let v = self.eval_expr(idx, env)?;
-                    steps.push(Langkah::Index(v, kini.span()));
-                    kini = obj;
-                }
-                Expr::Field { obj, field, .. } => {
-                    steps.push(Langkah::Field(field.clone(), kini.span()));
-                    kini = obj;
-                }
+                Expr::Index { obj, .. } | Expr::Field { obj, .. } => { jalur.push(kini); kini = obj; }
                 lain => {
                     return runtime_err!("{}", crate::interpreter::pesan_bukan_sasaran(lain));
                 }
             }
         };
-        // Dikumpulkan dari luar ke dalam, jadi dibalik supaya urutannya
-        // sama dengan urutan penulisannya.
-        steps.reverse();
+        let mut steps: Vec<Langkah> = Vec::with_capacity(jalur.len());
+        for e in jalur.into_iter().rev() {
+            match e {
+                Expr::Index { idx, .. } => { let v = self.eval_expr(idx, env)?; steps.push(Langkah::Index(v, e.span())); }
+                Expr::Field { field, .. } => steps.push(Langkah::Field(field.clone(), e.span())),
+                _ => unreachable!("cuma Index/Field yang dikumpulkan"),
+            }
+        }
         Ok((root, steps))
     }
 

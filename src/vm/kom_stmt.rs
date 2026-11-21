@@ -441,6 +441,7 @@ impl Compiler {
                     CompileError::new("spawn menangkap lebih dari 255 local")
                 })?;
                 let mut c = Compiler::new("<goroutine>", arity);
+                c.saudara = self.saudara.clone();
                 c.scope_depth = 1;
                 for (name, _) in &captures {
                     let slot = c.locals.len();

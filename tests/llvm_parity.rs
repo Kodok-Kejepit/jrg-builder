@@ -1022,6 +1022,8 @@ pub fn main() {
 
 /// `(nama, program, kata-kunci-interpreter, kata-kunci-llvm)`
 const DITOLAK_INTERP_DAN_LLVM: &[(&str, &str, &str, &str)] = &[
+    ("kebuntuan: Future membaca pointer di tengah ptr::update yang menunggunya (AGI-20261120-17)", "fn main() {\n    let p = ptr::new(1)\n    ptr::update(p, |x| { let f = Future::new(|| ptr::get(p)); x + future::await(f) })\n    wok(\"tidak sampai\")\n}\n",
+     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
     ("kebuntuan: dua kunci AB-BA (AGI-20261119-44)", "fn main() {\n    let m1 = Mutex::new()\n    let m2 = Mutex::new()\n    let siap = Chan::new(0)\n    m1.lock()\n    spawn { m2.lock(); siap <- true; m1.lock() }\n    <-siap\n    m2.lock()\n    wok(\"tidak sampai\")\n}\n",
      "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
     ("kebuntuan: goroutine menunggu kunci, main menunggu channel darinya (AGI-20261119-44)", "fn main() {\n    let m = Mutex::new()\n    let ch = Chan::new(0)\n    m.lock()\n    spawn { m.lock(); ch <- 1 }\n    wok(<-ch)\n}\n",

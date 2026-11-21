@@ -108,6 +108,10 @@ pub fn periksa_sibuk(id: u64, fname: &str) -> Result<(), String> {
     Ok(())
 }
 
+static PENUNGGU_SEL: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+/// Ada thread yang sedang menunggu sel pointer yang dipegang aktor lain.
+pub fn ada_penunggu_sel() -> bool { PENUNGGU_SEL.load(std::sync::atomic::Ordering::SeqCst) > 0 }
+
 /// Kunci sel yang dipegang aktor lain: penunggunya terlihat detektor kebuntuan, jadi `ptr::update` yang menunggu
 /// aktor penunggu itu dilaporkan buntu, bukan menggantung (AGI-20261120-17).
 pub fn kunci_sel<T>(sel: &std::sync::Mutex<T>) -> Result<std::sync::MutexGuard<'_, T>, String> {
@@ -116,7 +120,19 @@ pub fn kunci_sel<T>(sel: &std::sync::Mutex<T>) -> Result<std::sync::MutexGuard<'
         Err(std::sync::TryLockError::Poisoned(p)) => return Ok(p.into_inner()),
         Err(std::sync::TryLockError::WouldBlock) => {}
     }
-    if !crate::antrean::buntu::aktif() { return Ok(sel.lock().unwrap_or_else(|p| p.into_inner())); }
+    if !crate::antrean::buntu::aktif() {
+        // Biner `--emit-llvm`: penunggunya dihitung supaya jembatan bisa melihat kebuntuan (`ada_penunggu_sel`).
+        PENUNGGU_SEL.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let g = loop {
+            match sel.try_lock() {
+                Ok(g) => break g,
+                Err(std::sync::TryLockError::Poisoned(p)) => break p.into_inner(),
+                Err(std::sync::TryLockError::WouldBlock) => std::thread::sleep(std::time::Duration::from_micros(500)),
+            }
+        };
+        PENUNGGU_SEL.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+        return Ok(g);
+    }
     let mut b = crate::antrean::buntu::Blokir::mulai();
     let mut periksa = std::time::Instant::now();
     loop {

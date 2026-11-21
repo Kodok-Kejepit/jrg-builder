@@ -536,6 +536,8 @@ impl Compiler {
 
                 let arity = params.len() as u8;
                 let mut c = Compiler::new("<closure>", arity);
+                // `fn` bersarang di fungsi penciptanya terlihat juga dari closure, seperti interpreter (AGI-20261120-03).
+                c.saudara = self.saudara.clone();
                 // Closure di dalam sebuah method masih "di dalam tipe itu": ia bisa
                 // menangkap `self` dan interpreter memang mengizinkannya menyentuh field …
                 c.chunk.tipe_self = self.chunk.tipe_self.clone();

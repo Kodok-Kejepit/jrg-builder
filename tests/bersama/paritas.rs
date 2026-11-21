@@ -3234,4 +3234,24 @@ fn main() {
     wok(c.get_pixel(1, 1))
 }
 "#),
+    ("fn bersarang terlihat dari closure dan go, indeks penugasan dihitung kiri ke kanan (AGI-20261120-03)", r#"
+package main
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+var hitung = 0
+fn berikut() -> int { hitung += 1; return hitung - 1 }
+fn bersarang() {
+    fn kali2(x) { return x * 2 }
+    coba(|| kali2(21))
+    wok(arr::map([1, 2, 3], |x| kali2(x)))
+    let ch = Chan::new(1)
+    go { ch <- kali2(7) }
+    wok(<-ch)
+}
+pub fn main() {
+    bersarang()
+    var grid = [[0, 0], [0, 0]]
+    grid[berikut()][berikut()] = 9
+    wok(grid)
+}
+"#),
 ];

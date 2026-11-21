@@ -28,6 +28,8 @@ pub struct Kait {
     luncur: extern "C" fn(extern "C" fn(*mut u8), *mut u8),
     /// Pemilik logis korutin yang sedang jalan (`jrg_ko_aktor`).
     id: extern "C" fn() -> usize,
+    /// Masih ada korutin lain yang siap atau tidur (`jrg_ko_siap_lain`).
+    siap_lain: extern "C" fn() -> i64,
 }
 
 /// Korutin yang dibuat jembatan untuk menjalankan fungsi program atas nama aktor lain (callback `ptr::update`):
@@ -302,7 +304,17 @@ fn layani(nama: &str, masuk: Vec<VmValue>, k: &Kait) -> Hasil {
         MELAYANI.with(|x| x.set(false));
         let _ = tx.send(Kirim(r));
     }));
+    let mut buntu_sejak: Option<std::time::Instant> = None;
     let hasil = loop {
+        // Penunggu sel `ptr::` di thread pembantu yang tidak akan pernah dilepas: tidak ada korutin lain yang bisa maju.
+        if jrgc::dok::ptr::ada_penunggu_sel() && (k.siap_lain)() == 0 {
+            let t = *buntu_sejak.get_or_insert_with(std::time::Instant::now);
+            if t.elapsed() > std::time::Duration::from_millis(200) {
+                break Ok(Some(Err(jrgc::antrean::PESAN_BUNTU.to_string())));
+            }
+        } else {
+            buntu_sejak = None;
+        }
         // Kuncinya dilepas sebelum tugasnya jalan: tugas itu boleh masuk `layani` lagi.
         let tugas = antre().1.lock().unwrap_or_else(|p| p.into_inner()).try_recv().ok();
         // Handler dari thread koneksi jadi korutin sendiri: yang menunggu (`ws_recv`, `sleep`, channel)

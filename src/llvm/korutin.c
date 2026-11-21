@@ -298,6 +298,9 @@ int64_t jrg_ko_lain(void) { return jrg_ko_hidup; }
 
 // Identitas korutin yang sedang jalan: status panik runtime dicatat per korutin (AGI-20261120-08).
 uintptr_t jrg_ko_id(void) { return (uintptr_t)jrg_ko_kini; }
+// Masih ada korutin lain yang bisa maju (siap atau tidur)? Jembatan memakainya untuk melihat kebuntuan pada penunggu
+// sel `ptr::` di thread pembantunya, yang tidak terlihat penjadwal ini (AGI-20261120-17).
+int64_t jrg_ko_siap_lain(void) { return jrg_ko_siap != 0 || jrg_ko_tidur_daftar != 0; }
 // Pemilik logis (aktor) korutin yang sedang jalan — dipakai jembatan untuk penanda `ptr::update`.
 uintptr_t jrg_ko_aktor(void) { return (uintptr_t)jrg_ko_efektif(); }
 

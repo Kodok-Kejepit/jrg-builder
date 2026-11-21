@@ -432,12 +432,38 @@ body[data-situs="profil"]::before { content: ""; position: fixed; inset: var(--k
 .profil-garis { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
 .profil-garis li { border-left: 3px solid var(--aksen); }
 .profil-kontak { padding-left: 20px; }
+.profil-sertifikat { margin: 0; display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 28px;
+  align-items: center; padding: 22px; border: 1px solid var(--garis); border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--panel) 92%, #1f6b4f) 0%, var(--panel) 60%); }
+.sertifikat-gambar { display: block; border-radius: 10px; overflow: hidden; line-height: 0;
+  box-shadow: 0 10px 28px rgba(20, 50, 38, .22), 0 0 0 1px rgba(20, 50, 38, .12); transition: transform .2s ease, box-shadow .2s ease; }
+.sertifikat-gambar:hover { transform: translateY(-2px) rotate(-.4deg); box-shadow: 0 16px 36px rgba(20, 50, 38, .28), 0 0 0 1px #1f6b4f; }
+.sertifikat-gambar img { width: 100%; height: auto; display: block; }
+.sertifikat-isi .rel { color: #1f6b4f; }
+.sertifikat-isi h3 { font: 600 24px/1.25 var(--serif); margin: 2px 0 8px; }
+.sertifikat-isi > p { margin: 0 0 14px; color: var(--tinta-2); font-size: 15px; }
+.sertifikat-angka { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 6px 28px; margin: 0 0 14px; }
+.sertifikat-angka dt { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--tinta-3); }
+.sertifikat-angka dd { margin: 2px 0 0; font: 600 20px/1.2 var(--serif); }
+.sertifikat-angka .sertifikat-skor { font-size: 40px; line-height: 1; color: #1f6b4f; }
+.sertifikat-id { font-size: 14px; color: var(--tinta-3); margin: 0 0 10px; }
+.sertifikat-id code { font-size: .95em; background: var(--aksen-lembut); padding: .1em .4em; border-radius: 4px; color: var(--tinta); }
+.sertifikat-isi .lanjut { font: 600 13px var(--mono); color: var(--aksen-kuat); text-decoration: none; }
+.sertifikat-isi .lanjut:hover { text-decoration: underline; }
+:root[data-tema="gelap"] .profil-sertifikat { background: linear-gradient(135deg, color-mix(in srgb, var(--panel) 85%, #2f9c74) 0%, var(--panel) 60%); }
+:root[data-tema="gelap"] .sertifikat-isi .rel, :root[data-tema="gelap"] .sertifikat-angka .sertifikat-skor { color: #6fd3a8; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="terang"]) .profil-sertifikat { background: linear-gradient(135deg, color-mix(in srgb, var(--panel) 85%, #2f9c74) 0%, var(--panel) 60%); }
+  :root:not([data-tema="terang"]) .sertifikat-isi .rel, :root:not([data-tema="terang"]) .sertifikat-angka .sertifikat-skor { color: #6fd3a8; }
+}
 @media (max-width: 680px) {
   .profil { padding: 28px 16px 24px; }
   .profil-kepala { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 24px 18px; gap: 18px; }
   .profil-foto { width: 140px; height: 140px; }
   .profil-kepala .baris-tombol { justify-content: center; }
   .profil-minat { grid-template-columns: 1fr; }
+  .profil-sertifikat { grid-template-columns: 1fr; padding: 16px; gap: 18px; }
+  .sertifikat-angka { gap: 6px 20px; }
 }
 </style>
 <script>try{var t=localStorage.getItem('jrg-tema');if(t)document.documentElement.dataset.tema=t}catch(e){}</script>

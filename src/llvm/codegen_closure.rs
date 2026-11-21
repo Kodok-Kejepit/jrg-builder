@@ -174,6 +174,8 @@ impl Codegen {
         let nama_fn = self.nama_closure_baru();
         if badan_spawn { self.closure_spawn.insert(nama_fn.clone()); }
         self.tandai_fn_terpakai(&nama_fn);
+        // `fn` bersarang yang terlihat di sini ikut terlihat dari badannya, yang dipancarkan belakangan (AGI-20261120-03).
+        self.catat_sarang(&nama_fn);
         self.antre_fn(KerjaFn::Closure {
             nama: nama_fn.clone(),
             params: params.iter().enumerate()
@@ -278,6 +280,8 @@ impl Codegen {
         let nama = format!("$duga_closure{}_{}", span.lo.0, span.hi.0);
         // Salinan penduga memilih unitnya dari nama; closure milik modul diduga di unit modul itu.
         self.unit_simbol.insert(nama.clone(), self.unit_kini);
+        // `fn` bersarang di fungsi penciptanya ikut terlihat dari badan closure (AGI-20261120-03).
+        self.catat_sarang(&nama);
         let duga = self.tipe_return_duga(&palsu, &subst, &nama, None, params.len());
         self.benih_lokal.clear();
         if let Ok(t) = duga {
@@ -305,6 +309,8 @@ impl Codegen {
         body: &Expr, tangkap: &[(String, JrgType)], rantai_hasil: &[Vec<JrgType>],
     ) -> Result<(), String> {
         self.mulai_fungsi_kosong(ret.clone());
+        let sarang = self.sarang_fn.get(nama).cloned().unwrap_or_default();
+        let sarang_lama = std::mem::replace(&mut self.fn_bersarang, sarang);
         self.cur_self_ty = self.ruang_simbol.get(nama).cloned();
         self.tangkapan = nama_naik_ke_heap_ekspr(body);
         // Badan closure tidak berbagi penyangga antar-lokalnya: salinan saat diikat seperti dulu.
@@ -364,6 +370,7 @@ impl Codegen {
         self.rantai_hasil = rantai_lama;
         self.ret_ditebak = ditebak_lama;
         self.nama_diikat = nama_lama;
+        self.fn_bersarang = sarang_lama;
         Ok(())
     }
 }
