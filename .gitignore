@@ -52,3 +52,5 @@ __pycache__/
 /jembatan/target/
 # Pustaka gabungan runtime + jembatan untuk `--emit-wasm` (`wasm-rt/`), dibangun otomatis seperti `jrgrt`.
 /wasm-rt/target/
+# kernel hasil `jrgc --bebas`
+examples_bebas/*.elf

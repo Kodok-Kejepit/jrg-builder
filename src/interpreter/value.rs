@@ -1582,6 +1582,12 @@ pub fn pesan_path_tak_dikenal_plus(
     path: &str, saran: Option<&str>, di_tempat_lain: &[String],
     ekor_ada_telanjang: bool,
 ) -> String {
+    // `asli::` ada, tapi cuma di kernel `--bebas`: satu kalimat untuk ketiga mesin.
+    if let Some(n) = path.strip_prefix("asli::") {
+        if crate::llvm::codegen_asli::NAMA_ASLI.iter().any(|(m, _)| *m == n) {
+            return crate::llvm::codegen_asli::pesan_bukan_bebas(n);
+        }
+    }
     // Ejaan yang mirip DIDAHULUKAN kalau ada: `jawa::free` salah di bagian
     // NAMESPACE-nya, dan `jawir::free` menjawab persis itu.
     if let Some((ns, ekor)) = path.rsplit_once("::") {

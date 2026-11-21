@@ -1,0 +1,41 @@
+// Interupsi perangkat keras dari JRG: PIC 8259 dipetakan ulang ke vektor 32..47, PIT 100 Hz, papan ketik PS/2.
+//   jrgc examples_bebas/timer.jrg --bebas --layar
+package main
+
+var DETAK = 0
+var TOMBOL = 0
+
+fn pasang_pic() {
+    // ICW1..ICW4: master ke 32, slave ke 40, lalu buka IRQ0 (timer) dan IRQ1 (papan ketik).
+    for _, p in [[0x20, 0x11], [0xA0, 0x11], [0x21, 32], [0xA1, 40], [0x21, 4], [0xA1, 2], [0x21, 1], [0xA1, 1]] {
+        asli::outb(p[0], p[1])
+    }
+    asli::outb(0x21, 0xFC)
+    asli::outb(0xA1, 0xFF)
+}
+
+fn pasang_pit(hz: int) {
+    let pembagi = 1193182 / hz
+    asli::outb(0x43, 0x36)
+    asli::outb(0x40, pembagi & 255)
+    asli::outb(0x40, pembagi >> 8)
+}
+
+pub fn main() {
+    asli::interupsi(32, |v| {
+        DETAK = DETAK + 1
+        asli::outb(0x20, 0x20)
+    })
+    asli::interupsi(33, |v| {
+        let kode = asli::inb(0x60)
+        if kode < 0x80 { TOMBOL = TOMBOL + 1 }
+        asli::outb(0x20, 0x20)
+    })
+    pasang_pic()
+    pasang_pit(100)
+    asli::sti()
+    let awal = time::now_ms()
+    while DETAK < 200 { asli::hlt() }
+    asli::cli()
+    wok("200 detak timer dalam", time::now_ms() - awal, "ms; tombol ditekan:", TOMBOL)
+}

@@ -94,6 +94,14 @@ struct Cli {
     #[arg(long = "emit-wasm", conflicts_with_all = ["emit_llvm", "jit", "apk"])]
     emit_wasm: bool,
 
+    /// Kernel tanpa sistem operasi: kompilasi jadi kernel x86_64 multiboot lewat backend LLVM, lalu boot di QEMU
+    #[arg(long = "bebas", conflicts_with_all = ["jit", "emit_wasm", "apk", "use_vm"])]
+    bebas: bool,
+
+    /// Dengan --bebas: buka jendela layar VGA QEMU (bawaan tanpa jendela, keluaran lewat serial)
+    #[arg(long = "layar", requires = "bebas")]
+    layar: bool,
+
     /// Bungkus jadi aplikasi Android (lewat backend LLVM)
     #[arg(long = "apk", value_name = "BERKAS")]
     apk: Option<PathBuf>,
@@ -365,7 +373,7 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
         return Err(Vec::new());
     }
 
-    if cli.emit_llvm || cli.apk.is_some() || cli.emit_wasm {
+    if cli.emit_llvm || cli.apk.is_some() || cli.emit_wasm || cli.bebas {
         // `--uji`: `main` buatan yang menjalankan tiap tes (`llvm::uji`); tanpa tes, kalimat yang sama dengan acuan.
         let uji_ast;
         let ast = if cli.uji {
@@ -389,6 +397,7 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
                 fast_math: effective_fast_math,
                 full_buffered_stdout: effective_full_buffered_stdout,
                 ptr32: cli.emit_wasm,
+                bebas: cli.bebas,
             },
             &jalur_impor,
         ).map_err(|errs| {
@@ -413,6 +422,20 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
                 return Ok(());
             }
             let kode = jrgc::wasm::jalankan(&berkas, &[]).map_err(|e| vec![format!("jrgc: {}", e)])?;
+            keluar(kode);
+        }
+
+        if cli.bebas {
+            // `-o` bawaan (`a.out`) jadi `<nama-sumber>.elf` di folder kerja.
+            let berkas = if cli.output == std::path::Path::new("a.out") {
+                PathBuf::from(std::path::Path::new(nama).file_stem().unwrap_or_default()).with_extension("elf")
+            } else { cli.output.clone() };
+            jrgc::bebas::kompilasi(&ir, &berkas, cli.verbose).map_err(|e| vec![format!("jrgc: --bebas: {}", e)])?;
+            if cli.no_run {
+                jrgc::ecetak_t!("[jrgc] kernel: {} (boot: qemu-system-x86_64 -kernel {})", berkas.display(), berkas.display());
+                return Ok(());
+            }
+            let kode = jrgc::bebas::jalankan(&berkas, cli.layar).map_err(|e| vec![format!("jrgc: --bebas: {}", e)])?;
             keluar(kode);
         }
 

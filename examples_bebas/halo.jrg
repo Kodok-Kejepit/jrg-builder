@@ -1,0 +1,27 @@
+// Kernel JRG pertama: boot tanpa sistem operasi, menulis ke serial dan langsung ke memori layar VGA.
+//   jrgc examples_bebas/halo.jrg --bebas            (QEMU, keluaran lewat serial)
+//   jrgc examples_bebas/halo.jrg --bebas --layar    (juga jendela layar)
+package main
+
+const LAYAR = 0xB8000
+
+fn tulis_layar(baris: int, kolom: int, teks: string, warna: int) {
+    for i, b in teks.bytes() {
+        asli::tulis16(LAYAR + (baris * 80 + kolom + i) * 2, (warna << 8) | b)
+    }
+}
+
+fn teks_register(r: int) -> string {
+    var s = ""
+    for i in 0..4 { s = s + str(rune((r >> (i * 8)) & 255)) }
+    s
+}
+
+pub fn main() {
+    let (_, b, c, d) = asli::cpuid(0, 0)
+    let vendor = teks_register(b) + teks_register(d) + teks_register(c)
+    tulis_layar(12, 20, "Halo dari kernel JRG!", 0x1F)
+    tulis_layar(13, 20, "CPU: " + vendor, 0x0A)
+    wok("Halo dari kernel JRG! CPU:", vendor)
+    wok("memori layar baris 12:", asli::baca16(LAYAR + (12 * 80 + 20) * 2))
+}

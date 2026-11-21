@@ -239,6 +239,7 @@ impl Codegen {
                 let f = self.nilai_anggota_modul(u, ns, item, None, span)?;
                 return self.panggil_nilai_fungsi(&f, args, span);
             }
+            if ns == "asli" { return self.codegen_asli(item, args, span); }
             let qualified = format!("{}::{}", ns, item);
             if let Some(g) = Self::aritas_bawaan(&qualified, args.len(), span) { return Err(g); }
             if let Some(r) = self.try_builtin_call(&qualified, args, expected, span) { return r; }

@@ -168,7 +168,7 @@ pub(crate) fn bangun_apk(akar: &Path, m: &Manifest, opsi: &OpsiApk, tujuan: &Pat
     tambah_path_dependensi(akar, &mut jalur)?;
     jalur.dedup();
     let ir = crate::llvm::generate_ir_dgn_jalur(&ast,
-        crate::llvm::codegen::CodegenOptions { fast_math: false, full_buffered_stdout: false, ptr32: false }, &jalur)
+        crate::llvm::codegen::CodegenOptions { fast_math: false, full_buffered_stdout: false, ptr32: false, bebas: false }, &jalur)
         .map_err(|errs| {
             let g: Vec<_> = errs.iter().map(|e| crate::llvm::galat::GalatLlvm::dari_pesan(e)).collect();
             crate::diag::laporkan_llvm(&mut peta, &g);

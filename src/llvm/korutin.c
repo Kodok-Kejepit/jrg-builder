@@ -10,8 +10,8 @@ typedef struct { void *sp, *data[2]; char *simpan; int mulai, tidur; } JrgKontek
 #include <signal.h>
 #endif
 #if defined(__wasi__)
-#elif defined(__ANDROID__)
-// bionic tidak punya swapcontext/makecontext: stack ditukar sendiri (cuma register callee-saved).
+#elif defined(__ANDROID__) || defined(JRG_BEBAS)
+// bionic dan mode `--bebas` tidak punya swapcontext/makecontext: stack ditukar sendiri (register callee-saved).
 typedef struct { void *sp; } JrgKonteks;
 void jrg_ko_tukar(void **simpan, void *muat);
 #if defined(__aarch64__)
@@ -138,7 +138,7 @@ static void jrg_ko_pindah(JrgKo *ke) {
 #if defined(__wasi__)
     jrg_wasm_cek_jembatan();
     jrg_ko_wasm_tukar(dari, ke);
-#elif defined(__ANDROID__)
+#elif defined(__ANDROID__) || defined(JRG_BEBAS)
     jrg_ko_tukar(&dari->ctx.sp, ke->ctx.sp);
 #else
     swapcontext(&dari->ctx, &ke->ctx);
@@ -270,7 +270,7 @@ void jrg_ko_spawn(void (*fn)(void *), void *arg) {
         jrg_panic((const unsigned char *)pesan, (int64_t)(sizeof pesan - 1));
     }
 #if defined(__wasi__)
-#elif defined(__ANDROID__)
+#elif defined(__ANDROID__) || defined(JRG_BEBAS)
     mprotect(k->stack, 4096, PROT_NONE);
     // Bingkai awal: register nol, alamat kembali `jrg_ko_masuk`, puncaknya rata 16 byte.
     uintptr_t puncak = ((uintptr_t)k->stack + JRG_KO_STACK) & ~(uintptr_t)15;
@@ -370,7 +370,7 @@ int jrg_ko_selamatkan(void (*fn)(void)) {
     sigemptyset(&sinyal);
     sigaddset(&sinyal, SIGSEGV);
     sigaddset(&sinyal, SIGBUS);
-#if defined(__ANDROID__)
+#if defined(__ANDROID__) || defined(JRG_BEBAS)
     sigprocmask(SIG_UNBLOCK, &sinyal, 0);
     uintptr_t puncak = ((uintptr_t)st + JRG_KO_SELAMAT) & ~(uintptr_t)15;
     void **bingkai = (void **)(puncak - JRG_KO_BINGKAI);

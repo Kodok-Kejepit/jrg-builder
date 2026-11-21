@@ -48,6 +48,8 @@ pub struct CodegenOptions {
     pub full_buffered_stdout: bool,
     /// Sasaran berpenunjuk 32 bit (`--emit-wasm`, wasm32): ukuran tipe yang isinya penunjuk mengikutinya.
     pub ptr32: bool,
+    /// Kernel tanpa sistem operasi (`--bebas`): `asli::` boleh dipakai.
+    pub bebas: bool,
 }
 
 /// Keadaan `defer` satu fungsi.

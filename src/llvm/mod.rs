@@ -65,6 +65,7 @@ pub mod modul;
 pub mod generik;
 mod codegen_tumbuh;
 mod isi_pasti;
+pub mod codegen_asli;
 mod codegen_statis;
 mod codegen_sambung;
 pub mod uji;
@@ -77,7 +78,7 @@ pub mod apk;
 pub mod apk_bahasa;
 
 /// Program yang sedang dikompilasi memanggil builtin lewat jembatan: pustakanya ikut ditautkan.
-pub(crate) static PAKAI_JEMBATAN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+pub static PAKAI_JEMBATAN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -1097,6 +1098,7 @@ mod tests {
                 fast_math: true,
                 full_buffered_stdout: true,
                 ptr32: false,
+                bebas: false,
             },
         )
         .unwrap();

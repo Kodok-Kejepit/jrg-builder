@@ -66,6 +66,10 @@ jobs:
           fi
           (cd $GITHUB_WORKSPACE/runtime && cargo build --release --target wasm32-wasip1)
 
+      # Kernel `--bebas` (tanpa sistem operasi) boot di QEMU: `tests/bebas.rs`.
+      - name: QEMU (--bebas)
+        run: sudo apt-get install -y --no-install-recommends qemu-system-x86
+
       # `JRG_SOPAN` sengaja tidak diset: `tests/nada.rs` menguji sapaan yang
       # variabel itu matikan.
       - name: Bangun tes
@@ -79,6 +83,7 @@ jobs:
           RUST_TEST_THREADS: "2"
           # Alat `--emit-wasm` yang hilang di CI = gagal, bukan tes yang dilewati diam-diam.
           JRG_WASI_WAJIB: "1"
+          JRG_QEMU_WAJIB: "1"
         run: |
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
           ( while true; do echo "[mem $(date +%T)] $(free -m | awk '/Mem/ {print "pakai", $3, "sedia", $7}') | $(ps -eo rss=,comm= --sort=-rss | head -3 | awk '{printf "%s:%dM ", $2, $1/1024}')"; sleep 20; done ) &

@@ -26,6 +26,11 @@ static void jrg_lapor_stack(void) {
     jrg_panic((const unsigned char *)JRG_PESAN_STACK, (int64_t)(sizeof JRG_PESAN_STACK - 1));
 }
 
+#if defined(JRG_BEBAS)
+// Kernel `--bebas`: penangan page fault (`libc_mini.c`) melapor dari stack IST-nya, tanpa sinyal.
+void jrg_bebas_lapor_stack(void) { jrg_lapor_stack(); }
+#else
+
 static void jrg_tangani_stack(int sinyal, siginfo_t *info, void *konteks) {
     (void)konteks;
     uintptr_t alamat = (uintptr_t)info->si_addr;
@@ -71,4 +76,5 @@ __attribute__((constructor)) static void jrg_pasang_jaga_stack(void) {
     sigaction(SIGSEGV, &aksi, 0);
     sigaction(SIGBUS, &aksi, 0);
 }
+#endif  // JRG_BEBAS
 #endif
