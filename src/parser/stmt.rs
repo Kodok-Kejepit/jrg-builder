@@ -125,8 +125,12 @@ impl Parser {
             TokenKind::Ident(n)
                 if matches!(n.as_str(), "def" | "function" | "func")
                     && matches!(self.peek_kind(1), Some(TokenKind::Ident(_)))
-                    && matches!(self.peek_kind(2), Some(TokenKind::LParen)) =>
-                Some(format!("fungsi di JRG ditulis `fn nama(a, b) {{ .. }}`, bukan `{} nama(..)`", n)),
+                    && matches!(self.peek_kind(2), Some(TokenKind::LParen)) => {
+                let n = n.clone();
+                // Badan berkurawal (JS/Go) dilompati utuh; badan Python tanpa kurawal dibiarkan.
+                if self.kurung_lalu_kurawal(2) { self.lompati_bentuk_berblok(); }
+                Some(format!("fungsi di JRG ditulis `fn nama(a, b) {{ .. }}`, bukan `{} nama(..)`", n))
+            }
             TokenKind::KwFor if matches!(self.peek_kind(1), Some(TokenKind::LParen)) && self.kurung_berisi_titik_koma(1) => {
                 self.lompati_bentuk_berblok();
                 Some(concat!(
@@ -167,6 +171,22 @@ impl Parser {
         pesan.map(|p| self.error_di(p, galat_di))
     }
 
+    /// Sesudah `)` pasangan `(` di `peek(i)` ada `{` sebelum `:`, `;` atau akhir berkas.
+    fn kurung_lalu_kurawal(&self, i: usize) -> bool {
+        let mut dalam = 0usize;
+        let mut tutup = false;
+        for t in &self.tokens[(self.pos + i).min(self.tokens.len())..] {
+            match t.kind {
+                TokenKind::LParen if !tutup => dalam += 1,
+                TokenKind::RParen if !tutup => { dalam -= 1; if dalam == 0 { tutup = true; } }
+                TokenKind::LBrace if tutup => return true,
+                TokenKind::Colon | TokenKind::Semi | TokenKind::Eof | TokenKind::RBrace if tutup => return false,
+                _ => {}
+            }
+        }
+        false
+    }
+
     /// `(` di `peek(i)` memuat `;` sebelum `)` pasangannya: kepala `for` gaya C, bukan pola tuple.
     fn kurung_berisi_titik_koma(&self, i: usize) -> bool {
         let mut dalam = 0usize;
@@ -190,7 +210,11 @@ impl Parser {
                 TokenKind::LParen | TokenKind::LBracket => kurung += 1,
                 TokenKind::RParen | TokenKind::RBracket => kurung = kurung.saturating_sub(1),
                 TokenKind::RBrace if kurung == 0 => return,
-                TokenKind::LBrace if kurung == 0 => { self.advance(); self.tutup_kurawal(1); return; }
+                TokenKind::LBrace if kurung == 0 => {
+                    self.advance(); self.tutup_kurawal(1);
+                    self.lompat_sampai = Some(self.pos);
+                    return;
+                }
                 _ => {}
             }
             self.advance();

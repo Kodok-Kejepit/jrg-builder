@@ -653,6 +653,14 @@ impl Parser {
                 _ => {}
             }
         }
+        // `f(c ? a : b)`: di daftar argumen galatnya sudah di `a`, tepat sesudah `?`.
+        if matches!(kb(1), Some(TokenKind::Question)) && matches!(self.current().kind,
+            TokenKind::IntLit(_) | TokenKind::FloatLit(_) | TokenKind::StringLit(_) | TokenKind::Ident(_)
+            | TokenKind::KwTrue | TokenKind::KwFalse) {
+            return Some(concat!(
+                "ternary di JRG ditulis `syarat $ a : b` — `?` di JRG cuma berarti meneruskan ",
+                "galat (`f()?`)").to_string());
+        }
         // `c ? a : b` gaya C: `?` sudah dibaca sebagai penerus galat, lalu `:` tidak punya tempat.
         if matches!(self.current().kind, TokenKind::Colon) {
             let mut i = self.pos;

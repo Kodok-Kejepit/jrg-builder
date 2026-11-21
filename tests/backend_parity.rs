@@ -234,6 +234,7 @@ const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
     ("parser: def gaya Python", "def tambah(a, b):\n    return a + b\n", "fungsi di JRG ditulis `fn nama(a, b)", "fungsi di JRG ditulis `fn nama(a, b)"),
     ("parser: for gaya C", "for (var i = 0; i < 3; i += 1) { wok(i) }\nwok(\"sesudah\")\n", "`for (awal; syarat; langkah)` gaya C bukan bentuk JRG", "`for (awal; syarat; langkah)` gaya C bukan bentuk JRG"),
     ("parser: ternary gaya C", "let x = 1\nlet y = x > 0 ? 2 : 3\nwok(y)\n", "ternary di JRG ditulis `syarat $ a : b`", "ternary di JRG ditulis `syarat $ a : b`"),
+    ("parser: ternary gaya C di argumen", "wok(1 > 0 ? 2 : 3)\n", "ternary di JRG ditulis `syarat $ a : b`", "ternary di JRG ditulis `syarat $ a : b`"),
     ("parser: = di kurung kepala if", "var x = 1\nif (x = 5) { wok(x) }\n", "`=` itu MENUGASKAN nilai, bukan membandingkan", "`=` itu MENUGASKAN nilai, bukan membandingkan"),
     // Audit `Result`/`?` 2026-11-18: `?` yang mengubah keluarga kembalian yang DITULIS gagal saat jalan di dua mesin
     // (dulu diam-diam `None` dari fungsi `-> Result`), satu kalimat (`pesan_sebar_keluarga`), juga lewat JIT.
@@ -10013,7 +10014,9 @@ fn bentuk_asing_jadi_satu_galat() {
         "pub fn main() {\n    var x = 1\n    if (x = 5) {\n        wok(5)\n    } else {\n        wok(0)\n    }\n    wok(x)\n}\n",
     ];
     // Mode skrip (tanpa `package`) memulihkan galat lewat jalurnya sendiri.
-    let skrip = ["var x = 1\nif (x = 5) {\n    wok(5)\n} else if x == 2 {\n    wok(2)\n}\nwok(x)\n"];
+    let skrip = ["var x = 1\nif (x = 5) {\n    wok(5)\n} else if x == 2 {\n    wok(2)\n}\nwok(x)\n",
+        // Badan berkurawal `function`/`func` dilompati utuh; pemulihan tidak memakan bentuk berikutnya.
+        "function f(a) {\n    return a\n}\nwok(1)\n"];
     for src in kasus.iter().map(|s| format!("package main\n{}", s)).chain(skrip.iter().map(|s| s.to_string())) {
         let k = jalankan_keluaran_penuh(&src, false);
         let n = k.matches("error[").count();
