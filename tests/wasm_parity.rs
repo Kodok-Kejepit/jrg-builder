@@ -96,7 +96,10 @@ const PENANDA_KORUTIN: &[&str] = &["spawn", "Chan::new", "Future::new", "Task::s
 const LEWAT_JEMBATAN: &[&str] = &["goroutine tetap mendapat giliran selama main menunggu proses::",
     // Celah wasm (Bayu, 2026-11-20): WASI tanpa thread pembantu ber-stack besar, jadi penjelajah nilai `jrgc` di
     // korutin Asyncify kehabisan stack pada 8 000 tingkat — gagal keras ("call stack size exceeded"), bukan diam.
-    "JSON dan jembatan atas nilai bersarang 8 ribu tingkat di goroutine (AGI-20261118-04)"];
+    "JSON dan jembatan atas nilai bersarang 8 ribu tingkat di goroutine (AGI-20261118-04)",
+    // Celah wasm (Bayu, 2026-11-21): callback `ptr::update` yang berganti korutin di dalam builtin jembatan — gagal
+    // keras ("belum didukung --emit-wasm"), bukan diam.
+    "ptr::update ulang dari aktor yang sama ditolak, update serentak sah (AGI-20261120-17)"];
 
 #[test]
 fn korutin_lewat_wasm_sama_dengan_interpreter() {

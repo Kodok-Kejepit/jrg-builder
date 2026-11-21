@@ -5933,6 +5933,20 @@ fn proses_mengalir_di_dua_mesin() {
     }
 }
 
+/// Tulisan ke pipa yang penuh tidak menahan kunci daftar proses (timer `batas_ms` tetap menghentikan), `masukan` besar
+/// tidak membuat `mulai` macet, dan `baca` tidak menunggu cucu yang mewarisi pipanya (AGI-20261119-30).
+#[test]
+fn proses_tidak_macet_di_dua_mesin() {
+    if !cfg!(unix) { return; }
+    let program = "package main\npub fn main() {\n    let besar = str::repeat(\"x\", 300000)\n    let a = proses::mulai(\"sleep\", [\"5\"], dict { batas_ms: 400 }).unwrap()\n    let r = proses::tulis(a, besar)\n    wok(\"tulis selesai\", r.is_err())\n    let b = proses::mulai(\"sleep\", [\"5\"], dict { batas_ms: 400, masukan: besar }).unwrap()\n    wok(\"mulai kembali\")\n    var s = proses::baca(b).unwrap()\n    while !s.selesai { time::sleep_ms(50); s = proses::baca(b).unwrap() }\n    wok(\"habis waktu\", s.habis_waktu)\n    let c = proses::mulai(\"sh\", [\"-c\", \"sleep 2 & echo hai\"]).unwrap()\n    time::sleep_ms(200)\n    var t = proses::baca(c).unwrap()\n    while !t.selesai { time::sleep_ms(50); t = proses::baca(c).unwrap() }\n    wok(\"cucu\", str::trim(t.keluaran))\n}\n";
+    for vm in [false, true] {
+        let mulai = std::time::Instant::now();
+        let k = jalankan_keluaran_penuh(program, vm);
+        assert_eq!(k, "tulis selesai true\nmulai kembali\nhabis waktu true\ncucu hai\n", "vm={}", vm);
+        assert!(mulai.elapsed() < std::time::Duration::from_secs(20), "vm={}: {:?}", vm, mulai.elapsed());
+    }
+}
+
 /// Angka di luar 64 bit tidak dipotong diam-diam: `future::timeout(f, 2^64)` dulu menunggu 0 ms,
 /// dan `Ptr` ber-`id` 2^64+1 dulu membaca alokasi nomor 1 — sejak Fase PEGANGAN `id`-nya tidak bisa ditulis.
 #[test]

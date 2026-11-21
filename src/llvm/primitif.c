@@ -455,7 +455,21 @@ static uint32_t jrg_any_lukis(const JrgAny *a) {
 }
 
 // Salin nilai berlukisan `dari` di `src` menjadi berlukisan `ke` di `dst`; 0 kalau mustahil.
-static int jrg_lukis_ubah(const void *src, uint32_t dari, void *dst, uint32_t ke) {
+// Daftar kerja di heap untuk dua penjelajah di bawah: nilai bertag bersarang dalam (dibuat loop, bukan rekursi
+// program) dulu menghabiskan stack C di sini (AGI-20261119-15), seperti `jrg_tampil_lukis` sebelum dibuat iteratif.
+typedef struct { const void *src; void *dst; uint32_t dari, ke; } JrgLukisTugas;
+typedef struct { JrgLukisTugas *isi; int64_t n, kap; } JrgLukisDaftar;
+static void jrg_lukis_dorong(JrgLukisDaftar *d, const void *src, uint32_t dari, void *dst, uint32_t ke) {
+    if (d->n == d->kap) {
+        d->kap = d->kap ? d->kap * 2 : 64;
+        d->isi = realloc(d->isi, (size_t)d->kap * sizeof *d->isi);
+        if (d->isi == 0) jrg_panic((const unsigned char *)"memori habis", 12);
+    }
+    d->isi[d->n++] = (JrgLukisTugas){ src, dst, dari, ke };
+}
+
+// Satu langkah ubah: daun ditulis langsung, array/dict mendorong elemennya. 0 = tidak bisa diubah.
+static int jrg_lukis_ubah_satu(JrgLukisDaftar *kerja, const void *src, uint32_t dari, void *dst, uint32_t ke) {
     if (dari == ke) { memcpy(dst, src, (size_t)jrg_lukis_ukuran(ke)); return 1; }
     uint32_t jd = dari & 15, jk = ke & 15;
     if (jk == JRG_L_ANY) {
@@ -477,7 +491,9 @@ static int jrg_lukis_ubah(const void *src, uint32_t dari, void *dst, uint32_t ke
     if (jd == JRG_L_ANY) {
         const JrgAny *k = src;
         uint32_t l = jrg_any_lukis(k);
-        return l != 0 && jrg_lukis_ubah(&k->isi, l, dst, ke);
+        if (l == 0) return 0;
+        jrg_lukis_dorong(kerja, &k->isi, l, dst, ke);
+        return 1;
     }
     if (jd != jk) return 0;
     uint32_t ed = dari >> 4, ek = ke >> 4;
@@ -486,8 +502,7 @@ static int jrg_lukis_ubah(const void *src, uint32_t dari, void *dst, uint32_t ke
         const JrgSlice *s = src;
         int64_t ud = jrg_lukis_ukuran(ed), uk = jrg_lukis_ukuran(ek);
         char *buf = jrg_alloc(s->len > 0 ? jrg_kali(s->len, uk) : 1, 8);
-        for (int64_t i = 0; i < s->len; i++)
-            if (!jrg_lukis_ubah((const char *)s->ptr + i * ud, ed, buf + i * uk, ek)) return 0;
+        for (int64_t i = 0; i < s->len; i++) jrg_lukis_dorong(kerja, (const char *)s->ptr + i * ud, ed, buf + i * uk, ek);
         JrgSlice h = { buf, s->len };
         memcpy(dst, &h, sizeof h);
         return 1;
@@ -501,7 +516,7 @@ static int jrg_lukis_ubah(const void *src, uint32_t dari, void *dst, uint32_t ke
             char *pd = buf + i * lk;
             memset(pd, 0, (size_t)lk);
             memcpy(pd, ps, sizeof(JrgStr));
-            if (!jrg_lukis_ubah(ps + 16, ed, pd + 16, ek)) return 0;
+            jrg_lukis_dorong(kerja, ps + 16, ed, pd + 16, ek);
         }
         if (d->ptr != 0 && d->len > 0) jrg_peta_kepala(buf)->terurut = jrg_peta_kepala(d->ptr)->terurut;
         JrgDict h = { buf, d->len };
@@ -511,35 +526,54 @@ static int jrg_lukis_ubah(const void *src, uint32_t dari, void *dst, uint32_t ke
     return 0;
 }
 
+static int jrg_lukis_ubah(const void *src, uint32_t dari, void *dst, uint32_t ke) {
+    JrgLukisDaftar kerja = { 0, 0, 0 };
+    int ok = 1;
+    jrg_lukis_dorong(&kerja, src, dari, dst, ke);
+    while (ok && kerja.n > 0) {
+        JrgLukisTugas t = kerja.isi[--kerja.n];
+        ok = jrg_lukis_ubah_satu(&kerja, t.src, t.dari, t.dst, t.ke);
+    }
+    free(kerja.isi);
+    return ok;
+}
+
 // Salin-dalam DI TEMPAT nilai berlukisan `l`: penyangga array/dict di dalamnya diganti salinannya,
 // supaya salinan sebuah kotak tidak berbagi isi dengan aslinya.
-static void jrg_lukis_salin(void *p, uint32_t l) {
-    uint32_t j = l & 15, e = l >> 4;
-    if (j == JRG_L_ANY) {
-        JrgAny *k = p;
-        uint32_t dalam = jrg_any_lukis(k);
-        if ((dalam & 15) == JRG_L_SLICE || (dalam & 15) == JRG_L_DICT) jrg_lukis_salin(&k->isi, dalam);
-        return;
+static void jrg_lukis_salin(void *p0, uint32_t l0) {
+    JrgLukisDaftar kerja = { 0, 0, 0 };
+    jrg_lukis_dorong(&kerja, 0, l0, p0, 0);
+    while (kerja.n > 0) {
+        JrgLukisTugas t = kerja.isi[--kerja.n];
+        void *p = t.dst;
+        uint32_t l = t.dari, j = l & 15, e = l >> 4;
+        if (j == JRG_L_ANY) {
+            JrgAny *k = p;
+            uint32_t dalam = jrg_any_lukis(k);
+            if ((dalam & 15) == JRG_L_SLICE || (dalam & 15) == JRG_L_DICT) jrg_lukis_dorong(&kerja, 0, dalam, &k->isi, 0);
+            continue;
+        }
+        if ((e & 15) == 0 || (e & 15) == JRG_L_BURAM) continue;
+        int bersarang = (e & 15) == JRG_L_ANY || (e & 15) == JRG_L_SLICE || (e & 15) == JRG_L_DICT;
+        if (j == JRG_L_SLICE) {
+            JrgSlice *s = p;
+            int64_t uk = jrg_lukis_ukuran(e);
+            char *buf = jrg_alloc(s->len > 0 ? jrg_kali(s->len, uk) : 1, 8);
+            if (s->len > 0) memcpy(buf, s->ptr, (size_t)(s->len * uk));
+            if (bersarang) for (int64_t i = 0; i < s->len; i++) jrg_lukis_dorong(&kerja, 0, e, buf + i * uk, 0);
+            s->ptr = (void *)buf;
+        } else if (j == JRG_L_DICT) {
+            JrgDict *d = p;
+            if (d->ptr == 0 || d->len == 0) continue;
+            int64_t lk = jrg_lukis_langkah(e);
+            char *buf = jrg_dict_baru(d->len, lk, 8);
+            memcpy(buf, d->ptr, (size_t)(d->len * lk));
+            jrg_peta_kepala(buf)->terurut = jrg_peta_kepala(d->ptr)->terurut;
+            if (bersarang) for (int64_t i = 0; i < d->len; i++) jrg_lukis_dorong(&kerja, 0, e, buf + i * lk + 16, 0);
+            d->ptr = (void *)buf;
+        }
     }
-    if ((e & 15) == 0 || (e & 15) == JRG_L_BURAM) return;
-    int bersarang = (e & 15) == JRG_L_ANY || (e & 15) == JRG_L_SLICE || (e & 15) == JRG_L_DICT;
-    if (j == JRG_L_SLICE) {
-        JrgSlice *s = p;
-        int64_t uk = jrg_lukis_ukuran(e);
-        char *buf = jrg_alloc(s->len > 0 ? jrg_kali(s->len, uk) : 1, 8);
-        if (s->len > 0) memcpy(buf, s->ptr, (size_t)(s->len * uk));
-        if (bersarang) for (int64_t i = 0; i < s->len; i++) jrg_lukis_salin(buf + i * uk, e);
-        s->ptr = (void *)buf;
-    } else if (j == JRG_L_DICT) {
-        JrgDict *d = p;
-        if (d->ptr == 0 || d->len == 0) return;
-        int64_t lk = jrg_lukis_langkah(e);
-        char *buf = jrg_dict_baru(d->len, lk, 8);
-        memcpy(buf, d->ptr, (size_t)(d->len * lk));
-        jrg_peta_kepala(buf)->terurut = jrg_peta_kepala(d->ptr)->terurut;
-        if (bersarang) for (int64_t i = 0; i < d->len; i++) jrg_lukis_salin(buf + i * lk + 16, e);
-        d->ptr = (void *)buf;
-    }
+    free(kerja.isi);
 }
 
 void jrg_any_salin(JrgAny *a) { jrg_lukis_salin(a, JRG_L_ANY); }

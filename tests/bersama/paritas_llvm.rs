@@ -5487,7 +5487,7 @@ fn main() {
     }
 }
 "#),
-    ("ptr::update ulang dari aktor yang sama ditolak, update serentak sah, tangkap memegang kunci pemanggil (AGI-20261120-17, AGI-20261119-13)", r#"
+    ("ptr::update ulang dari aktor yang sama ditolak, update serentak sah (AGI-20261120-17)", r#"
 fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
 fn sibuk() {
     let p = ptr::new(1)
@@ -5497,7 +5497,18 @@ fn sibuk() {
     wok(ptr::get(p))
 }
 
-fn kunci_tangkap() {
+fn main() {
+    sibuk()
+    let p = ptr::new(0)
+    let selesai = Chan::new(4)
+    for i in 0..4 { spawn { for j in 0..50 { ptr::update(p, |x| x + 1) }; selesai <- true } }
+    for i in 0..4 { <-selesai }
+    wok(ptr::get(p))
+}
+"#),
+    ("tangkap memegang kunci pemanggil (AGI-20261119-13)", r#"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn main() {
     let m = Mutex::new()
     m.lock()
     coba(|| m.lock())
@@ -5507,15 +5518,71 @@ fn kunci_tangkap() {
     wok("lepas di luar berhasil")
     coba(|| m.unlock())
 }
+"#),
+    ("await/join/timeout serentak atas tugas yang sama: satu dapat, yang lain gagal sudah diambil (AGI-20261119-38)", r#"
+fn ganda() {
+    let f = Future::new(|| { time::sleep_ms(30); return 42 })
+    let done = Chan::new(2)
+    go { let r = tangkap(|| future::await(f)); done.send(r.is_ok()) }
+    go { let r = tangkap(|| future::await(f)); done.send(r.is_ok()) }
+    let a = done.recv()
+    let b = done.recv()
+    wok(a != b)
+    let t = Task::spawn(|| { time::sleep_ms(30); return 7 })
+    go { let r = tangkap(|| task::join(t)); done.send(r.is_ok()) }
+    go { let r = tangkap(|| task::join(t)); done.send(r.is_ok()) }
+    let c = done.recv()
+    let d = done.recv()
+    wok(c != d)
+}
 
 fn main() {
-    sibuk()
-    kunci_tangkap()
-    let p = ptr::new(0)
-    let selesai = Chan::new(4)
-    for i in 0..4 { spawn { for j in 0..50 { ptr::update(p, |x| x + 1) }; selesai <- true } }
-    for i in 0..4 { <-selesai }
-    wok(ptr::get(p))
+    ganda()
+    let f = Future::new(|| { time::sleep_ms(30); return 42 })
+    let done = Chan::new(2)
+    go { let r = tangkap(|| future::await(f)); done.send("await " + str(r.is_ok())) }
+    go { let r = tangkap(|| future::timeout(f, 2000)); done.send("timeout " + str(r.is_ok())) }
+    let a = done.recv()
+    let b = done.recv()
+    wok(a != b)
+}
+"#),
+    ("future::race atas tugas yang sudah diambil dan array kosong, Chan::new negatif (AGI-20261119-12)", r#"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn main() {
+    let f = Future::new(|| 1)
+    wok(future::await(f))
+    coba(|| future::race([f]))
+    coba(|| future::race([]))
+    coba(|| Chan::new(-5))
+}
+"#),
+    ("defer di let/penugasan/return/larik, defer atas closure var modul, salin nilai bertag bersarang dalam (AGI-20261119-15)", r#"
+package main
+var cb = || wok("awal")
+fn pakai() {
+    defer cb()
+    cb = || wok("akhir")
+    wok("badan")
+}
+fn nilai() -> int {
+    let x = { defer wok("tunda di let"); 42 }
+    var y = 0
+    y = { defer wok("tunda di penugasan"); 7 }
+    return x + y + { defer wok("tunda di return"); 1 }
+}
+fn dalam() {
+    var x = json::parse("[1]")
+    var i = 0
+    while i < 100000 { x = [x]; i = i + 1 }
+    var y = x
+    wok("salin dalam", len(y))
+}
+pub fn main() {
+    dalam()
+    pakai()
+    wok(nilai())
+    wok([1, { defer wok("tunda di larik"); 2 }])
 }
 "#),
 ];

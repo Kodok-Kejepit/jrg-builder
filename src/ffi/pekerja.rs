@@ -114,6 +114,23 @@ fn path_skrip(rt: &Runtime) -> std::io::Result<std::path::PathBuf> {
     }
 }
 
+/// Kunci acak per proses `jrgc`, diserahkan ke worker lewat `JRG_FFI_KUNCI`. Penanda handle/fungsi dan baris jawaban
+/// cuma sah kalau membawanya: data JSON biasa berkunci `__pyref__`/`__jrgfn__` dulu membajak handle dan callback, dan
+/// tulisan liar ke fd 1 menggeser jawaban (AGI-20261119-24).
+pub(crate) fn kunci_sesi() -> &'static str {
+    static K: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    K.get_or_init(|| {
+        let b = crate::host::acak(16).unwrap_or_else(|| {
+            let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+            (t ^ std::process::id() as u128).to_le_bytes().to_vec()
+        });
+        b.iter().map(|x| format!("{:02x}", x)).collect()
+    })
+}
+
+/// `{"__pyref__":id,"__kunci__":..}` — penanda handle yang dikenali worker.
+pub(crate) fn penanda_ref(id: u64) -> String { format!("{{\"__pyref__\":{},\"__kunci__\":\"{}\"}}", id, kunci_sesi()) }
+
 fn mulai_worker(rt: &Runtime) -> Result<Worker, String> {
     let script = path_skrip(rt).map_err(|e| format!(
         "tidak bisa menulis runner {} di temp dir: {}", rt.nama, e))?;
@@ -122,6 +139,7 @@ fn mulai_worker(rt: &Runtime) -> Result<Worker, String> {
     for a in rt.bin_args { cmd.arg(a); }
     let mut child = cmd
         .arg(&script)
+        .env("JRG_FFI_KUNCI", kunci_sesi())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         // stderr diwariskan: `print`/`console.log`/traceback milik pemakai
@@ -282,13 +300,11 @@ pub fn kirim(rt: &'static Runtime, req_json: &str, mut panggil: Option<Panggil<'
             }
             Ok(_) => {}
         }
-        // Baris protokol selalu diawali `{"`. Yang lain adalah tulisan MENTAH kode
-        // pemakai ke fd 1 (`os.write(1, ..)`): diteruskan ke stderr, dan jawaban
-        // sungguhannya tetap ditunggu — dulu tiap jawaban sesudahnya bergeser satu.
+        // Baris protokol diawali kunci sesi; yang lain (juga yang berbentuk JSON) tulisan mentah kode pemakai ke fd 1,
+        // diteruskan ke stderr — jawaban sungguhannya tetap ditunggu, tidak bergeser.
         let baris = line.trim_end();
-        let baris = match baris.find("{\"") {
-            Some(0) => baris,
-            Some(i) => { crate::host::galat_baris(&baris[..i]); &baris[i..] }
+        let baris = match baris.find(kunci_sesi()) {
+            Some(i) => { if i > 0 { crate::host::galat_baris(&baris[..i]); } &baris[i + kunci_sesi().len()..] }
             None => { crate::host::galat_baris(baris); continue; }
         };
         let Some((n, seq, args)) = permintaan_callback(rt, baris) else {
@@ -438,7 +454,7 @@ pub fn value_to_json(rt: &'static Runtime, v: &Value, out: &mut String) -> Resul
         // aslinya.
         v if v.bisa_dipanggil() => {
             match rt.daftar_fungsi(v.clone()) {
-                Some(n) => out.push_str(&format!("{{\"__jrgfn__\":{}}}", n)),
+                Some(n) => out.push_str(&format!("{{\"__jrgfn__\":{},\"__kunci__\":\"{}\"}}", n, kunci_sesi())),
                 None => return Err(format!(
                     "berupa fungsi, dan fungsi cuma bisa dikirim lewat `{ns}::call` atau \
                      `{ns}::method` — bukan lewat `{ns}::eval`/`{ns}::exec`, yang tidak \
@@ -730,13 +746,15 @@ pub fn json_to_value(rt: &'static Runtime, j: Json) -> Value {
         Json::Str(s) => Value::Str(std::sync::Arc::new(s)),
         Json::Arr(items) => Value::Array(items.into_iter().map(|v| json_to_value(rt, v)).collect()),
         Json::Obj(pairs) => {
-            if pairs.len() == 1 && pairs[0].0 == "__pyrepr__" {
-                if let Json::Str(s) = &pairs[0].1 {
+            // Penanda cuma sah kalau membawa kunci sesi; dict data biasa berkunci sama tetap dict.
+            let bertanda = pairs.iter().any(|(k, v)| k == "__kunci__" && matches!(v, Json::Str(s) if s == kunci_sesi()));
+            if bertanda && pairs.len() == 2 && pairs.iter().any(|(k, _)| k == "__pyrepr__") {
+                if let Some((_, Json::Str(s))) = pairs.iter().find(|(k, _)| k == "__pyrepr__") {
                     return Value::Str(std::sync::Arc::new(s.clone()));
                 }
             }
             // Handle yang dikirim INLINE, bukan di tingkat teratas respons.
-            if pairs.iter().any(|(k, _)| k == "__pyref__") {
+            if bertanda && pairs.iter().any(|(k, _)| k == "__pyref__") {
                 let mut id = None;
                 let mut tipe = String::from("object");
                 for (k, v) in &pairs {

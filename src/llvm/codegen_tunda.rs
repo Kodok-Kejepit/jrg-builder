@@ -1,64 +1,16 @@
 // src/llvm/codegen_tunda.rs — llvm/codegen_tunda.rs — `defer` untuk backend LLVM.
 
-use crate::parser::{Block, DeferStmt, Expr, ForStmt, IfStmt, MatchArm, MatchBody, Stmt};
+use crate::parser::{Block, DeferStmt, Expr};
 
 use super::codegen::{Codegen, Val};
 use super::types::JrgType;
 
-/// Apakah badan fungsi ini memuat `defer` di mana pun, termasuk di dalam blok
-/// bersarang?
-pub fn blok_punya_defer(b: &Block) -> bool {
-    b.stmts.iter().any(di_stmt) || b.tail.as_deref().map_or(false, di_ekspr)
-}
+/// Satu penelusur untuk "di mana pun di badan ini": dulu cuma pernyataan dan blok yang ditelusuri, jadi `defer` di
+/// `let`, penugasan, `return` atau argumen tidak membuka bingkai dan gagal dikompilasi (AGI-20261119-15).
+pub fn blok_punya_defer(b: &Block) -> bool { crate::interpreter::capture::ada_defer_blok(b) }
 
-fn di_if(i: &IfStmt) -> bool {
-    i.init.as_deref().map_or(false, di_stmt)
-        || di_ekspr(&i.cond)
-        || blok_punya_defer(&i.then)
-        || i.else_ifs.iter().any(|(s, c, b)| {
-            s.as_deref().map_or(false, di_stmt) || di_ekspr(c) || blok_punya_defer(b)
-        })
-        || i.else_.as_ref().map_or(false, blok_punya_defer)
-}
-
-fn di_arm(a: &MatchArm) -> bool {
-    a.guard.as_deref().map_or(false, di_ekspr)
-        || match &a.body {
-            MatchBody::Block(b) => blok_punya_defer(b),
-            MatchBody::Expr(e) => di_ekspr(e),
-        }
-}
-
-fn di_stmt(s: &Stmt) -> bool {
-    match s {
-        Stmt::Defer(_) => true,
-        Stmt::Block(b) => blok_punya_defer(b),
-        Stmt::If(i) => di_if(i),
-        Stmt::While(w) => blok_punya_defer(&w.body) || di_ekspr(&w.cond),
-        Stmt::For(ForStmt::Classic { init, cond, post, body, .. }) => {
-            init.as_deref().map_or(false, di_stmt)
-                || cond.as_deref().map_or(false, di_ekspr)
-                || post.as_deref().map_or(false, di_stmt)
-                || blok_punya_defer(body)
-        }
-        Stmt::For(ForStmt::Range { iter, body, .. }) => di_ekspr(iter) || blok_punya_defer(body),
-        Stmt::Loop(l) => blok_punya_defer(&l.body),
-        Stmt::Match(m) => di_ekspr(&m.scrutinee) || m.arms.iter().any(di_arm),
-        Stmt::Expr(e) => di_ekspr(e),
-        _ => false,
-    }
-}
-
-/// `if` dan `match` di JRG adalah EKSPRESI, jadi sebuah `if` yang berdiri
-/// sendiri sebagai statement sampai ke sini sebagai `Stmt::Expr(Expr::If)` — …
-pub fn di_ekspr(e: &Expr) -> bool {
-    match e {
-        Expr::Block(b) => blok_punya_defer(b),
-        Expr::If(i) => di_if(i),
-        Expr::Match { scrutinee, arms, .. } => di_ekspr(scrutinee) || arms.iter().any(di_arm),
-        _ => false,
-    }
-}
+/// `defer` di mana pun di ekspresi ini (badan closure).
+pub fn di_ekspr(e: &Expr) -> bool { crate::interpreter::capture::ada_defer_ekspr(e) }
 
 impl Codegen {
     pub fn codegen_defer(&mut self, d: &DeferStmt) -> Result<(), String> {
@@ -96,7 +48,8 @@ impl Codegen {
         let mut fungsi_beku = None;
         if let Expr::Call { func, .. } = &*d.expr {
             let nilai = match &**func {
-                Expr::Ident(n, _) => self.lookup_local(n).is_some(),
+                // `var` modul juga nilai yang bisa ditugasi ulang sebelum fungsi kembali (AGI-20261119-15).
+                Expr::Ident(n, _) => self.lookup_local(n).is_some() || self.var_global.contains_key(&self.k(n)),
                 Expr::PathExpr { .. } => false,
                 _ => true,
             };

@@ -172,6 +172,11 @@ pub fn register(vm: &mut Vm) {
                 klaim(&serah);
                 return Ok(VmValue::some(cek_gagal_vm(v)?));
             }
+            // Diambil penunggu lain selama menunggu: galat "sudah diambil", seperti interpreter — dulu `None` sesudah
+            // tenggatnya habis (AGI-20261119-38).
+            if !masih_boleh(&serah) {
+                return Err(crate::interpreter::tugas::pesan_sudah_diserahkan("future::timeout"));
+            }
             if crate::interpreter::tugas::lewat(batas) { return Ok(VmValue::none()); }
             std::thread::sleep(std::time::Duration::from_millis(1));
         }

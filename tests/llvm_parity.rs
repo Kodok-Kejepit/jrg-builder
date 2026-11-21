@@ -597,6 +597,32 @@ fn uji_di_llvm_seperti_acuan() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// `proses::tulis` ke anak yang dihentikan menjawab `Err`, bukan SIGPIPE yang mematikan biner (AGI-20261119-30).
+#[test]
+fn proses_tidak_macet_dan_tidak_mati_sigpipe() {
+    if !ada_clang() || !cfg!(unix) { eprintln!("lewati"); return; }
+    let l = jalankan_llvm("package main\npub fn main() {\n    let besar = str::repeat(\"x\", 300000)\n    let a = proses::mulai(\"sleep\", [\"5\"], dict { batas_ms: 400 }).unwrap()\n    let r = proses::tulis(a, besar)\n    wok(\"tulis selesai\", r.is_err())\n    let b = proses::mulai(\"sleep\", [\"5\"], dict { batas_ms: 400, masukan: besar }).unwrap()\n    wok(\"mulai kembali\")\n    var s = proses::baca(b).unwrap()\n    while !s.selesai { time::sleep_ms(50); s = proses::baca(b).unwrap() }\n    wok(\"habis waktu\", s.habis_waktu)\n    let c = proses::mulai(\"sh\", [\"-c\", \"sleep 2 & echo hai\"]).unwrap()\n    time::sleep_ms(200)\n    var t = proses::baca(c).unwrap()\n    while !t.selesai { time::sleep_ms(50); t = proses::baca(c).unwrap() }\n    wok(\"cucu\", str::trim(t.keluaran))\n}\n");
+    assert!(l.sukses, "{}", l.galat);
+    assert_eq!(l.keluaran, "tulis selesai true\nmulai kembali\nhabis waktu true\ncucu hai");
+}
+
+/// Stack korutin yang selesai dilepas walau banyak yang selesai beruntun sebelum `spawn` berikutnya: jumlah pemetaan
+/// memori tidak ikut jumlah gelombang goroutine (AGI-20261119-12; dulu 2 VMA dan 1 MiB bocor per korutin).
+#[test]
+fn stack_korutin_selesai_dilepas() {
+    if !ada_clang() { eprintln!("lewati: clang tidak ada"); return; }
+    let peta = |gelombang: usize| -> usize {
+        let src = format!("package main\npub fn main() {{ let done = Chan::new(10)\n for b in 0..{} {{\n \
+            for i in 0..10 {{ go {{ done.send(1) }} }}\n for i in 0..10 {{ <-done }} }}\n \
+            wok(len(str::split(fs::read(\"/proc/self/maps\"), \"\\n\"))) }}", gelombang);
+        let l = jalankan_llvm(&src);
+        assert!(l.sukses, "{}\n{}", src, l.galat);
+        l.keluaran.trim().parse().unwrap()
+    };
+    let (sedikit, banyak) = (peta(5), peta(60));
+    assert!(banyak < sedikit + 20, "pemetaan memori naik {} -> {} untuk 50 -> 600 goroutine", sedikit, banyak);
+}
+
 /// Kebuntuan yang terlihat dari goroutine `spawn` atau badan Future mengakhiri programnya SEKALI.
 /// Dulu goroutine itu saja yang tamat, lalu kebuntuan yang sama ditemukan lagi sampai stack habis.
 #[test]

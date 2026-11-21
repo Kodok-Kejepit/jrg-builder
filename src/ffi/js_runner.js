@@ -16,8 +16,12 @@ for (const m of ['log', 'info', 'warn', 'error', 'debug', 'trace', 'dir']) {
 
 function tidur(ms) { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); }
 
+// Kunci sesi dari jrgc: baris jawaban diawali kunci ini, dan penanda handle/fungsi cuma sah kalau membawanya.
+const KUNCI = process.env.JRG_FFI_KUNCI || '';
+function bertanda(v) { return Object.keys(v).length === 2 && v.__kunci__ === KUNCI; }
+
 function kirim(obj) {
-  let b = Buffer.from(keJson(obj) + '\n');
+  let b = Buffer.from(KUNCI + keJson(obj) + '\n');
   while (b.length > 0) {
     try { b = b.subarray(fs.writeSync(1, b)); }
     catch (e) { if (e.code === 'EAGAIN') tidur(1); else throw e; }
@@ -174,7 +178,7 @@ function bungkusFungsiJrgMentah(fid) {
     const seq = ++_seq;
     const konv = args.map((a) => {
       // Argumen yang tidak bisa menyeberang jadi handle.
-      try { return konversi(a); } catch { return { __pyref__: simpan(a) }; }
+      try { return konversi(a); } catch { return { __pyref__: simpan(a), __kunci__: KUNCI }; }
     });
     kirim({ cb: fid, seq, args: konv });
     for (;;) {
@@ -193,12 +197,12 @@ function bungkusFungsiJrgMentah(fid) {
 function bukaRef(v) {
   if (v === null || typeof v !== 'object') return v;
   if (Array.isArray(v)) return v.map(bukaRef);
-  if (Object.prototype.hasOwnProperty.call(v, '__pyref__')) {
+  if (bertanda(v) && Object.prototype.hasOwnProperty.call(v, '__pyref__')) {
     const id = v.__pyref__;
     if (!_objs.has(id)) throw new Error('handle js sudah tidak ada (id ' + id + ')');
     return _objs.get(id);
   }
-  if (Object.prototype.hasOwnProperty.call(v, '__jrgfn__')) return bungkusFungsiJrg(v.__jrgfn__);
+  if (bertanda(v) && Object.prototype.hasOwnProperty.call(v, '__jrgfn__')) return bungkusFungsiJrg(v.__jrgfn__);
   const o = {};
   for (const k of Object.keys(v)) o[k] = bukaRef(v[k]);
   return o;

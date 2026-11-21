@@ -200,7 +200,23 @@ static void jrg_ko_jadwal(void) {
 // Akhir hidup sebuah goroutine: bangunkan `main` kalau ia yang terakhir, lalu serahkan giliran.
 static void jrg_kunci_tinggal(JrgKo *ko);
 
+// Stack korutin yang sudah selesai dilepas begitu kita tidak berdiri di atasnya lagi.
+static void jrg_ko_lepas_mayat(void) {
+    if (jrg_ko_mayat && jrg_ko_mayat != jrg_ko_kini) {
+#if defined(__wasi__)
+        jrg_ko_wasm_lepas(jrg_ko_mayat);
+#else
+        munmap(jrg_ko_mayat->stack, JRG_KO_STACK);
+        if (jrg_ko_mayat->selamat) munmap(jrg_ko_mayat->selamat, JRG_KO_SELAMAT);
+#endif
+        jrg_ko_mayat = 0;
+    }
+}
+
 static void jrg_ko_tamat(JrgKo *k) {
+    // Mayat sebelumnya dilepas dulu: dulu cuma satu yang diingat, jadi korutin yang selesai beruntun sebelum `spawn`
+    // berikutnya membocorkan stack 1 MiB masing-masing (AGI-20261119-12).
+    jrg_ko_lepas_mayat();
     jrg_kunci_tinggal(k);
     jrg_ko_hidup--;
     if (jrg_ko_hidup == 0 && jrg_ko_utama_menunggu) { jrg_ko_utama_menunggu = 0; jrg_ko_antre(&jrg_ko_utama); }
@@ -234,15 +250,7 @@ void jrg_ko_wakil_berikut(void) { jrg_ko_baru_wakil = jrg_ko_efektif(); }
 
 // `fn(arg)` jadi goroutine baru; ia mulai jalan saat yang sekarang menunggu atau selesai.
 void jrg_ko_spawn(void (*fn)(void *), void *arg) {
-    if (jrg_ko_mayat && jrg_ko_mayat != jrg_ko_kini) {
-#if defined(__wasi__)
-        jrg_ko_wasm_lepas(jrg_ko_mayat);
-#else
-        munmap(jrg_ko_mayat->stack, JRG_KO_STACK);
-        if (jrg_ko_mayat->selamat) munmap(jrg_ko_mayat->selamat, JRG_KO_SELAMAT);
-#endif
-        jrg_ko_mayat = 0;
-    }
+    jrg_ko_lepas_mayat();
     JrgKo *k = jrg_alloc((int64_t)sizeof(JrgKo), 16);
     memset(k, 0, sizeof *k);
     k->fn = fn;
@@ -400,7 +408,12 @@ typedef struct {
 static void jrg_ch_panik(const char *s) { jrg_panic((const unsigned char *)s, (int64_t)strlen(s)); }
 
 void *jrg_chan_new(int64_t kap, int64_t esize) {
-    if (kap < 0) kap = 0;
+    // Ditolak seperti acuan; dulu diam-diam jadi 0 (AGI-20261119-12).
+    if (kap < 0) {
+        char pesan[96];
+        int n = snprintf(pesan, sizeof pesan, "Chan::new: kapasitas tidak boleh negatif, dapat %lld", (long long)kap);
+        jrg_panic((const unsigned char *)pesan, n);
+    }
     JrgChan *c = jrg_alloc((int64_t)sizeof(JrgChan), 8);
     memset(c, 0, sizeof *c);
     c->kap = kap;
@@ -588,6 +601,10 @@ int jrg_masa_gagal(const char *s, int64_t n) {
 // Hasil yang baru diambil ternyata galat: gagal di titik pengambilannya, seperti dua mesin lain.
 static void jrg_masa_periksa(JrgChan *c) {
     c->diambil = 1;
+    // Penunggu lain atas hasil yang sama dibangunkan tanpa nilai: mereka gagal "sudah diambil", seperti dua mesin lain —
+    // dulu tertidur selamanya dan program dinyatakan buntu (AGI-20261119-38).
+    JrgTunggu *t;
+    while ((t = jrg_ch_ambil(&c->penerima, &c->penerima_ekor)) != 0) jrg_ko_antre(t->k);
     if (!c->gagal) return;
     const char *awal = c->sekali == 2 ? "Task gagal: " : "Future gagal: ";
     int64_t na = (int64_t)strlen(awal);
@@ -600,7 +617,15 @@ static void jrg_masa_periksa(JrgChan *c) {
 // Tunggu hasilnya (`future::await`, `task::join`).
 void jrg_masa_ambil(JrgChan *c, void *out, const char *nama, int64_t nl) {
     jrg_masa_sudah(c, nama, nl);
-    jrg_chan_recv(c, out, c->esize);
+    if (jrg_ch_coba_terima(c, out) != 1) {
+        JrgTunggu saya = { jrg_ko_kini, out, 0, 0 };
+        jrg_ch_antre(&c->penerima, &c->penerima_ekor, &saya);
+        jrg_ko_jadwal();
+        if (!saya.beres) {
+            jrg_masa_sudah(c, nama, nl);
+            jrg_ch_panik("channel sudah ditutup dan kosong: tidak akan ada nilai lagi");
+        }
+    }
     jrg_masa_periksa(c);
 }
 
@@ -612,6 +637,8 @@ int32_t jrg_masa_coba(JrgChan *c, void *out, int64_t mikro, const char *nama, in
     int64_t tenggat = mikro > INT64_MAX - kini_jam ? INT64_MAX : kini_jam + mikro;
     for (;;) {
         if (c->n > 0) { jrg_chan_recv(c, out, c->esize); jrg_masa_periksa(c); return 1; }
+        // Diambil penunggu lain selama menunggu: gagal "sudah diambil", bukan `None` (AGI-20261119-38).
+        jrg_masa_sudah(c, nama, nl);
         if (mikro <= 0 || jrg_ko_jam() >= tenggat) {
             // Jawabannya keadaan SAAT ditanya, seperti mesin acuan; giliran sesudahnya membuat
             // tugas lain maju, jadi pertanyaan berikutnya bisa menemukan hasilnya.
@@ -666,7 +693,16 @@ int32_t jrg_masa_selesai(JrgChan *c) {
 
 // Indeks tugas pertama yang hasilnya siap, dari `n` penunjuk channel.
 int64_t jrg_masa_balap(JrgChan **daftar, int64_t n) {
+    // Array kosong dan tugas yang hasilnya sudah diambil tidak akan pernah siap: ditolak seperti acuan, dulu
+    // berputar selamanya (AGI-20261119-12).
+    if (n == 0) jrg_ch_panik("future::race: arraynya kosong — tidak ada yang bisa dibalap, dan menunggu tidak akan pernah "
+        "menghasilkan apa pun");
     for (;;) {
+        for (int64_t i = 0; i < n; i++) if (daftar[i]->diambil) {
+            char pesan[64];
+            int m = snprintf(pesan, sizeof pesan, "future::race: elemen ke-%lld", (long long)i);
+            jrg_masa_sudah(daftar[i], pesan, m);
+        }
         for (int64_t i = 0; i < n; i++) if (daftar[i]->n > 0) return i;
         jrg_ko_tidur(200);
     }

@@ -732,6 +732,35 @@ fn runner_python_tidak_rusak_saat_banyak_program_jalan_bersamaan() {
 // ── php:: — worker yang sama, bahasa lain. Di berkas ini, bukan berkas baru:
 // biner tes integrasi ke-17 adalah biaya nyata di mesin 7 GB.
 
+/// Data biasa berbentuk penanda (`{"__pyref__": 1}`, `{"__jrgfn__": 0}`) tidak jadi handle atau callback ke dua arah,
+/// dan baris berbentuk JSON yang ditulis langsung ke fd 1 tidak diterima sebagai jawaban (AGI-20261119-24).
+#[test]
+fn penanda_palsu_tidak_membajak_handle() {
+    let ada = |b: &str, a: &str| Command::new(b).arg(a).output().map(|o| o.status.success()).unwrap_or(false);
+    if !ada("python3", "--version") { eprintln!("dilewati: python3 tidak ada"); return; }
+    let src = "let r = py::ref(\"{'kunci': 'RAHASIA'}\")\n\
+        wok(py::call(\"builtins\", \"repr\", json::parse(\"{\\\"__pyref__\\\": 1}\")))\n\
+        wok(py::call(\"builtins\", \"repr\", json::parse(\"{\\\"__jrgfn__\\\": 0}\")))\n\
+        wok(py::eval(\"__import__('json').loads('{\\\"__pyref__\\\": 1}')\"))\n\
+        py::exec(\"import os; os.write(1, b'{\\\"ok\\\":true,\\\"value\\\":\\\"PALSU\\\"}\\\\n')\")\n\
+        wok(py::eval(\"1 + 1\"))\n";
+    for vm in [false, true] {
+        let dir = crate::bersama::dir_unik("jrg-penanda");
+        std::fs::create_dir_all(&dir).expect("bikin dir sementara");
+        let f = dir.join("uji.jrg");
+        std::fs::write(&f, src).unwrap();
+        let mut c = Command::new(jrgc());
+        c.arg(&f).arg("--sopan").stdin(std::process::Stdio::null());
+        if vm { c.arg("--vm"); }
+        let out = c.output().expect("jalankan jrgc");
+        let _ = std::fs::remove_dir_all(&dir);
+        let (o, e) = (String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr));
+        assert_eq!(o, "Result::Ok({'__pyref__': 1})\nResult::Ok({'__jrgfn__': 0})\n\
+            Result::Ok(dict {__pyref__: 1})\nResult::Ok(2)\n", "vm={}: {}", vm, e);
+        assert!(e.contains("PALSU"), "vm={}: baris palsunya harus terlihat di stderr: {}", vm, e);
+    }
+}
+
 /// Tulisan MENTAH ke fd 1 dari kode pemakai (di luar `print`/`echo`/`console`)
 /// diteruskan ke stderr, dan jawaban sesudahnya TIDAK bergeser. Dulu baris itu
 /// dibaca sebagai jawaban rusak dan `eval("1")` berikutnya menjawab `nil`.

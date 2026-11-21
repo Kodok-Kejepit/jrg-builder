@@ -47,6 +47,22 @@ pub fn names_mentioned(e: &Expr) -> HashSet<String> {
 /// Nama tidak sah yang ditandai penelusur saat ia melewati sebuah closure.
 const PENANDA_CLOSURE: &str = "\u{0}closure";
 
+/// Nama tidak sah yang ditandai penelusur saat ia melewati sebuah `defer` (juga di closure/`fn` bersarang).
+const PENANDA_DEFER: &str = "\u{0}defer";
+
+/// Apakah blok/ekspresi ini memuat `defer` di kedalaman mana pun — `let x = { defer f(); 1 }`, argumen, `return`.
+/// Perkiraan lebih: `defer` di closure atau `fn` bersarang ikut terhitung.
+pub fn ada_defer_blok(b: &Block) -> bool {
+    let mut out = HashSet::new();
+    walk_block(b, &mut out);
+    out.contains(PENANDA_DEFER)
+}
+pub fn ada_defer_ekspr(e: &Expr) -> bool {
+    let mut out = HashSet::new();
+    walk_expr(e, &mut out);
+    out.contains(PENANDA_DEFER)
+}
+
 /// Nama tidak sah yang ditandai penelusur saat ia melewati sesuatu yang menjalankan kode lain.
 const PENANDA_PANGGIL: &str = "\u{0}panggil";
 
@@ -386,7 +402,7 @@ fn walk_stmt(s: &Stmt, out: &mut HashSet<String>) {
                        else { PENANDA_KEMBALI_LAIN }.to_string());
             for v in &r.values { walk_expr(v, out); }
         }
-        Stmt::Defer(d) => walk_expr(&d.expr, out),
+        Stmt::Defer(d) => { out.insert(PENANDA_DEFER.to_string()); walk_expr(&d.expr, out) }
         Stmt::Spawn(sp) => {
             let mut dalam = HashSet::new();
             walk_block(&sp.body, &mut dalam);

@@ -72,7 +72,7 @@ fn tulis_handle_php(h: &PhpRef, out: &mut String) -> Result<(), String> {
              objeknya sudah hilang bersama proses lamanya",
             h.generasi, RT.generasi_kini()));
     }
-    out.push_str(&format!("{{\"__pyref__\":{}}}", h.id));
+    out.push_str(&super::pekerja::penanda_ref(h.id));
     Ok(())
 }
 

@@ -74,8 +74,12 @@ register_shutdown_function(static function (): void {
     jrg_kirim(['berhenti' => true, 'ok' => false, 'error' => $pesan]);
 });
 
+/** Kunci sesi dari jrgc: baris jawaban diawali kunci ini, penanda handle/fungsi cuma sah kalau membawanya. */
+function jrg_kunci(): string { static $k = null; return $k ??= (string)(getenv('JRG_FFI_KUNCI') ?: ''); }
+function jrg_bertanda(array $v): bool { return count($v) === 2 && ($v['__kunci__'] ?? null) === jrg_kunci(); }
+
 function jrg_kirim(array $pesan): void {
-    fwrite(STDOUT, jrg_json($pesan) . "\n");
+    fwrite(STDOUT, jrg_kunci() . jrg_json($pesan) . "\n");
     fflush(STDOUT);
 }
 
@@ -277,7 +281,7 @@ function jrg_ambil_objek(array $req, string $untuk): object {
 /** Penanda dari jrgc (`__pyref__`, `__jrgfn__`) jadi objeknya lagi. */
 function jrg_buka(mixed $v): mixed {
     if (!is_array($v)) return $v;
-    if (count($v) === 1) {
+    if (jrg_bertanda($v)) {
         if (array_key_exists('__pyref__', $v)) return JrgPekerja::$objs[jrg_cek_id($v['__pyref__'])];
         if (array_key_exists('__jrgfn__', $v)) return jrg_fungsi($v['__jrgfn__']);
     }
@@ -290,7 +294,7 @@ function jrg_buka(mixed $v): mixed {
 function jrg_args(array $req): array {
     $hasil = [];
     foreach ($req['args'] ?? [] as $i => $a) {
-        if (is_array($a) && count($a) === 1 && array_key_exists('__pyref__', $a)) {
+        if (is_array($a) && jrg_bertanda($a) && array_key_exists('__pyref__', $a)) {
             $hasil[$i] = &JrgPekerja::$objs[jrg_cek_id($a['__pyref__'])];
         } else {
             $hasil[$i] = jrg_buka($a);
@@ -320,7 +324,7 @@ function jrg_fungsi(mixed $n): Closure {
             try { $argl[] = jrg_konversi($a); }
             catch (JrgTakBisa $e) {
                 $d = jrg_simpan($a);
-                $argl[] = new JrgDict(['__pyref__' => $d['ref'], '__pytipe__' => $d['tipe']]);
+                $argl[] = new JrgDict(['__pyref__' => $d['ref'], '__pytipe__' => $d['tipe'], '__kunci__' => jrg_kunci()]);
             }
         }
         $seq = ++JrgPekerja::$seq;
@@ -548,6 +552,6 @@ while (($__jrg_baris = fgets(STDIN)) !== false) {
         $__jrg_teks = substr($__jrg_teks, 0, -1) . ',"fn_lepas":' . json_encode(JrgPenjagaFungsi::$mati) . '}';
         JrgPenjagaFungsi::$mati = [];
     }
-    fwrite(STDOUT, $__jrg_teks . "\n");
+    fwrite(STDOUT, jrg_kunci() . $__jrg_teks . "\n");
     fflush(STDOUT);
 }

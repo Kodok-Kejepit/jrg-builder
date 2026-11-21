@@ -168,7 +168,7 @@ fn tunggu_selesai(a: &[Value], nama: &str, o: Opsi) -> Result<Result<Selesai, St
     // Tiga pipa dikuras di utasnya sendiri: program yang menulis banyak tidak boleh macet menunggu dibaca.
     let tulis = anak.stdin.take().zip(o.masukan.clone()).map(|(mut p, t)| std::thread::spawn(move || {
         use std::io::Write;
-        let _ = p.write_all(t.as_bytes());
+        let _ = tanpa_sigpipe(|| p.write_all(t.as_bytes()));
     }));
     let lebih = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let kuras = |r: Option<Box<dyn std::io::Read + Send>>| {
@@ -217,7 +217,9 @@ fn tunggu_selesai(a: &[Value], nama: &str, o: Opsi) -> Result<Result<Selesai, St
 /// jadi `proses::baca` tidak pernah menunggu.
 struct Jalan {
     anak: std::process::Child,
-    masukan: Option<std::process::ChildStdin>,
+    /// Kunci stdin milik proses ini sendiri: menulis ke pipa yang penuh tidak menahan kunci daftar global, jadi
+    /// timer `batas_ms` dan proses lain tetap jalan (AGI-20261119-30).
+    masukan: Masukan,
     keluar: Penampung,
     galat: Penampung,
     pembaca: Vec<std::thread::JoinHandle<()>>,
@@ -226,6 +228,31 @@ struct Jalan {
 }
 
 type Penampung = std::sync::Arc<std::sync::Mutex<Vec<u8>>>;
+
+/// Tulisan ke stdin anak yang sudah berhenti menjawab `Err`, bukan SIGPIPE: biner `--emit-llvm` (main C) tidak
+/// mengabaikan sinyal itu seperti runtime Rust, jadi dulu ia mati diam-diam dengan kode 141 (AGI-20261119-30).
+fn tanpa_sigpipe<T>(f: impl FnOnce() -> T) -> T {
+    #[cfg(unix)]
+    unsafe {
+        let mut set: libc::sigset_t = std::mem::zeroed();
+        libc::sigemptyset(&mut set);
+        libc::sigaddset(&mut set, libc::SIGPIPE);
+        let mut lama: libc::sigset_t = std::mem::zeroed();
+        libc::pthread_sigmask(libc::SIG_BLOCK, &set, &mut lama);
+        let r = f();
+        let mut tertunda: libc::sigset_t = std::mem::zeroed();
+        libc::sigpending(&mut tertunda);
+        if libc::sigismember(&tertunda, libc::SIGPIPE) == 1 && libc::sigismember(&lama, libc::SIGPIPE) == 0 {
+            let mut sig = 0;
+            libc::sigwait(&set, &mut sig);
+        }
+        libc::pthread_sigmask(libc::SIG_SETMASK, &lama, std::ptr::null_mut());
+        r
+    }
+    #[cfg(not(unix))]
+    f()
+}
+type Masukan = std::sync::Arc<std::sync::Mutex<Option<std::process::ChildStdin>>>;
 
 fn daftar_jalan() -> std::sync::MutexGuard<'static, (i128, HashMap<i128, Jalan>)> {
     static D: std::sync::OnceLock<std::sync::Mutex<(i128, HashMap<i128, Jalan>)>> = std::sync::OnceLock::new();
@@ -292,13 +319,20 @@ fn b_mulai(a: &[Value]) -> Result<Value, String> {
         Err(e) => return Ok(crate::interpreter::err_value(galat_spawn(&prog, e))),
         Ok(x) => x,
     };
-    let mut masukan = anak.stdin.take();
-    if let (Some(p), Some(t)) = (masukan.as_mut(), &o.masukan) {
-        use std::io::Write;
-        let _ = p.write_all(t.as_bytes()).and_then(|_| p.flush());
-    }
+    let masukan: Masukan = std::sync::Arc::new(std::sync::Mutex::new(anak.stdin.take()));
     let (keluar, u1) = tampung(anak.stdout.take());
     let (galat, u2) = tampung(anak.stderr.take());
+    // Ditulis di utas sendiri SESUDAH pengurasnya jalan: masukan besar ke program yang menulis dulu dulu membuat
+    // `mulai` macet sebelum timer `batas_ms` sempat dipasang (AGI-20261119-30).
+    if let Some(t) = o.masukan.clone() {
+        let m = masukan.clone();
+        std::thread::spawn(move || {
+            use std::io::Write;
+            if let Some(p) = m.lock().unwrap_or_else(|e| e.into_inner()).as_mut() {
+                let _ = tanpa_sigpipe(|| p.write_all(t.as_bytes()).and_then(|_| p.flush()));
+            }
+        });
+    }
     let mut d = daftar_jalan();
     d.0 += 1;
     let id = d.0;
@@ -328,18 +362,23 @@ fn b_baca(a: &[Value]) -> Result<Value, String> {
     if let Some(s) = status {
         let mut j = d.1.remove(&id).expect("baru saja ada");
         drop(d);
-        j.masukan = None;
+        if let Ok(mut m) = j.masukan.try_lock() { *m = None; }
         // Sisa kelompoknya (pekerjaan latar sebuah shell) masih memegang pipanya; tanpa ini `join` di bawah menunggu selamanya.
         if j.kelompok { matikan(&mut j.anak, true); }
         // Penampung dikuras sambil menunggu pembacanya: yang penuh menahan pembacanya sampai dikosongkan.
         let (mut k, mut g) = (Vec::new(), Vec::new());
         let kuras = |p: &Penampung, ke: &mut Vec<u8>| ke.append(&mut p.lock().unwrap_or_else(|e| e.into_inner()));
-        while !j.pembaca.iter().all(|u| u.is_finished()) {
+        // Cucu yang mewarisi pipanya bisa memegangnya selamanya: ditunggu sebentar saja, lalu yang sudah datang dijawab
+        // (dulu menunggu tanpa batas, dan penampungnya tumbuh tanpa `MAKS_KELUARAN`) — AGI-20261119-30.
+        let awal = std::time::Instant::now();
+        while !j.pembaca.iter().all(|u| u.is_finished()) && awal.elapsed() < std::time::Duration::from_millis(500) {
             kuras(&j.keluar, &mut k);
             kuras(&j.galat, &mut g);
+            k.truncate(MAKS_KELUARAN);
+            g.truncate(MAKS_KELUARAN);
             std::thread::sleep(std::time::Duration::from_millis(5));
         }
-        for u in j.pembaca.drain(..) { let _ = u.join(); }
+        for u in j.pembaca.drain(..) { if u.is_finished() { let _ = u.join(); } }
         kuras(&j.keluar, &mut k);
         kuras(&j.galat, &mut g);
         f.insert("keluaran".into(), Value::Str(std::sync::Arc::new(String::from_utf8_lossy(&k).to_string())));
@@ -365,14 +404,14 @@ fn b_tulis(a: &[Value]) -> Result<Value, String> {
     if a.len() != 2 { return Err("proses::tulis(nomor, teks) -> Result".to_string()); }
     let id = nomor(a, "proses::tulis")?;
     let t = teks(&a[1], "proses::tulis", 1)?;
-    let mut d = daftar_jalan();
-    let j = match d.1.get_mut(&id) { None => return Ok(tidak_ada("proses::tulis", id)), Some(j) => j };
-    let p = match j.masukan.as_mut() {
+    let m = match daftar_jalan().1.get(&id) { None => return Ok(tidak_ada("proses::tulis", id)), Some(j) => j.masukan.clone() };
+    let mut kunci = m.lock().unwrap_or_else(|e| e.into_inner());
+    let p = match kunci.as_mut() {
         None => return Ok(crate::interpreter::err_value(format!("proses::tulis: masukan proses {} sudah ditutup", id))),
         Some(p) => p,
     };
     use std::io::Write;
-    Ok(match p.write_all(t.as_bytes()).and_then(|_| p.flush()) {
+    Ok(match tanpa_sigpipe(|| p.write_all(t.as_bytes()).and_then(|_| p.flush())) {
         Ok(()) => crate::interpreter::ok_value(Value::Unit),
         Err(e) => crate::interpreter::err_value(format!("proses::tulis: proses {} tidak menerima masukan lagi ({})", id, crate::host::galat_io(&e))),
     })
@@ -382,10 +421,9 @@ fn b_tulis(a: &[Value]) -> Result<Value, String> {
 fn b_tutup_masukan(a: &[Value]) -> Result<Value, String> {
     if a.len() != 1 { return Err("proses::tutup_masukan(nomor) -> Result".to_string()); }
     let id = nomor(a, "proses::tutup_masukan")?;
-    match daftar_jalan().1.get_mut(&id) {
-        None => Ok(tidak_ada("proses::tutup_masukan", id)),
-        Some(j) => { j.masukan = None; Ok(crate::interpreter::ok_value(Value::Unit)) }
-    }
+    let m = match daftar_jalan().1.get(&id) { None => return Ok(tidak_ada("proses::tutup_masukan", id)), Some(j) => j.masukan.clone() };
+    *m.lock().unwrap_or_else(|e| e.into_inner()) = None;
+    Ok(crate::interpreter::ok_value(Value::Unit))
 }
 
 /// Hentikan proses yang dimulai `proses::mulai`. `true` kalau ia memang masih jalan.

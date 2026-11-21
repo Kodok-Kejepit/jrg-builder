@@ -9,6 +9,8 @@ import json
 import importlib
 
 _proto_out = os.fdopen(os.dup(1), "w", buffering=1)
+# Kunci sesi dari jrgc: baris jawaban diawali kunci ini, dan penanda handle/fungsi cuma sah kalau membawanya.
+KUNCI = os.environ.get("JRG_FFI_KUNCI", "")
 
 # Satu kunci untuk SELURUH lalu lintas pipa.
 _pipa = threading.Lock()
@@ -150,7 +152,7 @@ class _FungsiJrg:
         with _pipa:
             _seq += 1
             n = _seq
-            _proto_out.write(json.dumps({"cb": self._n, "seq": n, "args": argl}) + "\n")
+            _proto_out.write(KUNCI + json.dumps({"cb": self._n, "seq": n, "args": argl}) + "\n")
             _proto_out.flush()
             jawab = _antre_jawab.get()
             if jawab is None:
@@ -192,16 +194,17 @@ def _konversi_arg(v):
         # Penanda INLINE, karena argumen callback bisa berada di dalam
         # sebuah array — bentuk `{"ok":..,"ref":..}` cuma dikenali di
         # tingkat teratas respons.
-        return {"__pyref__": d["ref"], "__pytipe__": d["tipe"]}
+        return {"__pyref__": d["ref"], "__pytipe__": d["tipe"], "__kunci__": KUNCI}
 
 
 def _buka_ref(v):
     """Tukar penanda `{"__pyref__": id}` kembali jadi objeknya."""
     if isinstance(v, dict):
         # Fungsi JRG yang dikirim sebagai argumen.
-        if len(v) == 1 and "__jrgfn__" in v:
+        bertanda = len(v) == 2 and v.get("__kunci__") == KUNCI
+        if bertanda and "__jrgfn__" in v:
             return _FungsiJrg(v["__jrgfn__"])
-        if len(v) == 1 and "__pyref__" in v:
+        if bertanda and "__pyref__" in v:
             i = v["__pyref__"]
             if i not in _objs:
                 raise KeyError(
@@ -357,7 +360,7 @@ def main():
         # Kunci yang sama dengan callback: balasan ini tidak boleh menyelip di
         # tengah pertukaran callback yang belum selesai.
         with _pipa:
-            _proto_out.write(json.dumps(_sertakan_fn_lepas(resp)) + "\n")
+            _proto_out.write(KUNCI + json.dumps(_sertakan_fn_lepas(resp)) + "\n")
             _proto_out.flush()
 
 

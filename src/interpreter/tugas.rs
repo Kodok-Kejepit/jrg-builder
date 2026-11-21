@@ -295,6 +295,10 @@ impl Interpreter {
                 klaim(&serah);
                 return Ok(crate::interpreter::some_value(cek_gagal(v)?));
             }
+            // Diambil penunggu lain selama menunggu: galat, bukan `None` sesudah tenggat (AGI-20261119-38).
+            if !masih_boleh(&serah) {
+                return Err(pesan_sudah_diserahkan(siapa));
+            }
             if lewat(batas) {
                 return Ok(crate::interpreter::none_value());
             }
