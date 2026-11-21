@@ -5412,4 +5412,79 @@ fn main() {
  wok(str::sub(x, 0, 4), str::substring(x, 5), str::slice(x, 1, 3))
 }
 "#),
+    ("lapis: rotate negatif, sleep_ms NaN, tahun negatif, rand::int rentang lebar (AGI-20261119-43)", r#"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn main() {
+ coba(|| arr::rotate_left([1, 2, 3], -1))
+ coba(|| arr::rotate_right([1, 2, 3], -1))
+ coba(|| time::sleep_ms(0.0 / 0.0))
+ coba(|| time::format(-62167219200000 - 86400000, "%Y-%m-%d"))
+ let r = rand::int(0, 9223372036854775807)
+ let s = rand::int(-5000000000000000000, 5000000000000000000)
+ wok(r >= 0, s >= -5000000000000000000 && s <= 5000000000000000000)
+}
+"#),
+    ("is_numeric satu definisi, sort satu NaN, jangkauan cap waktu (AGI-20261119-51)", r#"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn main() {
+    wok(" ".is_numeric(), "1.2.3".is_numeric(), "-".is_numeric(), "-3.5".is_numeric(), " 42 ".is_numeric())
+    wok(str::is_numeric(" "), str::is_numeric("1.2.3"), str::is_numeric("-"))
+    wok(arr::sort([0.0 / 0.0]))
+    coba(|| time::year(9000000000000000))
+    coba(|| time::format(9000000000000000, "%Y"))
+    coba(|| time::hour(-9000000000000000))
+    wok(time::hour(3600000), time::year(8640000000000000))
+}
+"#),
+    ("select: penugasan menulis variabel luar, satu case bertemu select lain, kanal tertutup (AGI-20261119-52)", r#"
+fn tugas() {
+    let ch = Chan::new(1)
+    ch <- 99
+    var x = 0
+    select {
+        case x = <-ch: { wok("di dalam", x) }
+    }
+    wok(x)
+    let d = Chan::new(1)
+    d <- "teks"
+    var s = "awal"
+    var n = 0
+    for i in 0..3 {
+        select {
+            case s = <-d: { n += 1 }
+            default: { n += 10 }
+        }
+    }
+    wok(s, n)
+}
+
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn a() { let ch = Chan::new(1); ch.close(); select { case v := <-ch: { return v } } }
+fn b() { let ch = Chan::new(1); ch.close(); let v = <-ch; return v }
+fn c() { let ch = Chan::new(1); ch.close(); select { case ch <- 1: { return 1 } } }
+fn d() { let ch = Chan::new(1); ch.close(); ch <- 1; return 1 }
+fn tutup() { coba(a); coba(b); coba(c); coba(d) }
+
+fn main() {
+    tugas()
+    tutup()
+    let ch = Chan::new(0)
+    let selesai = Chan::new(0)
+    spawn {
+        select { case ch <- 42: {} }
+        selesai <- "kirim lewat select"
+    }
+    select { case v := <-ch: { wok("terima", v) } }
+    wok(<-selesai)
+    let a = Chan::new(0)
+    let b = Chan::new(0)
+    spawn { b <- 7 }
+    for i in 0..1 {
+        select {
+            case v := <-a: { wok("a", v) }
+            case w := <-b: { wok("b", w) }
+        }
+    }
+}
+"#),
 ];

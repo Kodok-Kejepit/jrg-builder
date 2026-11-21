@@ -43,6 +43,8 @@ struct Dipegang(RefCell<Vec<Arc<Kunci>>>);
 
 impl Drop for Dipegang {
     fn drop(&mut self) {
+        // Thread utama yang berhenti karena kebuntuan tidak membangunkan penunggunya dengan galat susulan.
+        if crate::antrean::buntu::dilaporkan() { return; }
         for k in self.0.borrow_mut().drain(..) {
             let mut st = k.st.lock().unwrap_or_else(|p| p.into_inner());
             st.pemilik = None;
@@ -160,6 +162,8 @@ fn pesan_ditinggal(siapa: &str) -> String {
 pub fn kunci(k: &Arc<Kunci>, siapa: &str) -> Result<(), String> {
     let saya = std::thread::current().id();
     let mut st = k.st.lock().unwrap_or_else(|p| p.into_inner());
+    // Penunggu kunci dihitung terblokir oleh detektor kebuntuan, seperti penunggu channel (AGI-20261119-44).
+    let mut jaga: Option<crate::antrean::buntu::Blokir> = None;
     loop {
         if st.ditinggal { return Err(pesan_ditinggal(siapa)); }
         match st.pemilik {
@@ -167,7 +171,15 @@ pub fn kunci(k: &Arc<Kunci>, siapa: &str) -> Result<(), String> {
             Some(p) if p == saya => return Err(format!(
                 "{}: kunci ini sudah kamu pegang di goroutine yang sama — mengunci lagi \
                  berarti menunggu dirimu sendiri selamanya. Lepas dulu dengan `mutex::unlock`", siapa)),
-            Some(_) => st = k.cv.wait(st).unwrap_or_else(|p| p.into_inner()),
+            Some(_) if !crate::antrean::buntu::aktif() => st = k.cv.wait(st).unwrap_or_else(|p| p.into_inner()),
+            Some(_) => {
+                let b = jaga.get_or_insert_with(crate::antrean::buntu::Blokir::mulai);
+                let (g, habis) = k.cv.wait_timeout(st, crate::antrean::buntu::TIAP).unwrap_or_else(|p| p.into_inner());
+                st = g;
+                if habis.timed_out() && b.buntu() && crate::antrean::buntu::utama() {
+                    return Err(crate::antrean::PESAN_BUNTU.to_string());
+                }
+            }
         }
     }
     st.pemilik = Some(saya);
@@ -192,6 +204,7 @@ pub fn lepas(k: &Arc<Kunci>, siapa: &str) -> Result<(), String> {
     }
     st.pemilik = None;
     drop(st);
+    crate::antrean::buntu::geser();
     k.cv.notify_one();
     let _ = DIPEGANG.try_with(|d| {
         let mut v = d.0.borrow_mut();

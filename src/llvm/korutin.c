@@ -64,6 +64,8 @@ typedef struct JrgKo {
     int masa;                // badan sebuah Future/Task: gagalnya milik yang menunggu hasilnya
     char *selamat;           // stack penyelamat sesudah stack-nya habis (0 = belum)
     int32_t situs;
+    int64_t pilih;           // `select` yang tidur di antara putaran: cap kemajuan di awal putarannya (0 = bukan)
+    int64_t pilih_awal;
     const void *asan_bawah;  // wilayah stack-nya untuk ASan (cuma dipakai biner ber-`-fsanitize=address`)
     size_t asan_ukuran;
     struct JrgKo *next;
@@ -72,6 +74,8 @@ typedef struct JrgKo {
 extern int32_t jrg_situs;
 static JrgKo jrg_ko_utama;
 static JrgKo *jrg_ko_kini = &jrg_ko_utama;
+// Naik tiap korutin yang bukan pemutar `select` jalan dan tiap kirim/terima `select` berhasil (AGI-20261119-52).
+static int64_t jrg_ko_jaman = 1;
 static JrgKo *jrg_ko_siap, *jrg_ko_siap_ekor;   // antrean yang bisa jalan
 static JrgKo *jrg_ko_tidur_daftar;              // yang sedang tidur
 static JrgKo *jrg_ko_mayat;                     // selesai, stack-nya belum dilepas
@@ -116,6 +120,7 @@ static void jrg_ko_wasm_lepas(JrgKo *k);
 static void jrg_ko_pindah(JrgKo *ke) {
     JrgKo *dari = jrg_ko_kini;
     if (ke == dari) return;
+    if (ke->pilih == 0) jrg_ko_jaman++;
     dari->tunda = jrg_tunda_kini;
     jrg_tunda_kini = ke->tunda;
     // Situs panggilan yang sedang ditunggu milik korutin itu sendiri, bukan yang mendapat giliran.
@@ -172,6 +177,12 @@ static void jrg_ko_jadwal(void) {
             return;
         }
         if (jrg_ko_tidur_daftar == 0) jrg_ko_buntu();
+        // Yang tidur cuma `select` yang putarannya gagal tanpa ada yang berubah sejak putaran itu dimulai: buntu.
+        {
+            int semua = 1;
+            for (JrgKo *k = jrg_ko_tidur_daftar; k; k = k->next) if (k->pilih != jrg_ko_jaman) { semua = 0; break; }
+            if (semua) jrg_ko_buntu();
+        }
         int64_t awal = jrg_ko_tidur_daftar->bangun;
         for (JrgKo *k = jrg_ko_tidur_daftar; k; k = k->next) if (k->bangun < awal) awal = k->bangun;
         int64_t sisa = awal - jrg_ko_jam();
@@ -292,6 +303,16 @@ void jrg_ko_tidur(int64_t mikro) {
     k->next = jrg_ko_tidur_daftar;
     jrg_ko_tidur_daftar = k;
     jrg_ko_jadwal();
+}
+
+// Putaran `select` tanpa `default`: dicatat di awal, lalu yang gagal tidur sebentar sebagai pemutar.
+void jrg_ko_pilih_mulai(void) { jrg_ko_kini->pilih_awal = jrg_ko_jaman; }
+void jrg_ko_pilih_tunggu(void) {
+    // Tidak ada korutin lain: tidak ada yang bisa mengubah kanalnya.
+    if (jrg_ko_hidup == 0 && jrg_ko_kini == &jrg_ko_utama) jrg_ko_buntu();
+    jrg_ko_kini->pilih = jrg_ko_kini->pilih_awal;
+    jrg_ko_tidur(200);
+    jrg_ko_kini->pilih = 0;
 }
 
 // Di ujung `main`: goroutine yang belum selesai ditunggu, seperti di dua mesin lain.
@@ -430,9 +451,9 @@ static int32_t jrg_ch_coba_kirim(JrgChan *c, const void *v) {
 int32_t jrg_chan_try_send(JrgChan *c, const void *v, int64_t esize) {
     (void)esize;
     int32_t r = jrg_ch_coba_kirim(c, v);
-    if (r != 0) return r;
-    jrg_ko_serah();
-    return jrg_ch_coba_kirim(c, v);
+    if (r == 0) { jrg_ko_serah(); r = jrg_ch_coba_kirim(c, v); }
+    if (r == 1) jrg_ko_jaman++;
+    return r;
 }
 
 void jrg_chan_send(JrgChan *c, const void *v, int64_t esize) {
@@ -478,9 +499,9 @@ static int32_t jrg_ch_coba_terima(JrgChan *c, void *out) {
 int32_t jrg_chan_try_recv(JrgChan *c, void *out, int64_t esize) {
     (void)esize;
     int32_t r = jrg_ch_coba_terima(c, out);
-    if (r != 0) return r;
-    jrg_ko_serah();
-    return jrg_ch_coba_terima(c, out);
+    if (r == 0) { jrg_ko_serah(); r = jrg_ch_coba_terima(c, out); }
+    if (r == 1) jrg_ko_jaman++;
+    return r;
 }
 
 void jrg_chan_recv(JrgChan *c, void *out, int64_t esize) {

@@ -463,6 +463,10 @@ impl Codegen {
         let tidak_ada = self.fresh_label("sel.tiada.");
         self.terminate(format!("br label %{}", poll_lbl));
         self.start_block(poll_lbl.clone());
+        if sel.default.is_none() {
+            self.ensure_extern("declare void @jrg_ko_pilih_mulai()", "jrg_ko_pilih_mulai");
+            self.emit("call void @jrg_ko_pilih_mulai()".to_string());
+        }
         // Kanal tertutup ditolak di SEMUA lengan sebelum satu pun dicoba (urutan acuan).
         for (cv, _, vp, _) in &lengan {
             let t = self.fresh("seltt.");
@@ -519,7 +523,7 @@ impl Codegen {
             let body_lbl = self.fresh_label("sel.body.");
             if j_slot.is_some() { self.start_block(coba[ke].clone()); }
             match case {
-                SelectCase::Recv { names, body, .. } => {
+                SelectCase::Recv { names, body, is_decl, span, .. } => {
                     let slot = self.alloca_typed("selrv.", ety);
                     let ok = self.fresh("selok.");
                     self.emit(format!("{} = call i32 @jrg_chan_try_recv(ptr {}, ptr {}, i64 {})", ok, cv.text, slot, self.types.sizeof(ety)));
@@ -530,7 +534,20 @@ impl Codegen {
                     self.start_block(body_lbl);
                     self.push_scope();
                     if let Some(n) = names.first() {
-                        if n != "_" {
+                        if n != "_" && !*is_decl {
+                            // `case x = <-ch` menugasi `x` yang sudah ada lewat penugasan biasa; dulu jadi
+                            // bayangan di lengan itu dan nilainya hilang (AGI-20261119-52).
+                            let v = self.load_place(&slot, ety);
+                            let s = self.alloca_local("__select_terima__", ety.clone());
+                            self.emit(format!("store {} {}, ptr {}", ety.llvm_ty(), v.text, s));
+                            let tugas = crate::parser::AssignStmt {
+                                targets: vec![crate::parser::Expr::Ident(n.clone(), *span)],
+                                op: crate::parser::AssignOp::Eq,
+                                values: vec![crate::parser::Expr::Ident("__select_terima__".into(), *span)],
+                                span: *span,
+                            };
+                            self.codegen_assign(&tugas)?;
+                        } else if n != "_" {
                             let v = self.load_place(&slot, ety);
                             let s = self.alloca_local(n, ety.clone());
                             self.emit(format!("store {} {}, ptr {}", ety.llvm_ty(), v.text, s));
@@ -567,8 +584,9 @@ impl Codegen {
             self.pop_scope();
             if !self.is_terminated() { self.terminate(format!("br label %{}", end_lbl)); }
         } else {
-            self.ensure_extern("declare void @jrg_ko_tidur(i64)", "jrg_ko_tidur");
-            self.emit("call void @jrg_ko_tidur(i64 200)".to_string());
+            // Pemutar yang tidur tercatat: semua korutin hidup tinggal pemutar gagal = kebuntuan (AGI-20261119-52).
+            self.ensure_extern("declare void @jrg_ko_pilih_tunggu()", "jrg_ko_pilih_tunggu");
+            self.emit("call void @jrg_ko_pilih_tunggu()".to_string());
             self.terminate(format!("br label %{}", poll_lbl));
         }
         self.start_block(end_lbl);

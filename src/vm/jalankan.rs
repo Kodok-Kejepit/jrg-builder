@@ -1286,6 +1286,7 @@ impl Vm {
                     // Sama dengan `<-c`/`c <- v`: operasi yang tak akan pernah berhasil adalah
                     // galat — dulu `select` menggantung, atau menjawab `nil`.
                     if let VmValue::Channel(c) = self.pop(sp)? {
+                        if c.is_closed() { self.pilih_buntu = None; }
                         if arg == 0 && c.is_closed() && c.len() == 0 {
                             return Err(VmError::at(crate::antrean::PESAN_TERIMA_TERTUTUP.to_string(), sp));
                         }
@@ -1308,7 +1309,7 @@ impl Vm {
                             // pengirim yang menunggu baru menaruh nilainya sesudah melihat penerima.
                             self.pop(sp)?;
                             match c.coba_terima() {
-                                Ok(val) => self.push(val),
+                                Ok(val) => { self.pilih_buntu = None; self.push(val) }
                                 Err(_) => self.frames.last_mut().unwrap().ip = arg as usize,
                             }
                         }
@@ -1325,7 +1326,9 @@ impl Vm {
                     let ch  = self.peek(1, sp)?.clone();
                     match ch {
                         VmValue::Channel(c) => {
-                            if c.try_send(val.clone()).map_err(|e| VmError::at(e, sp))? {
+                            let terkirim = c.try_send(val.clone()).map_err(|e| { self.pilih_buntu = None; VmError::at(e, sp) })?;
+                            if terkirim {
+                                self.pilih_buntu = None;
                                 self.pop(sp)?; // val
                                 self.pop(sp)?; // ch
                                 // Fall through to arm body
@@ -1341,6 +1344,10 @@ impl Vm {
                 }
                 OpCode::SelectEnd => {
                     if arg != u32::MAX {
+                        if crate::antrean::buntu::PutaranPilih::putaran(&mut self.pilih_buntu) {
+                            self.pilih_buntu = None;
+                            return Err(VmError::at(crate::antrean::PESAN_BUNTU.to_string(), sp));
+                        }
                         std::thread::sleep(std::time::Duration::from_micros(200));
                         self.frames.last_mut().unwrap().ip = arg as usize;
                     }
@@ -1389,7 +1396,7 @@ impl Vm {
                     crate::host::tulis(&v.to_string());
                     self.push(VmValue::Nil);
                 }
-                OpCode::SelectDefault => { /* default arm no-op */ }
+                OpCode::SelectDefault => { self.pilih_buntu = None; }
                 OpCode::GagalCocok => {
                     let v = self.peek(0, sp)?;
                     let pesan = if arg >= 2 {

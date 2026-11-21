@@ -660,6 +660,13 @@ impl Compiler {
                             let skip = self.chunk.emit_jump(OpCode::SelectRecvArm);
                             let value_slot = self.slot_berikutnya();
                             self.define_local("__select_recv_value__");
+                            // Aturan `let` seperti interpreter: pola yang tidak cocok gagal, bukan diikat paksa.
+                            let mut gagal = Vec::new();
+                            self.compile_pattern_conditions(pattern, &PatternSource::Local(value_slot), &mut gagal)?;
+                            let cocok = self.chunk.emit_jump(OpCode::Jump);
+                            for j in gagal { self.chunk.patch_jump(j); }
+                            self.chunk.emit_arg(OpCode::GagalCocok, 2);
+                            self.chunk.patch_jump(cocok);
                             let mut bindings = Vec::new();
                             self.bind_pattern(pattern, value_slot, &mut bindings)?;
                             self.begin_scope();

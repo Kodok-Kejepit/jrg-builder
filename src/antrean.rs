@@ -112,7 +112,8 @@ impl<T> Antrean<T> {
 
     /// `Ok(true)` terkirim, `Ok(false)` akan memblokir, `Err` sudah ditutup.
     pub fn coba_kirim(&self, nilai: T) -> Result<bool, String> {
-        buntu::geser();
+        // Percobaan yang gagal tidak mengubah apa pun, jadi bukan kemajuan: `select` yang berputar tanpa hasil tetap
+        // terlihat buntu (AGI-20261119-52). `geser` cuma saat nilainya pindah.
         let mut g = self.isi.lock().unwrap_or_else(|p| p.into_inner());
         if g.tertutup {
             return Err(PESAN_KIRIM_TERTUTUP.to_string());
@@ -122,6 +123,7 @@ impl<T> Antrean<T> {
                 return Ok(false);
             }
             g.buf.push_back(nilai);
+            buntu::geser();
             self.temu.notify_all();
             self.tak_kosong.notify_all();
             return Ok(true);
@@ -130,6 +132,7 @@ impl<T> Antrean<T> {
             return Ok(false);
         }
         g.buf.push_back(nilai);
+        buntu::geser();
         self.tak_kosong.notify_one();
         Ok(true)
     }
@@ -179,9 +182,9 @@ impl<T> Antrean<T> {
     /// Dua kegagalan itu dipisah karena artinya berbeda bagi pemanggilnya:
     /// yang satu "coba lagi nanti", yang satu "jangan coba lagi".
     pub fn coba_terima(&self) -> Result<T, bool> {
-        buntu::geser();
         let mut g = self.isi.lock().unwrap_or_else(|p| p.into_inner());
         if let Some(v) = g.buf.pop_front() {
+            buntu::geser();
             self.temu.notify_all();
             self.tak_penuh.notify_one();
             return Ok(v);
@@ -201,6 +204,7 @@ impl<T> Antrean<T> {
             }
             g.penunggu_terima -= 1;
             if let Some(v) = g.buf.pop_front() {
+                buntu::geser();
                 self.temu.notify_all();
                 return Ok(v);
             }
@@ -262,6 +266,9 @@ pub mod buntu {
     static HIDUP: AtomicUsize = AtomicUsize::new(0);
     static TERBLOKIR: AtomicUsize = AtomicUsize::new(0);
     static GENERASI: AtomicU64 = AtomicU64::new(0);
+    /// Kebuntuan sudah dilaporkan thread utama: yang terbangun sesudahnya cuma akibatnya, bukan galat baru.
+    static DILAPORKAN: AtomicBool = AtomicBool::new(false);
+    pub fn dilaporkan() -> bool { DILAPORKAN.load(SeqCst) }
     static UTAMA: OnceLock<std::thread::ThreadId> = OnceLock::new();
     /// Tenggang sebelum dinyatakan buntu: dua pemeriksaan berturut tanpa perubahan apa pun.
     pub const TIAP: Duration = Duration::from_millis(100);
@@ -301,7 +308,9 @@ pub mod buntu {
                 return false;
             }
             self.stabil += 1;
-            self.stabil >= 2
+            let ya = self.stabil >= 2;
+            if ya && utama() { DILAPORKAN.store(true, SeqCst); }
+            ya
         }
     }
     impl Drop for Blokir {
@@ -314,9 +323,23 @@ pub mod buntu {
         let lain = HIDUP.load(SeqCst).saturating_sub(1);
         if g != *gen_awal || lain == 0 || TERBLOKIR.load(SeqCst) < lain { *gen_awal = g; *stabil = 0; return false; }
         *stabil += 1;
+        if *stabil >= 2 { DILAPORKAN.store(true, SeqCst); }
         *stabil >= 2
     }
     pub fn generasi() -> u64 { GENERASI.load(SeqCst) }
+
+    /// `select` tanpa `default` yang satu putarannya tidak menemukan case siap: dihitung terblokir selama berputar.
+    pub struct PutaranPilih { blokir: Blokir, periksa: std::time::Instant }
+    impl PutaranPilih {
+        /// Dipanggil tiap putaran gagal; `true` kalau programnya pasti buntu (cuma dijawab di thread utama).
+        pub fn putaran(jaga: &mut Option<PutaranPilih>) -> bool {
+            if !aktif() { return false; }
+            let p = jaga.get_or_insert_with(|| PutaranPilih { blokir: Blokir::mulai(), periksa: std::time::Instant::now() });
+            if p.periksa.elapsed() < TIAP { return false; }
+            p.periksa = std::time::Instant::now();
+            p.blokir.buntu() && utama()
+        }
+    }
 }
 
 impl<T> Antrean<T> {

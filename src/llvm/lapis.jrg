@@ -177,9 +177,16 @@ pub fn arr_rotate<T>(a: []T, n: int) -> []T {
     return keluar
 }
 
-pub fn arr_rotate_left<T>(a: []T, n: int = 1) -> []T { return arr_rotate(a, n) }
+// Jumlah negatif ditolak seperti acuan; dulu diam-diam memutar ke arah lain (AGI-20261119-43).
+pub fn arr_rotate_left<T>(a: []T, n: int = 1) -> []T {
+    if n < 0 { panik("index tidak boleh negatif: " + str(n)) }
+    return arr_rotate(a, n)
+}
 
-pub fn arr_rotate_right<T>(a: []T, n: int = 1) -> []T { return arr_rotate(a, 0 - n) }
+pub fn arr_rotate_right<T>(a: []T, n: int = 1) -> []T {
+    if n < 0 { panik("index tidak boleh negatif: " + str(n)) }
+    return arr_rotate(a, 0 - n)
+}
 
 pub fn arr_join<T>(a: []T, pemisah: string) -> string {
     var keluar = ""
@@ -475,6 +482,15 @@ pub fn str_rjust<T, I>(v: T, lebar: int, isi: I = " ") -> string {
 
 pub fn rand_int(lo: int, hi: int) -> int {
     if hi < lo { panik("rand::int: hi (" + str(hi) + ") harus >= lo (" + str(lo) + ")") }
+    // Rentang yang lebarnya tidak muat 64 bit: diambil sampel 64 bit penuh lalu ditolak yang di luar (peluang
+    // diterima >= 1/2) — dulu `hi - lo + 1` meluap (AGI-20261119-43).
+    if (lo < 0 && hi > 9223372036854775807 + lo) || hi - lo == 9223372036854775807 {
+        while true {
+            let a = lapis::acak()
+            let v = lapis::acak() % 2 == 0 $ a : (0 - a) - 1
+            if v >= lo && v <= hi { return v }
+        }
+    }
     return lo + lapis::acak() % (hi - lo + 1)
 }
 
@@ -546,9 +562,18 @@ fn _tanggal(hari: int) -> (int, int, int) {
     return (y, m, d)
 }
 
-fn _hari(ms: int) -> int { return _lantai(_lantai(ms, 1000), 86400) }
+// Jangkauan cap waktu sama dengan acuan (`time_ext::BATAS_MS`); dulu tahun 287168 dijawab (AGI-20261119-51).
+fn _hari(ms: int) -> int {
+    if ms > 8640000000000000 || ms < -8640000000000000 {
+        panik("time:: cap waktu `" + str(ms) + "` milidetik di luar jangkauan — yang sah -8640000000000000 sampai 8640000000000000 (sekitar 275 ribu tahun dari 1970)")
+    }
+    return _lantai(_lantai(ms, 1000), 86400)
+}
 
-fn _detik_hari(ms: int) -> int { return _sisa(_lantai(ms, 1000), 86400) }
+fn _detik_hari(ms: int) -> int {
+    let _ = _hari(ms)
+    return _sisa(_lantai(ms, 1000), 86400)
+}
 
 pub fn time_year(ms: int = time_now_ms()) -> int { return _tanggal(_hari(ms)).0 }
 pub fn time_month(ms: int = time_now_ms()) -> int { return _tanggal(_hari(ms)).1 }
@@ -563,6 +588,8 @@ pub fn time_weekday(ms: int = time_now_ms()) -> string {
 }
 
 fn _nol(n: int, lebar: int) -> string {
+    // Tanda di depan bantalan, seperti acuan: tahun -1 jadi `-001`, bukan `00-1` (AGI-20261119-43).
+    if n < 0 { return "-" + _nol(0 - n, lebar - 1) }
     var s = str(n)
     while len(s) < lebar { s = "0" + s }
     return s
@@ -635,6 +662,7 @@ pub fn time_now() -> float { return (time_now_ms() as float) / 1000.0 }
 
 pub fn time_sleep_ms<T>(ms: T) {
     let d = ms as float
+    if d != d { panik("time::sleep_ms: butuh angka (milidetik), dapat `float`") }
     if d > 315360000000.0 { panik("time::sleep_ms: durasi `" + _durasi(d) + "` milidetik tidak masuk akal — pakai angka yang wajar (0 untuk tanpa delay)") }
     if d > 0.0 { lapis::os(15, "", "", (d * 1000.0) as int) }
 }

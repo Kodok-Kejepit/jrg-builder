@@ -276,7 +276,7 @@ impl Parser {
             // desugared straight into the same `SpawnStmt` AST node so the
             // interpreter needs no extra code path to support it.
             TokenKind::KwGo     => self.parse_go_stmt().map(Stmt::Spawn),
-            TokenKind::KwSelect => self.parse_select_stmt().map(Stmt::Select),
+            TokenKind::KwSelect => self.parse_select_stmt().map(turunkan_select),
             TokenKind::KwDefer  => self.parse_defer_stmt().map(Stmt::Defer),
             TokenKind::LBrace   => self.parse_block().map(Stmt::Block),
             _ => {
@@ -1155,4 +1155,29 @@ impl Parser {
         let expr = Box::new(self.parse_expr()?);
         Ok(DeferStmt { expr, span: self.merge_span(lo) })
     }
+}
+
+
+/// `select` dengan satu case tanpa `default` ADALAH operasi kanalnya yang memblokir: tiga mesin lalu memakai jalur
+/// pemblokir yang bisa bertemu dengan `select` lain di kanal tanpa penyangga dan yang terpantau detektor kebuntuan —
+/// dulu dua `select` seperti itu saling menunggu selamanya (AGI-20261119-52).
+fn turunkan_select(sel: SelectStmt) -> Stmt {
+    if sel.default.is_some() || sel.cases.len() != 1 { return Stmt::Select(sel); }
+    let (pertama, body) = match sel.cases.into_iter().next().unwrap() {
+        SelectCase::Send { chan, val, body, span } => (Stmt::Expr(Box::new(Expr::Send { chan, val, span })), body),
+        SelectCase::Let { stmt, body, .. } => (Stmt::Let(stmt), body),
+        SelectCase::Recv { names, is_decl, chan, body, span } => {
+            let r = Expr::Recv { chan, span };
+            let st = match names.first().cloned() {
+                None => Stmt::Expr(Box::new(r)),
+                Some(_) if is_decl => Stmt::ShortDecl(ShortDeclStmt { names, values: vec![r], span }),
+                Some(n) => Stmt::Assign(AssignStmt { targets: vec![Expr::Ident(n, span)], op: AssignOp::Eq,
+                                                     values: vec![r], span }),
+            };
+            (st, body)
+        }
+    };
+    let mut stmts = vec![pertama];
+    stmts.extend(body.stmts);
+    Stmt::Block(Block { stmts, tail: body.tail, span: sel.span })
 }

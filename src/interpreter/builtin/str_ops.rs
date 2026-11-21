@@ -183,11 +183,7 @@ impl Interpreter {
                 // Satu angka utuh (`-3.5`, ` 42 `), bukan "tiap karakter digit, `.` atau `-`" —
                 // yang dulu menjawab true untuk `-`, `.` dan `1.2.3`.
                 let s = teks1(args, "str::is_numeric")?;
-                let t = s.trim();
-                let t = t.strip_prefix('-').unwrap_or(t);
-                let (bulat, pecahan) = t.split_once('.').unwrap_or((t, ""));
-                let digit = |x: &str| x.chars().all(|c| c.is_ascii_digit());
-                Ok(Value::Bool(digit(bulat) && digit(pecahan) && !(bulat.is_empty() && pecahan.is_empty())))
+                Ok(Value::Bool(teks_angka(&s)))
             }
             StrIsAlpha   => { let s = teks1(args, "str::is_alpha")?; Ok(Value::Bool(!s.is_empty() && s.chars().all(|c| c.is_alphabetic()))) }
             StrIsAlphaNum => { let s = teks1(args, "str::is_alphanumeric")?; Ok(Value::Bool(!s.is_empty() && s.chars().all(|c| c.is_alphanumeric()))) }
@@ -524,4 +520,14 @@ impl SegmenFormat {
         }
         Ok(n)
     }
+}
+
+
+/// Satu angka utuh (`-3.5`, ` 42 `) — satu definisi untuk `str::is_numeric` dan `s.is_numeric()` (AGI-20261119-51).
+pub(crate) fn teks_angka(s: &str) -> bool {
+    let t = s.trim();
+    let t = t.strip_prefix('-').unwrap_or(t);
+    let (bulat, pecahan) = t.split_once('.').unwrap_or((t, ""));
+    let digit = |x: &str| x.chars().all(|c| c.is_ascii_digit());
+    digit(bulat) && digit(pecahan) && !(bulat.is_empty() && pecahan.is_empty())
 }

@@ -454,6 +454,7 @@ impl Interpreter {
             }
         };
 
+        let mut pilih_buntu: Option<crate::antrean::buntu::PutaranPilih> = None;
         loop {
             // Channel tertutup tidak pernah "siap": ditolak di tiap putaran, SEBELUM
             // memilih cabang, supaya jawabannya tidak bergantung urutan acaknya.
@@ -498,6 +499,18 @@ impl Interpreter {
                     }
                     ResolvedCase::LetRecv { chan, pattern, body } => {
                         if let Ok(v) = channel_try_recv(chan) {
+                            // Aturan `let`: pola harus pasti cocok — dulu bagian penguji dilewati (AGI-20261119-52).
+                            let pasti = match pattern {
+                                crate::parser::Pattern::Wildcard(_) => true,
+                                crate::parser::Pattern::Ident { name, .. } => self.varian_unit(name).is_none(),
+                                _ => false,
+                            };
+                            if !pasti {
+                                if let Err(e) = self.cek_pola(pattern, &v) { return runtime_err!("{}", e); }
+                                if !self.pat_matches(pattern, &v) {
+                                    return runtime_err!("{}", crate::interpreter::pesan_let_tak_cocok(0, &v.type_name()));
+                                }
+                            }
                             env.push_scope();
                             let bind_result = self.bind_pattern(pattern, v, env);
                             let r = bind_result.and_then(|_| self.exec_block(body, env));
@@ -511,6 +524,9 @@ impl Interpreter {
                 return self.exec_block(default_block, env);
             }
             // No case ready and no default: this is a blocking select.
+            if crate::antrean::buntu::PutaranPilih::putaran(&mut pilih_buntu) {
+                return runtime_err!("{}", crate::antrean::PESAN_BUNTU);
+            }
             crate::host::tidur(std::time::Duration::from_micros(if n == 0 { 50_000 } else { 200 }));
         }
     }

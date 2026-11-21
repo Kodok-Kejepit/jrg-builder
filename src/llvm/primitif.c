@@ -347,6 +347,8 @@ void jrg_sort_any(JrgAny *p, int64_t n, const char *pola, int64_t pl) {
 
 // `arr::sort` atas pecahan: NaN tidak punya urutan, jadi ditolak — tidak ditaruh di ujung.
 void jrg_sort_f64_ketat(double *p, int64_t n, const char *pesan, int64_t pl) {
+    // Satu elemen tidak dibandingkan dengan apa pun, seperti acuan (AGI-20261119-51).
+    if (n <= 1) return;
     for (int64_t i = 0; i < n; i++) {
         if (p[i] != p[i]) jrg_panic((const unsigned char *)pesan, pl);
     }
@@ -1082,7 +1084,13 @@ int64_t jrg_os(int32_t op, const char *ap, int64_t an, const char *bp, int64_t b
         case 12: {  // variabel lingkungan: 1 kalau diset
             const char *v = getenv(a);
             if (v == 0) return 0;
-            jrg_os_teks(out, v, (int64_t)strlen(v));
+            // Isi yang bukan UTF-8 dijawab tidak ada, seperti acuan — teks JRG selalu UTF-8 (AGI-20261119-51).
+            if (!jrg_utf8_sah((const unsigned char *)v, (int64_t)strlen(v))) return 0;
+            // Disalin: `setenv` sesudahnya boleh membebaskan penyangga `getenv` di libc selain glibc.
+            int64_t vn = (int64_t)strlen(v);
+            char *salin = vn > 0 ? jrg_alloc(vn, 1) : 0;
+            if (vn > 0) memcpy(salin, v, (size_t)vn);
+            jrg_os_teks(out, salin, vn);
             return 1;
         }
         case 13: return setenv(a, jrg_os_cstr(bp, bn), 1) == 0 ? 0 : -errno;

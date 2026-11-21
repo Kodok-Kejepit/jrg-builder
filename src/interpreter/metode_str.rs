@@ -180,8 +180,7 @@ impl Interpreter {
                 let hi = args.get(1).cloned();
                 Self::potong_str(s, lo, hi)
             }
-            (s, "is_numeric") =>
-                Ok(Value::Bool(!s.is_empty() && s.trim().chars().all(|c| c.is_ascii_digit() || c == '.' || c == '-'))),
+            (s, "is_numeric") => Ok(Value::Bool(crate::interpreter::builtin::str_ops::teks_angka(s))),
             (s, "is_alpha") =>
                 Ok(Value::Bool(!s.is_empty() && s.chars().all(|c| c.is_alphabetic()))),
             (s, "is_alphanumeric") =>

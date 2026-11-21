@@ -996,6 +996,18 @@ pub fn main() {
 
 /// `(nama, program, kata-kunci-interpreter, kata-kunci-llvm)`
 const DITOLAK_INTERP_DAN_LLVM: &[(&str, &str, &str, &str)] = &[
+    ("kebuntuan: dua kunci AB-BA (AGI-20261119-44)", "fn main() {\n    let m1 = Mutex::new()\n    let m2 = Mutex::new()\n    let siap = Chan::new(0)\n    m1.lock()\n    spawn { m2.lock(); siap <- true; m1.lock() }\n    <-siap\n    m2.lock()\n    wok(\"tidak sampai\")\n}\n",
+     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
+    ("kebuntuan: goroutine menunggu kunci, main menunggu channel darinya (AGI-20261119-44)", "fn main() {\n    let m = Mutex::new()\n    let ch = Chan::new(0)\n    m.lock()\n    spawn { m.lock(); ch <- 1 }\n    wok(<-ch)\n}\n",
+     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
+    ("kebuntuan: main selesai memegang kunci yang ditunggu goroutine (AGI-20261119-44)", "fn main() {\n    let m = Mutex::new()\n    m.lock()\n    spawn { m.lock(); wok(\"dapat\") }\n    wok(\"main selesai\")\n}\n",
+     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
+    ("kebuntuan: select satu case tanpa pengirim (AGI-20261119-52)", "fn main() {\n    let ch = Chan::new(0)\n    wok(\"mulai\")\n    select { case v := <-ch: { wok(\"terima\", v) } }\n}\n",
+     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
+    ("kebuntuan: select banyak case tanpa pengirim (AGI-20261119-52)", "fn main() {\n    let a = Chan::new(0)\n    let b = Chan::new(0)\n    wok(\"mulai\")\n    select {\n        case v := <-a: { wok(\"a\", v) }\n        case w := <-b: { wok(\"b\", w) }\n    }\n}\n",
+     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
+    ("kebuntuan: dua select banyak case berhadapan di kanal tanpa penyangga (AGI-20261119-52)", "fn main() {\n    let a = Chan::new(0)\n    let b = Chan::new(0)\n    spawn { select { case a <- 1: { wok(\"kirim a\") } case b <- 2: { wok(\"kirim b\") } } }\n    select { case v := <-a: { wok(\"a\", v) } case w := <-b: { wok(\"b\", w) } }\n}\n",
+     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
     // 2026-11-18: kebuntuan dilaporkan interpreter dan `--vm` juga (`antrean::buntu`).
     ("kebuntuan: main menerima dari channel tanpa pengirim", "package main\npub fn main() { let c = make_chan(int)\n wok(<-c) }",
      "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),

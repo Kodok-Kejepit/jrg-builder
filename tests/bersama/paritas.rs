@@ -3048,4 +3048,83 @@ fn log_uji() {
     wok(log::baris(j, "info", "a\u202Eb", {"x": 0.0 / 0.0}))
 }
 "#),
+    ("is_numeric satu definisi, sort satu NaN, jangkauan cap waktu (AGI-20261119-51)", r#"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn main() {
+    wok(" ".is_numeric(), "1.2.3".is_numeric(), "-".is_numeric(), "-3.5".is_numeric(), " 42 ".is_numeric())
+    wok(str::is_numeric(" "), str::is_numeric("1.2.3"), str::is_numeric("-"))
+    wok(arr::sort([0.0 / 0.0]))
+    coba(|| time::year(9000000000000000))
+    coba(|| time::format(9000000000000000, "%Y"))
+    coba(|| time::hour(-9000000000000000))
+    wok(time::hour(3600000), time::year(8640000000000000))
+}
+"#),
+    ("select: case let menguji polanya seperti let, penugasan menulis variabel luar (AGI-20261119-52)", r#"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn terima_let(isi) {
+    let ch = Chan::new(1)
+    ch <- isi
+    var hasil = "kosong"
+    select {
+        case let Some(x) = <-ch: { hasil = "dapat " + str(x) }
+    }
+    return hasil
+}
+fn terima_tuple(isi) {
+    let ch = Chan::new(1)
+    ch <- isi
+    var hasil = 0
+    select {
+        case let (a, 5) = <-ch: { hasil = a }
+    }
+    return hasil
+}
+fn main() {
+    coba(|| terima_let(Some(3)))
+    coba(|| terima_let(Result::Ok(3)))
+    coba(|| terima_let(None))
+    coba(|| terima_tuple((1, 5)))
+    coba(|| terima_tuple((1, 6)))
+    let ch = Chan::new(1)
+    ch <- 99
+    var x = 0
+    select {
+        case x = <-ch: {}
+    }
+    wok(x)
+}
+"#),
+    ("select satu case bertemu select lain di kanal tanpa penyangga (AGI-20261119-52)", r#"
+fn main() {
+    let ch = Chan::new(0)
+    let selesai = Chan::new(0)
+    spawn {
+        select { case ch <- 42: {} }
+        selesai <- "kirim lewat select"
+    }
+    select { case v := <-ch: { wok("terima", v) } }
+    wok(<-selesai)
+    let a = Chan::new(0)
+    let b = Chan::new(0)
+    spawn { b <- 7 }
+    for i in 0..1 {
+        select {
+            case v := <-a: { wok("a", v) }
+            case w := <-b: { wok("b", w) }
+        }
+    }
+}
+"#),
+    ("kunci yang ditunggu lalu dilepas tidak dikira buntu (AGI-20261119-44)", r#"
+fn main() {
+    let m = Mutex::new()
+    let ch = Chan::new(0)
+    m.lock()
+    spawn { m.lock(); ch <- 1; m.unlock() }
+    time::sleep(0.2)
+    m.unlock()
+    wok(<-ch)
+}
+"#),
 ];

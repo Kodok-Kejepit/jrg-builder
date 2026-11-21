@@ -197,6 +197,8 @@ pub enum NativeKhusus {
 }
 
 pub struct Vm {
+    /// `select` yang sedang berputar tanpa case siap (detektor kebuntuan); dilepas begitu satu lengan jalan.
+    pub(crate) pilih_buntu: Option<crate::antrean::buntu::PutaranPilih>,
     pub stack:    Vec<VmValue>,
     pub globals:  crate::hash_cepat::PetaCepat<String, VmValue>,
     pub(crate) frames:   Vec<CallFrame>,
@@ -223,6 +225,7 @@ impl Vm {
     /// deklarasi program tidak pernah bisa menimpa sebuah builtin.
     pub fn new() -> Self {
         Vm {
+            pilih_buntu: None,
             stack: Vec::with_capacity(256),
             globals: Default::default(),
             frames: Vec::with_capacity(64),
