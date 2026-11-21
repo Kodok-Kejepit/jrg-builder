@@ -13,6 +13,33 @@ pub struct Isi<T> {
     // Untuk `kapasitas == 0`: berapa yang sedang menunggu di tiap sisi.
     pub penunggu_terima: usize,
     pub penunggu_kirim: usize,
+    /// `select` yang menunggu menerima dari kanal tanpa penyangga ini (`Tawaran`).
+    pub tawaran: Vec<Arc<Tawaran<T>>>,
+}
+
+/// Tawaran terima sebuah `select` yang sedang menunggu, satu untuk semua kanalnya: pengirim boleh menyerahkan nilainya
+/// ke sini selama tawarannya terbuka. Dua `select` yang berhadapan di kanal tanpa penyangga dulu tidak pernah bertemu,
+/// karena keduanya cuma mencoba dan tidak ada yang menunggu (AGI-20261119-52).
+#[derive(Debug)]
+pub struct Tawaran<T> { slot: Mutex<(bool, Option<(usize, T)>)> }
+
+impl<T> Tawaran<T> {
+    pub fn baru() -> Arc<Self> { Arc::new(Tawaran { slot: Mutex::new((false, None)) }) }
+    /// Tutup sebelum mencoba case lain; nilai yang sudah masuk (dari kanal ber-id itu) dikembalikan untuk dipakai.
+    pub fn tutup(&self) -> Option<(usize, T)> {
+        let mut g = self.slot.lock().unwrap_or_else(|p| p.into_inner());
+        g.0 = true;
+        g.1.take()
+    }
+    /// Buka lagi sesudah satu putaran tanpa hasil.
+    pub fn buka(&self) { self.slot.lock().unwrap_or_else(|p| p.into_inner()).0 = false; }
+    fn serahkan(&self, kanal: usize, nilai: T) -> Result<(), T> {
+        let mut g = self.slot.lock().unwrap_or_else(|p| p.into_inner());
+        if g.0 || g.1.is_some() { return Err(nilai); }
+        g.1 = Some((kanal, nilai));
+        g.0 = true;
+        Ok(())
+    }
 }
 
 /// Kenapa `recv` menjawab `Option` dan bukan `T`: sebuah antrean yang sudah
@@ -47,6 +74,7 @@ impl<T> Antrean<T> {
                 tertutup: false,
                 penunggu_terima: 0,
                 penunggu_kirim: 0,
+                tawaran: Vec::new(),
             })),
             tak_penuh: Arc::new(Condvar::new()),
             tak_kosong: Arc::new(Condvar::new()),
@@ -60,6 +88,35 @@ impl<T> Antrean<T> {
         Arc::ptr_eq(&self.isi, &lain.isi)
     }
 
+    /// Nomor kanal ini untuk `Tawaran` (alamat penyimpanannya).
+    pub fn nomor(&self) -> usize { Arc::as_ptr(&self.isi) as *const u8 as usize }
+
+    /// Daftarkan tawaran terima `select` (cuma berarti di kanal tanpa penyangga). Pengirim yang menunggu dibangunkan.
+    pub fn tawarkan_terima(&self, t: &Arc<Tawaran<T>>) {
+        let mut g = self.isi.lock().unwrap_or_else(|p| p.into_inner());
+        if g.kapasitas != 0 { return; }
+        if !g.tawaran.iter().any(|x| Arc::ptr_eq(x, t)) { g.tawaran.push(Arc::clone(t)); }
+        // Selalu dibangunkan: tawaran yang dibuka ulang juga harus terlihat pengirim yang sedang menunggu.
+        self.temu.notify_all();
+    }
+
+    pub fn tarik_tawaran(&self, t: &Arc<Tawaran<T>>) {
+        self.isi.lock().unwrap_or_else(|p| p.into_inner()).tawaran.retain(|x| !Arc::ptr_eq(x, t));
+    }
+
+    /// Serahkan `nilai` ke tawaran terbuka pertama; nilainya kembali kalau tidak ada.
+    fn ke_tawaran(&self, g: &mut Isi<T>, mut nilai: T) -> Result<(), T> {
+        let nomor = self.nomor();
+        let mut i = 0;
+        while i < g.tawaran.len() {
+            match g.tawaran[i].serahkan(nomor, nilai) {
+                Ok(()) => { g.tawaran.remove(i); buntu::geser(); return Ok(()); }
+                Err(v) => { nilai = v; i += 1; }
+            }
+        }
+        Err(nilai)
+    }
+
     // ── Kirim ────────────────────────────────────────────────────────────
 
     pub fn kirim(&self, nilai: T) -> Result<(), String> {
@@ -70,9 +127,18 @@ impl<T> Antrean<T> {
             return Err(PESAN_KIRIM_TERTUTUP.to_string());
         }
         if g.kapasitas == 0 {
+            // `select` yang menunggu menerima juga penerima (`Tawaran`).
+            let mut nilai = nilai;
+            match self.ke_tawaran(&mut g, nilai) { Ok(()) => return Ok(()), Err(v) => nilai = v }
             g.penunggu_kirim += 1;
             // Tunggu sampai ada penerima, lalu taruh dan tunggu ia mengambil.
             while g.buf.is_empty() && g.penunggu_terima == 0 && !g.tertutup {
+                if !g.tawaran.is_empty() {
+                    match self.ke_tawaran(&mut g, nilai) {
+                        Ok(()) => { g.penunggu_kirim -= 1; return Ok(()); }
+                        Err(v) => nilai = v,
+                    }
+                }
                 g = match self.tunggu(&self.temu, g, &mut jaga) {
                     Ok(g) => g,
                     // Kebuntuan yang ditangkap `tangkap`: penghitungnya dikembalikan, kalau tidak `try_recv`
@@ -120,7 +186,7 @@ impl<T> Antrean<T> {
         }
         if g.kapasitas == 0 {
             if g.penunggu_terima == 0 {
-                return Ok(false);
+                return Ok(self.ke_tawaran(&mut g, nilai).is_ok());
             }
             g.buf.push_back(nilai);
             buntu::geser();

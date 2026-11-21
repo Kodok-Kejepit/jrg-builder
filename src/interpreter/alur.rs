@@ -455,6 +455,12 @@ impl Interpreter {
         };
 
         let mut pilih_buntu: Option<crate::antrean::buntu::PutaranPilih> = None;
+        // Tawaran terima di kanal tanpa penyangga selama `select` ini menunggu; ditarik di jalan keluar mana pun.
+        struct Tarik(std::sync::Arc<crate::antrean::Tawaran<Value>>, Vec<ChannelHandle>);
+        impl Drop for Tarik {
+            fn drop(&mut self) { for c in &self.1 { c.tarik_tawaran(&self.0); } }
+        }
+        let mut tawaran: Option<Tarik> = None;
         loop {
             // Channel tertutup tidak pernah "siap": ditolak di tiap putaran, SEBELUM
             // memilih cabang, supaya jawabannya tidak bergantung urutan acaknya.
@@ -468,56 +474,74 @@ impl Interpreter {
                     _ => {}
                 }
             }
-            let start = poll_start_offset();
-            for i in 0..n {
-                let idx = (start + i) % n;
-                match &resolved[idx] {
-                    ResolvedCase::Send { chan, val, body } => {
-                        if channel_try_send(chan, val.clone()).is_ok() {
-                            env.push_scope();
-                            let r = self.exec_block(body, env);
-                            env.pop_scope();
-                            return r;
+            // Nilai yang sudah diserahkan lewat tawaran dipakai dulu; tawarannya ditutup sebelum case lain dicoba,
+            // jadi tidak pernah ada dua nilai yang terambil.
+            let mut pilih: Option<(usize, Option<Value>)> = None;
+            if let Some(t) = &tawaran {
+                if let Some((nomor, v)) = t.0.tutup() {
+                    let idx = resolved.iter().position(|c| matches!(c,
+                        ResolvedCase::Recv { chan, .. } | ResolvedCase::LetRecv { chan, .. } if chan.nomor() == nomor));
+                    pilih = idx.map(|i| (i, Some(v)));
+                }
+            }
+            if pilih.is_none() {
+                let start = poll_start_offset();
+                for i in 0..n {
+                    let idx = (start + i) % n;
+                    match &resolved[idx] {
+                        ResolvedCase::Send { chan, val, .. } => {
+                            if channel_try_send(chan, val.clone()).is_ok() { pilih = Some((idx, None)); break; }
+                        }
+                        ResolvedCase::Recv { chan, .. } | ResolvedCase::LetRecv { chan, .. } => {
+                            if let Ok(v) = channel_try_recv(chan) { pilih = Some((idx, Some(v))); break; }
                         }
                     }
-                    ResolvedCase::Recv { chan, name, is_decl, body } => {
-                        if let Ok(v) = channel_try_recv(chan) {
-                            env.push_scope();
-                            if let Some(nm) = name {
-                                if *is_decl {
-                                    env.define(nm, v);
-                                } else if !env.set_variabel(nm, v) {
-                                    let pesan = env.pesan_sasaran_tugas(nm);
-                                    env.pop_scope();
-                                    return runtime_err!("{}", pesan);
-                                }
+                }
+            }
+            if let Some((idx, v)) = pilih {
+                drop(tawaran.take());
+                match (&resolved[idx], v) {
+                    (ResolvedCase::Send { body, .. }, _) => {
+                        env.push_scope();
+                        let r = self.exec_block(body, env);
+                        env.pop_scope();
+                        return r;
+                    }
+                    (ResolvedCase::Recv { name, is_decl, body, .. }, Some(v)) => {
+                        env.push_scope();
+                        if let Some(nm) = name {
+                            if *is_decl {
+                                env.define(nm, v);
+                            } else if !env.set_variabel(nm, v) {
+                                let pesan = env.pesan_sasaran_tugas(nm);
+                                env.pop_scope();
+                                return runtime_err!("{}", pesan);
                             }
-                            let r = self.exec_block(body, env);
-                            env.pop_scope();
-                            return r;
                         }
+                        let r = self.exec_block(body, env);
+                        env.pop_scope();
+                        return r;
                     }
-                    ResolvedCase::LetRecv { chan, pattern, body } => {
-                        if let Ok(v) = channel_try_recv(chan) {
-                            // Aturan `let`: pola harus pasti cocok — dulu bagian penguji dilewati (AGI-20261119-52).
-                            let pasti = match pattern {
-                                crate::parser::Pattern::Wildcard(_) => true,
-                                crate::parser::Pattern::Ident { name, .. } => self.varian_unit(name).is_none(),
-                                _ => false,
-                            };
-                            if !pasti {
-                                if let Err(e) = self.cek_pola(pattern, &v) { return runtime_err!("{}", e); }
-                                if !self.pat_matches(pattern, &v) {
-                                    return runtime_err!("{}", crate::interpreter::pesan_let_tak_cocok(0, &v.type_name()));
-                                }
+                    (ResolvedCase::LetRecv { pattern, body, .. }, Some(v)) => {
+                        // Aturan `let`: pola harus pasti cocok — dulu bagian penguji dilewati (AGI-20261119-52).
+                        let pasti = match pattern {
+                            crate::parser::Pattern::Wildcard(_) => true,
+                            crate::parser::Pattern::Ident { name, .. } => self.varian_unit(name).is_none(),
+                            _ => false,
+                        };
+                        if !pasti {
+                            if let Err(e) = self.cek_pola(pattern, &v) { return runtime_err!("{}", e); }
+                            if !self.pat_matches(pattern, &v) {
+                                return runtime_err!("{}", crate::interpreter::pesan_let_tak_cocok(0, &v.type_name()));
                             }
-                            env.push_scope();
-                            let bind_result = self.bind_pattern(pattern, v, env);
-                            let r = bind_result.and_then(|_| self.exec_block(body, env));
-                            env.pop_scope();
-                            return r;
                         }
+                        env.push_scope();
+                        let bind_result = self.bind_pattern(pattern, v, env);
+                        let r = bind_result.and_then(|_| self.exec_block(body, env));
+                        env.pop_scope();
+                        return r;
                     }
+                    _ => unreachable!("case terima selalu membawa nilai"),
                 }
             }
             if let Some(default_block) = &sel.default {
@@ -527,6 +551,12 @@ impl Interpreter {
             if crate::antrean::buntu::PutaranPilih::putaran(&mut pilih_buntu) {
                 return runtime_err!("{}", crate::antrean::PESAN_BUNTU);
             }
+            let t = tawaran.get_or_insert_with(|| Tarik(crate::antrean::Tawaran::baru(), resolved.iter().filter_map(|c| match c {
+                ResolvedCase::Recv { chan, .. } | ResolvedCase::LetRecv { chan, .. } if chan.kapasitas() == 0 => Some(chan.clone()),
+                _ => None,
+            }).collect()));
+            t.0.buka();
+            for c in &t.1 { c.tawarkan_terima(&t.0); }
             crate::host::tidur(std::time::Duration::from_micros(if n == 0 { 50_000 } else { 200 }));
         }
     }

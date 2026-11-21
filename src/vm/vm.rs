@@ -196,9 +196,35 @@ pub enum NativeKhusus {
     Ffi { nomor: u16 },
 }
 
+/// Tawaran terima sebuah `select` di VM: didaftarkan `SelectEnd`, ditutup lengan pertama putaran berikutnya.
+pub(crate) struct PilihVm {
+    pub(crate) t: std::sync::Arc<crate::antrean::Tawaran<VmValue>>,
+    pub(crate) kanal: Vec<super::channel::VmChannel>,
+    pub(crate) masuk: Option<(usize, VmValue)>,
+    pub(crate) ditutup: bool,
+}
+
+impl Vm {
+    /// Tarik tawaran `select` dari semua kanalnya (lengan berhasil, galat, atau `default`).
+    pub(crate) fn pilih_selesai(&mut self) {
+        if let Some(p) = self.pilih.take() { for c in &p.kanal { c.tarik_tawaran(&p.t); } }
+        self.pilih_kanal.clear();
+        self.pilih_buntu = None;
+    }
+    /// Awal putaran: tutup tawarannya sekali; nilai yang sudah masuk dikembalikan nomor kanalnya.
+    pub(crate) fn pilih_tutup(&mut self) -> Option<usize> {
+        let p = self.pilih.as_mut()?;
+        if !p.ditutup { p.ditutup = true; p.masuk = p.t.tutup(); }
+        p.masuk.as_ref().map(|(n, _)| *n)
+    }
+}
+
 pub struct Vm {
     /// `select` yang sedang berputar tanpa case siap (detektor kebuntuan); dilepas begitu satu lengan jalan.
     pub(crate) pilih_buntu: Option<crate::antrean::buntu::PutaranPilih>,
+    /// Tawaran terima `select` yang sedang menunggu, dan kanal terima yang gagal di putaran ini (AGI-20261119-52).
+    pub(crate) pilih: Option<PilihVm>,
+    pub(crate) pilih_kanal: Vec<super::channel::VmChannel>,
     pub stack:    Vec<VmValue>,
     pub globals:  crate::hash_cepat::PetaCepat<String, VmValue>,
     pub(crate) frames:   Vec<CallFrame>,
@@ -226,6 +252,8 @@ impl Vm {
     pub fn new() -> Self {
         Vm {
             pilih_buntu: None,
+            pilih: None,
+            pilih_kanal: Vec::new(),
             stack: Vec::with_capacity(256),
             globals: Default::default(),
             frames: Vec::with_capacity(64),

@@ -1034,8 +1034,6 @@ const DITOLAK_INTERP_DAN_LLVM: &[(&str, &str, &str, &str)] = &[
      "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
     ("kebuntuan: select banyak case tanpa pengirim (AGI-20261119-52)", "fn main() {\n    let a = Chan::new(0)\n    let b = Chan::new(0)\n    wok(\"mulai\")\n    select {\n        case v := <-a: { wok(\"a\", v) }\n        case w := <-b: { wok(\"b\", w) }\n    }\n}\n",
      "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
-    ("kebuntuan: dua select banyak case berhadapan di kanal tanpa penyangga (AGI-20261119-52)", "fn main() {\n    let a = Chan::new(0)\n    let b = Chan::new(0)\n    spawn { select { case a <- 1: { wok(\"kirim a\") } case b <- 2: { wok(\"kirim b\") } } }\n    select { case v := <-a: { wok(\"a\", v) } case w := <-b: { wok(\"b\", w) } }\n}\n",
-     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
     // 2026-11-18: kebuntuan dilaporkan interpreter dan `--vm` juga (`antrean::buntu`).
     ("kebuntuan: main menerima dari channel tanpa pengirim", "package main\npub fn main() { let c = make_chan(int)\n wok(<-c) }",
      "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),

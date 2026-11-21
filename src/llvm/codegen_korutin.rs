@@ -434,6 +434,13 @@ impl Codegen {
 
     /// `select`: tiap case dicoba tanpa menunggu, berurutan; kalau belum ada yang siap dan
     /// tidak ada `default`, giliran diserahkan dulu ke goroutine lain lalu dicoba lagi.
+    /// Lengan yang berhasil: tawaran `select` ditarik dari semua kanal terimanya.
+    fn pilih_lepas(&mut self, pilih: &Option<String>, kanal: &[String]) {
+        let Some(p) = pilih else { return };
+        self.ensure_extern("declare void @jrg_pilih_lepas(ptr, ptr)", "jrg_pilih_lepas");
+        for c in kanal { self.emit(format!("call void @jrg_pilih_lepas(ptr {}, ptr {})", p, c)); }
+    }
+
     pub fn codegen_select(&mut self, sel: &SelectStmt) -> Result<(), String> {
         if sel.cases.is_empty() && sel.default.is_none() {
             return Err(super::galat::tandai(sel.span, "`select` butuh minimal satu case"));
@@ -464,12 +471,27 @@ impl Codegen {
         let poll_lbl = self.fresh_label("sel.poll.");
         let end_lbl = self.fresh_label("sel.end.");
         let tidak_ada = self.fresh_label("sel.tiada.");
+        // `select` yang menunggu punya tawaran terima (AGI-20261119-52): ditutup di AWAL putaran, sebelum apa pun
+        // yang bisa panik, jadi tawaran yang tertinggal selalu tertutup.
+        let pilih = if sel.default.is_none() && lengan.iter().any(|l| l.2.is_none()) {
+            self.ensure_extern("declare ptr @jrg_pilih_baru()", "jrg_pilih_baru");
+            let p = self.fresh("selp.");
+            self.emit(format!("{} = call ptr @jrg_pilih_baru()", p));
+            Some(p)
+        } else { None };
         self.terminate(format!("br label %{}", poll_lbl));
         self.start_block(poll_lbl.clone());
         if sel.default.is_none() {
             self.ensure_extern("declare void @jrg_ko_pilih_mulai()", "jrg_ko_pilih_mulai");
             self.emit("call void @jrg_ko_pilih_mulai()".to_string());
         }
+        let dari = pilih.as_ref().map(|p| {
+            self.ensure_extern("declare ptr @jrg_pilih_tutup(ptr)", "jrg_pilih_tutup");
+            let d = self.fresh("seld.");
+            self.emit(format!("{} = call ptr @jrg_pilih_tutup(ptr {})", d, p));
+            d
+        });
+        let kanal_terima: Vec<String> = lengan.iter().filter(|l| l.2.is_none()).map(|l| l.0.text.clone()).collect();
         // Kanal tertutup ditolak di SEMUA lengan sebelum satu pun dicoba (urutan acuan).
         for (cv, _, vp, _) in &lengan {
             let t = self.fresh("seltt.");
@@ -529,12 +551,19 @@ impl Codegen {
                 SelectCase::Recv { names, body, is_decl, span, .. } => {
                     let slot = self.alloca_typed("selrv.", ety);
                     let ok = self.fresh("selok.");
-                    self.emit(format!("{} = call i32 @jrg_chan_try_recv(ptr {}, ptr {}, i64 {})", ok, cv.text, slot, self.types.sizeof(ety)));
+                    if let (Some(p), Some(d)) = (&pilih, &dari) {
+                        self.ensure_extern("declare i32 @jrg_pilih_terima(ptr, ptr, ptr, ptr, i64)", "jrg_pilih_terima");
+                        self.emit(format!("{} = call i32 @jrg_pilih_terima(ptr {}, ptr {}, ptr {}, ptr {}, i64 {})",
+                            ok, p, d, cv.text, slot, self.types.sizeof(ety)));
+                    } else {
+                        self.emit(format!("{} = call i32 @jrg_chan_try_recv(ptr {}, ptr {}, i64 {})", ok, cv.text, slot, self.types.sizeof(ety)));
+                    }
                     self.tolak_tertutup(&ok, crate::antrean::PESAN_TERIMA_TERTUTUP);
                     let okb = self.fresh("selokb.");
                     self.emit(format!("{} = icmp eq i32 {}, 1", okb, ok));
                     self.terminate(format!("br i1 {}, label %{}, label %{}", okb, body_lbl, gagal_lbl));
                     self.start_block(body_lbl);
+                    self.pilih_lepas(&pilih, &kanal_terima);
                     self.push_scope();
                     if let Some(n) = names.first() {
                         if n != "_" && !*is_decl {
@@ -562,12 +591,19 @@ impl Codegen {
                 SelectCase::Send { body, .. } => {
                     let vp = vp.clone().unwrap_or_default();
                     let ok = self.fresh("selsok.");
-                    self.emit(format!("{} = call i32 @jrg_chan_try_send(ptr {}, ptr {}, i64 {})", ok, cv.text, vp, self.types.sizeof(ety)));
+                    if let (Some(p), Some(d)) = (&pilih, &dari) {
+                        self.ensure_extern("declare i32 @jrg_pilih_kirim(ptr, ptr, ptr, ptr, i64)", "jrg_pilih_kirim");
+                        self.emit(format!("{} = call i32 @jrg_pilih_kirim(ptr {}, ptr {}, ptr {}, ptr {}, i64 {})",
+                            ok, p, d, cv.text, vp, self.types.sizeof(ety)));
+                    } else {
+                        self.emit(format!("{} = call i32 @jrg_chan_try_send(ptr {}, ptr {}, i64 {})", ok, cv.text, vp, self.types.sizeof(ety)));
+                    }
                     self.tolak_tertutup(&ok, crate::antrean::PESAN_KIRIM_TERTUTUP);
                     let okb = self.fresh("selsokb.");
                     self.emit(format!("{} = icmp eq i32 {}, 1", okb, ok));
                     self.terminate(format!("br i1 {}, label %{}, label %{}", okb, body_lbl, gagal_lbl));
                     self.start_block(body_lbl);
+                    self.pilih_lepas(&pilih, &kanal_terima);
                     self.push_scope();
                     self.codegen_stmt_block(body)?;
                     self.pop_scope();
@@ -588,6 +624,13 @@ impl Codegen {
             if !self.is_terminated() { self.terminate(format!("br label %{}", end_lbl)); }
         } else {
             // Pemutar yang tidur tercatat: semua korutin hidup tinggal pemutar gagal = kebuntuan (AGI-20261119-52).
+            // Putaran tanpa hasil: tawaran didaftarkan di kanal terima lalu dibuka selama menunggu.
+            if let Some(p) = &pilih {
+                self.ensure_extern("declare void @jrg_pilih_daftar(ptr, ptr)", "jrg_pilih_daftar");
+                self.ensure_extern("declare void @jrg_pilih_buka(ptr)", "jrg_pilih_buka");
+                for c in &kanal_terima { self.emit(format!("call void @jrg_pilih_daftar(ptr {}, ptr {})", p, c)); }
+                self.emit(format!("call void @jrg_pilih_buka(ptr {})", p));
+            }
             self.ensure_extern("declare void @jrg_ko_pilih_tunggu()", "jrg_ko_pilih_tunggu");
             self.emit("call void @jrg_ko_pilih_tunggu()".to_string());
             self.terminate(format!("br label %{}", poll_lbl));

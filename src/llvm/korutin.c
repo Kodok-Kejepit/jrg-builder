@@ -406,7 +406,15 @@ typedef struct {
     char *gagal;     // kalimat galat badan tugasnya; diteruskan ke yang mengambil hasilnya
     int64_t gagal_n;
     JrgTunggu *penerima, *penerima_ekor, *pengirim, *pengirim_ekor;
+    struct JrgTawar *tawar;  // `select` yang menunggu menerima dari kanal tanpa penyangga ini
 } JrgChan;
+
+// Tawaran terima `select` (AGI-20261119-52): selama terbuka, pengirim boleh menyerahkan nilainya ke slot heap entri
+// kanalnya. Dua `select` yang berhadapan di kanal tanpa penyangga dulu tidak pernah bertemu.
+typedef struct JrgPilih { int terbuka; JrgChan *dari; void *nilai; } JrgPilih;
+typedef struct JrgTawar { JrgPilih *p; void *slot; struct JrgTawar *next; } JrgTawar;
+
+static int jrg_ch_ke_tawaran(JrgChan *c, const void *v);
 
 static void jrg_ch_panik(const char *s) { jrg_panic((const unsigned char *)s, (int64_t)strlen(s)); }
 
@@ -471,7 +479,39 @@ static int32_t jrg_ch_coba_kirim(JrgChan *c, const void *v) {
         return 1;
     }
     if (c->n < c->kap) { jrg_ch_masuk_buf(c, v); return 1; }
+    return jrg_ch_ke_tawaran(c, v);
+}
+
+static int jrg_ch_ke_tawaran(JrgChan *c, const void *v) {
+    for (JrgTawar **e = &c->tawar; *e; e = &(*e)->next) {
+        JrgTawar *t = *e;
+        if (!t->p->terbuka) continue;
+        jrg_ch_salin(t->slot, v, (size_t)c->esize);
+        t->p->terbuka = 0;
+        t->p->dari = c;
+        t->p->nilai = t->slot;
+        *e = t->next;
+        return 1;
+    }
     return 0;
+}
+
+void *jrg_pilih_baru(void) { JrgPilih *p = jrg_alloc((int64_t)sizeof(JrgPilih), 8); memset(p, 0, sizeof *p); return p; }
+// Awal putaran: tutup; kanal yang sudah menyerahkan nilai (atau 0).
+void *jrg_pilih_tutup(JrgPilih *p) { p->terbuka = 0; return p->dari; }
+// Akhir putaran tanpa hasil: daftarkan di tiap kanal terima tanpa penyangga, lalu buka.
+void jrg_pilih_daftar(JrgPilih *p, JrgChan *c) {
+    if (c->kap != 0) return;
+    for (JrgTawar *t = c->tawar; t; t = t->next) if (t->p == p) return;
+    JrgTawar *t = jrg_alloc((int64_t)sizeof(JrgTawar), 8);
+    t->p = p;
+    t->slot = jrg_alloc(c->esize > 0 ? c->esize : 1, 8);
+    t->next = c->tawar;
+    c->tawar = t;
+}
+void jrg_pilih_buka(JrgPilih *p) { p->terbuka = 1; }
+void jrg_pilih_lepas(JrgPilih *p, JrgChan *c) {
+    for (JrgTawar **e = &c->tawar; *e;) { if ((*e)->p == p) *e = (*e)->next; else e = &(*e)->next; }
 }
 
 // Bentuk yang dipanggil program: jawaban "belum" memberi giliran dulu, lalu dicoba sekali lagi.
@@ -496,6 +536,7 @@ void jrg_chan_send(JrgChan *c, const void *v, int64_t esize) {
         return;
     }
     if (c->n < c->kap) { jrg_ch_masuk_buf(c, v); return; }
+    if (jrg_ch_ke_tawaran(c, v)) { jrg_ko_jaman++; return; }
     (void)esize;
     JrgTunggu saya = { jrg_ko_kini, (void *)v, 0, 0 };
     jrg_ch_antre(&c->pengirim, &c->pengirim_ekor, &saya);
@@ -521,6 +562,21 @@ static int32_t jrg_ch_coba_terima(JrgChan *c, void *out) {
         return 1;
     }
     return c->tutup ? 2 : 0;
+}
+
+// Lengan `select` bertawaran: nilai yang sudah masuk milik lengan kanalnya saja, lengan lain tidak jalan.
+int32_t jrg_chan_try_recv(JrgChan *c, void *out, int64_t esize);
+int32_t jrg_pilih_terima(JrgPilih *p, JrgChan *dari, JrgChan *c, void *out, int64_t esize) {
+    if (dari == 0) return jrg_chan_try_recv(c, out, esize);
+    if (dari != c) return 0;
+    jrg_ch_salin(out, p->nilai, (size_t)c->esize);
+    p->dari = 0;
+    jrg_ko_jaman++;
+    return 1;
+}
+int32_t jrg_pilih_kirim(JrgPilih *p, JrgChan *dari, JrgChan *c, const void *v, int64_t esize) {
+    (void)p;
+    return dari == 0 ? jrg_chan_try_send(c, v, esize) : 0;
 }
 
 int32_t jrg_chan_try_recv(JrgChan *c, void *out, int64_t esize) {

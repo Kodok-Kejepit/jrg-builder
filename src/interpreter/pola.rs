@@ -227,11 +227,29 @@ impl Interpreter {
                 }
                 return Ok(());
             }
-            Pattern::Array { before, after, .. } => {
+            Pattern::Array { before, rest, after, .. } => {
+                // Elemen cuma diperiksa kalau panjangnya cocok, seperti VM
+                // yang menguji panjang sebelum sub-polanya.
                 let kosong = Value::Nil;
-                for e in before.iter().chain(after.iter()) { self.cek_pola(e, &kosong)?; }
+                let vs: &[Value] = match val { Value::Array(a) => &a[..], _ => &[] };
+                let muat = match rest {
+                    None => vs.len() == before.len() + after.len(),
+                    Some(_) => vs.len() >= before.len() + after.len(),
+                };
+                for (k, e) in before.iter().enumerate() {
+                    self.cek_pola(e, if muat { &vs[k] } else { &kosong })?;
+                }
+                let mulai = vs.len().saturating_sub(after.len());
+                for (k, e) in after.iter().enumerate() {
+                    self.cek_pola(e, if muat { &vs[mulai + k] } else { &kosong })?;
+                }
                 return Ok(());
             }
+            Pattern::Or { pats, .. } => {
+                for p in pats { self.cek_pola(p, val)?; }
+                return Ok(());
+            }
+            Pattern::Ref { inner, .. } => return self.cek_pola(inner, val),
             Pattern::Struct { ty, fields, .. } => {
                 // Field yang tidak ada dulu cuma membuat lengannya dilewati:
                 // salah ketik satu huruf jadi cabang yang tak pernah jalan.

@@ -5625,4 +5625,31 @@ pub fn main() {
     wok(grid)
 }
 "#),
+    ("dua select banyak case berhadapan di kanal tanpa penyangga bertemu lewat tawaran (AGI-20261119-52)", r#"
+fn main() {
+    let data = Chan::new(0)
+    let quit = Chan::new(0)
+    let selesai = Chan::new(0)
+    spawn {
+        var n = 0
+        var jalan = true
+        while jalan {
+            select {
+                case data <- n: { n += 1 }
+                case <-quit: { jalan = false }
+            }
+        }
+        selesai <- n
+    }
+    var jumlah = 0
+    for i in 0..50 {
+        select {
+            case v := <-data: { jumlah += v }
+            case <-selesai: { wok("tidak boleh") }
+        }
+    }
+    quit <- true
+    wok(jumlah, <-selesai)
+}
+"#),
 ];
