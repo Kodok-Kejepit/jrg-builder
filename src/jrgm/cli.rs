@@ -144,6 +144,9 @@ pub(crate) enum JrgmCommand {
         /// Gunakan JRGJIT: VM yang mengompilasi bagian panas jadi kode mesin saat jalan
         #[arg(long = "jit")]
         use_jit: bool,
+        /// Susun jadi kernel tanpa sistem operasi lalu boot di QEMU (`jrgc --bebas`)
+        #[arg(long = "bebas", conflicts_with_all = ["use_vm", "use_jit", "watch"])]
+        bebas: bool,
         /// Emit bytecode disassembly (butuh --vm)
         #[arg(long = "emit-bc")]
         emit_bc: bool,

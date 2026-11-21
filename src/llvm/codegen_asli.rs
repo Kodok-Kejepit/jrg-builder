@@ -15,6 +15,7 @@ pub const NAMA_ASLI: &[(&str, usize)] = &[
     ("hlt", 0), ("cli", 0), ("sti", 0), ("pause", 0), ("rdtsc", 0),
     ("rdmsr", 1), ("wrmsr", 2), ("cpuid", 2), ("cr0", 0), ("cr2", 0), ("cr3", 0), ("cr4", 0),
     ("tulis_cr3", 1), ("invlpg", 1), ("interupsi", 2),
+    ("memori_n", 0), ("memori", 1), ("bingkai_baru", 0), ("bingkai_lepas", 1), ("petakan", 3), ("lepas_peta", 1),
 ];
 
 /// Kalimat untuk `asli::` di luar kernel `--bebas` — dipakai juga interpreter dan VM.
@@ -198,6 +199,53 @@ impl Codegen {
                 self.emit(format!("{} = inttoptr i64 {} to ptr", p, a[0].text));
                 self.emit(format!("call void asm sideeffect \"invlpg ($0)\", \"r,~{{memory}},{}\"(ptr {})", PEMBERSIH, p));
                 Ok(unit)
+            }
+            "memori_n" => {
+                self.ensure_extern("declare i64 @jrg_bebas_memori_n()", "jrg_bebas_memori_n");
+                let t = self.fresh("asm.");
+                self.emit(format!("{} = call i64 @jrg_bebas_memori_n()", t));
+                Ok(Val { text: t, ty: JrgType::I64 })
+            }
+            "memori" => {
+                self.ensure_extern("declare i64 @jrg_bebas_memori(i64, ptr, ptr)", "jrg_bebas_memori");
+                let (pa, pp) = (self.alloca_raw("asma.", "i64", Some(8)), self.alloca_raw("asmp.", "i64", Some(8)));
+                let j = self.fresh("asm.");
+                self.emit(format!("{} = call i64 @jrg_bebas_memori(i64 {}, ptr {}, ptr {})", j, a[0].text, pa, pp));
+                let c = self.fresh("asm.");
+                self.emit(format!("{} = icmp slt i64 {}, 0", c, j));
+                let pesan = format!("`asli::memori`: entri {} tidak ada (lihat `asli::memori_n()`)", super::codegen_konversi::PENANDA);
+                let vv = a[0].clone();
+                self.gagal_bila(&c, |cg| cg.panik_sisip(&pesan, &super::codegen_konversi::Cetak::Bulat(vv)));
+                let ty = JrgType::Tuple(vec![JrgType::I64; 3]);
+                let (la, lp) = (self.fresh("asm."), self.fresh("asm."));
+                self.emit(format!("{} = load i64, ptr {}", la, pa));
+                self.emit(format!("{} = load i64, ptr {}", lp, pp));
+                let mut kini = "undef".to_string();
+                for (i, x) in [la, lp, j].iter().enumerate() {
+                    let n = self.fresh("asm.");
+                    self.emit(format!("{} = insertvalue {} {}, i64 {}, {}", n, ty.llvm_ty(), kini, x, i));
+                    kini = n;
+                }
+                Ok(Val { text: kini, ty })
+            }
+            "bingkai_baru" | "bingkai_lepas" | "petakan" | "lepas_peta" => {
+                let (sig, pesan) = match item {
+                    "bingkai_baru" => ("()", "`asli::bingkai_baru`: memori fisik habis"),
+                    "bingkai_lepas" => ("(i64)", "`asli::bingkai_lepas`: alamat bingkai harus kelipatan 4096"),
+                    "petakan" => ("(i64, i64, i64)", "`asli::petakan`: alamat virtual dan fisik harus kelipatan 4096, \
+                        dan alamat virtualnya di wilayah halaman 4 KiB (0x100000000 sampai 512 GiB)"),
+                    _ => ("(i64)", "`asli::lepas_peta`: alamat virtual harus kelipatan 4096"),
+                };
+                let nama = format!("jrg_bebas_{}", item);
+                let tipe_arg: Vec<String> = a.iter().map(|v| format!("i64 {}", v.text)).collect();
+                self.ensure_extern(&format!("declare i64 @{}{}", nama, sig.replace("i64", "i64")), &nama);
+                let t = self.fresh("asm.");
+                self.emit(format!("{} = call i64 @{}({})", t, nama, tipe_arg.join(", ")));
+                let c = self.fresh("asm.");
+                self.emit(format!("{} = icmp slt i64 {}, 0", c, t));
+                let p = pesan.to_string();
+                self.gagal_bila(&c, |cg| cg.panik(&p));
+                Ok(if item == "bingkai_baru" { Val { text: t, ty: JrgType::I64 } } else { unit })
             }
             _ => unreachable!("NAMA_ASLI dan codegen_asli tidak sepakat soal `{}`", item),
         }

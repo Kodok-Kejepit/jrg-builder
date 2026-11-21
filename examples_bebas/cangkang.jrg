@@ -1,0 +1,93 @@
+// Cangkang (shell) mini yang jalan langsung di perangkat keras: perintah dibaca dari papan ketik atau serial.
+//   jrgc examples_bebas/cangkang.jrg --bebas --layar      (ketik di jendela QEMU)
+//   printf 'cpu\nmemori\nketik 2+3*4\nkeluar\n' | jrgc examples_bebas/cangkang.jrg --bebas
+package main
+
+fn teks_register(r: int) -> string {
+    var s = ""
+    for i in 0..4 { s = s + str(rune((r >> (i * 8)) & 255)) }
+    s
+}
+
+fn cpu() -> string {
+    let (_, b, c, d) = asli::cpuid(0, 0)
+    teks_register(b) + teks_register(d) + teks_register(c)
+}
+
+fn memori_mib() -> int {
+    var total = 0
+    for i in 0..asli::memori_n() {
+        let (_, panjang, jenis) = asli::memori(i)
+        if jenis == 1 { total = total + panjang }
+    }
+    total / 1048576
+}
+
+// Kalkulator kecil: bilangan bulat, + - * / dan kurung, didahulukan seperti matematika.
+fn hitung(s: string) -> Result<int, string> {
+    let t = s.chars().filter(|c| c != ' ')
+    let (v, i) = jumlah(t, 0)?
+    if i != len(t) { return Err("sisa tak terbaca di posisi " + str(i)) }
+    Ok(v)
+}
+fn jumlah(t: []rune, i: int) -> Result<(int, int), string> {
+    v, j := kali(t, i)?
+    while j < len(t) && (t[j] == '+' || t[j] == '-') {
+        let (w, k) = kali(t, j + 1)?
+        v = t[j] == '+' $ v + w : v - w
+        j = k
+    }
+    Ok((v, j))
+}
+fn kali(t: []rune, i: int) -> Result<(int, int), string> {
+    v, j := suku(t, i)?
+    while j < len(t) && (t[j] == '*' || t[j] == '/') {
+        let (w, k) = suku(t, j + 1)?
+        if t[j] == '/' && w == 0 { return Err("pembagian dengan nol") }
+        v = t[j] == '*' $ v * w : v / w
+        j = k
+    }
+    Ok((v, j))
+}
+fn suku(t: []rune, i: int) -> Result<(int, int), string> {
+    if i >= len(t) { return Err("ekspresi berhenti di tengah") }
+    if t[i] == '(' {
+        let (v, j) = jumlah(t, i + 1)?
+        if j >= len(t) || t[j] != ')' { return Err("kurung tidak ditutup") }
+        return Ok((v, j + 1))
+    }
+    var j = i
+    var v = 0
+    while j < len(t) && t[j] >= '0' && t[j] <= '9' {
+        v = v * 10 + ((t[j] as int) - ('0' as int))
+        j = j + 1
+    }
+    if j == i { return Err("harusnya ada angka di posisi " + str(i)) }
+    Ok((v, j))
+}
+
+pub fn main() {
+    wok("JRG-OS mini — ketik `bantuan`")
+    let mulai = time::now_ms()
+    loop {
+        wok_("jrg> ")
+        let baris = tok().trim()
+        let bagian = baris.split(" ")
+        match bagian[0] {
+            "bantuan" => wok("perintah: cpu, memori, waktu, ketik <ekspresi>, ulang <teks>, keluar"),
+            "cpu" => wok("CPU:", cpu()),
+            "memori" => wok("RAM:", memori_mib(), "MiB"),
+            "waktu" => wok("menyala", time::now_ms() - mulai, "ms"),
+            "ketik" => match hitung(baris.substr(6)) {
+                Ok(v) => wok("=", v),
+                Err(e) => wok("galat:", e),
+            },
+            "ulang" => wok(baris.substr(6)),
+            "keluar" | "" => {
+                wok("sampai jumpa")
+                break
+            },
+            lain => wok("perintah tidak dikenal:", lain),
+        }
+    }
+}

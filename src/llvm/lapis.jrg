@@ -732,6 +732,13 @@ pub fn fs_read(path: string) -> string {
     return r.1
 }
 
+// `fs::read` yang menjawab `Result` (berkas hilang atau bukan teks jadi `Err`): tanpa jembatan, jadi juga di kernel.
+pub fn fs_try_read(path: string) -> Result<string, string> {
+    let r = lapis::os(1, path, "", 1)
+    if r.0 < 0 { return Err("fs::try_read '" + path + "': " + _galat_os(r.0)) }
+    return Ok(r.1)
+}
+
 pub fn fs_write<V>(path: string, isi: V) {
     let r = lapis::os(2, path, str(isi), 0)
     if r.0 < 0 { panik("fs::write '" + path + "': " + _galat_os(r.0)) }

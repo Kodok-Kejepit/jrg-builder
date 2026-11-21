@@ -1,0 +1,70 @@
+// Grafik tanpa sistem operasi: mode 640x480x32 lewat adaptor Bochs/QEMU (BGA), framebuffer dicari lewat PCI.
+//   jrgc examples_bebas/grafik.jrg --bebas --layar
+package main
+
+const LEBAR = 640
+const TINGGI = 480
+
+fn pci_baca(bus: int, slot: int, fungsi: int, ofs: int) -> int {
+    asli::outl(0xCF8, 0x80000000 | (bus << 16) | (slot << 11) | (fungsi << 8) | (ofs & 0xFC))
+    asli::inl(0xCFC)
+}
+
+// Alamat framebuffer: BAR0 perangkat VGA Bochs (vendor 0x1234, perangkat 0x1111).
+fn cari_framebuffer() -> Option<int> {
+    for slot in 0..32 {
+        let id = pci_baca(0, slot, 0, 0)
+        if id == 0x11111234 { return Some(pci_baca(0, slot, 0, 0x10) & 0xFFFFFFF0) }
+    }
+    None
+}
+
+fn bga(indeks: int, nilai: int) {
+    asli::outw(0x1CE, indeks)
+    asli::outw(0x1CF, nilai)
+}
+
+fn pasang_mode() {
+    bga(4, 0)          // matikan dulu
+    bga(1, LEBAR)
+    bga(2, TINGGI)
+    bga(3, 32)
+    bga(4, 0x41)       // nyala + framebuffer linear
+}
+
+fn titik(fb: int, x: int, y: int, warna: int) {
+    asli::tulis32(fb + (y * LEBAR + x) * 4, warna)
+}
+
+fn kotak(fb: int, x0: int, y0: int, l: int, t: int, warna: int) {
+    for dy in 0..t {
+        for dx in 0..l { titik(fb, x0 + dx, y0 + dy, warna) }
+    }
+}
+
+pub fn main() {
+    let fb = match cari_framebuffer() {
+        Some(a) => a,
+        None => {
+            wok("adaptor VGA Bochs tidak ditemukan (jalankan dengan QEMU -vga std)")
+            exit(1)
+            0
+        },
+    }
+    pasang_mode()
+    // gradasi latar
+    for y in 0..TINGGI {
+        for x in 0..LEBAR {
+            titik(fb, x, y, ((x * 255 / LEBAR) << 16) | ((y * 255 / TINGGI) << 8) | 0x40)
+        }
+    }
+    kotak(fb, 100, 100, 200, 120, 0xFFFFFF)
+    kotak(fb, 120, 120, 160, 80, 0x1E90FF)
+    // bukti: hitung piksel putih yang benar-benar tertulis di memori layar
+    var putih = 0
+    for dy in 0..120 {
+        for dx in 0..200 { if asli::baca32(fb + ((100 + dy) * LEBAR + 100 + dx) * 4) == 0xFFFFFF { putih = putih + 1 } }
+    }
+    wok("framebuffer di", fb, "piksel bingkai putih:", putih, "(harusnya", 200 * 120 - 160 * 80, ")")
+    wok("piksel (0,0):", asli::baca32(fb), "(639,479):", asli::baca32(fb + (479 * LEBAR + 639) * 4))
+}

@@ -98,6 +98,14 @@ struct Cli {
     #[arg(long = "bebas", conflicts_with_all = ["jit", "emit_wasm", "apk", "use_vm"])]
     bebas: bool,
 
+    /// Dengan --bebas: isi folder ini jadi sistem berkas RAM kernel (`/` = folder itu), dibaca dan ditulis `fs::`
+    #[arg(long = "berkas", value_name = "FOLDER", requires = "bebas")]
+    berkas: Option<PathBuf>,
+
+    /// Dengan --bebas: juga tulis image disk UEFI (MBR + partisi EFI + GRUB) yang bisa ditulis ke flashdisk
+    #[arg(long = "img", value_name = "BERKAS", requires = "bebas")]
+    img: Option<PathBuf>,
+
     /// Dengan --bebas: buka jendela layar VGA QEMU (bawaan tanpa jendela, keluaran lewat serial)
     #[arg(long = "layar", requires = "bebas")]
     layar: bool,
@@ -430,7 +438,16 @@ fn run_sumber(nama: &str, src: String, dir: PathBuf, cli: &Cli) -> Result<(), Ve
             let berkas = if cli.output == std::path::Path::new("a.out") {
                 PathBuf::from(std::path::Path::new(nama).file_stem().unwrap_or_default()).with_extension("elf")
             } else { cli.output.clone() };
-            jrgc::bebas::kompilasi(&ir, &berkas, cli.verbose).map_err(|e| vec![format!("jrgc: --bebas: {}", e)])?;
+            jrgc::bebas::kompilasi(&ir, &berkas, cli.berkas.as_deref(), cli.verbose).map_err(|e| vec![format!("jrgc: --bebas: {}", e)])?;
+            if let Some(img) = &cli.img {
+                jrgc::bebas::buat_img(&berkas, img, cli.verbose).map_err(|e| vec![format!("jrgc: --img: {}", e)])?;
+                if cli.no_run {
+                    jrgc::ecetak_t!("[jrgc] image UEFI: {} (tulis ke flashdisk: dd if={} of=/dev/sdX bs=4M)", img.display(), img.display());
+                    return Ok(());
+                }
+                let kode = jrgc::bebas::jalankan_img(img).map_err(|e| vec![format!("jrgc: --img: {}", e)])?;
+                keluar(kode);
+            }
             if cli.no_run {
                 jrgc::ecetak_t!("[jrgc] kernel: {} (boot: qemu-system-x86_64 -kernel {})", berkas.display(), berkas.display());
                 return Ok(());

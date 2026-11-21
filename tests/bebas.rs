@@ -173,3 +173,128 @@ fn pengecualian_cpu_dilaporkan() {
     assert!(b.galat.contains("pengecualian CPU #PF page fault") && b.galat.contains("alamat 0x7000000000"), "{}", b.galat);
     assert_eq!(b.kode, 1);
 }
+
+/// Peta memori multiboot dan tabel halaman dari JRG; halaman yang dilepas program sendiri bukan "stack habis".
+#[test]
+fn memori_dan_tabel_halaman_dari_jrg() {
+    if !ada_qemu() { eprintln!("dilewati: qemu-system-x86_64 tidak ada"); return; }
+    let src = r#"fn main() {
+  var total = 0
+  for i in 0..asli::memori_n() {
+    let (awal, panjang, jenis) = asli::memori(i)
+    if jenis == 1 { total = total + panjang }
+  }
+  wok("RAM cukup:", total > 256 * 1048576)
+  let f = asli::bingkai_baru()
+  asli::petakan(0x200000000, f, 2)
+  asli::tulis64(0x200000008, 0x1234567890)
+  wok("lewat fisik:", asli::baca64(f + 8) == 0x1234567890)
+  asli::lepas_peta(0x200000000)
+  wok(asli::baca64(0x200000000))
+}
+"#;
+    let b = jalankan(src, &["--bebas"]);
+    assert_eq!(b.keluaran, "RAM cukup: true\nlewat fisik: true\n", "{}", b.galat);
+    assert!(b.galat.contains("#PF page fault") && b.galat.contains("alamat 0x200000000"), "{}", b.galat);
+}
+
+/// stdin kernel = serial; akhir masukan sampai ke program seperti di proses biasa.
+#[test]
+fn masukan_lewat_serial_sampai_akhir() {
+    if !ada_qemu() { eprintln!("dilewati: qemu-system-x86_64 tidak ada"); return; }
+    let src = "fn main() {\n  wok(\"nama?\")\n  wok(\"halo\", tok())\n  let m = tok()\n  wok(\"habis:\", len(m))\n}\n";
+    let dir = std::env::temp_dir().join(format!("jrg-uji-bebas-masuk-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("k.jrg"), src).unwrap();
+    let mut anak = Command::new(jrgc()).arg(dir.join("k.jrg")).arg("--bebas").arg("-o").arg(dir.join("k.elf"))
+        .env("JRG_BAHASA", "id").env("JRG_SOPAN", "1").stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().unwrap();
+    use std::io::Write;
+    anak.stdin.take().unwrap().write_all(b"Budi\n").unwrap();
+    let out = anak.wait_with_output().unwrap();
+    let _ = std::fs::remove_dir_all(&dir);
+    assert_eq!(String::from_utf8_lossy(&out.stdout), "nama?\nhalo Budi\nhabis: 0\n");
+}
+
+/// Contoh `examples_bebas/` tetap jalan: cangkang interaktif dan grafik framebuffer (BGA lewat PCI).
+#[test]
+fn contoh_kernel_tetap_jalan() {
+    if !ada_qemu() { eprintln!("dilewati: qemu-system-x86_64 tidak ada"); return; }
+    let akar = env!("CARGO_MANIFEST_DIR");
+    let mut anak = Command::new(jrgc()).arg(format!("{akar}/examples_bebas/cangkang.jrg")).arg("--bebas")
+        .arg("-o").arg(std::env::temp_dir().join(format!("jrg-cangkang-{}.elf", std::process::id())))
+        .env("JRG_BAHASA", "id").env("JRG_SOPAN", "1").stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().unwrap();
+    use std::io::Write;
+    anak.stdin.take().unwrap().write_all("ketik (1+2)*(10-4)/3\nketik 5/0\nulang café\nterbang\nkeluar\n".as_bytes()).unwrap();
+    let out = String::from_utf8_lossy(&anak.wait_with_output().unwrap().stdout).to_string();
+    assert!(out.contains("jrg> = 6\njrg> galat: pembagian dengan nol\njrg> café\njrg> perintah tidak dikenal: terbang\n\
+        jrg> sampai jumpa"), "{out}");
+    let g = jalankan(&std::fs::read_to_string(format!("{akar}/examples_bebas/grafik.jrg")).unwrap(), &["--bebas"]);
+    assert!(g.keluaran.contains("piksel bingkai putih: 11200 (harusnya 11200 )") && g.keluaran.contains("piksel (0,0): 64"),
+        "{} {}", g.keluaran, g.galat);
+    let h = jalankan(&std::fs::read_to_string(format!("{akar}/examples_bebas/halo.jrg")).unwrap(), &["--bebas"]);
+    assert!(h.keluaran.starts_with("Halo dari kernel JRG! CPU:"), "{} {}", h.keluaran, h.galat);
+}
+
+/// `--berkas`: isi folder jadi sistem berkas RAM kernel; `fs::` menjawab sama dengan proses biasa di folder itu.
+#[test]
+fn sistem_berkas_ram_seperti_proses_biasa() {
+    if !ada_qemu() { eprintln!("dilewati: qemu-system-x86_64 tidak ada"); return; }
+    let src = r#"fn main() {
+  wok(fs::read("salam.txt"))
+  wok(fs::ls("."), fs::ls("data"))
+  fs::write("catatan.txt", "ditulis kernel\n")
+  fs::append("catatan.txt", "lagi\n")
+  wok(fs::read("catatan.txt"), fs::size("catatan.txt"), fs::exists("tak_ada"))
+  fs::mkdir("baru")
+  fs::write("baru/x.txt", "x")
+  wok(fs::ls("baru"), fs::is_dir("baru"))
+  fs::delete("baru/x.txt")
+  wok(fs::ls("baru"))
+  wok(fs::read("hilang.txt"))
+}
+"#;
+    let siapkan = |d: &std::path::Path| {
+        std::fs::create_dir_all(d.join("data")).unwrap();
+        std::fs::write(d.join("salam.txt"), "halo dari initramfs\n").unwrap();
+        std::fs::write(d.join("data/setelan.json"), "{}").unwrap();
+        std::fs::write(d.join("prog.jrg"), src).unwrap();
+    };
+    let dasar = std::env::temp_dir().join(format!("jrg-uji-berkas-{}", std::process::id()));
+    let (a, b) = (dasar.join("host"), dasar.join("kernel"));
+    siapkan(&a);
+    siapkan(&b);
+    let prog = dasar.join("prog.jrg");
+    std::fs::write(&prog, src).unwrap();
+    std::fs::remove_file(b.join("prog.jrg")).unwrap();
+    std::fs::remove_file(a.join("prog.jrg")).unwrap();
+    let host = Command::new(jrgc()).arg(&prog).current_dir(&a).env("JRG_BAHASA", "id").env("JRG_SOPAN", "1").output().unwrap();
+    let kern = Command::new(jrgc()).arg(&prog).args(["--bebas", "--berkas"]).arg(&b).arg("-o").arg(dasar.join("k.elf"))
+        .env("JRG_BAHASA", "id").env("JRG_SOPAN", "1").stdin(Stdio::null()).output().unwrap();
+    let _ = std::fs::remove_dir_all(&dasar);
+    assert_eq!(String::from_utf8_lossy(&host.stdout), String::from_utf8_lossy(&kern.stdout));
+    assert_eq!(host.status.code(), kern.status.code());
+    assert_eq!(String::from_utf8_lossy(&host.stderr).lines().next(), String::from_utf8_lossy(&kern.stderr).lines().next());
+}
+
+/// `--img`: image disk UEFI (MBR + partisi EFI FAT16 + GRUB) boot di QEMU lewat OVMF seperti flashdisk sungguhan.
+#[test]
+fn image_uefi_boot_lewat_ovmf() {
+    if !ada_qemu() { eprintln!("dilewati: qemu-system-x86_64 tidak ada"); return; }
+    let alat = std::path::Path::new("/usr/share/ovmf/OVMF.fd").is_file()
+        && std::path::Path::new("/usr/lib/grub/x86_64-efi").is_dir()
+        && Command::new("grub-mkstandalone").arg("--version").output().is_ok();
+    assert!(alat || std::env::var_os("JRG_IMG_WAJIB").is_none(), "JRG_IMG_WAJIB diset tapi OVMF/GRUB EFI tidak ada");
+    if !alat { eprintln!("dilewati: OVMF atau GRUB x86_64-efi tidak ada"); return; }
+    let dir = std::env::temp_dir().join(format!("jrg-uji-img-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("k.jrg"), "fn main() {\n  wok(\"boot UEFI:\", 6 * 7)\n  exit(5)\n}\n").unwrap();
+    let out = Command::new(jrgc()).arg(dir.join("k.jrg")).args(["--bebas", "-o"]).arg(dir.join("k.elf"))
+        .arg("--img").arg(dir.join("k.img")).env("JRG_SOPAN", "1").stdin(Stdio::null()).output().unwrap();
+    let img = std::fs::read(dir.join("k.img")).unwrap_or_default();
+    let _ = std::fs::remove_dir_all(&dir);
+    assert!(String::from_utf8_lossy(&out.stdout).contains("boot UEFI: 42"), "{}{}",
+        String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr));
+    assert_eq!(out.status.code(), Some(5));
+    assert_eq!(&img[510..512], &[0x55, 0xAA]);
+    assert_eq!(img[446 + 4], 0xEF, "partisi pertama harus Sistem EFI");
+}

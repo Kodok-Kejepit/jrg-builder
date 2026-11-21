@@ -79,6 +79,7 @@ pub fn utama(argumen: Vec<String>) {
         JrgmCommand::Build  { profile, target, verbose, skip_python_deps }
             => cmd_build(&profile, target.as_deref(), verbose, skip_python_deps),
 
+        JrgmCommand::Run    { bebas: true, .. } => perintah::cmd_run_bebas(),
         JrgmCommand::Run    { build_profile, args, verbose, prof, use_vm, use_jit, emit_bc, watch, clear, skip_python_deps, .. }
             => cmd_run(&build_profile, &args, verbose, prof, use_vm, use_jit, emit_bc, watch, clear, skip_python_deps),
 

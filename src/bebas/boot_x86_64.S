@@ -1,6 +1,6 @@
 // Boot stub: multiboot1 (QEMU -kernel / GRUB) -> long mode 64 bit -> jrg_bebas_mulai.
     .set MB_MAGIC, 0x1BADB002
-    .set MB_FLAGS, 0x00010003          // align, meminfo, alamat dari kepala (a.out kludge: ELF64 dimuat apa adanya)
+    .set MB_FLAGS, 0x00010003          // align, meminfo, alamat dari kepala (a.out kludge); bit video ditambal `--img`
     .section .multiboot, "a"
     .align 4
 mb_kepala:
@@ -12,6 +12,7 @@ mb_kepala:
     .long __akhir_data                 // load_end_addr
     .long __akhir_bss                  // bss_end_addr
     .long mulai32                      // entry_addr
+    .long 0, 1024, 768, 32             // grafis linear 1024x768x32 (GRUB jatuh ke `auto` kalau tidak ada)
 
     .section .bss
     .align 4096

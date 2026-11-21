@@ -1,0 +1,8 @@
+cpu
+memori
+ketik 2+3*4
+ketik (1+2)*(10-4)/3
+ketik 5/0
+ulang halo dunia
+terbang
+keluar

@@ -12,7 +12,7 @@ static inline void keluar32(uint16_t p, uint32_t v) { __asm__ volatile("outl %0,
 // ── serial ───────────────────────────────────────────────────────────────
 static void serial_pasang(uint16_t b) {
     keluar8(b + 1, 0x00); keluar8(b + 3, 0x80); keluar8(b + 0, 0x01); keluar8(b + 1, 0x00);
-    keluar8(b + 3, 0x03); keluar8(b + 2, 0xC7); keluar8(b + 4, 0x0B);
+    keluar8(b + 3, 0x03); keluar8(b + 4, 0x0B);  /* FIFO tidak disentuh: mengaturnya membuang byte masukan yang sudah tiba */
 }
 static void serial_tulis(uint16_t b, char c) {
     while (!(masuk8(b + 5) & 0x20)) {}
@@ -22,7 +22,94 @@ static void serial_tulis(uint16_t b, char c) {
 // ── layar VGA teks 80x25 ─────────────────────────────────────────────────
 static volatile uint16_t *const VGA = (volatile uint16_t *)0xB8000;
 static int vga_x, vga_y;
+/* Konsol framebuffer (mesin UEFI: tidak ada layar teks VGA): glyph 8x16 dari `fon_8x16.h`, latar hitam. */
+static volatile uint32_t *fb;
+static uint32_t fb_lebar, fb_tinggi, fb_pitch, fb_kol, fb_bar, fb_x, fb_y;
+static int glyph_untuk(uint32_t kode) {
+    int lo = 0, hi = (int)(sizeof FON_PETA / sizeof FON_PETA[0]) - 1;
+    while (lo <= hi) {
+        int m = (lo + hi) / 2;
+        if (FON_PETA[m].kode == kode) return FON_PETA[m].glyph;
+        if (FON_PETA[m].kode < kode) lo = m + 1; else hi = m - 1;
+    }
+    return kode == '?' ? 0 : glyph_untuk('?');
+}
+static void fb_gulir(void) {
+    uint32_t baris = fb_pitch / 4 * 16;
+    volatile uint32_t *a = fb;
+    for (uint32_t i = 0; i < (fb_bar - 1) * baris; i++) a[i] = a[i + baris];
+    for (uint32_t i = (fb_bar - 1) * baris; i < fb_bar * baris; i++) a[i] = 0;
+}
+static void fb_tulis(uint32_t kode) {
+    if (kode == '\n') { fb_x = 0; fb_y++; }
+    else if (kode == '\r') fb_x = 0;
+    else if (kode == '\b') { if (fb_x) fb_x--; kode = ' '; fb_tulis(kode); fb_x--; return; }
+    else {
+        const unsigned char *g = FON_GLYPH[glyph_untuk(kode)];
+        for (uint32_t y = 0; y < 16; y++)
+            for (uint32_t x = 0; x < 8; x++)
+                fb[(fb_y * 16 + y) * (fb_pitch / 4) + fb_x * 8 + x] = (g[y] >> (7 - x)) & 1 ? 0xC0C0C0 : 0;
+        if (++fb_x == fb_kol) { fb_x = 0; fb_y++; }
+    }
+    if (fb_y == fb_bar) { fb_gulir(); fb_y = fb_bar - 1; }
+}
+
+/* Layar teks VGA memakai CP437: UTF-8 didekode, kode yang punya padanan CP437 dipetakan, sisanya `?`. */
+static const struct { uint16_t u; uint8_t b; } CP437[] = {
+    {0x00A0, 0xFF}, {0x00A1, 0xAD}, {0x00A2, 0x9B}, {0x00A3, 0x9C}, {0x00A5, 0x9D}, {0x00AA, 0xA6},
+    {0x00AB, 0xAE}, {0x00AC, 0xAA}, {0x00B0, 0xF8}, {0x00B1, 0xF1}, {0x00B2, 0xFD}, {0x00B5, 0xE6},
+    {0x00B7, 0xFA}, {0x00BA, 0xA7}, {0x00BB, 0xAF}, {0x00BC, 0xAC}, {0x00BD, 0xAB}, {0x00BF, 0xA8},
+    {0x00C4, 0x8E}, {0x00C5, 0x8F}, {0x00C6, 0x92}, {0x00C7, 0x80}, {0x00C9, 0x90}, {0x00D1, 0xA5},
+    {0x00D6, 0x99}, {0x00DC, 0x9A}, {0x00DF, 0xE1}, {0x00E0, 0x85}, {0x00E1, 0xA0}, {0x00E2, 0x83},
+    {0x00E4, 0x84}, {0x00E5, 0x86}, {0x00E6, 0x91}, {0x00E7, 0x87}, {0x00E8, 0x8A}, {0x00E9, 0x82},
+    {0x00EA, 0x88}, {0x00EB, 0x89}, {0x00EC, 0x8D}, {0x00ED, 0xA1}, {0x00EE, 0x8C}, {0x00EF, 0x8B},
+    {0x00F1, 0xA4}, {0x00F2, 0x95}, {0x00F3, 0xA2}, {0x00F4, 0x93}, {0x00F6, 0x94}, {0x00F7, 0xF6},
+    {0x00F9, 0x97}, {0x00FA, 0xA3}, {0x00FB, 0x96}, {0x00FC, 0x81}, {0x00FF, 0x98}, {0x0192, 0x9F},
+    {0x0393, 0xE2}, {0x0398, 0xE9}, {0x03A3, 0xE4}, {0x03A6, 0xE8}, {0x03A9, 0xEA}, {0x03B1, 0xE0},
+    {0x03B4, 0xEB}, {0x03B5, 0xEE}, {0x03C0, 0xE3}, {0x03C3, 0xE5}, {0x03C4, 0xE7}, {0x03C6, 0xED},
+    {0x207F, 0xFC}, {0x20A7, 0x9E}, {0x2219, 0xF9}, {0x221A, 0xFB}, {0x221E, 0xEC}, {0x2229, 0xEF},
+    {0x2248, 0xF7}, {0x2261, 0xF0}, {0x2264, 0xF3}, {0x2265, 0xF2}, {0x2310, 0xA9}, {0x2320, 0xF4},
+    {0x2321, 0xF5}, {0x2500, 0xC4}, {0x2502, 0xB3}, {0x250C, 0xDA}, {0x2510, 0xBF}, {0x2514, 0xC0},
+    {0x2518, 0xD9}, {0x251C, 0xC3}, {0x2524, 0xB4}, {0x252C, 0xC2}, {0x2534, 0xC1}, {0x253C, 0xC5},
+    {0x2550, 0xCD}, {0x2551, 0xBA}, {0x2552, 0xD5}, {0x2553, 0xD6}, {0x2554, 0xC9}, {0x2555, 0xB8},
+    {0x2556, 0xB7}, {0x2557, 0xBB}, {0x2558, 0xD4}, {0x2559, 0xD3}, {0x255A, 0xC8}, {0x255B, 0xBE},
+    {0x255C, 0xBD}, {0x255D, 0xBC}, {0x255E, 0xC6}, {0x255F, 0xC7}, {0x2560, 0xCC}, {0x2561, 0xB5},
+    {0x2562, 0xB6}, {0x2563, 0xB9}, {0x2564, 0xD1}, {0x2565, 0xD2}, {0x2566, 0xCB}, {0x2567, 0xCF},
+    {0x2568, 0xD0}, {0x2569, 0xCA}, {0x256A, 0xD8}, {0x256B, 0xD7}, {0x256C, 0xCE}, {0x2580, 0xDF},
+    {0x2584, 0xDC}, {0x2588, 0xDB}, {0x258C, 0xDD}, {0x2590, 0xDE}, {0x2591, 0xB0}, {0x2592, 0xB1},
+    {0x2593, 0xB2}, {0x25A0, 0xFE}
+};
+static uint32_t utf_kode; static int utf_sisa;
+static void vga_byte(char c);
 static void vga_tulis(char c) {
+    unsigned char b = (unsigned char)c;
+    if (fb) {
+        if (b < 0x80) { utf_sisa = 0; fb_tulis(b); return; }
+        if ((b & 0xC0) == 0x80) {
+            if (!utf_sisa) { fb_tulis('?'); return; }
+            utf_kode = (utf_kode << 6) | (b & 0x3F);
+            if (!--utf_sisa) fb_tulis(utf_kode);
+            return;
+        }
+        utf_sisa = b >= 0xF0 ? 3 : b >= 0xE0 ? 2 : 1;
+        utf_kode = b & (b >= 0xF0 ? 0x07 : b >= 0xE0 ? 0x0F : 0x1F);
+        return;
+    }
+    if (b < 0x80) { utf_sisa = 0; vga_byte(c); return; }
+    if ((b & 0xC0) == 0x80) {
+        if (!utf_sisa) { vga_byte('?'); return; }
+        utf_kode = (utf_kode << 6) | (b & 0x3F);
+        if (--utf_sisa) return;
+        char k = '?';
+        if (utf_kode == 0x2014 || utf_kode == 0x2013) k = '-';
+        for (size_t i = 0; i < sizeof CP437 / sizeof CP437[0]; i++) if (CP437[i].u == utf_kode) { k = (char)CP437[i].b; break; }
+        vga_byte(k);
+        return;
+    }
+    utf_sisa = b >= 0xF0 ? 3 : b >= 0xE0 ? 2 : 1;
+    utf_kode = b & (b >= 0xF0 ? 0x07 : b >= 0xE0 ? 0x0F : 0x1F);
+}
+static void vga_byte(char c) {
     if (c == '\n') { vga_x = 0; vga_y++; }
     else if (c == '\r') { vga_x = 0; }
     else { VGA[vga_y * 80 + vga_x] = (uint16_t)(uint8_t)c | 0x0700; if (++vga_x == 80) { vga_x = 0; vga_y++; } }
@@ -53,6 +140,14 @@ void *memchr(const void *s, int c, size_t n) {
     return 0;
 }
 size_t strlen(const char *s) { size_t n = 0; while (s[n]) n++; return n; }
+int strcmp(const char *a, const char *b) { while (*a && *a == *b) { a++; b++; } return (unsigned char)*a - (unsigned char)*b; }
+int strncmp(const char *a, const char *b, size_t n) {
+    for (; n; n--, a++, b++) { if (*a != *b || !*a) return (unsigned char)*a - (unsigned char)*b; }
+    return 0;
+}
+char *strchr(const char *s, int c) { for (;; s++) { if (*s == (char)c) return (char *)s; if (!*s) return 0; } }
+char *strrchr(const char *s, int c) { const char *r = 0; for (;; s++) { if (*s == (char)c) r = s; if (!*s) return (char *)r; } }
+char *strncpy(char *d, const char *s, size_t n) { size_t i = 0; for (; i < n && s[i]; i++) d[i] = s[i]; for (; i < n; i++) d[i] = 0; return d; }
 
 // ── heap: kelas ukuran pangkat dua, daftar bebas per kelas ─────────────────
 extern char __heap_awal[];
@@ -160,16 +255,72 @@ void *mmap(void *a, size_t n, int prot, int fl, int fd, long off) {
     wilayah_kini += n + 4096;              /* satu halaman tak terpeta di antara dua pemetaan */
     return (void *)(uintptr_t)v;
 }
+/* Halaman penjaga stack korutin, dicatat persis: page fault di sana = stack habis, di tempat lain = galat biasa. */
+static uint64_t penjaga_awal[4096], penjaga_ukuran[4096];
+static int penjaga_n;
 int munmap(void *a, size_t n) {
     for (uint64_t p = 0; p < n; p += 4096) lepas_halaman((uint64_t)(uintptr_t)a + p);
+    for (int i = 0; i < penjaga_n; i++)
+        if (penjaga_awal[i] >= (uint64_t)(uintptr_t)a && penjaga_awal[i] < (uint64_t)(uintptr_t)a + n) {
+            penjaga_awal[i] = penjaga_awal[penjaga_n - 1]; penjaga_ukuran[i] = penjaga_ukuran[--penjaga_n]; i--;
+        }
     return 0;
 }
-/* PROT_NONE melepas halamannya (penjaga stack korutin); izin lain tidak berubah. */
-int mprotect(void *a, size_t n, int p) { if (p == 0) munmap(a, n); return 0; }
+/* PROT_NONE melepas halamannya dan mencatatnya sebagai penjaga; izin lain tidak berubah. */
+int mprotect(void *a, size_t n, int p) {
+    if (p != 0) return 0;
+    for (uint64_t q = 0; q < n; q += 4096) lepas_halaman((uint64_t)(uintptr_t)a + q);
+    if (penjaga_n < 4096) { penjaga_awal[penjaga_n] = (uint64_t)(uintptr_t)a; penjaga_ukuran[penjaga_n++] = n; }
+    return 0;
+}
+/* `asli::` atas memori: bingkai fisik 4 KiB dan pemetaan di wilayah 4 KiB (di atas 4 GiB, di bawah 512 GiB).
+   Jawaban negatif = kegagalan yang codegen ubah jadi galat berkalimat. */
+int64_t jrg_bebas_bingkai_baru(void) { void *b = bingkai_baru(); return b ? (int64_t)(uintptr_t)b : -1; }
+int64_t jrg_bebas_bingkai_lepas(int64_t f) {
+    if (f & 4095) return -1;
+    uint64_t *h = (uint64_t *)(uintptr_t)f; *h = (uint64_t)(uintptr_t)halaman_bebas; halaman_bebas = h;
+    return 0;
+}
+int64_t jrg_bebas_petakan(int64_t v, int64_t f, int64_t bendera) {
+    if ((v & 4095) || (f & 4095)) return -1;
+    if ((uint64_t)v < WILAYAH_AWAL || (uint64_t)v >= (512ULL << 30)) return -2;
+    uint64_t *e = pte_untuk((uint64_t)v, 1);
+    if (!e) return -3;
+    *e = ((uint64_t)f & 0x000FFFFFFFFFF000ULL) | ((uint64_t)bendera & 0x8000000000000FFFULL) | 1;
+    __asm__ volatile("invlpg (%0)" :: "r"(v) : "memory");
+    if ((uint64_t)v + 4096 > wilayah_kini) wilayah_kini = (uint64_t)v + 8192;
+    return 0;
+}
+int64_t jrg_bebas_lepas_peta(int64_t v) {
+    if (v & 4095) return -1;
+    uint64_t *e = pte_untuk((uint64_t)v, 0);
+    if (e) { *e = 0; __asm__ volatile("invlpg (%0)" :: "r"(v) : "memory"); }
+    return 0;
+}
+static uint32_t mb_info_salin;
+/* Peta memori multiboot: jumlah entri, lalu entri ke-i sebagai (awal, panjang, jenis). */
+int64_t jrg_bebas_memori_n(void) {
+    uint32_t *mb = (uint32_t *)(uintptr_t)mb_info_salin;
+    if (!mb || !(mb[0] & 64)) return 0;
+    int64_t n = 0;
+    for (uint32_t p = mb[12], akhir = mb[12] + mb[11]; p < akhir; p += *(uint32_t *)(uintptr_t)p + 4) n++;
+    return n;
+}
+int64_t jrg_bebas_memori(int64_t i, int64_t *awal, int64_t *panjang) {
+    uint32_t *mb = (uint32_t *)(uintptr_t)mb_info_salin;
+    if (!mb || !(mb[0] & 64) || i < 0) return -1;
+    for (uint32_t p = mb[12], akhir = mb[12] + mb[11]; p < akhir; p += *(uint32_t *)(uintptr_t)p + 4, i--) {
+        if (i == 0) {
+            uint32_t *e = (uint32_t *)(uintptr_t)p;
+            *awal = (int64_t)(e[1] | (uint64_t)e[2] << 32); *panjang = (int64_t)(e[3] | (uint64_t)e[4] << 32);
+            return e[5];
+        }
+    }
+    return -1;
+}
 static int di_wilayah_penjaga(uint64_t v) {
-    if (v < WILAYAH_AWAL || v >= wilayah_kini) return 0;
-    uint64_t *e = pte_untuk(v, 0);
-    return !e || !(*e & 1);
+    for (int i = 0; i < penjaga_n; i++) if (v >= penjaga_awal[i] && v < penjaga_awal[i] + penjaga_ukuran[i]) return 1;
+    return 0;
 }
 
 // ── errno, lingkungan, berkas: tidak ada sistem berkas ─────────────────────
@@ -195,26 +346,15 @@ char *getenv(const char *n) {
     return 0;
 }
 int setenv(const char *n, const char *v, int o) { (void)n; (void)v; (void)o; errno = TIDAK_ADA; return -1; }
-char *strerror(int e) { (void)e; return (char *)"tidak ada sistem berkas di mode bebas"; }
-#define TOLAK(nama, ...) int nama(__VA_ARGS__) { errno = TIDAK_ADA; return -1; }
-TOLAK(open, const char *p, int f, ...)
-TOLAK(close, int fd)
-TOLAK(stat, const char *p, void *s)
-TOLAK(lstat, const char *p, void *s)
-TOLAK(fstat, int fd, void *s)
-TOLAK(chmod, const char *p, unsigned m)
-TOLAK(mkdir, const char *p, unsigned m)
-TOLAK(rmdir, const char *p)
-TOLAK(unlink, const char *p)
-TOLAK(rename, const char *a, const char *b)
-long readlink(const char *p, char *b, size_t n) { (void)p; (void)b; (void)n; errno = TIDAK_ADA; return -1; }
-char *getcwd(char *b, size_t n) { (void)b; (void)n; errno = TIDAK_ADA; return 0; }
-void *fopen(const char *p, const char *m) { (void)p; (void)m; errno = TIDAK_ADA; return 0; }
-int fclose(void *f) { (void)f; return 0; }
-size_t fread(void *b, size_t a, size_t n, void *f) { (void)b; (void)a; (void)n; (void)f; return 0; }
-void *opendir(const char *p) { (void)p; errno = TIDAK_ADA; return 0; }
-void *readdir(void *d) { (void)d; return 0; }
-int closedir(void *d) { (void)d; return 0; }
+/* Bahasa pesan yang ditulis lapisan ini sendiri, aturannya sama dengan runtime: `JRG_BAHASA`, bawaan Inggris. */
+static const char *pilih(const char *id, const char *en) {
+    const char *b = getenv("JRG_BAHASA");
+    return b && b[0] == 'i' && b[1] == 'd' ? id : en;
+}
+char *strerror(int e) { (void)e; return (char *)pilih("operasi ini tidak ada di kernel --bebas", "this operation does not exist in a --bebas kernel"); }
+/* Berkas dan direktori: sistem berkas di RAM (`berkas_ram.c`). */
+long jrg_ram_baca(int fd, void *b, size_t n);
+long jrg_ram_tulis(int fd, const void *b, size_t n);
 long sysconf(int n) { (void)n; return 1; }
 int sigemptyset(void *s) { memset(s, 0, 128); return 0; }
 int sigaddset(void *s, int n) { (void)s; (void)n; return 0; }
@@ -222,6 +362,7 @@ int sigdelset(void *s, int n) { (void)s; (void)n; return 0; }
 
 // ── keluaran dan masukan ─────────────────────────────────────────────────
 long write(int fd, const void *b, size_t n) {
+    if (fd > 2) return jrg_ram_tulis(fd, b, n);
     const char *c = b;
     for (size_t i = 0; i < n; i++) {
         if (fd == 2) serial_tulis(0x2F8, c[i]);
@@ -229,11 +370,48 @@ long write(int fd, const void *b, size_t n) {
     }
     return (long)n;
 }
+/* stdin = serial COM1 (apa adanya; 0x04 = akhir masukan, dikirim jrgc saat stdin-nya habis) ATAU papan ketik
+   PS/2 (layout US, Shift, Backspace, gema ke layar, satu baris sekali seperti terminal biasa). Papan ketik cuma
+   dibaca selama program tidak memasang penangan IRQ1 sendiri. */
+static const char PETA_KECIL[] = "\0\0331234567890-=\b\tqwertyuiop[]\n\0asdfghjkl;'`\0\\zxcvbnm,./\0*\0 ";
+static const char PETA_BESAR[] = "\0\033!@#$%^&*()_+\b\tQWERTYUIOP{}\n\0ASDFGHJKL:\"~\0|ZXCVBNM<>?\0*\0 ";
+static int penangan_irq1(void);
+static char baris_ketik[256];
+static size_t baris_n, baris_baca;
+static int shift, serial_habis;
+static int ketik_satu(void) {
+    uint8_t k = masuk8(0x60);
+    if (k == 0x2A || k == 0x36) { shift = 1; return 0; }
+    if (k == 0xAA || k == 0xB6) { shift = 0; return 0; }
+    if (k & 0x80 || k >= sizeof PETA_KECIL - 1) return 0;
+    char c = (shift ? PETA_BESAR : PETA_KECIL)[k];
+    if (!c) return 0;
+    if (c == '\b') {
+        if (baris_n) { baris_n--; if (fb) vga_tulis('\b'); else if (vga_x) { vga_x--; VGA[vga_y * 80 + vga_x] = 0x0720; } }
+        return 0;
+    }
+    if (baris_n + 1 < sizeof baris_ketik) { baris_ketik[baris_n++] = c; vga_tulis(c); }
+    return c == '\n';
+}
 long read(int fd, void *b, size_t n) {
+    if (fd > 2) return jrg_ram_baca(fd, b, n);
     if (fd != 0 || n == 0) return 0;
-    while (!(masuk8(0x3F8 + 5) & 1)) {}
-    *(char *)b = (char)masuk8(0x3F8);
-    return 1;
+    for (;;) {
+        if (baris_baca < baris_n && baris_ketik[baris_n - 1] == '\n') {
+            *(char *)b = baris_ketik[baris_baca++];
+            if (baris_baca == baris_n) baris_baca = baris_n = 0;
+            return 1;
+        }
+        if (!serial_habis && (masuk8(0x3F8 + 5) & 1)) {
+            char c = (char)masuk8(0x3F8);
+            if (c == 4) { serial_habis = 1; return 0; }
+            *(char *)b = c;
+            return 1;
+        }
+        if (!penangan_irq1() && (masuk8(0x64) & 1) && !(masuk8(0x64) & 0x20)) ketik_satu();
+        else if (serial_habis && penangan_irq1()) return 0;
+        __asm__ volatile("pause");
+    }
 }
 
 // ── waktu: TSC dikalibrasi lawan PIT, detik dari RTC CMOS ──────────────────
@@ -374,6 +552,7 @@ static char ist_ganda[16 * 1024] __attribute__((aligned(16)));    /* IST3: doubl
 /* Penangan JRG per vektor (`asli::interupsi`): kode dan lingkungan `%JrgFn`. */
 typedef struct { void *kode, *env; } JrgFnC;
 static JrgFnC penangan[256];
+static int penangan_irq1(void) { return penangan[33].kode != 0; }
 void jrg_bebas_pasang_penangan(int64_t v, void *kode, void *env) { penangan[v & 255].kode = kode; penangan[v & 255].env = env; }
 
 static void pasang_idt(void) {
@@ -424,12 +603,13 @@ void jrg_bebas_interupsi(JrgBingkai *f) {
         if (f->rflags & 0x200) __asm__ volatile("sti");
         jrg_bebas_lapor_stack();
     }
-    tulis_teks(2, "error: pengecualian CPU ");
+    tulis_teks(2, pilih("error: pengecualian CPU ", "error: CPU exception "));
     tulis_teks(2, NAMA_GALAT[v]);
-    tulis_teks(2, " di RIP "); tulis_heks(2, f->rip);
-    if (v == 14) { tulis_teks(2, ", alamat "); tulis_heks(2, cr2); }
-    tulis_teks(2, ", kode galat "); tulis_heks(2, f->kode);
-    tulis_teks(2, "\n  catatan: kernel `--bebas` dihentikan; galat ini datang dari perangkat keras, bukan dari kalimat JRG\n");
+    tulis_teks(2, pilih(" di RIP ", " at RIP ")); tulis_heks(2, f->rip);
+    if (v == 14) { tulis_teks(2, pilih(", alamat ", ", address ")); tulis_heks(2, cr2); }
+    tulis_teks(2, pilih(", kode galat ", ", error code ")); tulis_heks(2, f->kode);
+    tulis_teks(2, pilih("\n  catatan: kernel `--bebas` dihentikan; galat ini datang dari perangkat keras, bukan dari kalimat JRG\n",
+                        "\n  note: the `--bebas` kernel was stopped; this error came from the hardware, not from a JRG sentence\n"));
     _exit(1);
 }
 
@@ -487,8 +667,7 @@ static void pasang_tls(void) {
     __asm__ volatile("wrmsr" :: "c"(0xC0000100u), "a"((uint32_t)(uintptr_t)tp), "d"((uint32_t)((uintptr_t)tp >> 32)));
 }
 __attribute__((noreturn)) void __stack_chk_fail(void) {
-    static const char m[] = "error: stack rusak (canary stack-protector berubah)\n";
-    write(2, m, sizeof m - 1);
+    tulis_teks(2, pilih("error: stack rusak (canary stack-protector berubah)\n", "error: stack corrupted (the stack-protector canary changed)\n"));
     _exit(1);
 }
 
@@ -497,8 +676,21 @@ int main(int, char **);
 extern void (*__init_awal[])(void);
 extern void (*__init_akhir[])(void);
 void jrg_bebas_mulai(uint32_t mb) {
+    mb_info_salin = mb;
     serial_pasang(0x3F8); serial_pasang(0x2F8);
-    for (int i = 0; i < 80 * 25; i++) VGA[i] = 0x0720;
+    /* Framebuffer dari multiboot (GRUB EFI): RGB 32 bit di bawah 4 GiB jadi konsol; selain itu layar teks VGA. */
+    uint32_t *m = (uint32_t *)(uintptr_t)mb;
+    if (mb && (m[0] & (1u << 12))) {
+        uint64_t alamat = (uint64_t)m[22] | ((uint64_t)m[23] << 32);
+        uint8_t bpp = ((uint8_t *)m)[108], jenis = ((uint8_t *)m)[109];
+        if (jenis == 1 && bpp == 32 && alamat + (uint64_t)m[24] * m[26] <= (4ull << 30)) {
+            fb = (volatile uint32_t *)(uintptr_t)alamat;
+            fb_pitch = m[24]; fb_lebar = m[25]; fb_tinggi = m[26];
+            fb_kol = fb_lebar / 8; fb_bar = fb_tinggi / 16;
+            for (uint32_t i = 0; i < fb_tinggi * (fb_pitch / 4); i++) fb[i] = 0;
+        }
+    }
+    if (!fb) for (int i = 0; i < 80 * 25; i++) VGA[i] = 0x0720;
     // Heap: sesudah kernel sampai batas memori atas dari multiboot (paling banyak 4 GiB terpeta).
     if (mb && (*(uint32_t *)(uintptr_t)mb & 4)) {
         const char *c = (const char *)(uintptr_t)((uint32_t *)(uintptr_t)mb)[4];
