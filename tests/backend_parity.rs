@@ -190,6 +190,8 @@ const DITOLAK_DUA_BACKEND: &[(&str, &str, &str, &str)] = &[
      "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
     ("kebuntuan: main selesai memegang kunci yang ditunggu goroutine (AGI-20261119-44)", "fn main() {\n    let m = Mutex::new()\n    m.lock()\n    spawn { m.lock(); wok(\"dapat\") }\n    wok(\"main selesai\")\n}\n",
      "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
+    ("kebuntuan: Future membaca pointer di tengah ptr::update yang menunggunya (AGI-20261120-17)", "fn main() {\n    let p = ptr::new(1)\n    ptr::update(p, |x| { let f = Future::new(|| ptr::get(p)); x + future::await(f) })\n    wok(\"tidak sampai\")\n}\n",
+     "kebuntuan: semua goroutine sedang menunggu channel", "kebuntuan: semua goroutine sedang menunggu channel"),
     ("parameter pengumpul bukan yang terakhir", "package main\nfn f(a..., b) { return 1 }\npub fn main() { wok(f(1, 2)) }", "harus yang terakhir", "harus yang terakhir"),
     // #1078 (AGI-20261119-03): rantai operator kiri, postfix, dan `else if let` dulu memutari batas 256 lalu SIGABRT.
     ("sarang rantai operator ditolak, bukan crash", "package main\npub fn main() { let x = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1\n wok(x) }", "sarang terlalu dalam", "sarang terlalu dalam"),
@@ -661,9 +663,10 @@ pub fn main() { wok(dok::cookie_set(dok::text("a"), "s", "x", {"same_site": "Lax
     ("select: channel tertutup ditolak walau ada default",
      "let c = Chan::new(1)\nc.close()\nselect {\n    case v := <-c: { wok(\"dapat\", v) }\n    default: { wok(\"def\") }\n}\n",
      "sudah ditutup dan kosong", "sudah ditutup dan kosong"),
+    // `select` satu case tanpa `default` adalah operasi terimanya (AGI-20261119-52), jadi kalimatnya kalimat `<-`.
     ("select: operand bukan channel ditolak, bukan menggantung",
      "let a = [1]\nselect {\n    case v := <-a: { wok(v) }\n}\n",
-     "`case` di `select` butuh channel, dapat `array`", "`case` di `select` butuh channel, dapat `array`"),
+     "`<-c` (terima) butuh channel, dapat `array`", "`<-c` (terima) butuh channel, dapat `array`"),
     ("select: operand bukan channel ditolak, bukan diam-diam ke default",
      "let a = [1]\nselect {\n    case a <- 1: { wok(1) }\n    default: { wok(2) }\n}\n",
      "`case` di `select` butuh channel, dapat `array`", "`case` di `select` butuh channel, dapat `array`"),

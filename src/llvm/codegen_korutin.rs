@@ -162,6 +162,9 @@ impl Codegen {
                 self.lokal_sementara(tempat, v.ty.clone(), span)
             }
         };
+        // Badannya bertindak atas nama pemanggil (kunci yang dipegang, `ptr::update`) — AGI-20261119-13.
+        self.ensure_extern("declare void @jrg_ko_wakil_berikut()", "jrg_ko_wakil_berikut");
+        self.emit("call void @jrg_ko_wakil_berikut()".to_string());
         let m = self.masa_baru_dgn(std::slice::from_ref(&fexpr), false, false, span)?;
         let JrgType::Masa(t, _) = m.ty.clone() else { return Err("tangkap: bukan tugas".to_string()) };
         let t = *t;

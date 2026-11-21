@@ -54,30 +54,83 @@ pub fn ptr_addr(args: &[Value]) -> Result<Value, String> {
     Ok(Value::Int(id as i128))
 }
 
-thread_local! {
-    /// Pointer yang sedang di tengah `ptr::update` di thread ini (selnya terkunci).
-    static SIBUK: std::cell::RefCell<Vec<u64>> = const { std::cell::RefCell::new(Vec::new()) };
+/// Aktor = thread pemanggil, kecuali yang sedang bekerja atas nama korutin biner `--emit-llvm` (jembatan).
+fn aktor_kini() -> u64 {
+    static BERIKUT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    thread_local! { static SAYA: u64 = BERIKUT.fetch_add(1, std::sync::atomic::Ordering::SeqCst); }
+    // Bit atas membedakan korutin dari nomor thread.
+    WAKIL.with(|w| w.get()).map(|k| k | 1 << 63).unwrap_or_else(|| SAYA.with(|s| *s))
+}
+
+thread_local! { static WAKIL: std::cell::Cell<Option<u64>> = const { std::cell::Cell::new(None) }; }
+/// Aktor korutin yang sedang diwakili thread ini, kalau ada.
+pub fn wakil_kini() -> Option<u64> { WAKIL.with(|w| w.get()) }
+/// Selama hidup, thread ini bekerja atas nama korutin `id` (jembatan LLVM).
+pub struct WakilAktor(Option<u64>);
+impl WakilAktor {
+    pub fn pasang(id: u64) -> Self { WakilAktor(WAKIL.with(|w| w.replace(Some(id)))) }
+}
+impl Drop for WakilAktor {
+    fn drop(&mut self) { WAKIL.with(|w| w.set(self.0)); }
+}
+
+/// Pointer yang sedang di tengah `ptr::update`, dengan aktor pemegangnya. Dulu per thread, jadi panggilan ulang
+/// dari korutin LLVM yang sama lewat thread pembantu lain menunggu dirinya sendiri selamanya (AGI-20261120-17).
+fn sibuk() -> &'static std::sync::Mutex<Vec<(u64, u64)>> {
+    static S: std::sync::OnceLock<std::sync::Mutex<Vec<(u64, u64)>>> = std::sync::OnceLock::new();
+    S.get_or_init(|| std::sync::Mutex::new(Vec::new()))
 }
 
 /// Menandai sebuah pointer sibuk selama `ptr::update` memanggil fungsinya.
-pub struct PenandaSibuk(u64);
+pub struct PenandaSibuk(u64, u64);
 impl PenandaSibuk {
-    pub fn baru(id: u64) -> Self { SIBUK.with(|s| s.borrow_mut().push(id)); PenandaSibuk(id) }
+    pub fn baru(id: u64) -> Self {
+        let a = aktor_kini();
+        sibuk().lock().unwrap_or_else(|p| p.into_inner()).push((id, a));
+        PenandaSibuk(id, a)
+    }
 }
 impl Drop for PenandaSibuk {
     fn drop(&mut self) {
-        SIBUK.with(|s| { let mut s = s.borrow_mut(); if let Some(i) = s.iter().rposition(|x| *x == self.0) { s.remove(i); } });
+        let mut s = sibuk().lock().unwrap_or_else(|p| p.into_inner());
+        if let Some(i) = s.iter().rposition(|x| *x == (self.0, self.1)) { s.remove(i); }
     }
 }
 
 /// Fungsi pembaruan yang menyentuh pointernya sendiri dulu MENGGANTUNG (selnya terkunci
-/// thread yang sama). Sekarang ditolak, sambil menunjuk nilai yang sudah ada di tangannya.
+/// aktor yang sama). Sekarang ditolak, sambil menunjuk nilai yang sudah ada di tangannya.
 pub fn periksa_sibuk(id: u64, fname: &str) -> Result<(), String> {
-    if SIBUK.with(|s| s.borrow().contains(&id)) {
+    let a = aktor_kini();
+    if sibuk().lock().unwrap_or_else(|p| p.into_inner()).iter().any(|x| *x == (id, a)) {
         return Err(format!("{}: pointer ini sedang diperbarui `ptr::update` — fungsi pembaruannya \
             sudah menerima nilai lamanya sebagai argumen, pakai itu", fname));
     }
     Ok(())
+}
+
+/// Kunci sel yang dipegang aktor lain: penunggunya terlihat detektor kebuntuan, jadi `ptr::update` yang menunggu
+/// aktor penunggu itu dilaporkan buntu, bukan menggantung (AGI-20261120-17).
+pub fn kunci_sel<T>(sel: &std::sync::Mutex<T>) -> Result<std::sync::MutexGuard<'_, T>, String> {
+    match sel.try_lock() {
+        Ok(g) => return Ok(g),
+        Err(std::sync::TryLockError::Poisoned(p)) => return Ok(p.into_inner()),
+        Err(std::sync::TryLockError::WouldBlock) => {}
+    }
+    if !crate::antrean::buntu::aktif() { return Ok(sel.lock().unwrap_or_else(|p| p.into_inner())); }
+    let mut b = crate::antrean::buntu::Blokir::mulai();
+    let mut periksa = std::time::Instant::now();
+    loop {
+        std::thread::sleep(std::time::Duration::from_micros(500));
+        match sel.try_lock() {
+            Ok(g) => return Ok(g),
+            Err(std::sync::TryLockError::Poisoned(p)) => return Ok(p.into_inner()),
+            Err(std::sync::TryLockError::WouldBlock) => {}
+        }
+        if periksa.elapsed() >= crate::antrean::buntu::TIAP {
+            periksa = std::time::Instant::now();
+            if b.buntu() && crate::antrean::buntu::utama() { return Err(crate::antrean::PESAN_BUNTU.to_string()); }
+        }
+    }
 }
 
 fn get_cell(id: u64) -> Option<Cell> {
@@ -89,7 +142,7 @@ pub fn ptr_get(args: &[Value]) -> Result<Value, String> {
     if id == 0 { return Err("ptr::get: null pointer dereference".to_string()); }
     periksa_sibuk(id, "ptr::get")?;
     match get_cell(id) {
-        Some(cell) => Ok(cell.lock().unwrap_or_else(|p| p.into_inner()).clone()),
+        Some(cell) => Ok(kunci_sel(&cell)?.clone()),
         None => Err("ptr::get: pointer tidak valid (sudah di-free?)".to_string()),
     }
 }
@@ -100,7 +153,7 @@ pub fn ptr_set(args: &[Value]) -> Result<Value, String> {
     periksa_sibuk(id, "ptr::set")?;
     let v = args.get(1).cloned().unwrap_or(Value::Nil);
     match get_cell(id) {
-        Some(cell) => { *cell.lock().unwrap_or_else(|p| p.into_inner()) = v; Ok(Value::Unit) }
+        Some(cell) => { *kunci_sel(&cell)? = v; Ok(Value::Unit) }
         None => Err("ptr::set: pointer tidak valid (sudah di-free?)".to_string()),
     }
 }
@@ -113,7 +166,7 @@ fn ptr_step(args: &[Value], fname: &str, delta: i128) -> Result<Value, String> {
     periksa_sibuk(id, fname)?;
     match get_cell(id) {
         Some(cell) => {
-            let mut guard = cell.lock().unwrap_or_else(|p| p.into_inner());
+            let mut guard = kunci_sel(&cell)?;
             let new_val = match &*guard {
                 Value::Int(n) => Value::Int(n.checked_add(delta).ok_or_else(|| format!(
                     "{}: {}", fname, crate::interpreter::pesan_luber("+", *n, delta)))?),
@@ -148,7 +201,7 @@ pub fn ptr_update(interp: &mut Interpreter, args: &[Value]) -> Result<Value, Sig
         Some(c) => c,
         None => return Err(Signal::RuntimeError(RuntimeError::new("ptr::update: pointer tidak valid (sudah di-free?)"))),
     };
-    let mut guard = cell.lock().unwrap_or_else(|p| p.into_inner());
+    let mut guard = kunci_sel(&cell).map_err(|e| Signal::RuntimeError(RuntimeError::new(e)))?;
     let old = guard.clone();
     let _sibuk = PenandaSibuk::baru(id);
     let new_val = interp.call_fn(f, vec![old])?;

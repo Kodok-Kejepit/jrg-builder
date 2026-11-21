@@ -5487,4 +5487,35 @@ fn main() {
     }
 }
 "#),
+    ("ptr::update ulang dari aktor yang sama ditolak, update serentak sah, tangkap memegang kunci pemanggil (AGI-20261120-17, AGI-20261119-13)", r#"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn sibuk() {
+    let p = ptr::new(1)
+    coba(|| ptr::update(p, |x| ptr::get(p)))
+    coba(|| ptr::update(p, |x| ptr::update(p, |y| y + 1)))
+    coba(|| ptr::update(p, |x| x + 10))
+    wok(ptr::get(p))
+}
+
+fn kunci_tangkap() {
+    let m = Mutex::new()
+    m.lock()
+    coba(|| m.lock())
+    m.unlock()
+    coba(|| { m.lock(); return 42 })
+    m.unlock()
+    wok("lepas di luar berhasil")
+    coba(|| m.unlock())
+}
+
+fn main() {
+    sibuk()
+    kunci_tangkap()
+    let p = ptr::new(0)
+    let selesai = Chan::new(4)
+    for i in 0..4 { spawn { for j in 0..50 { ptr::update(p, |x| x + 1) }; selesai <- true } }
+    for i in 0..4 { <-selesai }
+    wok(ptr::get(p))
+}
+"#),
 ];

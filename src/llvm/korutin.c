@@ -66,6 +66,9 @@ typedef struct JrgKo {
     int32_t situs;
     int64_t pilih;           // `select` yang tidur di antara putaran: cap kemajuan di awal putarannya (0 = bukan)
     int64_t pilih_awal;
+    // Pemilik logis: korutin yang dibuat `tangkap`/`jrg_masa_lindung` bertindak atas nama pemanggilnya (kunci, aktor
+    // jembatan), seperti di dua mesin ber-thread yang menjalankannya di thread yang sama (AGI-20261119-13/20261120-17).
+    struct JrgKo *wakil;
     const void *asan_bawah;  // wilayah stack-nya untuk ASan (cuma dipakai biner ber-`-fsanitize=address`)
     size_t asan_ukuran;
     struct JrgKo *next;
@@ -224,6 +227,10 @@ int jrg_ko_gugur(int tanya) {
 }
 
 static int jrg_ko_baru_masa;
+static JrgKo *jrg_ko_baru_wakil;
+static JrgKo *jrg_ko_efektif(void) { return jrg_ko_kini->wakil ? jrg_ko_kini->wakil : jrg_ko_kini; }
+// Korutin berikutnya yang dibuat bertindak atas nama korutin yang sedang jalan.
+void jrg_ko_wakil_berikut(void) { jrg_ko_baru_wakil = jrg_ko_efektif(); }
 
 // `fn(arg)` jadi goroutine baru; ia mulai jalan saat yang sekarang menunggu atau selesai.
 void jrg_ko_spawn(void (*fn)(void *), void *arg) {
@@ -242,6 +249,8 @@ void jrg_ko_spawn(void (*fn)(void *), void *arg) {
     k->arg = arg;
     k->masa = jrg_ko_baru_masa;
     jrg_ko_baru_masa = 0;
+    k->wakil = jrg_ko_baru_wakil;
+    jrg_ko_baru_wakil = 0;
 #if defined(__wasi__)
     k->stack = jrg_ko_wasm_stack(k);
     if (k->stack == 0) {
@@ -281,6 +290,8 @@ int64_t jrg_ko_lain(void) { return jrg_ko_hidup; }
 
 // Identitas korutin yang sedang jalan: status panik runtime dicatat per korutin (AGI-20261120-08).
 uintptr_t jrg_ko_id(void) { return (uintptr_t)jrg_ko_kini; }
+// Pemilik logis (aktor) korutin yang sedang jalan — dipakai jembatan untuk penanda `ptr::update`.
+uintptr_t jrg_ko_aktor(void) { return (uintptr_t)jrg_ko_efektif(); }
 
 void jrg_ko_serah(void) {
     // Yang tidur ikut dibangunkan: penunggu builtin pemblokir memanggil ini berulang-ulang.
@@ -627,6 +638,7 @@ int32_t jrg_masa_lindung(void (*jalan)(void *), void *env, const char **pesan, i
         return 0;
     }
 #endif
+    jrg_ko_wakil_berikut();
     JrgChan *c = jrg_masa_baru(jalan, env, NULL, 0, 1);
     char nol[8];
     jrg_chan_recv(c, nol, 0);
@@ -703,13 +715,13 @@ void jrg_kunci_kunci(JrgKunci *k, int32_t dijaga, const char *nama, int64_t nl) 
     for (;;) {
         if (k->ditinggal) jrg_kunci_panik(nama, nl, jrg_kunci_ditinggal);
         if (!k->pemilik) break;
-        if (k->pemilik == jrg_ko_kini) jrg_kunci_panik(nama, nl, ": kunci ini sudah kamu pegang di goroutine yang sama — "
+        if (k->pemilik == jrg_ko_efektif()) jrg_kunci_panik(nama, nl, ": kunci ini sudah kamu pegang di goroutine yang sama — "
             "mengunci lagi berarti menunggu dirimu sendiri selamanya. Lepas dulu dengan `mutex::unlock`");
         jrg_ko_kini->next = k->antre;
         k->antre = jrg_ko_kini;
         jrg_ko_jadwal();
     }
-    k->pemilik = jrg_ko_kini;
+    k->pemilik = jrg_ko_efektif();
     k->dijaga = dijaga;
 }
 
@@ -717,7 +729,7 @@ void jrg_kunci_lepas(JrgKunci *k, const char *nama, int64_t nl) {
     if (k->ditinggal) jrg_kunci_panik(nama, nl, jrg_kunci_ditinggal);
     if (!k->pemilik) jrg_kunci_panik(nama, nl, ": kunci ini tidak sedang terkunci — tiap `mutex::unlock` butuh satu "
         "`mutex::lock` sebelumnya");
-    if (k->pemilik != jrg_ko_kini) jrg_kunci_panik(nama, nl, ": kunci ini dipegang goroutine lain — cuma yang mengunci "
+    if (k->pemilik != jrg_ko_efektif()) jrg_kunci_panik(nama, nl, ": kunci ini dipegang goroutine lain — cuma yang mengunci "
         "yang boleh melepas");
     k->pemilik = 0;
     jrg_kunci_bangun(k);

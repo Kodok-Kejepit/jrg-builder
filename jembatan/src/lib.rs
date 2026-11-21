@@ -26,6 +26,16 @@ pub struct Kait {
     lain: extern "C" fn() -> i64,
     /// `fn(arg)` jadi korutin baru di biner (`jrg_ko_spawn`).
     luncur: extern "C" fn(extern "C" fn(*mut u8), *mut u8),
+    /// Pemilik logis korutin yang sedang jalan (`jrg_ko_aktor`).
+    id: extern "C" fn() -> usize,
+}
+
+/// Korutin yang dibuat jembatan untuk menjalankan fungsi program atas nama aktor lain (callback `ptr::update`):
+/// aktornya mewarisi pemanggil, jadi panggilan ulang ke pointer yang sedang diperbarui dikenali (AGI-20261120-17).
+static INDUK: std::sync::Mutex<Vec<(usize, u64)>> = std::sync::Mutex::new(Vec::new());
+fn aktor_efektif(k: &Kait) -> u64 {
+    let id = (k.id)();
+    INDUK.lock().unwrap_or_else(|p| p.into_inner()).iter().rev().find(|x| x.0 == id).map(|x| x.1).unwrap_or(id as u64)
 }
 
 const LANGKAH: i64 = 40;
@@ -234,7 +244,17 @@ unsafe fn fungsi_program(kotak_fn: *const u8, k: &Kait) -> VmValue {
         }
         let (rtx, rrx) = std::sync::mpsc::channel::<Kirim<Result<VmValue, String>>>();
         let (m, args) = (*m, Kirim(args.to_vec()));
-        let tugas: Tugas = Box::new(move || { let a = args; let _ = rtx.send(Kirim(jalankan_fungsi(m, &a.0))); });
+        let aktor = jrgc::dok::ptr::wakil_kini();
+        let tugas: Tugas = Box::new(move || {
+            let a = args;
+            // Korutin yang menjalankannya bertindak atas nama aktor pemanggil builtinnya.
+            let tanda = aktor.map(|w| { let id = ((*m.1).id)(); INDUK.lock().unwrap_or_else(|p| p.into_inner()).push((id, w)); (id, w) });
+            let _ = rtx.send(Kirim(jalankan_fungsi(m, &a.0)));
+            if let Some(t) = tanda {
+                let mut v = INDUK.lock().unwrap_or_else(|p| p.into_inner());
+                if let Some(i) = v.iter().rposition(|x| *x == t) { v.remove(i); }
+            }
+        });
         if antre().0.send(Kirim((MELAYANI.with(|m| m.get()), tugas))).is_err() {
             return Err("thread biner `--emit-llvm` sudah berhenti melayani".to_string());
         }
@@ -272,10 +292,12 @@ extern "C" fn jalan_tugas(p: *mut u8) {
 fn layani(nama: &str, masuk: Vec<VmValue>, k: &Kait) -> Hasil {
     let (tx, rx) = std::sync::mpsc::channel::<Kirim<Hasil>>();
     let (nama, masuk) = (nama.to_string(), Kirim(masuk));
+    let aktor = aktor_efektif(k);
     AKTIF.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     kerjakan(Box::new(move || {
         let m = masuk;
         MELAYANI.with(|x| x.set(true));
+        let _wakil = jrgc::dok::ptr::WakilAktor::pasang(aktor);
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| jrgc::vm::panggil_bawaan(&nama, &m.0)));
         MELAYANI.with(|x| x.set(false));
         let _ = tx.send(Kirim(r));
@@ -467,6 +489,7 @@ pub unsafe extern "C" fn jrg_jembatan_panggil(
     // (hasil `py::eval` bersarang dalam, JSON) pindah stack sebelum habis (AGI-20261118-04).
     let lama = stack_utama().map(|(p, u)| jrgc::interpreter::pasang_stack_luar(p, u));
     let _pulih = Pulih(lama);
+    let _wakil = jrgc::dok::ptr::WakilAktor::pasang(aktor_efektif(k));
     // `::extern`: argumen pertamanya deskripsi `extern fn`-nya, sisanya argumen panggilannya.
     // `::metode`: argumen pertamanya nama method, lalu penerima dan argumennya.
     let hasil = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match (nama, masuk.first()) {

@@ -244,7 +244,7 @@ impl Vm {
                 let ptr = self.pop(sp)?;
                 let cell = vm_ptr_cell(&ptr, "ptr::update")
                     .map_err(|error| VmError::at(error, sp))?;
-                let mut value = cell.lock().unwrap();
+                let mut value = crate::dok::ptr::kunci_sel(&cell).map_err(|e| VmError::at(e, sp))?;
                 let _sibuk = crate::dok::ptr::PenandaSibuk::baru(
                     super::vm::vm_ptr_id(&ptr, "ptr::update").unwrap_or(0));
                 let updated = self.call_value_immediate(

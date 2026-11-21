@@ -899,7 +899,7 @@ pub(crate) fn vm_ptr_step(a: &[VmValue], fname: &str, delta: i128) -> Result<VmV
         return Err(format!("{}: null pointer dereference", fname));
     }
     let cell = vm_ptr_cell(a.get(0).unwrap_or(&VmValue::Nil), fname)?;
-    let mut g = cell.lock().unwrap_or_else(|p| p.into_inner());
+    let mut g = crate::dok::ptr::kunci_sel(&cell)?;
     let baru = match &*g {
         VmValue::Int(n)   => VmValue::Int(n.checked_add(delta).ok_or_else(|| format!(
             "{}: {}", fname, crate::interpreter::pesan_luber("+", *n, delta)))?),

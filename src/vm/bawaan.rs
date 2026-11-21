@@ -432,12 +432,12 @@ impl Vm {
         });
         self.def("ptr::get", |a| {
             let cell = vm_ptr_cell(a.get(0).unwrap_or(&Nil), "ptr::get")?;
-            let value = cell.lock().unwrap().clone();
+            let value = crate::dok::ptr::kunci_sel(&cell)?.clone();
             Ok(value)
         });
         self.def("ptr::set", |a| {
             let cell = vm_ptr_cell(a.get(0).unwrap_or(&Nil), "ptr::set")?;
-            *cell.lock().unwrap() = a.get(1).cloned().unwrap_or(Nil);
+            *crate::dok::ptr::kunci_sel(&cell)? = a.get(1).cloned().unwrap_or(Nil);
             Ok(Unit)
         });
         self.def("ptr::free", |a| {
