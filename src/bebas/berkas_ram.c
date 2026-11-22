@@ -43,9 +43,16 @@ static char *normal(const char *p) {
     return o;
 }
 
+static Simpul *buat(const char *p, int dir);
 static Simpul *cari(const char *p) {
     char *j = normal(p);
     Simpul *h = 0;
+    /* `/tmp` seperti di OS biasa, tapi baru ada saat pertama disebut: isi folder `--berkas` tetap apa adanya. */
+    if (j && strncmp(j, "/tmp", 4) == 0 && (j[4] == 0 || j[4] == '/')) {
+        int ada = 0;
+        for (size_t i = 0; i < simpul_n; i++) if (simpul[i].ada && strcmp(simpul[i].jalur, "/tmp") == 0) ada = 1;
+        if (!ada) buat("/tmp", 1);
+    }
     for (size_t i = 0; j && i < simpul_n; i++) if (simpul[i].ada && strcmp(simpul[i].jalur, j) == 0) { h = &simpul[i]; break; }
     free(j);
     return h;
@@ -79,7 +86,6 @@ static void pasang(void) {
     if (siap) return;
     siap = 1;
     buat("/", 1);
-    buat("/tmp", 1);              /* seperti OS biasa: tempat berkas sementara */
     if (!jrg_berkas_awal) return;
     for (uint64_t i = 0; i < jrg_berkas_awal_n; i++) {
         const JrgBerkasAwal *a = &jrg_berkas_awal[i];
@@ -211,10 +217,11 @@ int unlink(const char *p) {
 }
 int rename(const char *a, const char *b) {
     pasang();
+    /* Tujuan dicari dulu: `cari` bisa membuat `/tmp` dan memindahkan larik simpul. */
+    Simpul *t = cari(b);
     Simpul *s = cari(a);
     if (!s) return gagal(ENOENT);
     if (s->dir && punya_anak(s)) return gagal(EXDEV);
-    Simpul *t = cari(b);
     if (t && t != s) t->ada = 0;
     free(s->jalur);
     s->jalur = normal(b);
