@@ -450,20 +450,23 @@ static int penangan_irq1(void);
 static char baris_ketik[256];
 static size_t baris_n, baris_baca;
 static int shift, serial_habis;
-static int ketik_satu(void) {
-    uint8_t k = masuk8(0x60);
-    if (k == 0x2A || k == 0x36) { shift = 1; return 0; }
-    if (k == 0xAA || k == 0xB6) { shift = 0; return 0; }
-    if (k & 0x80 || k >= sizeof PETA_KECIL - 1) return 0;
-    char c = (shift ? PETA_BESAR : PETA_KECIL)[k];
-    if (!c) return 0;
+/* Satu karakter ketikan (PS/2 atau USB) masuk baris yang sedang disunting, dengan gema ke layar. */
+static void ketik_char(char c) {
     if (c == '\b') {
         if (baris_n) { baris_n--; if (fb) vga_tulis('\b'); else if (vga_x) { vga_x--; VGA[vga_y * 80 + vga_x] = 0x0720; } }
-        return 0;
+        return;
     }
     if (baris_n + 1 < sizeof baris_ketik) { baris_ketik[baris_n++] = c; vga_tulis(c); }
-    return c == '\n';
 }
+static void ketik_satu(void) {
+    uint8_t k = masuk8(0x60);
+    if (k == 0x2A || k == 0x36) { shift = 1; return; }
+    if (k == 0xAA || k == 0xB6) { shift = 0; return; }
+    if (k & 0x80 || k >= sizeof PETA_KECIL - 1) return;
+    char c = (shift ? PETA_BESAR : PETA_KECIL)[k];
+    if (c) ketik_char(c);
+}
+static void usb_poll(void);
 long read(int fd, void *b, size_t n) {
     if (fd > 2) return jrg_ram_baca(fd, b, n);
     if (fd != 0 || n == 0) return 0;
@@ -479,6 +482,7 @@ long read(int fd, void *b, size_t n) {
             *(char *)b = c;
             return 1;
         }
+        usb_poll();
         if (!penangan_irq1() && (masuk8(0x64) & 1) && !(masuk8(0x64) & 0x20)) ketik_satu();
         else if (serial_habis && penangan_irq1()) return 0;
         __asm__ volatile("pause");
@@ -746,6 +750,7 @@ __attribute__((noreturn)) void __stack_chk_fail(void) {
 int main(int, char **);
 extern void (*__init_awal[])(void);
 extern void (*__init_akhir[])(void);
+static void usb_mulai(void);
 void jrg_bebas_mulai(uint32_t mb) {
     mb_info_salin = mb;
     serial_pasang(0x3F8); serial_pasang(0x2F8);
@@ -770,6 +775,16 @@ void jrg_bebas_mulai(uint32_t mb) {
     }
     uint64_t atas = 64u << 20;
     if (mb && (*(uint32_t *)(uintptr_t)mb & 1)) atas = ((uint64_t)((uint32_t *)(uintptr_t)mb)[2] + 1024) * 1024;
+    /* `mem_upper` berhenti di lubang memori pertama (di firmware UEFI bisa di bawah ujung kernel): ujung heap
+       diambil dari peta memori, wilayah tersedia yang memuat awal heap. */
+    if (mb && (m[0] & 64)) {
+        uint64_t awal = (uint64_t)(uintptr_t)__heap_awal;
+        for (uint32_t p = m[12], akhir = m[12] + m[11]; p < akhir; p += *(uint32_t *)(uintptr_t)p + 4) {
+            uint32_t *e = (uint32_t *)(uintptr_t)p;
+            uint64_t a = e[1] | (uint64_t)e[2] << 32, z = a + (e[3] | (uint64_t)e[4] << 32);
+            if (e[5] == 1 && a <= awal && z > awal && z > atas) atas = z;
+        }
+    }
     if (atas > (4ull << 30)) atas = 4ull << 30;
     heap_kini = __heap_awal; heap_akhir = (char *)(uintptr_t)atas;
     /* Halaman penjaga di bawah stack utama dilepas (PD halaman 2 MiB di peta identitas). */
@@ -782,6 +797,7 @@ void jrg_bebas_mulai(uint32_t mb) {
     pasang_fitur_cpu();
     pasang_ifunc();
     kalibrasi(); baca_rtc();
+    usb_mulai();
     /* Konstruktor dipanggil seperti glibc: (argc, argv, envp). */
     static char *argv[] = { (char *)"kernel", 0 }, *envp[] = { 0 };
     for (void (**f)(void) = __init_awal; f < __init_akhir; f++) ((void (*)(int, char **, char **))*f)(1, argv, envp);

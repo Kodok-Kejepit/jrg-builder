@@ -319,3 +319,60 @@ fn kerangka_proyek_kernel_langsung_boot() {
     assert!(teks.contains("> [salam.txt]") && teks.contains("Halo dari sistem berkas RAM kernel JRG."),
         "{}{}", teks, String::from_utf8_lossy(&out.stderr));
 }
+
+/// Papan ketik USB (xHCI, `src/bebas/usb_xhci.c`): PS/2 dimatikan, jadi ketikan cuma bisa sampai lewat USB. Lewat
+/// `-kernel` (BAR di bawah 4 GiB) dan, kalau OVMF ada, image UEFI (serah terima firmware, BAR di atas 4 GiB).
+#[test]
+fn papan_ketik_usb_lewat_xhci() {
+    use std::io::{BufRead, Write};
+    if !ada_qemu() { eprintln!("dilewati: qemu-system-x86_64 tidak ada"); return; }
+    let dir = std::env::temp_dir().join(format!("jrg-uji-usb-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("k.jrg"), "fn main() {\n  wok(\"siap\")\n  wok(\"[\" + tok() + \"]\")\n  wok(\"[\" + tok() + \"]\")\n}\n").unwrap();
+    let ovmf = std::path::Path::new("/usr/share/ovmf/OVMF.fd");
+    let img = ovmf.is_file() && Command::new("grub-mkstandalone").arg("--version").output().is_ok();
+    let mut susun = Command::new(jrgc());
+    susun.arg(dir.join("k.jrg")).args(["--bebas", "--no-run", "-o"]).arg(dir.join("k.elf"));
+    if img { susun.arg("--img").arg(dir.join("k.img")); }
+    let out = susun.env("JRG_SOPAN", "1").stdin(Stdio::null()).output().unwrap();
+    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    let mut jalur: Vec<Vec<String>> = vec![vec!["-kernel".into(), dir.join("k.elf").display().to_string()]];
+    if img {
+        jalur.push(vec!["-bios".into(), ovmf.display().to_string(), "-drive".into(),
+            format!("file={},format=raw", dir.join("k.img").display())]);
+    }
+    for boot in jalur {
+        let sok = std::env::temp_dir().join(format!("jrg-usb-{}.sock", std::process::id()));
+        let _ = std::fs::remove_file(&sok);
+        let mut q = Command::new("qemu-system-x86_64").args(&boot)
+            .args(["-display", "none", "-serial", "stdio", "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",
+                   "-no-reboot", "-m", "512", "-cpu", "max", "-machine", "q35,accel=tcg,i8042=off",
+                   "-device", "qemu-xhci,id=x", "-device", "usb-kbd,bus=x.0", "-monitor"])
+            .arg(format!("unix:{},server,nowait", sok.display()))
+            .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null()).spawn().unwrap();
+        let (kirim, terima) = std::sync::mpsc::channel();
+        let keluar = q.stdout.take().unwrap();
+        std::thread::spawn(move || for b in std::io::BufReader::new(keluar).lines().map_while(Result::ok) {
+            let _ = kirim.send(b.replace('\r', ""));
+        });
+        let mut baris = Vec::new();
+        let batas = std::time::Instant::now() + std::time::Duration::from_secs(180);
+        while !baris.iter().any(|b: &String| b.ends_with("siap")) && std::time::Instant::now() < batas {
+            if let Ok(b) = terima.recv_timeout(std::time::Duration::from_secs(1)) { baris.push(b); }
+        }
+        let mut mon = std::os::unix::net::UnixStream::connect(&sok).expect("monitor QEMU");
+        for k in ["h", "a", "l", "o", "spc", "shift-a", "1", "ret", "x", "backspace", "y", "shift-slash", "ret"] {
+            mon.write_all(format!("sendkey {}\n", k).as_bytes()).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(200));
+        }
+        while baris.iter().filter(|b| b.starts_with('[')).count() < 2 && std::time::Instant::now() < batas {
+            if let Ok(b) = terima.recv_timeout(std::time::Duration::from_secs(1)) { baris.push(b); }
+        }
+        let _ = q.kill();
+        let _ = q.wait();
+        let _ = std::fs::remove_file(&sok);
+        let jawab: Vec<&String> = baris.iter().filter(|b| b.starts_with('[')).collect();
+        assert_eq!(jawab, ["[halo A1]", "[y?]"], "boot {:?}:\n{}", boot[0], baris.join("\n"));
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}

@@ -9,7 +9,7 @@ use std::process::Command;
 
 const BOOT: &str = include_str!("boot_x86_64.S");
 const PENAUT: &str = include_str!("kernel_x86_64.ld");
-const LIBC_MINI: &str = concat!(include_str!("fon_8x16.h"), include_str!("libc_mini.c"));
+const LIBC_MINI: &str = concat!(include_str!("fon_8x16.h"), include_str!("libc_mini.c"), include_str!("usb_xhci.c"));
 const BERKAS_RAM: &str = include_str!("berkas_ram.c");
 
 /// Isi folder `--berkas` sebagai tabel `jrg_berkas_awal` (`berkas_ram.c`): data lewat `.incbin`, tanpa disalin
