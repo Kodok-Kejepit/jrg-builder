@@ -1196,3 +1196,121 @@ pub fn term_lebar_tiap<V>(s: V) -> []int {
     }
     panik("term::lebar_tiap: argumen ke-1 harus teks, dapat `" + typeof(s) + "`")
 }
+
+// ── `re::` tanpa jembatan: mesin Pike yang sama (`regex_inti`, salinannya di runtime) lewat `lapis::os(30, ..)`.
+// Kalimat gagal dan bentuk hasil sama dengan `src/stdlib/regex.rs`.
+pub struct Regex { pub pattern: string }
+
+fn _re_pola<R>(r: R, nama: string) -> string {
+    if typeof(r) == "string" { let p: string = r; return p }
+    if typeof(r) == "struct:Regex" { let x: Regex = r; return x.pattern }
+    if typeof(r) == "dict" {
+        if dict::has(r, "pattern") {
+            let p = r["pattern"]
+            if typeof(p) == "string" { let t: string = p; return t }
+        }
+        panik(nama + "invalid Regex object")
+    }
+    panik("butuh Regex atau pola berupa string")
+}
+
+fn _re_salah(nama: string, tipe: string, bentuk: string) -> string {
+    "argumen tidak cocok untuk `" + nama + "` — dapat (" + tipe + "), bentuk yang diterima: " + bentuk
+}
+
+fn _re_os(pola: string, s: string, pengganti: string, mode: int) -> (int, string) {
+    let h = lapis::os(30, pola, s + pengganti, (str::byte_len(s) << 3) | mode)
+    if h.0 < 0 { panik(h.1) }
+    h
+}
+
+fn _re_angka(t: string) -> []int {
+    var hasil: []int = []
+    for _, x in str::split(t, " ") { if x != "" { hasil = arr::push(hasil, int(x)) } }
+    hasil
+}
+
+fn _re_cocok(s: string, a: []int, k: int) -> dict {
+    let m: string = s[a[k]:a[k + 1]]
+    let d = {"end": a[k + 3], "match": m, "start": a[k + 2]}
+    d
+}
+
+pub fn re_compile<P>(pola: P) -> Regex {
+    if typeof(pola) == "string" {
+        let p: string = pola
+        let _ = _re_os(p, "", "", 2)
+        return Regex { pattern: p }
+    }
+    panik(_re_salah("re::compile", typeof(pola), "re::compile(pattern: string)"))
+}
+
+pub fn re_test<R, S>(r: R, s: S) -> bool {
+    if typeof(s) == "string" && (typeof(r) == "string" || typeof(r) == "struct:Regex" || typeof(r) == "dict") {
+        let t: string = s
+        return _re_os(_re_pola(r, "re::test: "), t, "", 0).0 > 0
+    }
+    panik(_re_salah("re::test", typeof(r) + ", " + typeof(s), "re::test(re, s)"))
+}
+
+pub fn re_match_str<P, S>(pola: P, s: S) -> bool {
+    if typeof(pola) == "string" && typeof(s) == "string" {
+        let p: string = pola
+        let t: string = s
+        return _re_os(p, t, "", 0).0 > 0
+    }
+    panik(_re_salah("re::match_str", typeof(pola) + ", " + typeof(s), "re::match_str(pattern, s)"))
+}
+
+pub fn re_find<R, S>(r: R, s: S) -> Option<dict> {
+    if typeof(s) == "string" {
+        let t: string = s
+        let h = _re_os(_re_pola(r, ""), t, "", 0)
+        if h.0 == 0 { return None }
+        return Some(_re_cocok(t, _re_angka(h.1), 0))
+    }
+    panik(_re_salah("re::find", typeof(r) + ", " + typeof(s), "re::find(re, s)"))
+}
+
+pub fn re_find_all<R, S>(r: R, s: S) -> []dict {
+    if typeof(s) == "string" {
+        let t: string = s
+        let a = _re_angka(_re_os(_re_pola(r, ""), t, "", 1).1)
+        var hasil: []dict = []
+        var k = 0
+        while k < len(a) {
+            hasil = arr::push(hasil, _re_cocok(t, a, k))
+            k += 4
+        }
+        return hasil
+    }
+    panik(_re_salah("re::find_all", typeof(r) + ", " + typeof(s), "re::find_all(re, s)"))
+}
+
+fn _re_ganti<R, S, G>(r: R, s: S, pengganti: G, mode: int, nama: string) -> string {
+    if typeof(s) == "string" && typeof(pengganti) == "string" {
+        let t: string = s
+        let g: string = pengganti
+        return _re_os(_re_pola(r, ""), t, g, mode).1
+    }
+    panik(_re_salah(nama, typeof(r) + ", " + typeof(s) + ", " + typeof(pengganti), nama + "(re, s, replacement)"))
+}
+
+pub fn re_replace<R, S, G>(r: R, s: S, pengganti: G) -> string { _re_ganti(r, s, pengganti, 3, "re::replace") }
+
+pub fn re_replace_all<R, S, G>(r: R, s: S, pengganti: G) -> string { _re_ganti(r, s, pengganti, 4, "re::replace_all") }
+
+pub fn re_split<R, S>(r: R, s: S) -> []string {
+    if typeof(s) == "string" {
+        let t: string = s
+        let a = _re_angka(_re_os(_re_pola(r, ""), t, "", 5).1)
+        var hasil: []string = []
+        var k = 0
+        while k < len(a) {
+            hasil = arr::push(hasil, t[a[k]:a[k + 1]])
+            k += 2
+        }
+        return hasil
+    }
+    panik(_re_salah("re::split", typeof(r) + ", " + typeof(s), "re::split(re, s)"))
+}

@@ -368,8 +368,12 @@ impl Codegen {
                 JrgType::Tuple(ts) => ts.get(field.parse::<usize>().ok()?).cloned(),
                 _ => None,
             },
-            Expr::Index { obj, .. } => match self.tipe_jalur(obj)? {
+            Expr::Index { obj, idx, .. } => match self.tipe_jalur(obj)? {
                 JrgType::Slice(el) | JrgType::Array(el, _) => Some(*el),
+                JrgType::Tuple(ts) => match idx.as_ref() {
+                    Expr::Literal(crate::parser::LitKind::Int(i), _) => ts.get(usize::try_from(*i).ok()?).cloned(),
+                    _ => None,
+                },
                 _ => None,
             },
             _ => None,

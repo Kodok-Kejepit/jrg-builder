@@ -46,12 +46,8 @@ impl Codegen {
                 Ok(Val { text: r, ty: JrgType::I64 })
             }
             "range" => self.builtin_range(args, span),
-            // `range_inclusive(a, b)` adalah `range(a, b + 1)`; luapan di `b + 1` diperiksa seperti `+`.
-            "range_inclusive" if args.len() == 2 => {
-                let satu = Expr::Literal(crate::parser::LitKind::Int(1), span);
-                let ujung = Expr::Binary { op: BinaryOp::Add, lhs: Box::new(args[1].clone()), rhs: Box::new(satu), span };
-                self.builtin_range_bernama("range_inclusive", &[args[0].clone(), ujung], span)
-            }
+            // `range_inclusive(a, b)`: ujungnya ditambah satu di 128 bit, jadi `b = MAX` tetap sah (AGI-20261120-05).
+            "range_inclusive" if args.len() == 2 => self.builtin_range_bernama("range_inclusive", args, true, span),
             "enumerate" | "zip" if self.kunci_lapis("arr", name).is_some() => {
                 let kunci = self.kunci_lapis("arr", name).unwrap_or_default();
                 self.call_named_function(&kunci, args, expected, span)
@@ -66,6 +62,17 @@ impl Codegen {
                         self.codegen_path_call(&["str".to_string(), "chars".to_string()], &[isi], expected, span)
                     }
                     JrgType::Array(..) | JrgType::Slice(_) => Ok(v),
+                    // Tuple: literal array atas elemennya, jadi elemen campur jadi array bertag seperti `[t[0], t[1]]`.
+                    JrgType::Tuple(ts) => {
+                        let n = ts.len();
+                        let slot = self.spill_to_place(&v);
+                        let isi = self.lokal_sementara(slot, v.ty.clone(), span);
+                        let elems = (0..n).map(|i| Expr::Index {
+                            obj: Box::new(isi.clone()),
+                            idx: Box::new(Expr::Literal(crate::parser::LitKind::Int(i as u128), span)), span,
+                        }).collect();
+                        self.codegen_expr(&Expr::Array { elems, span }, expected)
+                    }
                     lain => Err(super::galat::tandai(span, format!(
                         "`list` butuh teks atau array, dapat `{}`", lain.nama_typeof()))),
                 }
@@ -653,7 +660,7 @@ impl Codegen {
                 Ok(self.load_place(&lf, &JrgType::I64))
             }
             JrgType::Tuple(ts) => Ok(Val { text: ts.len().to_string(), ty: JrgType::I64 }),
-            JrgType::Dict(_) => { let (_, n) = self.bagian_dict_mentah(v); Ok(Val { text: n, ty: JrgType::I64 }) }
+            JrgType::Dict(_) | JrgType::DictCampur(_) => { let (_, n) = self.bagian_dict_mentah(v); Ok(Val { text: n, ty: JrgType::I64 }) }
             // Channel: isi yang menunggu diterima, sama dengan `chan::len`.
             JrgType::Chan(_) => {
                 self.ensure_extern("declare i64 @jrg_chan_info(ptr, i32)", "jrg_chan_info");
@@ -707,10 +714,10 @@ impl Codegen {
 
     /// `range(n)`, `range(a, b)`, `range(a, b, langkah)`.
     fn builtin_range(&mut self, args: &[Expr], span: Span) -> Result<Val, String> {
-        self.builtin_range_bernama("range", args, span)
+        self.builtin_range_bernama("range", args, false, span)
     }
 
-    fn builtin_range_bernama(&mut self, nama: &str, args: &[Expr], span: Span) -> Result<Val, String> {
+    fn builtin_range_bernama(&mut self, nama: &str, args: &[Expr], inklusif: bool, span: Span) -> Result<Val, String> {
         if args.is_empty() || args.len() > 3 {
             return Err(super::galat::tandai(span, format!(
                 "`range` butuh 1..3 argumen, diberi {}", args.len())));
@@ -738,6 +745,7 @@ impl Codegen {
         self.start_block(lanjut);
         let lebar = |cg: &mut Self, v: &str| { let r = cg.fresh("rgw."); cg.emit(format!("{} = sext i64 {} to i128", r, v)); r };
         let (a, b, st) = (lebar(self, &awal), lebar(self, &akhir), lebar(self, &langkah));
+        let b = if inklusif { let r = self.fresh("rgw."); self.emit(format!("{} = add i128 {}, 1", r, b)); r } else { b };
         let ins = |cg: &mut Self, f: String| { let r = cg.fresh("rg."); cg.emit(f.replace("{}", &r)); r };
         let maju = ins(self, format!("{{}} = icmp sgt i128 {}, 0", st));
         let lt = ins(self, format!("{{}} = icmp slt i128 {}, {}", a, b));

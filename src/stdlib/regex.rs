@@ -117,36 +117,19 @@ fn extract_pattern(v: &VmValue) -> Result<String, String> {
 
 // ─── Mesin: `regex_inti` (Pike VM, waktu linear) ─────────────────────────
 
-use super::regex_inti::Regex;
-
-fn compile_pattern(pat: &str) -> Result<Regex, String> { Regex::baru(pat) }
-
-/// Teks sebagai karakter, plus offset byte tiap karakter (dan ujungnya) — indeks hasil dalam byte.
-fn karakter(s: &str) -> (Vec<char>, Vec<usize>) {
-    let mut cs = Vec::with_capacity(s.len());
-    let mut off = Vec::with_capacity(s.len() + 1);
-    for (i, c) in s.char_indices() { cs.push(c); off.push(i); }
-    off.push(s.len());
-    (cs, off)
-}
+fn compile_pattern(pat: &str) -> Result<super::regex_inti::Regex, String> { super::regex_inti::Regex::baru(pat) }
 
 /// Gagal menyusun pola DITOLAK, tidak pernah dijawab `false`/`None`.
 fn regex_test(pattern: &str, s: &str) -> Result<bool, String> {
-    let r = compile_pattern(pattern)?;
-    let (cs, _) = karakter(s);
-    Ok(r.cari_dari(&cs, 0).is_some())
+    Ok(!super::regex_inti::cocok_di(pattern, s, false)?.is_empty())
 }
 
 fn regex_find(pattern: &str, s: &str) -> Result<Option<(usize, usize)>, String> {
-    let r = compile_pattern(pattern)?;
-    let (cs, off) = karakter(s);
-    Ok(r.cari_dari(&cs, 0).map(|(a, b)| (off[a], off[b])))
+    Ok(super::regex_inti::cocok_di(pattern, s, false)?.first().map(|m| (m[2], m[3])))
 }
 
 fn regex_find_all(pattern: &str, s: &str) -> Result<Vec<(usize, usize)>, String> {
-    let r = compile_pattern(pattern)?;
-    let (cs, off) = karakter(s);
-    Ok(r.semua(&cs).into_iter().map(|(a, b)| (off[a], off[b])).collect())
+    Ok(super::regex_inti::cocok_di(pattern, s, true)?.into_iter().map(|m| (m[2], m[3])).collect())
 }
 
 /// Teks di antara kecocokan disalin utuh — dulu kecocokan kosong menelan karakter sesudahnya.

@@ -2639,6 +2639,60 @@ pub extern "C" fn jrg_acak63() -> i64 {
 mod json_inti;
 // `kutip_inti.rs` juga SALINAN PERSIS `src/kutip_inti.rs`.
 mod kutip_inti;
+// `regex_inti.rs` SALINAN PERSIS `src/stdlib/regex_inti.rs`: mesin `re::` tanpa jembatan.
+mod regex_inti;
+
+/// `lapis::os(30, pola, teks+pengganti, (byte teks << 3) | mode)`: 0/1 cocok pertama/semua ("kar kar byte byte"),
+/// 2 periksa pola, 3/4 ganti pertama/semua, 5 `split` (indeks karakter). Galat = -1 dan kalimat `regex.rs`.
+#[cfg(not(test))]
+#[no_mangle]
+pub extern "C" fn jrg_re_os(ap: *const u8, an: i64, bp: *const u8, bn: i64, i: i64,
+                            out_ptr: *mut *const u8, out_len: *mut i64) -> i64 {
+    use core::fmt::Write;
+    let pola = unsafe { borrow_str(ap, an) };
+    let gab = unsafe { borrow_str(bp, bn) };
+    let n = ((i >> 3) as usize).min(gab.len());
+    let (s, repl) = (&gab[..n], &gab[n..]);
+    let jawab = |t: String, k: i64| { unsafe { emit_string(t, out_ptr, out_len) }; k };
+    if i & 7 == 2 {
+        return match regex_inti::Regex::baru(pola) {
+            Ok(_) => jawab(String::new(), 0),
+            Err(e) => jawab(format!("re::compile '{}': {}", kutip_inti::kutip(pola), e), -1),
+        };
+    }
+    let semua = matches!(i & 7, 1 | 4 | 5);
+    let cocok = match regex_inti::cocok_di(pola, s, semua) { Ok(c) => c, Err(e) => return jawab(e, -1) };
+    match i & 7 {
+        3 | 4 => {
+            let k = cocok.len() as i128;
+            let total = (s.len() as i128) - cocok.iter().map(|m| (m[3] - m[2]) as i128).sum::<i128>()
+                + k.saturating_mul(repl.len() as i128);
+            if total > 256 * 1024 * 1024 {
+                let nama = if i & 7 == 4 { "re::replace_all" } else { "re::replace" };
+                return jawab(format!("{}: hasil penggantian kegedean: {} kemunculan x {} karakter pengganti = \
+                    sekitar {} byte (batasnya 256 MiB). Cek lagi pengganti atau polanya", nama, k, repl.chars().count(), total), -1);
+            }
+            let mut out = String::with_capacity(s.len());
+            let mut akhir = 0;
+            for m in &cocok { out.push_str(&s[akhir..m[2]]); out.push_str(repl); akhir = m[3]; }
+            out.push_str(&s[akhir..]);
+            jawab(out, 0)
+        }
+        5 => {
+            let mut t = String::new();
+            let (mut kar, mut bagian) = (0usize, 0i64);
+            for m in &cocok { let _ = write!(t, "{} {} ", kar, m[0]); kar = m[1]; bagian += 1; }
+            let _ = write!(t, "{} {}", kar, s.chars().count());
+            jawab(t, bagian + 1)
+        }
+        _ => {
+            let mut t = String::new();
+            for m in &cocok { let _ = write!(t, "{} {} {} {} ", m[0], m[1], m[2], m[3]); }
+            jawab(t, cocok.len() as i64)
+        }
+    }
+}
+
 // `terjemah_inti.rs` SALINAN PERSIS `src/terjemah/inti.rs`; bahasa galat saat jalan di `bahasa.rs`.
 mod terjemah_inti;
 mod bahasa;

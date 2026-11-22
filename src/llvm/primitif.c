@@ -1080,6 +1080,8 @@ static int jrg_utf8_sah(const unsigned char *p, int64_t n) {
 }
 
 // Hasil: >= 0 berhasil (artinya per operasi), negatif = -errno. Teks hasil di `out`.
+int64_t jrg_re_os(const char *ap, int64_t an, const char *bp, int64_t bn, int64_t i, const char **op, int64_t *on);
+
 int64_t jrg_os(int32_t op, const char *ap, int64_t an, const char *bp, int64_t bn, int64_t i, JrgStr *out) {
     jrg_os_teks(out, 0, 0);
     // NUL memotong teks di C: `a.txt\0.jrg` dulu jadi `a.txt`. Acuan menolaknya, jadi di sini juga (-100001).
@@ -1255,6 +1257,7 @@ int64_t jrg_os(int32_t op, const char *ap, int64_t an, const char *bp, int64_t b
             return 0;
         }
         case 29: return jrg_lebar_kode((uint32_t)i);   // kolom layar satu karakter (`term::lebar`)
+        case 30: return jrg_re_os(ap, an, bp, bn, i, &out->ptr, &out->len);   // `re::` (runtime Rust)
         case 28: {  // `i` byte dari sumber acak OS, sebagai heksadesimal (`crypto::random_hex`)
             // Teks hasil di arena runtime: `jrg_os_teks` cuma menyimpan penunjuknya.
             unsigned char *b = malloc(i > 0 ? (size_t)i : 1);

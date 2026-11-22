@@ -125,8 +125,14 @@ fn muat_api() -> Result<Api, String> {
 struct Db(*mut c_void);
 unsafe impl Send for Db {}
 
-static REG: OnceLock<Mutex<HashMap<u64, Db>>> = OnceLock::new();
-fn reg() -> &'static Mutex<HashMap<u64, Db>> { REG.get_or_init(|| Mutex::new(HashMap::new())) }
+// `REG` cuma dipegang untuk mencari koneksinya; selama `sqlite3_step` yang dikunci koneksi itu
+// sendiri, jadi query lambat di satu koneksi tidak membekukan koneksi lain (AGI-20261119-42).
+type Koneksi = std::sync::Arc<Mutex<Db>>;
+static REG: OnceLock<Mutex<HashMap<u64, Koneksi>>> = OnceLock::new();
+fn reg() -> &'static Mutex<HashMap<u64, Koneksi>> { REG.get_or_init(|| Mutex::new(HashMap::new())) }
+fn koneksi(id: u64) -> Option<Koneksi> {
+    reg().lock().unwrap_or_else(|p| p.into_inner()).get(&id).cloned()
+}
 static URUT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
 fn handle(id: u64) -> Value {
@@ -186,7 +192,7 @@ pub fn db_open(args: &[Value]) -> Result<Value, String> {
         return Ok(err_value(format!("dok::db_open `{}`: {}", path, pesan)));
     }
     let id = URUT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-    reg().lock().unwrap_or_else(|p| p.into_inner()).insert(id, Db(db));
+    reg().lock().unwrap_or_else(|p| p.into_inner()).insert(id, std::sync::Arc::new(Mutex::new(Db(db))));
     Ok(ok_value(handle(id)))
 }
 
@@ -194,8 +200,13 @@ pub fn db_open(args: &[Value]) -> Result<Value, String> {
 pub fn db_close(args: &[Value]) -> Result<Value, String> {
     let id = id_dari(args.get(0), "dok::db_close")?;
     let a = match api() { Ok(a) => a, Err(e) => return Ok(err_value(e)) };
-    if let Some(Db(p)) = reg().lock().unwrap_or_else(|q| q.into_inner()).remove(&id) {
-        unsafe { (a.close)(p); }
+    let k = reg().lock().unwrap_or_else(|q| q.into_inner()).remove(&id);
+    if let Some(k) = k {
+        // Menunggu query yang sedang jalan di koneksi ini; sesudahnya penunjuknya nol, jadi pemakai
+        // yang sempat memegang koneksinya dijawab "sudah ditutup", bukan memakai penunjuk basi.
+        let mut d = k.lock().unwrap_or_else(|q| q.into_inner());
+        if !d.0.is_null() { unsafe { (a.close)(d.0); } }
+        d.0 = std::ptr::null_mut();
     }
     Ok(Value::Unit)
 }
@@ -301,9 +312,10 @@ pub fn db_exec(args: &[Value]) -> Result<Value, String> {
     };
     let params = params_dari(args.get(2), "dok::db_exec")?;
     let a = match api() { Ok(a) => a, Err(e) => return Ok(err_value(e)) };
-    let reg = reg().lock().unwrap_or_else(|p| p.into_inner());
-    let Some(Db(db)) = reg.get(&id) else { return Ok(err_value("koneksi sudah ditutup")) };
-    let db = *db;
+    let Some(k) = koneksi(id) else { return Ok(err_value("koneksi sudah ditutup")) };
+    let kunci = k.lock().unwrap_or_else(|p| p.into_inner());
+    if kunci.0.is_null() { return Ok(err_value("koneksi sudah ditutup")) }
+    let db = kunci.0;
     unsafe {
         let stmt = match siapkan(a, db, &sql, &params) {
             Ok(s) => s, Err(e) => return Ok(err_value(format!("dok::db_exec: {}", e))),
@@ -333,9 +345,10 @@ pub fn db_query(args: &[Value]) -> Result<Value, String> {
     };
     let params = params_dari(args.get(2), "dok::db_query")?;
     let a = match api() { Ok(a) => a, Err(e) => return Ok(err_value(e)) };
-    let reg = reg().lock().unwrap_or_else(|p| p.into_inner());
-    let Some(Db(db)) = reg.get(&id) else { return Ok(err_value("koneksi sudah ditutup")) };
-    let db = *db;
+    let Some(k) = koneksi(id) else { return Ok(err_value("koneksi sudah ditutup")) };
+    let kunci = k.lock().unwrap_or_else(|p| p.into_inner());
+    if kunci.0.is_null() { return Ok(err_value("koneksi sudah ditutup")) }
+    let db = kunci.0;
     unsafe {
         let stmt = match siapkan(a, db, &sql, &params) {
             Ok(s) => s, Err(e) => return Ok(err_value(format!("dok::db_query: {}", e))),
@@ -400,9 +413,10 @@ unsafe fn nilai_kolom(a: &Api, stmt: *mut c_void, i: c_int) -> Result<Value, ()>
 pub fn db_last_id(args: &[Value]) -> Result<Value, String> {
     let id = id_dari(args.get(0), "dok::db_last_id")?;
     let a = match api() { Ok(a) => a, Err(e) => return Ok(err_value(e)) };
-    let reg = reg().lock().unwrap_or_else(|p| p.into_inner());
-    let Some(Db(db)) = reg.get(&id) else { return Ok(err_value("koneksi sudah ditutup")) };
-    Ok(ok_value(Value::Int(unsafe { (a.last_id)(*db) } as i128)))
+    let Some(k) = koneksi(id) else { return Ok(err_value("koneksi sudah ditutup")) };
+    let kunci = k.lock().unwrap_or_else(|p| p.into_inner());
+    if kunci.0.is_null() { return Ok(err_value("koneksi sudah ditutup")) }
+    Ok(ok_value(Value::Int(unsafe { (a.last_id)(kunci.0) } as i128)))
 }
 
 /// `dok::db_tersedia()` → bool — apakah libsqlite3 bisa dimuat di mesin ini.

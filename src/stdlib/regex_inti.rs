@@ -2,6 +2,13 @@
 // Waktunya linear (panjang teks × ukuran program), jadi pola dari pemakai tidak bisa membuatnya meledak
 // (ReDoS). Semantiknya leftmost-first seperti Perl/Python: alternatif dan pengulangan dicoba urut prioritas.
 
+// SALINAN PERSISNYA di `runtime/src/regex_inti.rs` (runtime LLVM, `no_std`), dijaga tes: cuma `alloc`/`core`.
+use alloc::boxed::Box;
+use alloc::format;
+use alloc::string::{String, ToString};
+use alloc::vec;
+use alloc::vec::Vec;
+
 /// Batas pengulangan `{n,m}` dan ukuran program; di atasnya pola ditolak, bukan dijalankan lambat.
 pub const MAKS_ULANG: usize = 1000;
 pub const MAKS_PROGRAM: usize = 100_000;
@@ -10,7 +17,7 @@ pub const MAKS_SARANG: usize = 1000;
 
 /// Rentang kelas yang URUT dan tidak tumpang-tindih, dibagi antar-salinan: `x{1000}` atas kelas besar dulu
 /// menyalin seluruh daftar per salinan (ratusan MiB), dan tiap karakter dicocokkan linear (AGI-20261119-25).
-type Kelas = std::sync::Arc<[(char, char)]>;
+type Kelas = alloc::sync::Arc<[(char, char)]>;
 
 fn kelas_dari(mut r: Vec<(char, char)>) -> Kelas {
     r.sort_unstable();
@@ -390,7 +397,7 @@ impl Regex {
                 // Utas yang tersisa cuma bisa selesai di `Match` pada posisi ini; sudah diperiksa di atas.
                 break;
             }
-            std::mem::swap(&mut kini, &mut depan);
+            core::mem::swap(&mut kini, &mut depan);
             pos += 1;
         }
         hasil
@@ -409,6 +416,18 @@ impl Regex {
         }
         keluar
     }
+}
+
+/// Kecocokan pertama (atau semuanya) dari `pola` di `s`: indeks karakter awal/akhir lalu offset byte-nya.
+/// Satu definisi untuk `re::` di `jrgc` dan di runtime LLVM.
+pub fn cocok_di(pola: &str, s: &str, semua: bool) -> Result<Vec<[usize; 4]>, String> {
+    let r = Regex::baru(pola)?;
+    let mut cs = Vec::with_capacity(s.len());
+    let mut off = Vec::with_capacity(s.len() + 1);
+    for (i, c) in s.char_indices() { cs.push(c); off.push(i); }
+    off.push(s.len());
+    let hasil: Vec<(usize, usize)> = if semua { r.semua(&cs) } else { r.cari_dari(&cs, 0).into_iter().collect() };
+    Ok(hasil.into_iter().map(|(a, b)| [a, b, off[a], off[b]]).collect())
 }
 
 #[cfg(test)]

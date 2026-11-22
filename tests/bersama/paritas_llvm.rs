@@ -5724,4 +5724,56 @@ fn main() {
   wok(crypto::md5(""), crypto::sha1("abc"), crypto::sha256([]))
 }
 "#),
+    ("range_inclusive di ujung 64 bit, len dict campur, list dan literal array atas tuple campur (AGI-20261120-05)", r#"
+fn main() {
+  wok(range_inclusive(9223372036854775807, 9223372036854775807))
+  wok(range_inclusive(-9223372036854775807 - 1, -9223372036854775807 - 1))
+  wok(range_inclusive(9223372036854775805, 9223372036854775807), range_inclusive(3, 1))
+  let t = (1, "a", 2.5)
+  let l = list(t)
+  wok(l, typeof(l), len(l), l[1])
+  wok(list((3, 4)), [t[0], t[1], t[2]], [t[2], t[0]])
+  var d = {"a": 1}
+  d["b"] = "x"
+  wok(len(d))
+}
+"#),
+    ("re:: di lapis (mesin Pike yang sama di runtime, tanpa jembatan): hasil, offset byte, kalimat gagal", r#"
+fn kedua() {
+    let r = re::compile("[0-9]+")
+    wok(re::find_all(r, "a1 b22 漢333 é4"))
+    wok(re::split(r, "x1y22z"), re::split("", "ab"), re::split(",", ""))
+    wok(re::replace_all(r, "a1b22", "<$0>"), re::replace_all("", "漢é", "-"))
+    var t = ""
+    for i in 0..2000 { t = t + "é1" }
+    wok(len(re::find_all(r, t)), len(re::replace_all(r, t, "")))
+    let g = tangkap(|| re::replace_all("", str::repeat("a", 1000), str::repeat("x", 300000))).map_err(|e| e.pesan)
+    wok(g)
+    wok(tangkap(|| re::test(r, 5)).map_err(|e| e.pesan))
+    wok(tangkap(|| re::compile(5)).map_err(|e| e.pesan))
+    wok(tangkap(|| re::replace(r, "a", 5)).map_err(|e| e.pesan))
+    wok(tangkap(|| re::match_str(r, "a")).map_err(|e| e.pesan))
+    let d = {"pattern": "b"}
+    wok(tangkap(|| re::test(d, "abc")).map_err(|e| e.pesan))
+}
+
+fn main() {
+    kedua()
+    let r = re::compile("a(b+)")
+    wok(r, typeof(r))
+    wok(re::test(r, "xabbb"), re::test("^é+$", "éé"))
+    wok(re::find(r, "zzabbc"), re::find("q", "abc"))
+    wok(re::find_all("a*", "baaac"))
+    wok(re::find_all("é", "aéé"))
+    wok(re::replace("a", "banana", "o"), re::replace_all("a", "banana", "o"), re::replace_all("x*", "ab", "-"))
+    wok(re::split(",\\s*", "a, b,c"), re::split("z", "abc"))
+    wok(re::match_str("^[0-9]+$", "123"))
+    let g = tangkap(|| re::test("(", "x")).map_err(|e| e.pesan)
+    wok(g)
+    let h = tangkap(|| re::compile("a{2,1}")).map_err(|e| e.pesan)
+    wok(h)
+    let k = tangkap(|| re::find(5, "x")).map_err(|e| e.pesan)
+    wok(k)
+}
+"#),
 ];

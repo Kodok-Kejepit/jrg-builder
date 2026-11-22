@@ -164,6 +164,9 @@ local function adalah_deret(t)
     if k > n then n = k end
     jumlah = jumlah + 1
   end
+  -- Deret yang panjangnya dicatat (nilai balik ganda, array dari JRG) boleh berlubang `nil`.
+  local tetap = panjang[t]
+  if tetap ~= nil and n <= tetap then return true, tetap end
   if jumlah ~= n then return false end
   return true, n
 end
@@ -264,6 +267,7 @@ local function hasil_dari(n, ...)
   if n == 1 then return (...) end
   local t = table.pack(...)
   t.n = nil
+  panjang[t] = n
   return t
 end
 
