@@ -1080,6 +1080,7 @@ static int jrg_utf8_sah(const unsigned char *p, int64_t n) {
 }
 
 // Hasil: >= 0 berhasil (artinya per operasi), negatif = -errno. Teks hasil di `out`.
+int64_t jrg_kripto_os(const char *ap, int64_t an, const char *bp, int64_t bn, int64_t i, const char **op, int64_t *on);
 int64_t jrg_re_os(const char *ap, int64_t an, const char *bp, int64_t bn, int64_t i, const char **op, int64_t *on);
 
 int64_t jrg_os(int32_t op, const char *ap, int64_t an, const char *bp, int64_t bn, int64_t i, JrgStr *out) {
@@ -1258,6 +1259,7 @@ int64_t jrg_os(int32_t op, const char *ap, int64_t an, const char *bp, int64_t b
         }
         case 29: return jrg_lebar_kode((uint32_t)i);   // kolom layar satu karakter (`term::lebar`)
         case 30: return jrg_re_os(ap, an, bp, bn, i, &out->ptr, &out->len);   // `re::` (runtime Rust)
+        case 31: return jrg_kripto_os(ap, an, bp, bn, i, &out->ptr, &out->len);   // `crypto::` (runtime Rust)
         case 28: {  // `i` byte dari sumber acak OS, sebagai heksadesimal (`crypto::random_hex`)
             // Teks hasil di arena runtime: `jrg_os_teks` cuma menyimpan penunjuknya.
             unsigned char *b = malloc(i > 0 ? (size_t)i : 1);

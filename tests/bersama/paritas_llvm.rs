@@ -5776,4 +5776,36 @@ fn main() {
     wok(k)
 }
 "#),
+    ("crypto:: sisanya di lapis (inti Rust yang sama di runtime, tanpa jembatan): sha512, hmac, base64/hex, aes, seal", r#"
+fn p<T>(r: Result<T, Galat>) { match r { Ok(v) => wok("ok", v), Err(e) => wok("galat", e.pesan) } }
+fn main() {
+    wok(crypto::sha512("abc"))
+    wok(crypto::sha512([1, 2, 255]), crypto::hash("x"))
+    wok(crypto::hmac_sha256("kunci", "pesan"), crypto::hmac_sha256(str::repeat("k", 100), [0, 1]))
+    wok(crypto::compare_digest("abc", "abc"), crypto::compare_digest("abc", "abd"), crypto::compare_digest([1], "ab"))
+    wok(crypto::base64url_encode([251, 255]), crypto::base64url_encode("hi"), crypto::base64url_encode(""))
+    wok(crypto::base64_decode("aGk="), crypto::base64_decode("aGk=aGk="), crypto::base64_decode("/w=="))
+    wok(crypto::base64_decode_bytes("/w=="), crypto::base64url_decode("aGk"), crypto::base64url_decode("aGk="))
+    wok(crypto::base64url_decode_bytes("-_8"), crypto::hex_decode("6869"), crypto::hex_decode("6g"), crypto::hex_decode("ff"))
+    wok(crypto::hex_decode_bytes("00ff10"), crypto::hex_decode_bytes("abc"))
+    let k = str::repeat("0f", 32)
+    let iv = str::repeat("a1", 16)
+    let c = crypto::aes_encrypt("rahasia", k, iv).unwrap()
+    wok(c, crypto::aes_decrypt(c, k, iv), crypto::aes_decrypt_bytes(c, k, iv))
+    wok(crypto::aes_decrypt(c, str::repeat("1f", 32), iv), crypto::aes_encrypt("x", "zz", iv), crypto::aes_encrypt("x", k, "00"))
+    let s = crypto::seal("isi kotak", k).unwrap()
+    wok(len(s), crypto::unseal(s, k), crypto::unseal_bytes(s, k), crypto::unseal(s, str::repeat("1f", 32)))
+    wok(crypto::unseal("aGk=", k), crypto::seal("x", "pendek"))
+    wok(len(crypto::aes_gen_key()), len(crypto::aes_gen_iv()))
+    var ok = true
+    for i in 0..200 { let r = crypto::random_int(-3, 4); if r < -3 || r > 4 { ok = false } }
+    wok(ok, crypto::random_int(7, 7))
+    p(tangkap(|| crypto::random_int(5, 1)))
+    p(tangkap(|| crypto::random_int(1.5, 2)))
+    p(tangkap(|| crypto::sha512(5)))
+    p(tangkap(|| crypto::hmac_sha256("k", [300])))
+    p(tangkap(|| crypto::base64_decode(5)))
+    p(tangkap(|| crypto::aes_encrypt("x", 5, iv)))
+}
+"#),
 ];

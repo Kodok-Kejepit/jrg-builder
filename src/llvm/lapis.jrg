@@ -1314,3 +1314,132 @@ pub fn re_split<R, S>(r: R, s: S) -> []string {
     }
     panik(_re_salah("re::split", typeof(r) + ", " + typeof(s), "re::split(re, s)"))
 }
+
+// ── `crypto::` sisanya tanpa jembatan: inti Rust yang sama (`kripto_inti`, salinannya di runtime) lewat
+// `lapis::os(31, a, b, (n << 5) | op)`; byte menyeberang sebagai heksadesimal. Kalimat gagal = `src/dok/crypto.rs`.
+fn _kripto(a: string, b1: string, b2: string, op: int) -> (int, string) {
+    let r = lapis::os(31, a, b1 + b2, (str::byte_len(b1) << 5) | op)
+    if r.0 < 0 { panik(r.1) }
+    r
+}
+
+fn _kripto_hasil(a: string, b1: string, b2: string, op: int) -> Result<string, string> {
+    let r = lapis::os(31, a, b1 + b2, (str::byte_len(b1) << 5) | op)
+    if r.0 < 0 { return Err(r.1) }
+    Ok(r.1)
+}
+
+fn _teks_arg<V>(v: V, nama: string) -> string {
+    if typeof(v) == "string" { let t: string = v; return t }
+    panik(nama + ": butuh string, dapat `" + typeof(v) + "`")
+}
+
+fn _byte_heks(h: string) -> []int {
+    let b = str::bytes(h)
+    var hasil: []int = []
+    var i = 0
+    while i + 1 < len(b) {
+        hasil = arr::push(hasil, _digit16(b[i]) * 16 + _digit16(b[i + 1]))
+        i += 2
+    }
+    hasil
+}
+
+fn _digit16(k: int) -> int { if k <= 57 { return k - 48 } k - 87 }
+
+fn _acak_kunci(n: int, siapa: string) -> string {
+    let r = lapis::os(28, "", "", n)
+    if r.0 < 0 { panik(siapa + ": sumber acak yang aman tidak bisa dibaca: " + _galat_os(r.0) + " — angka dari jam bisa ditebak, jadi tidak dipakai untuk kripto") }
+    r.1
+}
+
+pub fn crypto_hash<V>(isi: V) -> string { crypto_sha256(isi) }
+
+pub fn crypto_sha512<V>(isi: V) -> string { _kripto(_heks_byte(_isi_byte(isi, "crypto::sha512")), "", "", 0).1 }
+
+pub fn crypto_hmac_sha256<K, M>(kunci: K, pesan: M) -> string {
+    let k = _heks_byte(_isi_byte(kunci, "crypto::hmac_sha256"))
+    let m = _heks_byte(_isi_byte(pesan, "crypto::hmac_sha256"))
+    _kripto(k, m, "", 1).1
+}
+
+pub fn crypto_compare_digest<A, B>(a: A, b: B) -> bool {
+    let x = _heks_byte(_isi_byte(a, "crypto::compare_digest"))
+    let y = _heks_byte(_isi_byte(b, "crypto::compare_digest"))
+    _kripto(x, y, "", 2).0 == 1
+}
+
+pub fn crypto_base64url_encode<V>(isi: V) -> string {
+    let b = _isi_byte(isi, "crypto::base64url_encode")
+    var s = str::replace(str::replace(crypto_base64_encode(b), "+", "-"), "/", "_")
+    while str::ends_with(s, "=") { s = s[0:len(s) - 1] }
+    s
+}
+
+pub fn crypto_base64_decode<V>(t: V) -> Result<string, string> { _kripto_hasil(_teks_arg(t, "crypto::base64_decode"), "", "", 3) }
+pub fn crypto_base64url_decode<V>(t: V) -> Result<string, string> { _kripto_hasil(_teks_arg(t, "crypto::base64url_decode"), "", "", 5) }
+pub fn crypto_hex_decode<V>(t: V) -> Result<string, string> { _kripto_hasil(_teks_arg(t, "crypto::hex_decode"), "", "", 7) }
+
+fn _kripto_byte(a: string, b1: string, b2: string, op: int) -> Result<[]int, string> {
+    let r = _kripto_hasil(a, b1, b2, op)
+    match r {
+        Ok(h) => Ok(_byte_heks(h)),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn crypto_base64_decode_bytes<V>(t: V) -> Result<[]int, string> { _kripto_byte(_teks_arg(t, "crypto::base64_decode_bytes"), "", "", 4) }
+pub fn crypto_base64url_decode_bytes<V>(t: V) -> Result<[]int, string> { _kripto_byte(_teks_arg(t, "crypto::base64url_decode_bytes"), "", "", 6) }
+pub fn crypto_hex_decode_bytes<V>(t: V) -> Result<[]int, string> { _kripto_byte(_teks_arg(t, "crypto::hex_decode_bytes"), "", "", 8) }
+
+pub fn crypto_aes_gen_key() -> string { _acak_kunci(32, "crypto::aes_gen_key") }
+pub fn crypto_aes_gen_iv() -> string { _acak_kunci(16, "crypto::aes_gen_iv") }
+
+pub fn crypto_aes_encrypt<V, K, I>(isi: V, kunci: K, iv: I) -> Result<string, string> {
+    let p = _heks_byte(_isi_byte(isi, "crypto::aes_encrypt"))
+    let k = _teks_arg(kunci, "crypto::aes_encrypt")
+    let v = _teks_arg(iv, "crypto::aes_encrypt")
+    _kripto_hasil(p, k, v, 9)
+}
+
+pub fn crypto_aes_decrypt<C, K, I>(sandi: C, kunci: K, iv: I) -> Result<string, string> {
+    let c = _teks_arg(sandi, "crypto::aes_decrypt")
+    let k = _teks_arg(kunci, "crypto::aes_decrypt")
+    let v = _teks_arg(iv, "crypto::aes_decrypt")
+    _kripto_hasil(c, k, v, 10)
+}
+
+pub fn crypto_aes_decrypt_bytes<C, K, I>(sandi: C, kunci: K, iv: I) -> Result<[]int, string> {
+    let c = _teks_arg(sandi, "crypto::aes_decrypt_bytes")
+    let k = _teks_arg(kunci, "crypto::aes_decrypt_bytes")
+    let v = _teks_arg(iv, "crypto::aes_decrypt_bytes")
+    _kripto_byte(c, k, v, 11)
+}
+
+pub fn crypto_seal<V, K>(isi: V, kunci: K) -> Result<string, string> {
+    let p = _heks_byte(_isi_byte(isi, "crypto::seal"))
+    let k = _teks_arg(kunci, "crypto::seal")
+    _kripto_hasil(p, k, _acak_kunci(16, "crypto::seal"), 12)
+}
+
+pub fn crypto_unseal<C, K>(kotak: C, kunci: K) -> Result<string, string> {
+    let c = _teks_arg(kotak, "crypto::unseal")
+    let k = _teks_arg(kunci, "crypto::unseal")
+    _kripto_hasil(c, k, "", 13)
+}
+
+pub fn crypto_unseal_bytes<C, K>(kotak: C, kunci: K) -> Result<[]int, string> {
+    let c = _teks_arg(kotak, "crypto::unseal_bytes")
+    let k = _teks_arg(kunci, "crypto::unseal_bytes")
+    _kripto_byte(c, k, "", 14)
+}
+
+pub fn crypto_random_int<A, B>(lo: A, hi: B) -> int {
+    if typeof(lo) == "int" && typeof(hi) == "int" {
+        let a: int = lo
+        let b: int = hi
+        if b < a { panik("crypto::random_int: max harus >= min") }
+        return int(_kripto(str(a), str(b), "", 15).1)
+    }
+    panik("argumen tidak cocok untuk `crypto::random_int` — dapat (" + typeof(lo) + ", " + typeof(hi) + "), bentuk yang diterima: crypto::random_int(min, max)")
+}

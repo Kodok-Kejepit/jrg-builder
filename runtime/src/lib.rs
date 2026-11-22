@@ -2639,6 +2639,116 @@ pub extern "C" fn jrg_acak63() -> i64 {
 mod json_inti;
 // `kutip_inti.rs` juga SALINAN PERSIS `src/kutip_inti.rs`.
 mod kutip_inti;
+// `kripto_inti.rs` SALINAN PERSIS `src/kripto_inti.rs`; di sini tanpa jalur perangkat keras.
+#[allow(dead_code)]
+mod kripto_inti;
+mod kripto_cepat {
+    pub fn sha256(_: &mut [u32; 8], _: &[u8]) -> bool { false }
+    pub fn aes_ada() -> bool { false }
+    pub fn aes_sandi(_: &[u8; 16], _: &[[u8; 16]; 15]) -> [u8; 16] { unreachable!() }
+    pub fn aes_buka(_: &[u8; 16], _: &[[u8; 16]; 15]) -> [u8; 16] { unreachable!() }
+}
+
+/// `lapis::os(31, a, b, (n << 5) | op)` untuk `crypto::` (tabel op di `crypto_os` lapis): byte masuk dan keluar
+/// sebagai heksadesimal, `b` = dua teks bersambung dengan `n` byte pertama milik yang pertama. Galat = -1 + kalimat.
+#[cfg(not(test))]
+#[no_mangle]
+pub extern "C" fn jrg_kripto_os(ap: *const u8, an: i64, bp: *const u8, bn: i64, i: i64,
+                                out_ptr: *mut *const u8, out_len: *mut i64) -> i64 {
+    use kripto_inti as k;
+    let a = unsafe { borrow_str(ap, an) };
+    let b = unsafe { borrow_str(bp, bn) };
+    let n = ((i >> 5) as usize).min(b.len());
+    let (b1, b2) = (&b[..n], &b[n..]);
+    let jawab = |t: String, kode: i64| { unsafe { emit_string(t, out_ptr, out_len) }; kode };
+    let byt = |h: &str| k::hex_decode_str(h).unwrap_or_default();
+    let teks = |r: Result<Vec<u8>, String>, nama: &str, jalan: &str| -> i64 {
+        match r {
+            Ok(v) => { let m = v.len(); match String::from_utf8(v) {
+                Ok(t) => jawab(t, 0),
+                Err(_) => jawab(format!("{}: hasilnya ({} byte) bukan teks UTF-8 yang sah; {}", nama, m, jalan), -1),
+            } }
+            Err(e) => jawab(e, -1),
+        }
+    };
+    let heks = |r: Result<Vec<u8>, String>| match r { Ok(v) => jawab(k::hex_encode(&v), 0), Err(e) => jawab(e, -1) };
+    let aes_buka = |nama: &str| -> Result<Vec<u8>, String> {
+        let key = k::parse_key32(b1, nama)?;
+        let iv = k::parse_iv16(b2, nama)?;
+        k::aes256_cbc_decrypt(&k::base64_decode_str(a)?, &key, &iv)
+    };
+    let buka_kotak = |nama: &str| -> Result<Vec<u8>, String> {
+        let (ke, km) = k::kunci_kotak(b, nama)?;
+        let kotak = k::base64_decode_str(a).map_err(|e| format!("{}: {}", nama, e))?;
+        if kotak.len() < 16 + 16 + 32 {
+            return Err(format!("{}: kotaknya terlalu pendek ({} byte) — bukan hasil `crypto::seal`", nama, kotak.len()));
+        }
+        let (isi, tanda) = kotak.split_at(kotak.len() - 32);
+        if !k::sama_waktu_tetap(&k::hmac_sha256(&km, isi), tanda) {
+            return Err(format!("{}: tanda tangan tidak cocok — kuncinya lain, atau kotaknya diubah", nama));
+        }
+        let mut iv = [0u8; 16];
+        iv.copy_from_slice(&isi[..16]);
+        k::aes256_cbc_decrypt(&isi[16..], &ke, &iv).map_err(|e| format!("{}: {}", nama, e))
+    };
+    match i & 31 {
+        0 => jawab(k::hex_encode(&k::sha512(&byt(a))), 0),
+        1 => jawab(k::hex_encode(&k::hmac_sha256(&byt(a), &byt(b))), 0),
+        2 => k::sama_waktu_tetap(&byt(a), &byt(b)) as i64,
+        3 => teks(k::base64_decode_str(a), "crypto::base64_decode", "pakai `crypto::base64_decode_bytes` untuk mengambil byte-nya"),
+        4 => heks(k::base64_decode_str(a)),
+        5 => teks(k::base64url_decode_str(a), "crypto::base64url_decode", "pakai `crypto::base64url_decode_bytes` untuk mengambil byte-nya"),
+        6 => heks(k::base64url_decode_str(a)),
+        7 => teks(k::hex_decode_str(a), "crypto::hex_decode", "pakai `crypto::hex_decode_bytes` untuk mengambil byte-nya"),
+        8 => heks(k::hex_decode_str(a)),
+        9 | 12 => {
+            let nama = if i & 31 == 9 { "crypto::aes_encrypt" } else { "crypto::seal" };
+            let r: Result<String, String> = (|| {
+                if i & 31 == 9 {
+                    let key = k::parse_key32(b1, nama)?;
+                    let iv = k::parse_iv16(b2, nama)?;
+                    return Ok(k::base64_encode_bytes(&k::aes256_cbc_encrypt(&byt(a), &key, &iv)));
+                }
+                let (ke, km) = k::kunci_kotak(b1, nama)?;
+                let mut iv = [0u8; 16];
+                iv.copy_from_slice(&byt(b2));
+                let mut kotak = iv.to_vec();
+                kotak.extend(k::aes256_cbc_encrypt(&byt(a), &ke, &iv));
+                let tanda = k::hmac_sha256(&km, &kotak);
+                kotak.extend_from_slice(&tanda);
+                Ok(k::base64_encode_bytes(&kotak))
+            })();
+            match r { Ok(t) => jawab(t, 0), Err(e) => jawab(e, -1) }
+        }
+        10 => teks(aes_buka("crypto::aes_decrypt"), "crypto::aes_decrypt",
+            "kunci atau IV-nya mungkin bukan yang dipakai menyandikan; isi biner diambil `crypto::aes_decrypt_bytes`"),
+        11 => heks(aes_buka("crypto::aes_decrypt_bytes")),
+        13 => teks(buka_kotak("crypto::unseal"), "crypto::unseal", "isi biner diambil `crypto::unseal_bytes`"),
+        14 => heks(buka_kotak("crypto::unseal_bytes")),
+        // `random_int(a, b)`: 16 byte OS ditarik ulang di atas kelipatan rentang (tanpa bias modulo), seperti acuan.
+        15 => {
+            extern "C" { fn getentropy(buf: *mut u8, n: usize) -> i32; }
+            let (lo, hi) = (a.parse::<i128>().unwrap_or(0), b.parse::<i128>().unwrap_or(0));
+            let m = (hi.wrapping_sub(lo) as u128).wrapping_add(1);
+            let ambang = if m == 0 { 0 } else { m.wrapping_neg() % m };
+            loop {
+                let mut buf = [0u8; 16];
+                if unsafe { getentropy(buf.as_mut_ptr(), 16) } != 0 {
+                    return jawab(String::from("crypto::random_int: sumber acak yang aman tidak bisa dibaca — angka dari jam \
+                        bisa ditebak, jadi tidak dipakai untuk kripto"), -1);
+                }
+                let n = u128::from_be_bytes(buf);
+                if n >= ambang {
+                    let lebar = hi.wrapping_sub(lo) as u128;
+                    let geser = if lebar == u128::MAX { n } else { n % (lebar + 1) };
+                    return jawab(format!("{}", lo.wrapping_add(geser as i128)), 0);
+                }
+            }
+        }
+        _ => jawab(String::from("crypto: op tidak dikenal"), -1),
+    }
+}
+
 // `regex_inti.rs` SALINAN PERSIS `src/stdlib/regex_inti.rs`: mesin `re::` tanpa jembatan.
 mod regex_inti;
 

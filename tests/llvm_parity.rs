@@ -1878,6 +1878,8 @@ fn salinan_json_inti_di_runtime_identik() {
         "runtime/src/json_inti.rs berbeda dari src/json_inti.rs — salin ulang: cp src/json_inti.rs runtime/src/");
     assert!(include_str!("../src/kutip_inti.rs") == include_str!("../runtime/src/kutip_inti.rs"),
         "runtime/src/kutip_inti.rs berbeda dari src/kutip_inti.rs — salin ulang: cp src/kutip_inti.rs runtime/src/");
+    assert!(include_str!("../src/kripto_inti.rs") == include_str!("../runtime/src/kripto_inti.rs"),
+        "runtime/src/kripto_inti.rs berbeda dari src/kripto_inti.rs — salin ulang: cp src/kripto_inti.rs runtime/src/");
     assert!(include_str!("../src/stdlib/regex_inti.rs") == include_str!("../runtime/src/regex_inti.rs"),
         "runtime/src/regex_inti.rs berbeda dari src/stdlib/regex_inti.rs — salin ulang: cp src/stdlib/regex_inti.rs runtime/src/");
 }
