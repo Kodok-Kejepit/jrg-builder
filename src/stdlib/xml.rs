@@ -334,15 +334,16 @@ fn x_escape(a: &[Value]) -> Result<Value, String> {
 
 #[cfg(test)]
 mod tes {
-    /// AMAN-42: pemeriksaan atribut kembar dulu kuadrat (160 ribu atribut 34 dtk). 4x ukuran harus < 10x waktu.
+    /// AMAN-42: pemeriksaan atribut kembar dulu kuadrat (160 ribu atribut 34 dtk). 8x ukuran: linear ±8x, kuadrat
+    /// ±64x; ambang 24x seperti tes biaya lain — 4x/10x dulu merah di runner CI karena efek cache saja.
     #[test]
     fn atribut_banyak_tetap_linear() {
         let waktu = |n: usize| {
             let teks = format!("<a{}/>", (0..n).map(|i| format!(" k{}=\"v\"", i)).collect::<String>());
             (0..3).map(|_| { let t = std::time::Instant::now(); assert!(urai(&teks).is_ok()); t.elapsed() }).min().unwrap()
         };
-        let (kecil, besar) = (waktu(20_000), waktu(80_000));
-        assert!(besar < kecil * 10, "4x atribut makan {:?} lawan {:?} — kuadrat lagi?", besar, kecil);
+        let (kecil, besar) = (waktu(10_000), waktu(80_000));
+        assert!(besar < kecil * 24, "8x atribut makan {:?} lawan {:?} — kuadrat lagi?", besar, kecil);
     }
 
     use super::*;
