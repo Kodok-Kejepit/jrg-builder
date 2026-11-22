@@ -81,6 +81,7 @@ impl Codegen {
     pub(crate) fn panggil_jembatan(&mut self, nama: &str, awalan: Option<(&str, &str)>, bentuk: Option<String>,
                         args: &[Expr], span: Span) -> Result<Val, String> {
         super::PAKAI_JEMBATAN.store(true, std::sync::atomic::Ordering::Relaxed);
+        if std::env::var_os("JRGC_LOG_JEMBATAN").is_some() { eprintln!("[jembatan] {}", nama); }
         let geser = usize::from(awalan.is_some());
         let n = args.len() + geser;
         let larik = self.alloca_raw("jbarg.", &format!("[{} x %JrgAny]", n.max(1)), Some(8));

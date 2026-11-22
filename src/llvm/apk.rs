@@ -405,7 +405,7 @@ fn bangun_abi(ir_path: &Path, kerja: &Path, abi: &Abi, alat: &Alat, opsi: &OpsiA
     jalankan(Command::new(super::find_clang()?).arg(&sasaran).arg("-fPIC").arg(&opt).arg("-c").arg(ir_path).arg("-o").arg(&obj),
              "mengompilasi IR program", verbose)?;
     let c = d.join("pengantar.c");
-    std::fs::write(&c, concat!(include_str!("primitif.c"), "\n", include_str!("korutin.c"), "\n",
+    std::fs::write(&c, concat!(include_str!("primitif.c"), "\n", include_str!("lebar_tabel.h"), include_str!("lebar.c"), "\n", include_str!("korutin.c"), "\n",
                                include_str!("jaga_stack.c"), "\n", include_str!("android.c")))
         .map_err(|e| format!("gagal menulis {}: {}", c.display(), e))?;
     let mut objek = vec![obj];

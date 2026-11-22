@@ -926,6 +926,11 @@ int32_t jrg_jembatan(const char *nama, int64_t nl, const JrgAny *args, int64_t n
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#if defined(__APPLE__) || defined(__ANDROID__)
+#include <sys/random.h>
+#endif
+
+int64_t jrg_lebar_kode(uint32_t cp);   // `lebar.c`
 
 /* `num_cpus()`: inti yang terlihat proses ini, paling sedikit 1. */
 int64_t jrg_num_cpus(void) {
@@ -1205,6 +1210,20 @@ int64_t jrg_os(int32_t op, const char *ap, int64_t an, const char *bp, int64_t b
             const char *s = "tak-dikenal";
 #endif
             jrg_os_teks(out, s, (int64_t)strlen(s));
+            return 0;
+        }
+        case 29: return jrg_lebar_kode((uint32_t)i);   // kolom layar satu karakter (`term::lebar`)
+        case 28: {  // `i` byte dari sumber acak OS, sebagai heksadesimal (`crypto::random_hex`)
+            // Teks hasil di arena runtime: `jrg_os_teks` cuma menyimpan penunjuknya.
+            unsigned char *b = malloc(i > 0 ? (size_t)i : 1);
+            char *h = jrg_alloc(i * 2 + 1, 1);
+            if (!b) return -ENOMEM;
+            for (int64_t k = 0; k < i; k += 256) {
+                if (getentropy(b + k, (size_t)(i - k < 256 ? i - k : 256)) != 0) { int e = errno; free(b); return -e; }
+            }
+            for (int64_t k = 0; k < i; k++) { h[2 * k] = "0123456789abcdef"[b[k] >> 4]; h[2 * k + 1] = "0123456789abcdef"[b[k] & 15]; }
+            free(b);
+            jrg_os_teks(out, h, i * 2);
             return 0;
         }
         default: return -ENOSYS;

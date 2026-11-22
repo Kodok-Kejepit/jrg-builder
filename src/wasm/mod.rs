@@ -245,7 +245,7 @@ pub fn kompilasi(ir: &str, keluar: &Path, verbose: bool) -> Result<PathBuf, Stri
     susun(&ll, &prog_o)?;
     // Primitif runtime yang sama dengan `--emit-llvm` (satu definisi); korutin diganti versi WASM.
     let c = dir.join("pengantar.c");
-    std::fs::write(&c, concat!(include_str!("../llvm/primitif.c"), "\n", include_str!("../llvm/jaga_stack.c"), "\n",
+    std::fs::write(&c, concat!(include_str!("../llvm/primitif.c"), "\n", include_str!("../llvm/lebar_tabel.h"), include_str!("../llvm/lebar.c"), "\n", include_str!("../llvm/jaga_stack.c"), "\n",
         include_str!("../llvm/korutin.c"), "\n", include_str!("../llvm/korutin_wasm.c")))
         .map_err(|e| format!("gagal menulis {}: {}", c.display(), crate::host::galat_io(&e)))?;
     let c_o = dir.join("pengantar.o");

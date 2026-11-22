@@ -1160,3 +1160,39 @@ pub fn crypto_md5<V>(isi: V) -> string {
     for _, v in h { for k in 0..4 { keluar = arr::push(keluar, (v >> (k * 8)) & 255) } }
     return _heks_byte(keluar)
 }
+
+// Byte acak dari sumber acak OS (bukan `rand::`), sebagai heksadesimal; kalimat galat sama dengan acuan.
+pub fn crypto_random_hex<V>(n: V) -> string {
+    if typeof(n) == "int" {
+        let k: int = n
+        if k < 0 { panik("argumen tidak cocok untuk `crypto::random_hex` — dapat (int), bentuk yang diterima: crypto::random_hex(n)") }
+        if k > 16777216 {
+            panik("crypto::random_hex: minta " + str(k) + " elemen sekaligus, batasnya 16777216 — permintaan sebesar itu mematikan prosesnya sebelum sempat menjawab. Cek lagi angkanya")
+        }
+        let r = lapis::os(28, "", "", k)
+        if r.0 < 0 { panik("crypto::random_hex: sumber acak yang aman tidak bisa dibaca: " + _galat_os(r.0) + " — angka dari jam bisa ditebak, jadi tidak dipakai untuk kripto") }
+        return r.1
+    }
+    panik("argumen tidak cocok untuk `crypto::random_hex` — dapat (" + typeof(n) + "), bentuk yang diterima: crypto::random_hex(n)")
+}
+
+// Lebar tampil (kolom layar) — tabel yang sama dengan `jrgc` (`src/lebar.rs`, salinan C diturunkan generatornya).
+pub fn term_lebar<V>(s: V) -> int {
+    if typeof(s) == "string" {
+        let t: string = s
+        var n = 0
+        for _, c in str::chars(t) { n += lapis::os(29, "", "", c as int).0 }
+        return n
+    }
+    panik("term::lebar: argumen ke-1 harus teks, dapat `" + typeof(s) + "`")
+}
+
+pub fn term_lebar_tiap<V>(s: V) -> []int {
+    if typeof(s) == "string" {
+        let t: string = s
+        var hasil: []int = []
+        for _, c in str::chars(t) { hasil = arr::push(hasil, lapis::os(29, "", "", c as int).0) }
+        return hasil
+    }
+    panik("term::lebar_tiap: argumen ke-1 harus teks, dapat `" + typeof(s) + "`")
+}

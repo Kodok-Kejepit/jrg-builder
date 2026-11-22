@@ -1,11 +1,27 @@
 #!/usr/bin/env python3
-# perkakas/lebar_unicode.py — bangkitkan tabel lebar tampil (`src/lebar/tabel.rs`).
-#   python3 perkakas/lebar_unicode.py            tulis ulang tabelnya
+# perkakas/lebar_unicode.py — tabel lebar tampil `src/lebar/tabel.rs`, dan salinan C-nya `src/llvm/lebar_tabel.h`.
+#   python3 perkakas/lebar_unicode.py [--c]      tulis ulang (`--c`: salinan C saja, diturunkan dari berkas Rust)
 #   python3 perkakas/lebar_unicode.py --periksa  bandingkan saja: 0 sama, 1 beda, 3 versi Unicode lain
 import sys
 import unicodedata as u
 
 KELUAR = "src/lebar/tabel.rs"
+KELUAR_C = "src/llvm/lebar_tabel.h"
+
+
+def ke_c(rs):
+    """Tabel C dari isi `tabel.rs`: rentang yang sama persis, urutan yang sama."""
+    import re
+    keluar = ["// src/llvm/lebar_tabel.h — DITURUNKAN `perkakas/lebar_unicode.py` dari src/lebar/tabel.rs.",
+              "// Jangan disunting tangan: jalankan ulang skripnya."]
+    for nama in ("NOL", "DUA"):
+        isi = rs.split("pub static %s:" % nama)[1].split("];")[0]
+        pas = re.findall(r"\((0x[0-9A-F]+), (0x[0-9A-F]+)\)", isi)
+        keluar.append("static const uint32_t JRG_LEBAR_%s[][2] = {" % nama)
+        for i in range(0, len(pas), 4):
+            keluar.append("    " + " ".join("{%s, %s}," % p for p in pas[i:i + 4]))
+        keluar.append("};")
+    return "\n".join(keluar) + "\n"
 
 
 def lebar(cp):
@@ -85,13 +101,23 @@ def main():
             print("versi Unicode beda: tabel %s, python %s" % (tercatat, u.unidata_version))
             return 3
         lama = open(KELUAR, encoding="utf-8").read()
+        try:
+            c_lama = open(KELUAR_C, encoding="utf-8").read()
+        except OSError:
+            c_lama = None
+        if c_lama != ke_c(lama):
+            print("%s tidak cocok dengan %s" % (KELUAR_C, KELUAR))
+            return 1
         if lama == bangun():
             print("tabel lebar cocok dengan unicodedata %s" % u.unidata_version)
             return 0
         print("tabel lebar TIDAK cocok dengan unicodedata %s" % u.unidata_version)
         return 1
-    open(KELUAR, "w", encoding="utf-8").write(bangun())
-    print("%s ditulis (Unicode %s)" % (KELUAR, u.unidata_version))
+    if "--c" not in sys.argv:
+        open(KELUAR, "w", encoding="utf-8").write(bangun())
+        print("%s ditulis (Unicode %s)" % (KELUAR, u.unidata_version))
+    open(KELUAR_C, "w", encoding="utf-8").write(ke_c(open(KELUAR, encoding="utf-8").read()))
+    print("%s ditulis" % KELUAR_C)
     return 0
 
 

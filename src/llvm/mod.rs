@@ -807,7 +807,7 @@ fn tulis_jaga_stack() -> Result<PathBuf, String> {
     let d = crate::host::dir_sementara("jrgc-jaga").map_err(|e| format!("gagal membuat folder sementara: {}", crate::host::galat_io(&e)))?;
     let p = d.join(format!("jaga-{}.c", n));
     // Primitif memori (semua sasaran) lalu penjaga stack (cuma Unix; berkasnya menjaga dirinya).
-    std::fs::write(&p, concat!(include_str!("primitif.c"), "\n", include_str!("korutin.c"), "\n", include_str!("jaga_stack.c")))
+    std::fs::write(&p, concat!(include_str!("primitif.c"), "\n", include_str!("lebar_tabel.h"), include_str!("lebar.c"), "\n", include_str!("korutin.c"), "\n", include_str!("jaga_stack.c")))
         .map_err(|e| format!("gagal menulis {}: {}", p.display(), e))?;
     Ok(p)
 }

@@ -130,7 +130,7 @@ pub fn kompilasi(ir: &str, keluar: &Path, berkas: Option<&Path>, verbose: bool) 
         tulis(&libc, LIBC_MINI)?;
         let ram = dir.join("berkas_ram.c");
         tulis(&ram, BERKAS_RAM)?;
-        tulis(&rt, concat!(include_str!("../llvm/primitif.c"), "\n", include_str!("../llvm/korutin.c"), "\n",
+        tulis(&rt, concat!(include_str!("../llvm/primitif.c"), "\n", include_str!("../llvm/lebar_tabel.h"), include_str!("../llvm/lebar.c"), "\n", include_str!("../llvm/korutin.c"), "\n",
             include_str!("../llvm/jaga_stack.c")))?;
         let susun = |sumber: &Path, tambahan: &[&str]| -> Result<PathBuf, String> {
             let o = sumber.with_extension("o");
