@@ -16,6 +16,7 @@ pub const NAMA_ASLI: &[(&str, usize)] = &[
     ("rdmsr", 1), ("wrmsr", 2), ("cpuid", 2), ("cr0", 0), ("cr2", 0), ("cr3", 0), ("cr4", 0),
     ("tulis_cr3", 1), ("invlpg", 1), ("interupsi", 2),
     ("memori_n", 0), ("memori", 1), ("bingkai_baru", 0), ("bingkai_lepas", 1), ("petakan", 3), ("lepas_peta", 1),
+    ("layar", 0), ("konsol_layar", 1), ("teks_layar", 4),
 ];
 
 /// Kalimat untuk `asli::` di luar kernel `--bebas` — dipakai juga interpreter dan VM.
@@ -86,6 +87,33 @@ impl Codegen {
             self.emit(format!("{} = extractvalue %JrgFn {}, 1", e, f.text));
             self.ensure_extern("declare void @jrg_bebas_pasang_penangan(i64, ptr, ptr)", "jrg_bebas_pasang_penangan");
             self.emit(format!("call void @jrg_bebas_pasang_penangan(i64 {}, ptr {}, ptr {})", v.text, k, e));
+            return Ok(Val::unit());
+        }
+        if item == "teks_layar" {
+            let x = self.asli_bulat(item, &args[0])?;
+            let y = self.asli_bulat(item, &args[1])?;
+            let t = self.codegen_expr(&args[2], Some(&JrgType::Str))?;
+            if t.ty != JrgType::Str {
+                return Err(super::galat::tandai(args[2].span(), format!(
+                    "`asli::teks_layar` butuh teks sebagai argumen ke-3, dapat `{}`", t.ty.nama_typeof())));
+            }
+            let w = self.asli_bulat(item, &args[3])?;
+            self.asli_rentang(item, "warna", &w, 0xFFFFFF);
+            let (p, l) = self.split_str(&t);
+            self.ensure_extern("declare void @jrg_bebas_teks_layar(i64, i64, ptr, i64, i64)", "jrg_bebas_teks_layar");
+            self.emit(format!("call void @jrg_bebas_teks_layar(i64 {}, i64 {}, ptr {}, i64 {}, i64 {})", x.text, y.text, p, l, w.text));
+            return Ok(Val::unit());
+        }
+        if item == "konsol_layar" {
+            let v = self.codegen_expr(&args[0], Some(&JrgType::Bool))?;
+            if v.ty != JrgType::Bool {
+                return Err(super::galat::tandai(args[0].span(), format!(
+                    "`asli::konsol_layar` butuh `bool`, dapat `{}`", v.ty.nama_typeof())));
+            }
+            let z = self.fresh("asl.");
+            self.emit(format!("{} = zext i1 {} to i64", z, v.text));
+            self.ensure_extern("declare void @jrg_bebas_konsol_layar(i64)", "jrg_bebas_konsol_layar");
+            self.emit(format!("call void @jrg_bebas_konsol_layar(i64 {})", z));
             return Ok(Val::unit());
         }
         let mut a = Vec::new();
@@ -224,6 +252,20 @@ impl Codegen {
                 for (i, x) in [la, lp, j].iter().enumerate() {
                     let n = self.fresh("asm.");
                     self.emit(format!("{} = insertvalue {} {}, i64 {}, {}", n, ty.llvm_ty(), kini, x, i));
+                    kini = n;
+                }
+                Ok(Val { text: kini, ty })
+            }
+            "layar" => {
+                self.ensure_extern("declare void @jrg_bebas_layar(ptr, ptr, ptr, ptr)", "jrg_bebas_layar");
+                let p: Vec<String> = (0..4).map(|_| self.alloca_raw("asly.", "i64", Some(8))).collect();
+                self.emit(format!("call void @jrg_bebas_layar(ptr {}, ptr {}, ptr {}, ptr {})", p[0], p[1], p[2], p[3]));
+                let ty = JrgType::Tuple(vec![JrgType::I64; 4]);
+                let mut kini = "undef".to_string();
+                for (i, x) in p.iter().enumerate() {
+                    let (l, n) = (self.fresh("asly."), self.fresh("asly."));
+                    self.emit(format!("{} = load i64, ptr {}", l, x));
+                    self.emit(format!("{} = insertvalue {} {}, i64 {}, {}", n, ty.llvm_ty(), kini, l, i));
                     kini = n;
                 }
                 Ok(Val { text: kini, ty })

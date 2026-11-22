@@ -287,12 +287,12 @@ fn image_uefi_boot_lewat_ovmf() {
     if !alat { eprintln!("dilewati: OVMF atau GRUB x86_64-efi tidak ada"); return; }
     let dir = std::env::temp_dir().join(format!("jrg-uji-img-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
-    std::fs::write(dir.join("k.jrg"), "fn main() {\n  wok(\"boot UEFI:\", 6 * 7)\n  exit(5)\n}\n").unwrap();
+    std::fs::write(dir.join("k.jrg"), "fn main() {\n  let (fb, l, t, p) = asli::layar()\n  wok(\"boot UEFI:\", 6 * 7, \"layar:\", fb > 0 && l > 0 && p >= l * 4)\n  exit(5)\n}\n").unwrap();
     let out = Command::new(jrgc()).arg(dir.join("k.jrg")).args(["--bebas", "-o"]).arg(dir.join("k.elf"))
         .arg("--img").arg(dir.join("k.img")).env("JRG_SOPAN", "1").stdin(Stdio::null()).output().unwrap();
     let img = std::fs::read(dir.join("k.img")).unwrap_or_default();
     let _ = std::fs::remove_dir_all(&dir);
-    assert!(String::from_utf8_lossy(&out.stdout).contains("boot UEFI: 42"), "{}{}",
+    assert!(String::from_utf8_lossy(&out.stdout).contains("boot UEFI: 42 layar: true"), "{}{}",
         String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr));
     assert_eq!(out.status.code(), Some(5));
     assert_eq!(&img[510..512], &[0x55, 0xAA]);

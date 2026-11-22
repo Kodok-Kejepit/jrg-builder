@@ -1,0 +1,40 @@
+// Menggambar di layar grafis mesin UEFI (framebuffer dari firmware lewat GRUB), langsung dari JRG.
+//   jrgc examples_bebas/layar.jrg --bebas --img layar.img      (diuji di QEMU+OVMF; tulis ke flashdisk untuk laptop)
+package main
+
+fn titik(fb: int, pitch: int, x: int, y: int, warna: int) {
+    asli::tulis32(fb + y * pitch + x * 4, warna)
+}
+
+fn lingkaran(fb: int, pitch: int, cx: int, cy: int, r: int, warna: int) {
+    for dy in 0..2 * r + 1 {
+        let y = dy - r
+        for dx in 0..2 * r + 1 {
+            let x = dx - r
+            if x * x + y * y <= r * r { titik(fb, pitch, cx + x, cy + y, warna) }
+        }
+    }
+}
+
+pub fn main() {
+    let (fb, lebar, tinggi, pitch) = asli::layar()
+    if fb == 0 {
+        wok("tidak ada framebuffer dari firmware: jalankan lewat --img (UEFI)")
+        return
+    }
+    asli::konsol_layar(false)
+    for y in 0..tinggi {
+        for x in 0..lebar {
+            titik(fb, pitch, x, y, ((y * 60 / tinggi) << 16) | ((y * 40 / tinggi) << 8) | (80 + y * 100 / tinggi))
+        }
+    }
+    let warna = [0xE63946, 0xF4A261, 0x2A9D8F, 0x8AB17D, 0xE9C46A]
+    for i, w in warna {
+        lingkaran(fb, pitch, lebar / 6 * (i + 1), tinggi / 2, tinggi / 10, w)
+    }
+    asli::teks_layar(lebar / 2 - 120, tinggi / 2 + tinggi / 10 + 40, "JRG-OS — digambar dari JRG", 0xFFFFFF)
+    asli::teks_layar(lebar / 2 - 100, tinggi / 2 + tinggi / 10 + 64, "layar " + str(lebar) + "×" + str(tinggi), 0xE9C46A)
+    wok("layar", lebar, "x", tinggi, "digambar dari JRG")
+    time::sleep(3)
+    asli::konsol_layar(true)
+}

@@ -16,7 +16,7 @@ const BERKAS_RAM: &str = include_str!("berkas_ram.c");
 /// jadi teks; jalurnya relatif terhadap folder itu, berawalan `/`.
 fn tulis_berkas_awal(akar: &Path, keluar: &Path) -> Result<(), String> {
     fn jalan(d: &Path, akar: &Path, daftar: &mut Vec<(String, Option<PathBuf>)>) -> Result<(), String> {
-        let mut isi: Vec<_> = std::fs::read_dir(d).map_err(|e| format!("--berkas: tidak bisa membaca {}: {}",
+        let mut isi: Vec<_> = std::fs::read_dir(d).map_err(|e| format!("--berkas: tidak bisa membaca {} ({})",
             d.display(), crate::host::galat_io(&e)))?.flatten().map(|e| e.path()).collect();
         isi.sort();
         for p in isi {
@@ -33,7 +33,7 @@ fn tulis_berkas_awal(akar: &Path, keluar: &Path) -> Result<(), String> {
     for (i, (jalur, berkas)) in daftar.iter().enumerate() {
         s += &format!("jalur_{i}: .byte {},0\n", kutip(jalur));
         if let Some(b) = berkas {
-            let abs = std::fs::canonicalize(b).map_err(|e| format!("--berkas: {}: {}", b.display(), crate::host::galat_io(&e)))?;
+            let abs = std::fs::canonicalize(b).map_err(|e| format!("--berkas: tidak bisa membaca {} ({})", b.display(), crate::host::galat_io(&e)))?;
             s += &format!(".p2align 3\nisi_{i}: .incbin \"{}\"\nisi_{i}_akhir:\n", abs.display().to_string().replace('\\', "\\\\").replace('"', "\\\""));
         }
     }
@@ -172,7 +172,7 @@ pub fn jalankan(kernel: &Path, layar: bool) -> Result<i32, String> {
         PATH (atau `JRG_QEMU`); pakai `--no-run -o kernel.elf` untuk menyusun saja, lalu boot lewat GRUB")?;
     let mut c = Command::new(qemu);
     c.arg("-kernel").arg(kernel).args(["-monitor", "none", "-serial", "stdio", "-chardev", "file,id=galat,path=/dev/stderr,append=on", "-serial", "chardev:galat",
-        "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-no-reboot", "-m", "512",
+        "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-no-reboot", "-m", "2048",
         "-cpu", "max"]);
     // KVM kalau boleh dibuka (cepat); tanpa itu TCG, tanpa peringatan QEMU yang mengotori stderr program.
     let kvm = std::fs::OpenOptions::new().read(true).write(true).open("/dev/kvm").is_ok();

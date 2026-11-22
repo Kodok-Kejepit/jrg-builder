@@ -25,6 +25,31 @@ static int vga_x, vga_y;
 /* Konsol framebuffer (mesin UEFI: tidak ada layar teks VGA): glyph 8x16 dari `fon_8x16.h`, latar hitam. */
 static volatile uint32_t *fb;
 static uint32_t fb_lebar, fb_tinggi, fb_pitch, fb_kol, fb_bar, fb_x, fb_y;
+static int konsol_layar = 1;
+/* `asli::layar()`: framebuffer dari firmware (0 semua kalau tidak ada); `asli::konsol_layar(b)`: teks ikut digambar? */
+void jrg_bebas_layar(int64_t *a, int64_t *l, int64_t *t, int64_t *p) {
+    *a = (int64_t)(uintptr_t)fb; *l = fb ? fb_lebar : 0; *t = fb ? fb_tinggi : 0; *p = fb ? fb_pitch : 0;
+}
+void jrg_bebas_konsol_layar(int64_t b) { konsol_layar = b != 0; }
+static int glyph_untuk(uint32_t kode);
+/* `asli::teks_layar(x, y, teks, warna)`: teks UTF-8 di posisi piksel bebas, latar dibiarkan; yang keluar layar dipotong. */
+void jrg_bebas_teks_layar(int64_t x, int64_t y, const unsigned char *s, int64_t n, int64_t warna) {
+    if (!fb) return;
+    for (int64_t i = 0; i < n;) {
+        uint32_t k = s[i++];
+        int sisa = k >= 0xF0 ? 3 : k >= 0xE0 ? 2 : k >= 0xC0 ? 1 : 0;
+        if (sisa) k &= sisa == 3 ? 0x07 : sisa == 2 ? 0x0F : 0x1F;
+        while (sisa-- && i < n) k = (k << 6) | (s[i++] & 0x3F);
+        const unsigned char *g = FON_GLYPH[glyph_untuk(k)];
+        for (int64_t gy = 0; gy < 16; gy++)
+            for (int64_t gx = 0; gx < 8; gx++) {
+                int64_t px = x + gx, py = y + gy;
+                if (px < 0 || py < 0 || px >= fb_lebar || py >= fb_tinggi || !((g[gy] >> (7 - gx)) & 1)) continue;
+                fb[py * (fb_pitch / 4) + px] = (uint32_t)warna;
+            }
+        x += 8;
+    }
+}
 static int glyph_untuk(uint32_t kode) {
     int lo = 0, hi = (int)(sizeof FON_PETA / sizeof FON_PETA[0]) - 1;
     while (lo <= hi) {
@@ -84,6 +109,7 @@ static void vga_byte(char c);
 static void vga_tulis(char c) {
     unsigned char b = (unsigned char)c;
     if (fb) {
+        if (!konsol_layar) return;
         if (b < 0x80) { utf_sisa = 0; fb_tulis(b); return; }
         if ((b & 0xC0) == 0x80) {
             if (!utf_sisa) { fb_tulis('?'); return; }
@@ -163,8 +189,21 @@ static inline uint64_t tutup_irq(void) { uint64_t f; __asm__ volatile("pushfq; p
 static inline void buka_irq(uint64_t f) { if (f & 0x200) __asm__ volatile("sti" ::: "memory"); }
 static void *malloc_dalam(size_t n);
 void *malloc(size_t n) { uint64_t f = tutup_irq(); void *p = malloc_dalam(n); buka_irq(f); return p; }
+/* Blok besar (>= 1 MiB) dipetakan per halaman di wilayah 4 KiB dan dikembalikan utuh saat `free`: pola `realloc`
+   yang terus membesar tidak meninggalkan sisa di kelas pangkat dua. `kelas` = KELAS_BESAR, `_isi` = jumlah halaman. */
+#define KELAS_BESAR 62
+#define KELAS_GESER 63          /* kepala `posix_memalign`: `_isi` = jarak ke blok aslinya */
+void *mmap(void *a, size_t n, int prot, int fl, int fd, long off);
+int munmap(void *a, size_t n);
 static void *malloc_dalam(size_t n) {
     if (n > ((size_t)1 << 40)) return 0;
+    if (n + sizeof(Kepala) >= ((size_t)1 << 20)) {
+        size_t hal = (n + sizeof(Kepala) + 4095) / 4096;
+        Kepala *h = mmap(0, hal * 4096, 3, 0, -1, 0);
+        if (h == (void *)-1) return 0;
+        h->kelas = KELAS_BESAR; h->_isi = hal;
+        return h + 1;
+    }
     int k = kelas_untuk(n);
     Kepala *h;
     if (bebas_kelas[k]) { h = (Kepala *)bebas_kelas[k]; bebas_kelas[k] = bebas_kelas[k]->lanjut; }
@@ -180,9 +219,13 @@ void free(void *p) {
     if (!p) return;
     uint64_t f = tutup_irq();
     Kepala *h = (Kepala *)p - 1;
+    if (h->kelas == KELAS_GESER) { p = (char *)p - h->_isi; h = (Kepala *)p - 1; }
+    if (h->kelas == KELAS_BESAR) { munmap(h, h->_isi * 4096); buka_irq(f); return; }
+    /* `lanjut` menempati tempat `kelas`: kelasnya dibaca dulu. */
+    uint64_t k = h->kelas;
     Blok *b = (Blok *)h;
-    b->lanjut = bebas_kelas[h->kelas];
-    bebas_kelas[h->kelas] = b;
+    b->lanjut = bebas_kelas[k];
+    bebas_kelas[k] = b;
     buka_irq(f);
 }
 void *calloc(size_t a, size_t b) {
@@ -194,7 +237,15 @@ void *calloc(size_t a, size_t b) {
 void *realloc(void *p, size_t n) {
     if (!p) return malloc(n);
     Kepala *h = (Kepala *)p - 1;
-    size_t muat = ((size_t)1 << h->kelas) - sizeof(Kepala);
+    size_t muat;
+    if (h->kelas == KELAS_GESER) {
+        Kepala *asal = (Kepala *)((char *)p - h->_isi) - 1;
+        muat = (asal->kelas == KELAS_BESAR ? asal->_isi * 4096 : (size_t)1 << asal->kelas) - sizeof(Kepala) - h->_isi;
+        void *q = malloc(n);
+        if (q) { memcpy(q, p, n < muat ? n : muat); free(p); }
+        return q;
+    }
+    muat = (h->kelas == KELAS_BESAR ? h->_isi * 4096 : (size_t)1 << h->kelas) - sizeof(Kepala);
     if (n <= muat) return p;
     void *q = malloc(n);
     if (!q) return 0;
@@ -203,9 +254,12 @@ void *realloc(void *p, size_t n) {
     return q;
 }
 int posix_memalign(void **r, size_t al, size_t n) {
-    void *p = malloc(n + al);
+    if (al <= 16) { *r = malloc(n); return *r ? 0 : 12; }
+    char *p = malloc(n + al + sizeof(Kepala));
     if (!p) return 12;
-    *r = (void *)(((uintptr_t)p + al - 1) & ~(uintptr_t)(al - 1));
+    char *q = (char *)(((uintptr_t)p + sizeof(Kepala) + al - 1) & ~(uintptr_t)(al - 1));
+    if (q != p) { Kepala *k = (Kepala *)q - 1; k->kelas = KELAS_GESER; k->_isi = (uint64_t)(q - p); }
+    *r = q;
     return 0;
 }
 // ── peta halaman 4 KiB di atas 4 GiB: stack korutin dengan halaman penjaga sungguhan ─────────────────
@@ -327,10 +381,13 @@ static int di_wilayah_penjaga(uint64_t v) {
 extern __thread int errno;
 int *__errno_location(void) { return &errno; }
 #define TIDAK_ADA 38   /* ENOSYS */
+static char *ling_nama[64], *ling_nilai[64];
+static int ling_n;
 /* Lingkungan = baris perintah multiboot (`NAMA=nilai` dipisah spasi), disalin saat mulai. */
 static char baris_perintah[1024];
 char *getenv(const char *n) {
     size_t k = strlen(n);
+    for (int i = 0; i < ling_n; i++) if (ling_nama[i][0] && strcmp(ling_nama[i], n) == 0) return ling_nilai[i];
     for (char *p = baris_perintah; *p;) {
         while (*p == ' ') p++;
         char *awal = p;
@@ -345,7 +402,21 @@ char *getenv(const char *n) {
     }
     return 0;
 }
-int setenv(const char *n, const char *v, int o) { (void)n; (void)v; (void)o; errno = TIDAK_ADA; return -1; }
+/* `env::set`: tabel lingkungan sendiri, didahulukan atas baris perintah multiboot. */
+static char *salin_teks(const char *s) { size_t n = strlen(s); char *d = malloc(n + 1); if (d) memcpy(d, s, n + 1); return d; }
+int setenv(const char *n, const char *v, int o) {
+    for (int i = 0; i < ling_n; i++)
+        if (strcmp(ling_nama[i], n) == 0) { if (o) { free(ling_nilai[i]); ling_nilai[i] = salin_teks(v); } return 0; }
+    if (!o && getenv(n)) return 0;
+    if (ling_n == 64) { errno = 12; return -1; }
+    ling_nama[ling_n] = salin_teks(n); ling_nilai[ling_n++] = salin_teks(v);
+    return 0;
+}
+int unsetenv(const char *n) {
+    for (int i = 0; i < ling_n; i++)
+        if (strcmp(ling_nama[i], n) == 0) { ling_nilai[i][0] = 0; ling_nama[i][0] = 0; }
+    return 0;
+}
 /* Bahasa pesan yang ditulis lapisan ini sendiri, aturannya sama dengan runtime: `JRG_BAHASA`, bawaan Inggris. */
 static const char *pilih(const char *id, const char *en) {
     const char *b = getenv("JRG_BAHASA");

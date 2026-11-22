@@ -151,7 +151,7 @@ pub(crate) fn cmd_run_bebas() -> Result<(), String> {
     // Folder `berkas/` proyek jadi sistem berkas RAM kernel.
     if cwd.join("berkas").is_dir() { cmd.arg("--berkas").arg(cwd.join("berkas")); }
     for d in &inc { cmd.arg("-I").arg(d); }
-    let status = cmd.status().map_err(|e| format!("jrgm run --bebas: gagal menjalankan jrgc: {}", crate::host::galat_io(&e)))?;
+    let status = cmd.status().map_err(|e| format!("jrgm run --bebas: gagal menjalankan jrgc ({})", crate::host::galat_io(&e)))?;
     match status.code() { Some(0) => Ok(()), Some(k) => process::exit(k), None => process::exit(1) }
 }
 

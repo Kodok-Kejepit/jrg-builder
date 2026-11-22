@@ -79,6 +79,7 @@ static void pasang(void) {
     if (siap) return;
     siap = 1;
     buat("/", 1);
+    buat("/tmp", 1);              /* seperti OS biasa: tempat berkas sementara */
     if (!jrg_berkas_awal) return;
     for (uint64_t i = 0; i < jrg_berkas_awal_n; i++) {
         const JrgBerkasAwal *a = &jrg_berkas_awal[i];

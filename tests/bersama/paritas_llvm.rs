@@ -5706,4 +5706,22 @@ fn main() {
   wok(d.x)
 }
 "#),
+    ("crypto:: sidik dan pengodean di lapis (tanpa jembatan): sha256/sha1/md5/crc32/hex/base64 atas teks dan array byte", r#"
+fn main() {
+  var s = ""
+  for n in 0..200 {
+    if n < 5 || (n > 50 && n < 70) || (n > 110 && n < 130) || n % 37 == 0 {
+      wok(n, crypto::sha256(s), crypto::sha1(s), crypto::md5(s), crypto::crc32(s), crypto::hex_encode(s), crypto::base64_encode(s))
+    }
+    s = s + str(rune(97 + n % 26))
+    if n % 9 == 0 { s = s + "é" }
+  }
+  var b: []int = []
+  for n in 0..130 {
+    b = arr::push(b, (n * 37) % 256)
+    if n % 13 == 0 { wok(crypto::sha256(b), crypto::sha1(b), crypto::md5(b), crypto::crc32(b), crypto::base64_encode(b)) }
+  }
+  wok(crypto::md5(""), crypto::sha1("abc"), crypto::sha256([]))
+}
+"#),
 ];
