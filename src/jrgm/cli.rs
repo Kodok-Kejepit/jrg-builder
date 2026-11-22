@@ -24,6 +24,7 @@ Contoh:
   jrgm lint                  periksa tanpa menjalankan (galat + peringatan)
   jrgm publish               tag v<versi> lalu dorong ke repositori git
   jrgm new gameku --android  proyek aplikasi Android
+  jrgm new osku --bebas      kernel tanpa sistem operasi (jrgm run --bebas)
   jrgm apk                   bungkus jadi target/<nama>.apk
   jrgm siapkan android       pasang SDK/NDK/build-tools (ditawarkan otomatis oleh jrgm apk)
   jrgm run --android         pasang ke HP, buka, tampilkan keluarannya
@@ -69,6 +70,9 @@ pub(crate) enum JrgmCommand {
         /// Sama dengan `--kind android`: proyek aplikasi Android (kanvas + sentuhan)
         #[arg(long)]
         android: bool,
+        /// Sama dengan `--kind bebas`: kernel tanpa sistem operasi (`jrgm run --bebas`)
+        #[arg(long)]
+        bebas: bool,
         /// Proyek bahasa lain: python, javascript, c, cpp, rust, go, java, php, lua, ruby, sh
         #[arg(long, visible_alias = "lang")]
         bahasa: Option<String>,

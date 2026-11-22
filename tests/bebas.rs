@@ -298,3 +298,24 @@ fn image_uefi_boot_lewat_ovmf() {
     assert_eq!(&img[510..512], &[0x55, 0xAA]);
     assert_eq!(img[446 + 4], 0xEF, "partisi pertama harus Sistem EFI");
 }
+
+/// `jrgm new nama --bebas` lalu `jrgm run --bebas`: kerangka kernel langsung boot, folder `berkas/` ikut tertanam.
+#[test]
+fn kerangka_proyek_kernel_langsung_boot() {
+    if !ada_qemu() { eprintln!("dilewati: qemu-system-x86_64 tidak ada"); return; }
+    let dasar = std::env::temp_dir().join(format!("jrg-uji-rangka-bebas-{}", std::process::id()));
+    std::fs::create_dir_all(&dasar).unwrap();
+    let buat = Command::new(jrgc()).args(["--jrgm", "new", "osku", "--bebas"]).current_dir(&dasar)
+        .env("JRG_BAHASA", "id").output().unwrap();
+    assert!(buat.status.success(), "{}", String::from_utf8_lossy(&buat.stderr));
+    let mut anak = Command::new(jrgc()).args(["--jrgm", "run", "--bebas"]).current_dir(dasar.join("osku"))
+        .env("JRG_BAHASA", "id").env("JRG_SOPAN", "1").env("JRGC_BIN", jrgc())
+        .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
+    use std::io::Write;
+    anak.stdin.take().unwrap().write_all(b"berkas\nbaca salam.txt\nkeluar\n").unwrap();
+    let out = anak.wait_with_output().unwrap();
+    let _ = std::fs::remove_dir_all(&dasar);
+    let teks = String::from_utf8_lossy(&out.stdout);
+    assert!(teks.contains("> [salam.txt]") && teks.contains("Halo dari sistem berkas RAM kernel JRG."),
+        "{}{}", teks, String::from_utf8_lossy(&out.stderr));
+}

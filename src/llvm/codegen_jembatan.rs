@@ -17,6 +17,15 @@ pub const TANDA_VARIAN: &str = "\u{1}varian";
 pub const TANDA_ISI: &str = "\u{1}isi";
 
 /// Wadah yang isinya bisa berupa nilai buram (struct/tuple milik program) saat jalan.
+/// Wadah yang isinya PASTI buram (struct/enum/tuple milik program), bukan sekadar `any` yang mungkin memuatnya.
+pub(crate) fn buram_pasti(t: &JrgType) -> bool {
+    match t {
+        JrgType::Array(e, _) | JrgType::Slice(e) | JrgType::Dict(e) =>
+            (**e != JrgType::Any && super::codegen_any::tag_untuk(e) == Some(super::codegen_any::TAG_BURAM)) || buram_pasti(e),
+        _ => false,
+    }
+}
+
 pub(crate) fn mengandung_buram(t: &JrgType) -> bool {
     match t {
         JrgType::Array(e, _) | JrgType::Slice(e) | JrgType::Dict(e) => **e == JrgType::Any
@@ -80,7 +89,8 @@ impl Codegen {
 
     pub(crate) fn panggil_jembatan(&mut self, nama: &str, awalan: Option<(&str, &str)>, bentuk: Option<String>,
                         args: &[Expr], span: Span) -> Result<Val, String> {
-        super::PAKAI_JEMBATAN.store(true, std::sync::atomic::Ordering::Relaxed);
+        if self.jembatan_cadangan { super::JEMBATAN_CADANGAN.store(true, std::sync::atomic::Ordering::Relaxed); }
+        else { super::PAKAI_JEMBATAN.store(true, std::sync::atomic::Ordering::Relaxed); }
         if std::env::var_os("JRGC_LOG_JEMBATAN").is_some() { eprintln!("[jembatan] {}", nama); }
         let geser = usize::from(awalan.is_some());
         let n = args.len() + geser;

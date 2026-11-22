@@ -79,6 +79,9 @@ pub mod apk_bahasa;
 
 /// Program yang sedang dikompilasi memanggil builtin lewat jembatan: pustakanya ikut ditautkan.
 pub static PAKAI_JEMBATAN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// Jembatan yang cuma CADANGAN saat jalan (mis. `json::stringify` atas wadah berisi `any` yang ternyata memuat struct):
+/// tetap ditautkan di biner biasa, tapi tidak membuat kernel `--bebas` menolak programnya.
+pub static JEMBATAN_CADANGAN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -702,7 +705,7 @@ pub fn compile_ir_to_native(
     // penaut cuma menarik anggota arsip untuk simbol yang sudah diminta di sebelah kirinya.
     let jaga = tulis_jaga_stack()?;
     cmd.arg(&clang_input).arg(&jaga).arg(&runtime_lib).arg(&opt_flag);
-    if PAKAI_JEMBATAN.load(std::sync::atomic::Ordering::Relaxed) {
+    if PAKAI_JEMBATAN.load(std::sync::atomic::Ordering::Relaxed) || JEMBATAN_CADANGAN.load(std::sync::atomic::Ordering::Relaxed) {
         let lib = ensure_jembatan(verbose)?;
         let dir = lib.parent().map(|d| d.display().to_string()).unwrap_or_default();
         cmd.arg(&lib).arg(format!("-Wl,-rpath,{}", dir));

@@ -419,7 +419,7 @@ fn bangun_abi(ir_path: &Path, kerja: &Path, abi: &Abi, alat: &Alat, opsi: &OpsiA
     let mut cmd = Command::new(&ndk_clang);
     cmd.arg(&sasaran).arg("-shared").arg("-o").arg(&so).args(&objek).arg(&runtime);
     let mut pustaka = vec![so.clone()];
-    if super::PAKAI_JEMBATAN.load(std::sync::atomic::Ordering::Relaxed) {
+    if super::PAKAI_JEMBATAN.load(std::sync::atomic::Ordering::Relaxed) || super::JEMBATAN_CADANGAN.load(std::sync::atomic::Ordering::Relaxed) {
         let linker = alat.ndk_bin.join(format!("{}{}-clang", abi.clang, API));
         if let Some(k) = crate::host::skrip_tanpa_penafsir(&linker) { return Err(k); }
         let lib = super::ensure_jembatan_untuk(verbose, Some((abi.rust, &linker, &alat.ndk_bin.join("llvm-ar"))))

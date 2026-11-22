@@ -1426,6 +1426,9 @@ impl Codegen {
         let v = super::codegen_any::samakan_dict(&v);
         // Struct/enum/tuple milik program (juga di dalam wadah): penyandi `jrgc` lewat jembatan, yang
         // sama dengan acuan — dulu ditolak saat kompilasi.
+        let cadangan = !matches!(v.ty, JrgType::Struct(_) | JrgType::Enum(_) | JrgType::Tuple(_))
+            && super::codegen_jembatan::mengandung_buram(&v.ty) && !super::codegen_jembatan::buram_pasti(&v.ty);
+        if cadangan { return self.json_tulis_cadangan(&v, indent, span); }
         if matches!(v.ty, JrgType::Struct(_) | JrgType::Enum(_) | JrgType::Tuple(_))
             || super::codegen_jembatan::mengandung_buram(&v.ty) {
             let tempat = self.spill_to_place(&v);
@@ -1449,6 +1452,11 @@ impl Codegen {
         let kotak = kotak.map_err(|_| super::galat::tandai(span, format!(
             "nilai bertipe `{}` belum bisa disandikan jadi JSON di backend `--emit-llvm` — baru nil, bool, \
              angka, teks, array dan dict", v.ty.display_name())))?;
+        self.json_tulis_kotak(&kotak, indent, span)
+    }
+
+    /// Penyandi JSON native (`jrg_json_tulis`) atas kotak bertag.
+    fn json_tulis_kotak(&mut self, kotak: &Val, indent: Option<Option<&Expr>>, span: Span) -> Result<Val, String> {
         let rapi = if indent.is_some() { 1 } else { 0 };
         let lebar = match indent {
             None | Some(None) => "2".to_string(),
@@ -1462,11 +1470,42 @@ impl Codegen {
             }
         };
         self.ensure_extern("declare void @jrg_json_tulis(ptr, i32, i64, ptr, ptr)", "jrg_json_tulis");
-        let tempat = self.spill_to_place(&kotak);
+        let tempat = self.spill_to_place(kotak);
         let outp = self.alloca_raw("jtp.", "ptr", None);
         let outl = self.alloca_raw("jtl.", "i64", None);
         self.emit(format!("call void @jrg_json_tulis(ptr {}, i32 {}, i64 {}, ptr {}, ptr {})", tempat, rapi, lebar, outp, outl));
         self.join_str(&outp, &outl)
+    }
+
+    /// Wadah berisi `any`: penyandi native kalau isinya memang punya padanan JSON (diperiksa saat jalan,
+    /// `jrg_json_ada_buram`), selain itu penyandi `jrgc` lewat jembatan sebagai cadangan.
+    fn json_tulis_cadangan(&mut self, v: &Val, indent: Option<Option<&Expr>>, span: Span) -> Result<Val, String> {
+        let slot = self.alloca_typed("jcs.", &JrgType::Str);
+        let kotak = self.kotak_any(v, span)?;
+        let tk = self.spill_to_place(&kotak);
+        self.ensure_extern("declare i32 @jrg_json_ada_buram(ptr)", "jrg_json_ada_buram");
+        let (r, c) = (self.fresh("jcs."), self.fresh("jcs."));
+        self.emit(format!("{} = call i32 @jrg_json_ada_buram(ptr {})", r, tk));
+        self.emit(format!("{} = icmp ne i32 {}, 0", c, r));
+        let (lj, ln, la) = (self.fresh_label("jcs.jemb."), self.fresh_label("jcs.asli."), self.fresh_label("jcs.akhir."));
+        self.terminate(format!("br i1 {}, label %{}, label %{}", c, lj, ln));
+        self.start_block(lj);
+        let tempat = self.spill_to_place(v);
+        let mut args = vec![self.lokal_sementara(tempat, v.ty.clone(), span)];
+        if let Some(Some(x)) = indent { args.push(x.clone()); }
+        let nama = if indent.is_some() { "json::pretty" } else { "json::stringify" };
+        self.jembatan_cadangan = true;
+        let hasil = self.panggil_jembatan(nama, None, None, &args, span);
+        self.jembatan_cadangan = false;
+        let hj = self.coerce(&hasil?, &JrgType::Str);
+        self.emit(format!("store %JrgStr {}, ptr {}", hj.text, slot));
+        self.terminate(format!("br label %{}", la));
+        self.start_block(ln);
+        let hn = self.json_tulis_kotak(&kotak, indent, span)?;
+        self.emit(format!("store %JrgStr {}, ptr {}", hn.text, slot));
+        self.terminate(format!("br label %{}", la));
+        self.start_block(la);
+        Ok(self.load_place(&slot, &JrgType::Str))
     }
 
     fn nama_masa(&self, nama: &str, n: usize) -> bool {

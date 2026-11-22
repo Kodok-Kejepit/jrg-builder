@@ -290,6 +290,8 @@ pub struct Codegen {
     /// Tipe yang badan fungsi bantunya sedang dibangun: tingkat pertamanya diturunkan sebaris.
     pub(crate) sebaris_sekali: Option<String>,
     pub(crate) pakai_jemb_buram: bool,
+    /// Panggilan jembatan berikutnya cuma cadangan saat jalan (`JEMBATAN_CADANGAN`, bukan `PAKAI_JEMBATAN`).
+    pub(crate) jembatan_cadangan: bool,
     pub(crate) pakai_sama_buram: bool,
     pub(crate) pakai_aritas_buram: bool,
 
@@ -464,6 +466,7 @@ impl Codegen {
             bantu_tipe_ada: std::collections::HashSet::new(),
             sebaris_sekali: None,
             pakai_jemb_buram: false,
+            jembatan_cadangan: false,
             pakai_sama_buram: false,
             pakai_aritas_buram: false,
             kap_tumbuh: HashMap::new(),

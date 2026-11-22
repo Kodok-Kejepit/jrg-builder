@@ -578,6 +578,42 @@ static void jrg_lukis_salin(void *p0, uint32_t l0) {
 
 void jrg_any_salin(JrgAny *a) { jrg_lukis_salin(a, JRG_L_ANY); }
 
+// 1 kalau kotak `a` memuat nilai tanpa padanan JSON native (struct, enum, tuple, handle) di kedalaman mana pun:
+// `json::stringify` atas wadah berisi nilai bertag memilih penyandi native atau cadangan jembatan SAAT JALAN.
+int32_t jrg_json_ada_buram(const JrgAny *a) {
+    JrgLukisDaftar kerja = { 0, 0, 0 };
+    jrg_lukis_dorong(&kerja, a, JRG_L_ANY, 0, 0);
+    int32_t ada = 0;
+    while (kerja.n > 0 && !ada) {
+        JrgLukisTugas t = kerja.isi[--kerja.n];
+        const void *p = t.src;
+        uint32_t l = t.dari, j = l & 15, e = l >> 4;
+        if (j == JRG_L_ANY) {
+            const JrgAny *k = p;
+            int32_t tag = k->tag & 255;
+            if (tag > 8) { ada = 1; break; }
+            uint32_t dalam = jrg_any_lukis(k);
+            if ((dalam & 15) == JRG_L_SLICE || (dalam & 15) == JRG_L_DICT) jrg_lukis_dorong(&kerja, &k->isi, dalam, 0, 0);
+            continue;
+        }
+        if (j == JRG_L_BURAM || (e & 15) == JRG_L_BURAM) { ada = 1; break; }
+        if ((e & 15) == 0) continue;
+        int bersarang = (e & 15) == JRG_L_ANY || (e & 15) == JRG_L_SLICE || (e & 15) == JRG_L_DICT;
+        if (!bersarang) continue;
+        if (j == JRG_L_SLICE) {
+            const JrgSlice *s = p;
+            int64_t uk = jrg_lukis_ukuran(e);
+            for (int64_t i = 0; i < s->len; i++) jrg_lukis_dorong(&kerja, (const char *)s->ptr + i * uk, e, 0, 0);
+        } else if (j == JRG_L_DICT) {
+            const JrgDict *d = p;
+            int64_t lk = jrg_lukis_langkah(e);
+            for (int64_t i = 0; d->ptr && i < d->len; i++) jrg_lukis_dorong(&kerja, (const char *)d->ptr + i * lk + 16, e, 0, 0);
+        }
+    }
+    free(kerja.isi);
+    return ada;
+}
+
 static int64_t jrg_lukis_nama(uint32_t l, char *buf, int64_t n, int64_t maks) {
     const char *t = "?";
     uint32_t dalam = 0;
@@ -906,11 +942,17 @@ void jrg_jembatan_lepas(const JrgAny *v) {
 // Hasil: 0 nilai biasa, 1 `Some`/`Ok`, 2 `None`, 3 `Err`; kegagalan builtinnya menghentikan program.
 int32_t jrg_jembatan(const char *nama, int64_t nl, const JrgAny *args, int64_t n, JrgAny *out) {
     static const JrgKait kait = { jrg_alloc, jrg_dict_tempat, jrg_any_ubah, jrg_buram_jembatan_isi, jrg_ko_serah, jrg_ko_lain, jrg_ko_spawn, jrg_ko_aktor, jrg_ko_siap_lain };
-    // Pustakanya tidak ditautkan: program ini tidak pernah memanggil builtin lewat jembatan,
-    // jadi nilai titipan tidak mungkin ada — yang sampai ke sini tag yang tak dikenal.
+    // Pustakanya tidak ditautkan: cuma kernel `--bebas` yang sampai di sini, lewat jembatan CADANGAN (mis.
+    // `json::stringify` atas wadah berisi `any` yang ternyata memuat struct) — biner biasa selalu menautkannya.
     if (jrg_jembatan_panggil == 0) {
-        static const char pesan[] = "tag nilai tidak dikenal — ini bug di jrgc, bukan di programmu";
-        jrg_panic((const unsigned char *)pesan, (int64_t)(sizeof pesan - 1));
+        static const char awal[] = "`", akhir[] = "` atas nilai ini (struct, enum, tuple atau handle) butuh jembatan builtin "
+            "`jrgc`, dan biner ini tidak membawanya (kernel `--bebas` tanpa sistem operasi)";
+        char pesan[256];
+        int64_t n = 0, nk = nl < 64 ? nl : 64;
+        memcpy(pesan, awal, sizeof awal - 1); n += sizeof awal - 1;
+        memcpy(pesan + n, nama, (size_t)nk); n += nk;
+        memcpy(pesan + n, akhir, sizeof akhir - 1); n += sizeof akhir - 1;
+        jrg_panic((const unsigned char *)pesan, n);
     }
     int32_t r = jrg_jembatan_panggil(nama, nl, args, n, out, &kait);
     if (r < 0) jrg_panic((const unsigned char *)out->isi.s.ptr, out->isi.s.len);

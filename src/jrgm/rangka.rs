@@ -131,17 +131,20 @@ pub(crate) fn cmd_new(name: &str, kind: &str) -> Result<(), String> {
     std::fs::create_dir_all(root.join("src"))
         .map_err(|e| format!("tidak bisa buat direktori project: {}", crate::host::galat_io(&e)))?;
 
-    if !["bin", "lib", "web", "android"].contains(&kind) {
+    if !["bin", "lib", "web", "android", "bebas"].contains(&kind) {
         return Err(format!(
             "jenis project `{}` tidak dikenal — yang ada: `bin` (program biasa), \
-             `lib` (pustaka), `web` (server HTTP yang langsung jalan), `android` (aplikasi HP)", kind));
+             `lib` (pustaka), `web` (server HTTP yang langsung jalan), `android` (aplikasi HP), \
+             `bebas` (kernel tanpa sistem operasi)", kind));
     }
     let entry = if kind == "lib" { "src/lib.jrg" } else { "src/main.jrg" };
     // Kerangka ikut bahasa pesan: dalam bahasa Inggris komentar, nama dan teksnya juga Inggris.
     let en = crate::terjemah::aktif() == crate::terjemah::Bahasa::En;
     use super::rangka_en as en_;
 
-    let entry_content = if en {
+    let entry_content = if kind == "bebas" {
+        rangka_bebas(name, en)
+    } else if en {
         match kind { "web" => en_::web(name), "android" => en_::android(name), "lib" => en_::lib(name), _ => en_::bin(name) }
     } else if kind == "web" {
         rangka_web(name)
@@ -184,6 +187,14 @@ pub fn main() {{
 
     std::fs::write(root.join(entry), entry_content)
         .map_err(|e| format!("tidak bisa tulis entry file: {}", crate::host::galat_io(&e)))?;
+    // Kernel: folder `berkas/` jadi sistem berkas RAM-nya (`jrgm run --bebas` menanamnya).
+    if kind == "bebas" {
+        std::fs::create_dir_all(root.join("berkas"))
+            .map_err(|e| format!("tidak bisa buat direktori berkas: {}", crate::host::galat_io(&e)))?;
+        let salam = if en { "Hello from the RAM file system of a JRG kernel.\n" } else { "Halo dari sistem berkas RAM kernel JRG.\n" };
+        std::fs::write(root.join("berkas").join(if en { "hello.txt" } else { "salam.txt" }), salam)
+            .map_err(|e| format!("tidak bisa tulis berkas contoh: {}", crate::host::galat_io(&e)))?;
+    }
 
     let manifest = if en { en_::manifes_umum(name, entry) } else { format!(
         "[package]\nname        = \"{name}\"\nversion     = \"0.1.0\"\n\
@@ -265,4 +276,68 @@ pub fn main() {{
 
     crate::ecetak_t!("Created `{}` ({}) package", name, kind);
     Ok(())
+}
+
+/// Kerangka kernel `jrgm new nama --bebas`: cangkang kecil yang jalan tanpa sistem operasi (`jrgm run --bebas`).
+fn rangka_bebas(name: &str, en: bool) -> String {
+    if en {
+        return format!(r#"// {name} — a JRG kernel: boots without an operating system.
+//   jrgm run --bebas                                   boot it in QEMU (input and output over serial)
+//   jrgc src/main.jrg --bebas --berkas berkas --img {name}.img   UEFI disk image for a USB stick
+package main
+
+pub fn main() {{
+    wok("{name}: a JRG kernel. Type `help`.")
+    loop {{
+        wok_("> ")
+        let line = tok().trim()
+        let parts = line.split(" ")
+        match parts[0] {{
+            "help" => wok("commands: files, read <name>, time, cpu, exit"),
+            "files" => wok(fs::ls("/")),
+            "read" => match fs::try_read(line.substr(5)) {{
+                Ok(text) => wok_(text),
+                Err(e) => wok("error:", e),
+            }},
+            "time" => wok("running for", time::now_ms(), "ms since 1970"),
+            "cpu" => {{
+                let (top, _, _, _) = asli::cpuid(0, 0)
+                wok("highest CPUID leaf:", top)
+            }},
+            "exit" | "" => break,
+            other => wok("unknown command:", other),
+        }}
+    }}
+}}
+"#);
+    }
+    format!(r#"// {name} — kernel JRG: boot tanpa sistem operasi.
+//   jrgm run --bebas                                   boot di QEMU (masukan dan keluaran lewat serial)
+//   jrgc src/main.jrg --bebas --berkas berkas --img {name}.img   image disk UEFI untuk flashdisk
+package main
+
+pub fn main() {{
+    wok("{name}: kernel JRG. Ketik `bantuan`.")
+    loop {{
+        wok_("> ")
+        let baris = tok().trim()
+        let bagian = baris.split(" ")
+        match bagian[0] {{
+            "bantuan" => wok("perintah: berkas, baca <nama>, waktu, cpu, keluar"),
+            "berkas" => wok(fs::ls("/")),
+            "baca" => match fs::try_read(baris.substr(5)) {{
+                Ok(isi) => wok_(isi),
+                Err(e) => wok("galat:", e),
+            }},
+            "waktu" => wok("menyala sejak", time::now_ms(), "ms sejak 1970"),
+            "cpu" => {{
+                let (puncak, _, _, _) = asli::cpuid(0, 0)
+                wok("leaf CPUID tertinggi:", puncak)
+            }},
+            "keluar" | "" => break,
+            lain => wok("perintah tidak dikenal:", lain),
+        }}
+    }}
+}}
+"#)
 }

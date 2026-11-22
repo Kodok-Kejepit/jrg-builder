@@ -55,14 +55,14 @@ pub fn utama(argumen: Vec<String>) {
     }
 
     let result = match cli.command {
-        JrgmCommand::New    { name, kind, android, bahasa: Some(b) }
+        JrgmCommand::New    { name, kind, android, bebas, bahasa: Some(b) }
             if !b.trim().eq_ignore_ascii_case("jrg")
-            => if android || kind != "bin" {
+            => if android || bebas || kind != "bin" {
                 Err("`--bahasa` tidak bisa digabung dengan `--kind`/`--android`: rangka bahasa lain cuma program biasa".into())
             } else { bahasa::resep(&b).and_then(|r| bahasa::rangka(&name, r)) },
 
-        JrgmCommand::New    { name, kind, android, .. }
-            => cmd_new(&name, if android { "android" } else { &kind }),
+        JrgmCommand::New    { name, kind, android, bebas, .. }
+            => cmd_new(&name, if android { "android" } else if bebas { "bebas" } else { &kind }),
 
         JrgmCommand::Apk    { abi, output, rilis, aab, verbose }
             => android::cmd_apk(abi.as_deref(), output.as_deref(), rilis, aab, verbose),
