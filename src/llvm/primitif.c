@@ -591,7 +591,7 @@ int32_t jrg_json_ada_buram(const JrgAny *a) {
         if (j == JRG_L_ANY) {
             const JrgAny *k = p;
             int32_t tag = k->tag & 255;
-            if (tag > 8) { ada = 1; break; }
+            if (tag > 8 && tag != 10) { ada = 1; break; }   /* buram milik program: kait `@jrg_buram_ke_json` */
             uint32_t dalam = jrg_any_lukis(k);
             if ((dalam & 15) == JRG_L_SLICE || (dalam & 15) == JRG_L_DICT) jrg_lukis_dorong(&kerja, &k->isi, dalam, 0, 0);
             continue;

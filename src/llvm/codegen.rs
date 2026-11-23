@@ -278,6 +278,11 @@ pub struct Codegen {
     pub(crate) sama_terpancar: usize,
     /// Penyeberang tipe buram ke jembatan (struct jadi dict bertanda), dipancarkan kalau dipakai.
     pub(crate) jemb_terpancar: usize,
+    /// `json::` atas nilai buram: `@json.buram.N` yang sudah dipancarkan, dan apakah kaitnya dipakai.
+    pub(crate) json_terpancar: usize,
+    pub(crate) pakai_json_buram: bool,
+    /// Fungsi buatan kompilator (`@json.buram.N`, `@jemb.buram.N`) membaca seluruh field, privat juga, seperti acuan.
+    pub(crate) baca_semua_field: bool,
     /// Adaptor nilai fungsi yang sudah dibuat, per pasangan tipe.
     pub(crate) adaptor_ada: HashMap<String, String>,
     pub(crate) desk_fn: Vec<super::codegen_desk::DeskFn>,
@@ -457,6 +462,9 @@ impl Codegen {
             pakai_buram: false,
             sama_terpancar: 0,
             jemb_terpancar: 0,
+            json_terpancar: 0,
+            pakai_json_buram: false,
+            baca_semua_field: false,
             adaptor_ada: HashMap::new(),
             desk_fn: Vec::new(),
             situs_bernama: Vec::new(),
@@ -1107,6 +1115,11 @@ impl Codegen {
                     self.jemb_terpancar += 1;
                     if let Err(e) = self.pancarkan_buram_jembatan(no) { self.errors.push(e); }
                 }
+                None if self.pakai_json_buram && self.json_terpancar < self.tipe_buram.len() => {
+                    let no = self.json_terpancar;
+                    self.json_terpancar += 1;
+                    if let Err(e) = self.pancarkan_buram_json(no) { self.errors.push(e); }
+                }
                 None if self.ada_keluarga_tertunda() => {
                     if let Err(e) = self.pancarkan_keluarga() { self.errors.push(e); }
                 }
@@ -1206,6 +1219,9 @@ impl Codegen {
         }
         if self.pakai_jemb_buram {
             out.push_str(&self.definisi_buram_jembatan());
+        }
+        if self.pakai_json_buram {
+            out.push_str(&self.definisi_buram_json());
         }
         out.push_str(&self.definisi_metode_dinamis());
         out.push_str(&self.definisi_keluarga());

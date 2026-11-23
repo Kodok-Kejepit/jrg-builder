@@ -368,6 +368,7 @@ impl Codegen {
         let t = self.tipe_buram[no].clone();
         let nol = Span { lo: crate::lexer::BytePos(0), hi: crate::lexer::BytePos(0), file_id: 0 };
         self.mulai_fungsi_kosong(JrgType::Any);
+        let ruang = std::mem::replace(&mut self.baca_semua_field, true);
         let k = if matches!(t, JrgType::Struct(_) | JrgType::Tuple(_)) {
             let v = self.load_place("%p", &t);
             let tempat = self.spill_to_place(&v);
@@ -403,6 +404,7 @@ impl Codegen {
             self.emit(format!("{} = insertvalue %JrgAny {}, i64 {}, 1, 0", c, b, pi));
             Val { text: c, ty: JrgType::Any }
         };
+        self.baca_semua_field = ruang;
         self.terminate(format!("ret %JrgAny {}", k.text));
         let badan = self.take_function_body();
         self.tambah_definisi(format!("define internal %JrgAny @jemb.buram.{}(ptr %p) {{\n{}}}\n", no + 1, badan));
@@ -460,6 +462,114 @@ impl Codegen {
         }
         self.start_block(usai);
         Ok(self.load_place(&hasil, &JrgType::Any))
+    }
+
+    /// Badan `@json.buram.N(ptr) -> %JrgAny`: nilai buram ke-N sebagai kotak berbentuk JSON acuan
+    /// (`src/stdlib/json.rs`): struct = objek field, tuple = larik, varian telanjang = teks, bermuatan = `{"V": isi}`.
+    /// Tanpa kunci penanda, jadi dict pemakai tidak bisa menyamar sebagai struct di sini (kelas AGI-20261120-10).
+    pub(crate) fn pancarkan_buram_json(&mut self, no: usize) -> Result<(), String> {
+        let t = self.tipe_buram[no].clone();
+        let nol = Span { lo: crate::lexer::BytePos(0), hi: crate::lexer::BytePos(0), file_id: 0 };
+        self.mulai_fungsi_kosong(JrgType::Any);
+        let teks = |s: &str| Expr::Literal(LitKind::Str(s.to_string()), nol);
+        let pasang = |k: Expr, v: Expr| Expr::Array { elems: vec![k, v], span: nol };
+        let dari_pasangan = |isi: Vec<Expr>| Expr::Call { func: Box::new(Expr::PathExpr {
+            segments: vec![String::new(), "dict".into(), "from_pairs".into()], span: nol }),
+            args: vec![Expr::Array { elems: isi, span: nol }], span: nol };
+        let ruang = std::mem::replace(&mut self.baca_semua_field, true);
+        let k = match &t {
+            JrgType::Struct(_) | JrgType::Tuple(_) if !matches!(&t, JrgType::Struct(n) if !self.types.structs.contains_key(n)) => {
+                let v = self.load_place("%p", &t);
+                let tempat = self.spill_to_place(&v);
+                let e = self.lokal_sementara(tempat, t.clone(), nol);
+                let field = |f: String| Expr::Field { obj: Box::new(e.clone()), field: f, span: nol };
+                let ex = match &t {
+                    JrgType::Tuple(ts) => Some(Expr::Array { elems: (0..ts.len()).map(|i| field(i.to_string())).collect(), span: nol }),
+                    _ => {
+                        let nama = if let JrgType::Struct(n) = &t { n.clone() } else { String::new() };
+                        let fs: Vec<String> = self.types.structs.get(&nama).map(|l| l.fields.iter().map(|(f, _)| f.clone()).collect()).unwrap_or_default();
+                        (!fs.is_empty()).then(|| dari_pasangan(fs.into_iter().map(|f| pasang(teks(&f), field(f))).collect()))
+                    }
+                };
+                match ex {
+                    Some(ex) => { let d = self.codegen_expr(&ex, None)?; let d = super::codegen_any::samakan_dict(&d); self.kotak_any(&d, nol)? }
+                    None => self.kotak_any(&Val { text: "zeroinitializer".into(), ty: JrgType::Dict(Box::new(JrgType::Any)) }, nol)?,
+                }
+            }
+            JrgType::Enum(en) => self.enum_ke_json(en, &t, nol)?,
+            lain => {
+                let (apa, jalan) = match lain {
+                    JrgType::Fn(..) => ("fungsi".to_string(), crate::json_inti::JALAN_FUNGSI),
+                    JrgType::Chan(_) => ("channel".to_string(), crate::json_inti::JALAN_CHANNEL),
+                    JrgType::Sinkron(m) => ((if *m { "mutex" } else { "atomic" }).to_string(), crate::json_inti::JALAN_PEGANGAN),
+                    JrgType::Masa(_, tugas) => ((if *tugas { "Task" } else { "Future" }).to_string(),
+                        "kirim hasilnya (`future::await`, `task::join`), bukan tugasnya"),
+                    lain => (lain.display_name(), "kirim datanya, bukan handle-nya"),
+                };
+                self.panik(&crate::json_inti::pesan_tak_bisa(&apa, jalan));
+                Val { text: "zeroinitializer".into(), ty: JrgType::Any }
+            }
+        };
+        self.baca_semua_field = ruang;
+        if !self.is_terminated() { self.terminate(format!("ret %JrgAny {}", k.text)); }
+        let badan = self.take_function_body();
+        self.tambah_definisi(format!("define internal %JrgAny @json.buram.{}(ptr %p) {{\n{}}}\n", no + 1, badan));
+        self.selesai_fungsi_kosong();
+        Ok(())
+    }
+
+    fn enum_ke_json(&mut self, en: &str, t: &JrgType, nol: Span) -> Result<Val, String> {
+        use super::types::EnumPayload;
+        let layout = self.types.enums.get(en).cloned().ok_or("enum hilang")?;
+        let hasil = self.alloca_typed("jje.", &JrgType::Any);
+        let tag = self.get_tag("%p", t);
+        let usai = self.fresh_label("jje.usai.");
+        let label: Vec<String> = layout.variants.iter().map(|_| self.fresh_label("jje.v.")).collect();
+        let kasus: Vec<String> = layout.variants.iter().zip(&label).map(|(v, l)| format!("i32 {}, label %{}", v.tag, l)).collect();
+        self.terminate(format!("switch i32 {}, label %{} [ {} ]", tag, usai, kasus.join(" ")));
+        let teks = |s: &str| Expr::Literal(LitKind::Str(s.to_string()), nol);
+        let pasang = |k: Expr, v: Expr| Expr::Array { elems: vec![k, v], span: nol };
+        let dari_pasangan = |isi: Vec<Expr>| Expr::Call { func: Box::new(Expr::PathExpr {
+            segments: vec![String::new(), "dict".into(), "from_pairs".into()], span: nol }),
+            args: vec![Expr::Array { elems: isi, span: nol }], span: nol };
+        for (v, l) in layout.variants.iter().zip(&label) {
+            self.start_block(l.clone());
+            let ps = v.payload.as_llvm_struct();
+            let mut nilai = Vec::new();
+            for (i, ft) in v.payload.field_types().iter().enumerate() {
+                let x = self.get_payload_field("%p", t, &ps, i, ft);
+                let tempat = self.spill_to_place(&x);
+                nilai.push(self.lokal_sementara(tempat, x.ty.clone(), nol));
+            }
+            let ex = match &v.payload {
+                EnumPayload::Unit => teks(&v.name),
+                EnumPayload::Tuple(_) if nilai.len() == 1 => dari_pasangan(vec![pasang(teks(&v.name), nilai.pop().unwrap())]),
+                EnumPayload::Tuple(_) => dari_pasangan(vec![pasang(teks(&v.name), Expr::Array { elems: nilai, span: nol })]),
+                EnumPayload::Struct(fs) => {
+                    let isi = fs.iter().zip(nilai).map(|((f, _), x)| pasang(teks(f), x)).collect();
+                    dari_pasangan(vec![pasang(teks(&v.name), dari_pasangan(isi))])
+                }
+            };
+            let d = self.codegen_expr(&ex, None)?;
+            let d = super::codegen_any::samakan_dict(&d);
+            let k = self.kotak_any(&d, nol)?;
+            self.emit(format!("store %JrgAny {}, ptr {}", k.text, hasil));
+            if !self.is_terminated() { self.terminate(format!("br label %{}", usai)); }
+        }
+        self.start_block(usai);
+        Ok(self.load_place(&hasil, &JrgType::Any))
+    }
+
+    /// `@jrg_buram_ke_json(a, out)`: kait penyandi JSON runtime; nilai buram lewat `@json.buram.N`, sisanya apa adanya.
+    pub(crate) fn definisi_buram_json(&self) -> String {
+        let mut s = String::from("define void @jrg_buram_ke_json(ptr %a, ptr %out) {\nentry:\n  %v = load %JrgAny, ptr %a\n  \
+            %w = extractvalue %JrgAny %v, 0\n  %p0 = extractvalue %JrgAny %v, 1, 0\n  %p = inttoptr i64 %p0 to ptr\n  switch i32 %w, label %lain [");
+        let mut badan = String::new();
+        for i in 0..self.json_terpancar {
+            s.push_str(&format!(" i32 {}, label %b{}", super::codegen_any::TAG_BURAM | ((i as i32 + 1) << 8), i + 1));
+            badan.push_str(&format!("b{0}:\n  %r{0} = call %JrgAny @json.buram.{0}(ptr %p)\n  store %JrgAny %r{0}, ptr %out\n  ret void\n", i + 1));
+        }
+        format!("{} ]\n{}lain:\n  store %JrgAny %v, ptr %out\n  ret void\n}}\n", s, badan)
     }
 
     /// `@jrg_buram_ke_jembatan(kotak)`: kotak bertipe buram lewat penyeberangnya, sisanya apa adanya.

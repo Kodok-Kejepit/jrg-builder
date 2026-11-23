@@ -2886,8 +2886,18 @@ mod json_llvm {
 
     enum Bingkai { Arr(Vec<Json>, *const KotakAny, usize, usize), Obj(Vec<(String, Json)>, *mut u8, usize, usize, String) }
 
+    /// Kait codegen (`@jrg_buram_ke_json`): nilai buram milik program (struct/enum/tuple) jadi kotak berbentuk JSON.
+    type KaitBuram = Option<unsafe extern "C" fn(*const KotakAny, *mut KotakAny)>;
+
     /// Daun langsung jadi `Json`; array/dict mendorong bingkainya dan menjawab `None`.
-    unsafe fn turun(a: &KotakAny, tumpuk: &mut Vec<Bingkai>) -> Option<Json> {
+    unsafe fn turun(a: &KotakAny, tumpuk: &mut Vec<Bingkai>, kait: KaitBuram) -> Option<Json> {
+        if a.tag & 255 == 10 {
+            if let Some(f) = kait {
+                let mut o = KotakAny { tag: 0, sela: 0, a: 0, b: 0 };
+                f(a, &mut o);
+                if o.tag & 255 != 10 { return turun(&o, tumpuk, kait); }
+            }
+        }
         Some(match a.tag & 255 {
             1 => Json::Bool(a.a & 255 != 0),
             2 => Json::Int(a.a as i64 as i128),
@@ -2911,9 +2921,9 @@ mod json_llvm {
     }
 
     /// Iteratif (AGI-20261118-04): nilai bersarang berapa pun dalam tidak menghabiskan stack korutin.
-    unsafe fn dari_any(akar: &KotakAny) -> Json {
+    unsafe fn dari_any(akar: &KotakAny, kait: KaitBuram) -> Json {
         let mut tumpuk: Vec<Bingkai> = Vec::new();
-        let mut naik = turun(akar, &mut tumpuk);
+        let mut naik = turun(akar, &mut tumpuk, kait);
         loop {
             if let Some(j) = naik.take() {
                 match tumpuk.last_mut() {
@@ -2934,7 +2944,7 @@ mod json_llvm {
                 _ => None,
             };
             naik = match anak {
-                Some(c) => turun(&*c, &mut tumpuk),
+                Some(c) => turun(&*c, &mut tumpuk, kait),
                 None => match tumpuk.pop() {
                     Some(Bingkai::Arr(v, ..)) => Some(Json::Arr(v)),
                     Some(Bingkai::Obj(v, ..)) => Some(Json::Obj(v)),
@@ -2955,11 +2965,12 @@ mod json_llvm {
 
     /// `rapi == 0`: rapat (`json::stringify`); selain itu rapi selebar `indent` (`json::pretty`).
     #[no_mangle]
-    pub extern "C" fn jrg_json_tulis(a: *const KotakAny, rapi: i32, indent: i64, out_ptr: *mut *const u8, out_len: *mut i64) {
+    pub extern "C" fn jrg_json_tulis(a: *const KotakAny, rapi: i32, indent: i64, out_ptr: *mut *const u8, out_len: *mut i64,
+                                     kait: KaitBuram) {
         if rapi != 0 && !(0..=16).contains(&indent) {
             gagal(format!("json::pretty: lebar indentasi {} di luar jangkauan 0 sampai 16", indent));
         }
-        let j = unsafe { dari_any(&*a) };
+        let j = unsafe { dari_any(&*a, kait) };
         let lebar = if rapi == 0 { None } else { Some(indent as usize) };
         let hasil = json_inti::tulis(&j, lebar, 0);
         json_inti::lepas(j);

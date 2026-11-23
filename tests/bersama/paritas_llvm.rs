@@ -5808,4 +5808,35 @@ fn main() {
     p(tangkap(|| crypto::aes_encrypt("x", 5, iv)))
 }
 "#),
+    ("json:: atas struct/enum/tuple native (kait @jrg_buram_ke_json, tanpa jembatan), field privat ikut", r#"
+struct Kosong {}
+struct FF { f: fn(int) -> int }
+enum E { Dua(int, string), Rek { a: int, b: Option<int> }, U }
+fn kedua() {
+    wok(json::stringify(E::Dua(1, "x")), json::stringify(E::Rek { a: 1, b: None }), json::stringify(E::U))
+    wok(json::stringify(Kosong {}), json::stringify([(1, 2.5), (3, 4.0)]), json::stringify(((1, 2), "a")))
+    wok(json::stringify({"k": [Some(1), None]}))
+    let g = tangkap(|| json::stringify(FF { f: |x| x }))
+    match g { Ok(v) => wok(v), Err(e) => wok(e.pesan) }
+    let h = tangkap(|| json::stringify([Future::new(|| 1)]))
+    match h { Ok(v) => wok(v), Err(e) => wok(e.pesan) }
+}
+
+struct Titik { x: int, y: float, nama: string }
+struct Kotak { a: Titik, isi: []Titik, tanda: Option<int> }
+enum Bentuk { Bulat(float), Persegi { s: int }, Kosong }
+fn main() {
+    kedua()
+    let t = Titik { x: 1, y: 2.5, nama: "a\"b" }
+    wok(json::stringify(t))
+    wok(json::stringify(Kotak { a: t, isi: [t, t], tanda: Some(3) }))
+    wok(json::stringify(Kotak { a: t, isi: [], tanda: None }))
+    wok(json::stringify((1, "x", true)))
+    wok(json::stringify([Bentuk::Bulat(1.5), Bentuk::Persegi { s: 2 }, Bentuk::Kosong]))
+    wok(json::pretty(t, 2))
+    wok(json::stringify(Ok(5)), json::stringify(Err("e")))
+    let d = {"p": t}
+    wok(json::stringify(d))
+}
+"#),
 ];

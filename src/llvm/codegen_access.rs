@@ -632,8 +632,10 @@ impl Codegen {
                 };
                 // Satu pintu untuk BACA dan TULIS: `codegen_field` dan jalur target
                 // penugasan dua-duanya lewat sini, jadi penegakan visibilitas tidak bisa …
-                crate::vm::visibilitas::periksa(super::generik::dasar(name), field, self.cur_self_ty.as_deref())
-                    .map_err(|e| crate::llvm::galat::tandai(span, e))?;
+                if !self.baca_semua_field {
+                    crate::vm::visibilitas::periksa(super::generik::dasar(name), field, self.cur_self_ty.as_deref())
+                        .map_err(|e| crate::llvm::galat::tandai(span, e))?;
+                }
                 let fty = layout.fields[idx].1.clone();
                 let r = self.fresh("fld.");
                 self.emit(format!("{} = getelementptr {}, ptr {}, i32 0, i32 {}", r, oty.llvm_ty(), optr, idx));

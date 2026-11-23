@@ -1437,13 +1437,13 @@ impl Codegen {
         let cadangan = !matches!(v.ty, JrgType::Struct(_) | JrgType::Enum(_) | JrgType::Tuple(_))
             && super::codegen_jembatan::mengandung_buram(&v.ty) && !super::codegen_jembatan::buram_pasti(&v.ty);
         if cadangan { return self.json_tulis_cadangan(&v, indent, span); }
+        // Struct/enum/tuple milik program (juga di dalam wadah): penyandi native, nilai buramnya lewat kait
+        // `@jrg_buram_ke_json` (`pancarkan_buram_json`) — dulu lewat jembatan, jadi tidak ada di kernel `--bebas`.
         if matches!(v.ty, JrgType::Struct(_) | JrgType::Enum(_) | JrgType::Tuple(_))
             || super::codegen_jembatan::mengandung_buram(&v.ty) {
-            let tempat = self.spill_to_place(&v);
-            let mut args = vec![self.lokal_sementara(tempat, v.ty.clone(), span)];
-            if let Some(Some(x)) = indent { args.push(x.clone()); }
-            let nama = if indent.is_some() { "json::pretty" } else { "json::stringify" };
-            return self.panggil_jembatan(nama, None, None, &args, span);
+            self.pakai_json_buram = true;
+            let kotak = self.kotak_any(&v, span)?;
+            return self.json_tulis_kotak(&kotak, indent, span);
         }
         let buram = super::codegen_any::tag_untuk(&v.ty) == Some(super::codegen_any::TAG_BURAM);
         let kotak = if buram { Err(String::new()) } else { self.kotak_any(&v, span) };
@@ -1477,11 +1477,12 @@ impl Codegen {
                 n.text
             }
         };
-        self.ensure_extern("declare void @jrg_json_tulis(ptr, i32, i64, ptr, ptr)", "jrg_json_tulis");
+        self.ensure_extern("declare void @jrg_json_tulis(ptr, i32, i64, ptr, ptr, ptr)", "jrg_json_tulis");
         let tempat = self.spill_to_place(kotak);
         let outp = self.alloca_raw("jtp.", "ptr", None);
         let outl = self.alloca_raw("jtl.", "i64", None);
-        self.emit(format!("call void @jrg_json_tulis(ptr {}, i32 {}, i64 {}, ptr {}, ptr {})", tempat, rapi, lebar, outp, outl));
+        let kait = if self.pakai_json_buram { "@jrg_buram_ke_json" } else { "null" };
+        self.emit(format!("call void @jrg_json_tulis(ptr {}, i32 {}, i64 {}, ptr {}, ptr {}, ptr {})", tempat, rapi, lebar, outp, outl, kait));
         self.join_str(&outp, &outl)
     }
 
@@ -1509,6 +1510,7 @@ impl Codegen {
         self.emit(format!("store %JrgStr {}, ptr {}", hj.text, slot));
         self.terminate(format!("br label %{}", la));
         self.start_block(ln);
+        self.pakai_json_buram = true;
         let hn = self.json_tulis_kotak(&kotak, indent, span)?;
         self.emit(format!("store %JrgStr {}, ptr {}", hn.text, slot));
         self.terminate(format!("br label %{}", la));
