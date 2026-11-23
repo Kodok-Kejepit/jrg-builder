@@ -61,6 +61,15 @@ impl Codegen {
     /// `<-c`.
     pub fn codegen_recv(&mut self, chan: &Expr, span: Span) -> Result<Val, String> {
         let (cv, ety) = self.chan_dari(chan, "`<-` (terima)", span)?;
+        // Channel yang tidak pernah dikirimi (`Chan(!)`): yang diterima bertipe bebas — bertag, `nil` saat ditutup
+        // (dulu `return <-ch` di closure ditolak saat kompilasi, AGI-20261120-24).
+        if ety == JrgType::Never {
+            self.ensure_extern("declare void @jrg_chan_recv(ptr, ptr, i64)", "jrg_chan_recv");
+            let slot = self.alloca_typed("recv.", &JrgType::Any);
+            self.emit(format!("store %JrgAny zeroinitializer, ptr {}", slot));
+            self.emit(format!("call void @jrg_chan_recv(ptr {}, ptr {}, i64 0)", cv.text, slot));
+            return Ok(self.load_place(&slot, &JrgType::Any));
+        }
         let slot = self.alloca_typed("recv.", &ety);
         self.ensure_extern("declare void @jrg_chan_recv(ptr, ptr, i64)", "jrg_chan_recv");
         self.emit(format!("call void @jrg_chan_recv(ptr {}, ptr {}, i64 {})", cv.text, slot, self.types.sizeof(&ety)));

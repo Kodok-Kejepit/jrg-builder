@@ -203,10 +203,6 @@ impl Codegen {
                 Expr::Literal(LitKind::Str(_), _) | Expr::Literal(LitKind::RawStr(_), _) => JrgType::Str,
                 Expr::Literal(LitKind::Nil, _) => JrgType::Nil,
                 Expr::Unary { op: UnaryOp::Neg, expr, .. } => return tipe_literal(expr),
-                // Literal dict (`{"a": 1}` diturunkan parser jadi `::dict::from_pairs`).
-                Expr::Call { func, .. } if matches!(func.as_ref(), Expr::PathExpr { segments, .. }
-                    if segments.last().map(|x| x.as_str()) == Some("from_pairs")) =>
-                    JrgType::Dict(Box::new(JrgType::Any)),
                 Expr::Array { elems, .. } => {
                     let ts: Option<Vec<JrgType>> = elems.iter().map(tipe_literal).collect();
                     let ts = ts?;
@@ -219,6 +215,10 @@ impl Codegen {
         /// Tipe elemen untuk literal-literal ini: sama → itu; array beda panjang → slice; lainnya bertag.
         fn satukan_literal(ts: &[JrgType]) -> JrgType {
             if ts.iter().all(|t| *t == ts[0]) { return ts[0].clone(); }
+            // Dict beda isi (`[{"x": 1}, {"y": {"z": 2}}]`): dict bernilai bertag, bukan dipaksa ke yang pertama.
+            if ts.iter().all(|t| matches!(t, JrgType::Dict(_) | JrgType::DictCampur(_))) {
+                return JrgType::Dict(Box::new(JrgType::Any));
+            }
             let isi: Option<Vec<JrgType>> = ts.iter().map(|t| match t {
                 JrgType::Array(e, _) => Some(super::codegen_any::luruh(e)),
                 _ => None,
@@ -281,7 +281,11 @@ impl Codegen {
         // Literal array berbeda panjang (`[[t], [t, t]]` atas variabel/tuple) jadi slice; dulu ditolak `[2]T` vs `[1]T`.
         let panjang = |e: &Expr| match inti(e) { Expr::Array { elems, .. } => Some(elems.len()), _ => None };
         let beda_panjang = elems.iter().all(|e| panjang(e).is_some()) && elems.iter().any(|e| panjang(e) != panjang(&elems[0]));
+        // Literal dict (`{"a": 1}` = `::dict::from_pairs`): isinya baru terbaca kalau diturunkan.
+        let lit_dict = |e: &Expr| matches!(inti(e), Expr::Call { func, .. } if matches!(func.as_ref(),
+            Expr::PathExpr { segments, .. } if segments.last().map(|x| x.as_str()) == Some("from_pairs")));
         let beragam = elems.len() > 1 && (elems.iter().any(|e| ragam(e) != ragam(&elems[0])) || beda_panjang
+            || elems.iter().all(lit_dict)
             || elems.iter().any(|e| nama_struct(e).is_some() && nama_struct(e) != nama_struct(&elems[0]))
             || beda_tipe);
         // Petunjuk dari luar tidak menang atas isi yang TIDAK bisa menjadi tipenya: struct dan

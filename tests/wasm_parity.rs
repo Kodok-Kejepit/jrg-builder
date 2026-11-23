@@ -154,7 +154,8 @@ fn builtin_jembatan_lewat_wasm() {
 #[test]
 fn goroutine_berganti_di_callback_jembatan_ditolak_keras() {
     let kerja = folder("jembatan-ganti");
-    let src = "fn main() {\n    let c = Chan::new()\n    spawn { wok(<-c) }\n    let p = ptr::new(1)\n    wok(\"awal\")\n    ptr::update(p, |x| { c <- x; x + 1 })\n    wok(ptr::get(p))\n}\n";
+    // `ptr::update` dulu dipakai di sini; sejak #1166 `ptr::` native, jadi callback-nya `dok::num_solve`.
+    let src = "fn main() {\n    let c = Chan::new()\n    spawn { wok(<-c) }\n    wok(\"awal\")\n    wok(dok::num_solve(|x: float| { c <- 1; x * x - 2.0 }, 0.0, 2.0))\n}\n";
     let p = tulis(&kerja, "ganti.jrg", src);
     let Some(w) = wasm(&p, &kerja) else { return };
     let _ = std::fs::remove_dir_all(&kerja);

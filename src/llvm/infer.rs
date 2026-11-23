@@ -456,6 +456,12 @@ impl Codegen {
 
             Expr::Unary { op: UnaryOp::Neg, expr, .. } => self.tipe_ekspresi(expr, lokal, subst, nama_diri),
             Expr::Unary { op: UnaryOp::Not, .. } => Some(JrgType::Bool),
+            // `<-ch`: isi channel-nya; channel yang tak pernah dikirimi menjawab nilai bertag (`codegen_recv`).
+            Expr::Recv { chan, .. } => match self.tipe_ekspresi(chan, lokal, subst, nama_diri)? {
+                JrgType::Chan(e) if *e == JrgType::Never => Some(JrgType::Any),
+                JrgType::Chan(e) => Some(*e),
+                _ => None,
+            },
 
             Expr::Binary { op, lhs, rhs, .. } => match op {
                 BinaryOp::Eq | BinaryOp::Ne | BinaryOp::Lt | BinaryOp::Le

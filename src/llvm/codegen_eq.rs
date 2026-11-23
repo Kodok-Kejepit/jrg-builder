@@ -471,8 +471,28 @@ impl Codegen {
                 self.emit(format!("{} = and i1 {}, {}", dua, sp, ad));
                 let (l_tup, l_lain) = (self.fresh_label("anyeq.tup."), self.fresh_label("anyeq.lain."));
                 self.terminate(format!("br i1 {}, label %{}, label %{}, !prof !0", dua, l_tup, l_lain));
+                // Keduanya dibuka jadi larik bertag berisi elemennya, lalu dibandingkan seperti larik (AGI-20261120-23).
                 self.start_block(l_tup);
-                self.panik("membandingkan dua tuple yang tipe elemennya berbeda di tempat campur tipe belum didukung backend --emit-llvm");
+                self.pakai_tup_larik = true;
+                if !self.is_fn_emitted_or_queued("jrg_sama_daun") {
+                    self.tandai_fn_terpakai("jrg_sama_daun");
+                    self.antre_fn(super::codegen::KerjaFn::SamaDaun);
+                }
+                let (xa, xb) = (self.fresh("aqt."), self.fresh("aqt."));
+                self.emit(format!("{} = call %JrgAny @jrg_tuple_ke_larik(i32 {}, ptr {})", xa, lw, lp));
+                self.emit(format!("{} = call %JrgAny @jrg_tuple_ke_larik(i32 {}, ptr {})", xb, rw, rp));
+                let (ta, tb) = (self.alloca_typed("aqta.", &JrgType::Any), self.alloca_typed("aqtb.", &JrgType::Any));
+                self.emit(format!("store %JrgAny {}, ptr {}", xa, ta));
+                self.emit(format!("store %JrgAny {}, ptr {}", xb, tb));
+                self.ensure_extern("declare i8 @jrg_sama_lukis(ptr, ptr, ptr, ptr, i64)", "jrg_sama_lukis");
+                let pesan = self.intern_string(
+                    "membandingkan array/dict berisi nilai buram dari tempat campur tipe belum didukung backend --emit-llvm");
+                let (pp, pl) = self.split_str(&pesan);
+                let r = self.fresh("aqtr.");
+                self.emit(format!("{} = call i8 @jrg_sama_lukis(ptr {}, ptr {}, ptr @jrg_sama_daun, ptr {}, i64 {})",
+                                  r, ta, tb, pp, pl));
+                self.dan_ke_slot(slot, &Val { text: r, ty: JrgType::Bool });
+                self.terminate(format!("br label %{}", l_gab));
                 self.start_block(l_lain);
                 self.emit(format!("store i8 0, ptr {}", slot));
                 self.terminate(format!("br label %{}", l_gab));
@@ -674,5 +694,46 @@ impl Codegen {
 
         self.start_block(end_lbl);
         Ok(())
+    }
+
+    /// `@tup.larik.N(ptr) -> %JrgAny`: tuple buram ke-N sebagai larik bertag berisi elemennya; yang bukan tuple nil.
+    pub(crate) fn pancarkan_tup_larik(&mut self, no: usize) -> Result<(), String> {
+        let t = self.tipe_buram[no].clone();
+        let nol = Span { lo: crate::lexer::BytePos(0), hi: crate::lexer::BytePos(0), file_id: 0 };
+        self.mulai_fungsi_kosong(JrgType::Any);
+        let k = match &t {
+            JrgType::Tuple(ts) if !ts.is_empty() => {
+                let n = ts.len().to_string();
+                let buf = self.buffer_baru(&n, &JrgType::Any);
+                for (i, et) in ts.iter().enumerate() {
+                    let gp = self.fresh("tupl.");
+                    self.emit(format!("{} = getelementptr {}, ptr %p, i32 0, i32 {}", gp, t.llvm_ty(), i));
+                    let x = self.load_place(&gp, et);
+                    let x = self.kotak_any(&x, nol)?;
+                    let dp = self.fresh("tupl.");
+                    self.emit(format!("{} = getelementptr %JrgAny, ptr {}, i64 {}", dp, buf, i));
+                    self.emit(format!("store %JrgAny {}, ptr {}", x.text, dp));
+                }
+                let sl = self.rakit_slice(&buf, &n, &JrgType::Any);
+                self.kotak_any(&sl, nol)?
+            }
+            _ => Val { text: "zeroinitializer".into(), ty: JrgType::Any },
+        };
+        self.terminate(format!("ret %JrgAny {}", k.text));
+        let badan = self.take_function_body();
+        self.tambah_definisi(format!("define internal %JrgAny @tup.larik.{}(ptr %p) {{\n{}}}\n", no + 1, badan));
+        self.selesai_fungsi_kosong();
+        Ok(())
+    }
+
+    /// `@jrg_tuple_ke_larik(kata, p)`: pemilih `@tup.larik.N` menurut kata-tag buramnya.
+    pub(crate) fn definisi_tup_larik(&self) -> String {
+        let mut s = String::from("define internal %JrgAny @jrg_tuple_ke_larik(i32 %w, ptr %p) {\nentry:\n  switch i32 %w, label %lain [");
+        let mut badan = String::new();
+        for i in 0..self.tup_terpancar {
+            s.push_str(&format!(" i32 {}, label %b{}", super::codegen_any::TAG_BURAM | ((i as i32 + 1) << 8), i + 1));
+            badan.push_str(&format!("b{0}:\n  %r{0} = call %JrgAny @tup.larik.{0}(ptr %p)\n  ret %JrgAny %r{0}\n", i + 1));
+        }
+        format!("{} ]\n{}lain:\n  ret %JrgAny zeroinitializer\n}}\n", s, badan)
     }
 }

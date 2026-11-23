@@ -280,6 +280,9 @@ pub struct Codegen {
     pub(crate) jemb_terpancar: usize,
     /// `json::` atas nilai buram: `@json.buram.N` yang sudah dipancarkan, dan apakah kaitnya dipakai.
     pub(crate) json_terpancar: usize,
+    /// `==` atas tuple bertag beda tipe: tuple ke larik bertag (`@tup.larik.N`), dipancarkan sebanyak ini.
+    pub(crate) pakai_tup_larik: bool,
+    pub(crate) tup_terpancar: usize,
     pub(crate) pakai_json_buram: bool,
     /// Fungsi buatan kompilator (`@json.buram.N`, `@jemb.buram.N`) membaca seluruh field, privat juga, seperti acuan.
     pub(crate) baca_semua_field: bool,
@@ -463,6 +466,8 @@ impl Codegen {
             sama_terpancar: 0,
             jemb_terpancar: 0,
             json_terpancar: 0,
+            pakai_tup_larik: false,
+            tup_terpancar: 0,
             pakai_json_buram: false,
             baca_semua_field: false,
             adaptor_ada: HashMap::new(),
@@ -1122,6 +1127,11 @@ impl Codegen {
                     self.json_terpancar += 1;
                     if let Err(e) = self.pancarkan_buram_json(no) { self.errors.push(e); }
                 }
+                None if self.pakai_tup_larik && self.tup_terpancar < self.tipe_buram.len() => {
+                    let no = self.tup_terpancar;
+                    self.tup_terpancar += 1;
+                    if let Err(e) = self.pancarkan_tup_larik(no) { self.errors.push(e); }
+                }
                 None if self.ada_keluarga_tertunda() => {
                     if let Err(e) = self.pancarkan_keluarga() { self.errors.push(e); }
                 }
@@ -1224,6 +1234,9 @@ impl Codegen {
         }
         if self.pakai_json_buram {
             out.push_str(&self.definisi_buram_json());
+        }
+        if self.pakai_tup_larik {
+            out.push_str(&self.definisi_tup_larik());
         }
         out.push_str(&self.definisi_metode_dinamis());
         out.push_str(&self.definisi_keluarga());

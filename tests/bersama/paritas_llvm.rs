@@ -5918,4 +5918,27 @@ fn tuple_rapi() {
     wok(json::pretty({"a": (1, 2)}))
 }
 "#),
+    ("larik campur di arr::sum/product, larik dict beda isi, <-ch atas channel tanpa kiriman, == tuple bertag beda tipe (AGI-20261120-23/24)", r#"
+fn main() {
+    let a = [1, 2.5, 3]
+    wok(arr::sum(a), arr::product(a), a.sum(), arr::sum([1, 2.0]), typeof(arr::sum([1, 2.0])))
+    match tangkap(|| arr::sum([1, "a"])) { Result::Ok(v) => wok(v), Result::Err(g) => wok(g.pesan) }
+    match tangkap(|| arr::product([2, true])) { Result::Ok(v) => wok(v), Result::Err(g) => wok(g.pesan) }
+    let d = [{"x": 1}, {"y": {"z": 2}}]
+    let c = [{"a": 1}, {"a": "halo"}]
+    wok(d, c, c[1]["a"], d[1]["y"], [["a", "b"], [1, 2]])
+    let ch = Chan::new(1)
+    let g = || { return <-ch }
+    wok(typeof(g))
+    let t = [1, (10, 20), (10.0, 20.0), (10, "a"), (1, 2, 3)]
+    wok(t[1] == t[2], t[1] != t[2], t[1] == t[3], t[3] == t[1], t[1] == t[4], t[2] == t[2])
+    let b = [1, (1, [2]), (1, [2.0]), (1, (2, 3)), (1, (2.0, 3))]
+    wok(b[1] == b[2], b[3] == b[4])
+    var u = nil
+    var v = nil
+    u = (1, 2)
+    v = (1.0, 2.0)
+    wok(u == v)
+}
+"#),
 ];

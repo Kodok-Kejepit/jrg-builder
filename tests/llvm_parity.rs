@@ -924,11 +924,6 @@ const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
     ("jawa::set: rune disimpan sebagai bilangan",
      "package main\npub fn main() { let p = jawa::alloc(1)\n jawa::set(p, 'a')\n wok(jawa::get(p)) }",
      "cuma menyimpan bilangan bulat, diberi `rune`"),
-    // Dua kotak berisi tuple sama panjang tapi beda tipe elemen: acuan membandingkan per elemen
-    // (`true`); LLVM dulu menjawab `false`, sekarang menolak saat jalan.
-    ("nilai bertag: == dua tuple beda tipe elemen",
-     "package main\npub fn main() { var u = nil\n var v = nil\n u = (1, 2)\n v = (1.0, 2.0)\n wok(u == v) }",
-     "membandingkan dua tuple yang tipe elemennya berbeda di tempat campur tipe belum didukung backend"),
     // Fase UMUM: struct di dalam nilai bertag dibuka sebagai struct LAIN — gagal saat jalan,
     // menyebut kedua tipenya (acuan mengganti tipe variabelnya).
     ("nilai bertag: struct dibuka sebagai struct lain",

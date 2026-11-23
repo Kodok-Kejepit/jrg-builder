@@ -185,6 +185,32 @@ impl Codegen {
     fn arr_lipat(&mut self, args: &[Expr], span: Span, kali: bool) -> Result<Val, String> {
         let nama = if kali { "product" } else { "sum" };
         let (koleksi, elem) = self.arg_koleksi(&args[0], nama, span)?;
+        // Larik campur (`[1, 2.5, 3]`): dilipat lewat aritmetika bertag, tiap elemennya harus angka (AGI-20261120-23).
+        if elem == JrgType::Any {
+            let (ptr, len) = self.bagian_koleksi_pub(&koleksi, &elem);
+            let awal = Val { text: if kali { "1" } else { "0" }.into(), ty: JrgType::I64 };
+            let awal = self.kotak_any(&awal, span)?;
+            let akum = self.alloca_typed("suma.", &JrgType::Any);
+            self.emit(format!("store %JrgAny {}, ptr {}", awal.text, akum));
+            let pesan = crate::interpreter::pesan_elemen_bukan_angka(&format!("arr::{}", nama), "\u{1}");
+            self.loop_koleksi(&ptr, &len, &elem, |cg, nilai| {
+                let t = cg.tag_any(&nilai);
+                let (b, c, d) = (cg.fresh("suma."), cg.fresh("suma."), cg.fresh("suma."));
+                cg.emit(format!("{} = icmp ne i32 {}, {}", b, t.text, super::codegen_any::TAG_INT));
+                cg.emit(format!("{} = icmp ne i32 {}, {}", c, t.text, super::codegen_any::TAG_FLOAT));
+                cg.emit(format!("{} = and i1 {}, {}", d, b, c));
+                let kotak = nilai.clone();
+                let pola = pesan.clone();
+                cg.gagal_bila(&d, |cg| cg.panik_tipe_any(&kotak, |t| pola.replace('\u{1}', t)));
+                let lama = cg.load_place(&akum, &JrgType::Any);
+                let op = if kali { BinaryOp::Mul } else { BinaryOp::Add };
+                let baru = cg.gabung_nilai(&op, lama, nilai, span)?;
+                let baru = cg.kotak_any(&baru, span)?;
+                cg.emit(format!("store %JrgAny {}, ptr {}", baru.text, akum));
+                Ok(())
+            })?;
+            return Ok(self.load_place(&akum, &JrgType::Any));
+        }
         if !elem.is_numeric() {
             return Err(super::galat::tandai(span, format!(
                 "`arr::{}` butuh elemen berupa angka, bukan `{}`", nama, elem.display_name())));
