@@ -293,7 +293,7 @@ impl Codegen {
     }
 
     /// Kalimat acuan untuk fungsi yang dipanggil dengan `diberi` argumen.
-    fn pesan_aritas_hof(fnama: &str, param: &[String], diberi: usize) -> String {
+    pub(crate) fn pesan_aritas_hof(fnama: &str, param: &[String], diberi: usize) -> String {
         if param.len() > diberi {
             crate::interpreter::pesan_parameter_wajib(fnama, &param[diberi], diberi + 1)
         } else {

@@ -25,9 +25,17 @@ fn simbol(nama: &str, n: usize) -> String {
 }
 
 impl Codegen {
-    /// Ada tipe milik program yang punya method `nama` ber-`self` dengan `n` argumen lain.
-    pub(crate) fn ada_metode_program(&self, nama: &str, n: usize) -> bool {
-        self.tables.impls.values().filter_map(|m| m.get(nama)).any(|d| d.params.len() == n + 1 && Self::ber_self(d))
+    /// Ada tipe milik program yang punya method `nama` ber-`self`; jumlah argumennya diperiksa per tipe saat jalan.
+    pub(crate) fn ada_metode_program(&self, nama: &str, _n: usize) -> bool {
+        self.tables.impls.values().filter_map(|m| m.get(nama)).any(|d| Self::ber_self(d))
+    }
+
+    /// Method ber-`self` bisa dipanggil dengan `n` argumen lain: parameter yang dihilangkan punya default,
+    /// atau pengumpul menampung sisanya (AGI-20261120-22).
+    fn aritas_cocok(d: &crate::parser::FnDecl, n: usize) -> bool {
+        let Some(sisa) = d.params.get(1..) else { return false };
+        if sisa.last().is_some_and(|p| p.is_variadic) && n + 1 >= sisa.len() { return true; }
+        n <= sisa.len() && sisa[n..].iter().all(|p| p.default.is_some() || p.is_variadic)
     }
 
     fn ber_self(d: &crate::parser::FnDecl) -> bool {
@@ -157,8 +165,20 @@ impl Codegen {
         let t = self.tipe_buram[no].clone();
         let tipe = match &t { JrgType::Struct(x) | JrgType::Enum(x) => x.clone(), _ => return Ok(()) };
         let Some(decl) = self.tables.find_method(&tipe, &m.nama).cloned() else { return Ok(()) };
-        if decl.params.len() != m.n + 1 || !Self::ber_self(&decl) { return Ok(()); }
+        if !Self::ber_self(&decl) { return Ok(()); }
         self.mulai_fungsi_kosong(JrgType::Any);
+        // Method-nya ADA tapi jumlah argumennya salah: kalimat aritas acuan, bukan "tidak punya method".
+        if !Self::aritas_cocok(&decl, m.n) {
+            let nama: Vec<String> = decl.params.iter().map(|p| super::codegen::pattern_simple_name(&p.pattern)
+                .unwrap_or_default()).collect();
+            let fnama = format!("{}::{}", super::modul::tampil(super::generik::dasar(&tipe)), m.nama);
+            self.panik(&Self::pesan_aritas_hof(&fnama, &nama, m.n + 1));
+            let badan = self.take_function_body();
+            self.tambah_definisi(format!("define internal %JrgAny @{}.{}(ptr %p, ptr %a) {{\n{}}}\n", simbol(&m.nama, m.n), no + 1, badan));
+            self.selesai_fungsi_kosong();
+            self.metode_dinamis[k].ada.push(no);
+            return Ok(());
+        }
         let mut args = Vec::with_capacity(m.n);
         for i in 0..m.n {
             let p = self.fresh("mdp.");

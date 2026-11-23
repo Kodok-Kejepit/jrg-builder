@@ -415,9 +415,21 @@ impl Codegen {
                 return self.tulis_field_titipan(obj, field, nilai, *span);
             }
         }
+        // `a[i] op= v` atas lokal bertag: `a[i] = a[i] op v`, cuma kalau indeksnya tidak berefek (AGI-20261120-15).
+        if let ([Expr::Index { obj, idx, span }], [nilai]) = (a.targets.as_slice(), a.values.as_slice()) {
+            let murni = matches!(**idx, Expr::Literal(..) | Expr::Ident(..));
+            if !matches!(a.op, AssignOp::Eq) && murni && matches!(**obj, Expr::Ident(..))
+                && self.peek_expr_type(obj) == Some(JrgType::Any) {
+                let baca = Expr::Index { obj: obj.clone(), idx: idx.clone(), span: *span };
+                let baru = Expr::Binary { op: super::codegen::compound_to_binop(&a.op), lhs: Box::new(baca),
+                    rhs: Box::new(nilai.clone()), span: a.span };
+                return self.codegen_assign(&AssignStmt { targets: a.targets.clone(), op: AssignOp::Eq,
+                    values: vec![baru], span: a.span });
+            }
+        }
         if let ([Expr::Index { obj, idx: index, span }], [nilai], AssignOp::Eq) = (a.targets.as_slice(), a.values.as_slice(), &a.op) {
             if let Expr::Ident(nama, _) = &**obj {
-                if self.lookup_local(nama).is_some_and(|(_, t)| t == JrgType::Any) && !self.tangkapan.contains(nama) {
+                if self.lookup_local(nama).is_some_and(|(_, t)| t == JrgType::Any) {
                     return self.tulis_indeks_bertag(obj, index, nilai, *span);
                 }
                 // `var` modul bertag juga (AGI-20261120-13): dulu ditolak "tidak bisa index nilai bertag".

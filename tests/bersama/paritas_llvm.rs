@@ -5941,4 +5941,59 @@ fn main() {
     wok(u == v)
 }
 "#),
+    ("tulis indeks majemuk atas lokal dan tangkapan bertag; method berparameter default/pengumpul langsung, statis dan lewat nilai bertag (AGI-20261120-07/15/22)", r#"
+struct M { pub a: int }
+impl M {
+    pub fn with_def(x: int = 42) -> int { x + 1 }
+    pub fn add_def(self, b: int = 10) -> int { self.a + b }
+    pub fn jumlah(self, xs...) -> int { self.a + len(xs) }
+    pub fn campur(self, b: int, c: int = 3, sisa...) -> int { self.a + b + c + len(sisa) }
+}
+fn metode() {
+    let s = M { a: 1 }
+    wok(M::with_def(), M::with_def(5))
+    wok(s.add_def(), s.add_def(2))
+    wok(s.jumlah(), s.jumlah(10, 20, 30), s.jumlah([10, 20, 30]))
+    wok(s.campur(1), s.campur(1, 2), s.campur(1, 2, 7, 8))
+    let xs = [1, s]
+    wok(xs[1].add_def(), xs[1].jumlah(1, 2), xs[1].jumlah())
+}
+struct S { pub a: int }
+impl S {
+    pub fn add_def(self, b: int = 10) -> int { self.a + b }
+    pub fn wajib(self, b: int, c: int = 1) -> int { self.a + b + c }
+}
+fn coba2(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn aritas() {
+    let s = S { a: 1 }
+    let xs = [1, s]
+    coba2(|| xs[1].add_def(1, 2))
+    coba2(|| xs[1].wajib())
+    coba2(|| xs[1].wajib(5))
+}
+fn main() {
+    metode()
+    aritas()
+    var a = 0
+    a = [10, 20]
+    a[0] += 5
+    a[1] *= 2
+    let i = 1
+    a[i] -= 1
+    wok(a)
+    var c = 0
+    let f = || c
+    c = [10, 20]
+    c[0] = 99
+    wok(c[0], c, f())
+    var d = nil
+    d = {"k": 1}
+    d["k"] += 41
+    wok(d)
+    var s = nil
+    s = ["a"]
+    s[0] += "b"
+    wok(s)
+}
+"#),
 ];

@@ -822,9 +822,20 @@ impl Codegen {
     }
 
     pub(crate) fn call_static_method(&mut self, self_ty_name: &str, decl: &FnDecl, args: &[Expr], span: Span) -> Result<Val, String> {
-        if decl.params.len() != args.len() {
+        // Pengumpul dan default seperti fungsi bebas (AGI-20261120-07).
+        let args_kemas: Vec<Expr>;
+        let args: &[Expr] = if decl.params.last().is_some_and(|p| p.is_variadic) && args.len() + 1 >= decl.params.len() {
+            let tetap = decl.params.len() - 1;
+            let mut v: Vec<Expr> = args[..tetap].to_vec();
+            v.push(Expr::Array { elems: args[tetap..].to_vec(), span });
+            args_kemas = v;
+            &args_kemas
+        } else { args };
+        if args.len() > decl.params.len()
+            || decl.params[args.len()..].iter().any(|p| p.default.is_none() && !p.is_variadic) {
             return Err(format!("[{}:{}] `{}::{}` butuh {} argumen, diberi {}", span.lo.0, span.hi.0, self_ty_name, decl.name, decl.params.len(), args.len()));
         }
+        let terpakai = args.len();
         let mut subst = TypeSubst::new();
         self.ikat_diri(self_ty_name, &mut subst);
         // Satu lintasan, urut tulis: argumen parameter tanpa anotasi dulu diturunkan DUA kali (efek sampingnya
@@ -842,16 +853,18 @@ impl Codegen {
             let v = if self.boleh_pinjam(decl, i, a, &v.ty) { v } else { self.ambil_milik(a, v)? };
             final_args.push((pty.clone(), v));
         }
+        let dasar = if terpakai == decl.params.len() { mangle_method(self_ty_name, &decl.name) }
+            else { format!("{}$ar{}", mangle_method(self_ty_name, &decl.name), terpakai) };
         let mangled = if subst.is_empty() {
-            mangle_method(self_ty_name, &decl.name)
+            dasar
         } else {
             let tys: Vec<JrgType> = final_args.iter().map(|(t, _)| t.clone()).collect();
-            mangle_fn(&mangle_method(self_ty_name, &decl.name), &tys)
+            mangle_fn(&dasar, &tys)
         };
         let u = self.tables.unit_tipe.get(super::generik::dasar(self_ty_name)).copied().unwrap_or(0);
         self.unit_simbol.entry(mangled.clone()).or_insert(u);
-        let ret_ty = self.tipe_return_duga(decl, &subst, &mangled, None, decl.params.len())?;
-        self.enqueue_fn(&decl.name, decl, subst, mangled.clone(), None);
+        let ret_ty = self.tipe_return_duga(decl, &subst, &mangled, None, terpakai)?;
+        self.enqueue_fn_arity(&decl.name, decl, subst, mangled.clone(), None, terpakai);
         self.emit_call(&mangled, &final_args, &ret_ty, None)
     }
 
@@ -1195,9 +1208,12 @@ impl Codegen {
             args_kemas = v;
             &args_kemas
         } else { args };
-        if rest_params.len() != args.len() {
+        // Parameter yang dihilangkan boleh, asal semuanya punya default (AGI-20261120-07/22), seperti fungsi bebas.
+        if args.len() > rest_params.len()
+            || rest_params[args.len()..].iter().any(|p| p.default.is_none() && !p.is_variadic) {
             return Err(format!("[{}:{}] method `{}.{}` butuh {} argumen, diberi {}", span.lo.0, span.hi.0, self_ty_name, decl.name, rest_params.len(), args.len()));
         }
+        let terpakai = args.len() + 1;
         // Parameter method tanpa anotasi disimpulkan dari argumennya, sama seperti
         // fungsi bebas.
         let mut subst = TypeSubst::new();
@@ -1253,7 +1269,7 @@ impl Codegen {
             final_args.push((pty.clone(), v));
         }
         self.milik_berikutnya = milik;
-        self.pancarkan_panggilan_metode(self_ty_name, decl, self_ptr, self_ty, final_args, subst)
+        self.pancarkan_panggilan_metode_ar(self_ty_name, decl, self_ptr, self_ty, final_args, subst, terpakai)
     }
 
     /// Ekor bersama tiap pemanggilan metode: mangling, antrean monomorfisasi, dan
@@ -1265,25 +1281,42 @@ impl Codegen {
         self_ptr: &str,
         self_ty: &JrgType,
         final_args: Vec<(JrgType, Val)>,
+        subst: TypeSubst,
+    ) -> Result<Val, String> {
+        self.pancarkan_panggilan_metode_ar(self_ty_name, decl, self_ptr, self_ty, final_args, subst, decl.params.len())
+    }
+
+    /// Seperti `pancarkan_panggilan_metode`, dengan `arity` parameter terisi (termasuk `self`); sisanya default.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn pancarkan_panggilan_metode_ar(
+        &mut self,
+        self_ty_name: &str,
+        decl: &FnDecl,
+        self_ptr: &str,
+        self_ty: &JrgType,
+        final_args: Vec<(JrgType, Val)>,
         mut subst: TypeSubst,
+        arity: usize,
     ) -> Result<Val, String> {
         self.ikat_generik_penerima(self_ty_name, &decl.name, &mut subst);
         // Nama termangling ikut membawa tipe argumen kalau ada yang
         // disimpulkan — tanpa itu dua pemanggilan dengan tipe berbeda akan
         // memakai satu badan fungsi yang sama dan salah satunya salah.
         let milik = std::mem::take(&mut self.milik_berikutnya);
+        let dasar = if arity == decl.params.len() { mangle_method(self_ty_name, &decl.name) }
+            else { format!("{}$ar{}", mangle_method(self_ty_name, &decl.name), arity) };
         let mangled = if subst.is_empty() {
-            mangle_method(self_ty_name, &decl.name)
+            dasar
         } else {
             let tys: Vec<JrgType> = final_args.iter().map(|(t, _)| t.clone()).collect();
-            mangle_fn(&mangle_method(self_ty_name, &decl.name), &tys)
+            mangle_fn(&dasar, &tys)
         };
         // Varian ber-`self` MILIK punya simbolnya sendiri: badannya tidak menyalin penerima.
         let mangled = if milik { format!("{}{}", mangled, super::codegen_tumbuh::AKHIRAN_MILIK) } else { mangled };
         let u = self.tables.unit_tipe.get(super::generik::dasar(self_ty_name)).copied().unwrap_or(0);
         self.unit_simbol.entry(mangled.clone()).or_insert(u);
-        let ret_ty = self.tipe_return_duga(decl, &subst, &mangled, Some(self_ty), decl.params.len())?;
-        self.enqueue_fn(&decl.name, decl, subst, mangled.clone(), Some(self_ty.clone()));
+        let ret_ty = self.tipe_return_duga(decl, &subst, &mangled, Some(self_ty), arity)?;
+        self.enqueue_fn_arity(&decl.name, decl, subst, mangled.clone(), Some(self_ty.clone()), arity);
         self.emit_call(&mangled, &final_args, &ret_ty, Some(self_ptr.to_string()))
     }
 
