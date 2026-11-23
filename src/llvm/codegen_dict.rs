@@ -116,7 +116,10 @@ impl Codegen {
         let vp = self.fresh("dktv.");
         self.emit(format!("{} = getelementptr {}, ptr {}, i64 {}, i32 1", vp, pl, data, iv.text));
         let v = self.load_place(&vp, vty);
-        let kotak = self.coerce(&v, ke);
+        // Nilai bertag menuju tipe agregat ber-isi buram dibuka sampai ke dalam (`buka_any`).
+        let kotak = if v.ty == JrgType::Any && *ke != JrgType::Any {
+            self.buka_any(&v, ke, crate::lexer::Span { lo: crate::lexer::BytePos(0), hi: crate::lexer::BytePos(0), file_id: 0 }).ok()?
+        } else { self.coerce(&v, ke) };
         if kotak.ty != *ke { return None; }
         let dk = self.fresh("dktdk.");
         self.emit(format!("{} = getelementptr {}, ptr {}, i64 {}, i32 0", dk, pb, buf, iv.text));

@@ -354,7 +354,7 @@ impl Codegen {
         let Some(layout) = self.types.structs.get(nama) else { return e.clone() };
         let teks = |t: &str| Expr::Literal(LitKind::Str(t.to_string()), span);
         let pasang = |k: Expr, v: Expr| Expr::Array { elems: vec![k, v], span };
-        let mut isi = vec![pasang(teks(TANDA_STRUCT), teks(super::generik::dasar(nama)))];
+        let mut isi = vec![pasang(teks(TANDA_STRUCT), teks(&crate::ruang_tipe::bersih(super::generik::dasar(nama))))];
         for (f, ft) in &layout.fields {
             let akses = Expr::Field { obj: Box::new(e.clone()), field: f.clone(), span };
             isi.push(pasang(teks(f), self.struct_ke_dict(&akses, ft, span)));
@@ -477,7 +477,20 @@ impl Codegen {
             segments: vec![String::new(), "dict".into(), "from_pairs".into()], span: nol }),
             args: vec![Expr::Array { elems: isi, span: nol }], span: nol };
         let ruang = std::mem::replace(&mut self.baca_semua_field, true);
+        // Pegangan `ptr::`/`jawa::` ditolak seperti acuan, bukan ditulis `{"id":1}`.
+        let pegangan = match &t {
+            JrgType::Struct(n) => n == super::codegen_ptr::LABEL_PTR
+                || (n == "Ptr" && self.types.structs.get("Ptr").and_then(|l| l.field_index("kind")) == Some(1)),
+            _ => false,
+        };
         let k = match &t {
+            _ if pegangan => {
+                self.panik(&crate::interpreter::galat_index::tidak_bisa_jadi_json("Ptr",
+                    "kirim nilai yang ditunjuknya (`ptr::get(p)`), bukan pointernya"));
+                let l = self.fresh_label("json.ptr.");
+                self.start_block(l);
+                Val { text: "zeroinitializer".into(), ty: JrgType::Any }
+            }
             JrgType::Struct(_) | JrgType::Tuple(_) if !matches!(&t, JrgType::Struct(n) if !self.types.structs.contains_key(n)) => {
                 let v = self.load_place("%p", &t);
                 let tempat = self.spill_to_place(&v);

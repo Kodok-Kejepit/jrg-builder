@@ -312,6 +312,16 @@ fn stringify_pretty(v: &VmValue, depth: usize, indent: usize) -> Result<String, 
             }
             Ok(format!("[\n{}\n{}]", items.join(",\n"), pad))
         }
+        // Tuple ditulis seperti larik: dulu tetap rapat (`[1,2]`) di tengah keluaran berindentasi.
+        VmValue::Tuple(t) => {
+            let isi = crate::vm::value::isi_tuple(t);
+            if isi.is_empty() { return Ok("[]".to_string()); }
+            let mut items: Vec<String> = Vec::new();
+            for x in isi.iter() {
+                items.push(format!("{}{}", inner, stringify_pretty(x, depth + 1, indent)?));
+            }
+            Ok(format!("[\n{}\n{}]", items.join(",\n"), pad))
+        }
         VmValue::Map(m) => {
             if let Some(e) = pegangan_pustaka(v) { return Err(e); }
             // Enum ditulis dengan indentasi yang sama dengan objek lain; memakai

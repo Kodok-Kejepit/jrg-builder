@@ -5839,4 +5839,83 @@ fn main() {
     wok(json::stringify(d))
 }
 "#),
+    ("ptr:: native tanpa jembatan: salinan masuk dan keluar, update menahan pembaca lain, handle jawa:: ditolak", r#"
+struct Wadah { pub p: Ptr, pub n: int }
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn buat(v) { ptr::new(v) }
+fn main() {
+    let p = ptr::new([1, 2])
+    wok(p, typeof(p), ptr::addr(p) > 0, ptr::is_null(p), ptr::is_null(ptr::null()), p == p, p == ptr::new([1, 2]))
+    let a = arr::push(ptr::get(p), 3)
+    wok(a, ptr::get(p), ptr::deref(p))
+    var v = [7]
+    ptr::set(p, v)
+    v = arr::push(v, 8)
+    wok(v, ptr::get(p))
+    let q = buat(5)
+    wok(ptr::inc(q), ptr::dec(q), ptr::update(q, |x| x * 10), ptr::update(q, |n: int| n + 1), ptr::get(q))
+    let r = ptr::new(1.5)
+    wok(ptr::inc(r), ptr::get(r))
+    coba(|| ptr::inc(ptr::new("a")))
+    let w = Wadah { p: q, n: 1 }
+    ptr::set(w.p, "lewat field")
+    let xs: []Ptr = [q, ptr::new(4)]
+    wok(ptr::get(q), ptr::get(xs[1]), typeof(xs[0]))
+    ptr::free(q)
+    coba(|| ptr::get(q))
+    coba(|| ptr::set(ptr::null(), 1))
+    coba(|| ptr::get(5))
+    coba(|| ptr::get(jawa::alloc(3)))
+    coba(|| jawa::get(p))
+    coba(|| json::stringify(p))
+    coba(|| ptr::update(p, |x| panik("di dalam")))
+    coba(|| ptr::update(p, |x| ptr::get(p)))
+    wok(ptr::update(p, |x| "lepas lagi"))
+    let m = Mutex::new()
+    coba(|| mutex::with_lock(m, || panik("kunci")))
+    coba(|| mutex::with_lock(m, || 5))
+    let s = ptr::new(1)
+    let mulai = Chan::new(1)
+    let selesai = Chan::new(1)
+    spawn { <-mulai; selesai <- ptr::get(s) }
+    ptr::update(s, |x| { mulai <- true; time::sleep(0.05); x + 1 })
+    wok("pembaca menunggu update:", <-selesai)
+}
+"#),
+    ("json:: atas wadah campur berisi larik buram bersarang tanpa jembatan, dibuka kembali; pretty atas tuple berindentasi", r#"
+struct T { pub x: int }
+fn main() {
+    let d = {"a": 1, "k": [[Some(1)], [None]]}
+    wok(json::stringify(d))
+    var e = dict::new()
+    e["t"] = {"u": [T { x: 1 }]}
+    e["n"] = 3
+    wok(json::stringify(e), e)
+    let xs = [1, "a"]
+    wok(json::stringify([xs, [[T { x: 2 }]]]))
+    bolak()
+    tuple_rapi()
+}
+fn bolak() {
+    var d = dict::new()
+    d["k"] = [[Some(1)], [None]]
+    d["m"] = {"p": [T { x: 9 }]}
+    d["n"] = 2
+    wok(d)
+    let k: [][]Option<int> = d["k"]
+    wok(k, k[0][0])
+    let m: dict<[]T> = d["m"]
+    wok(m["p"][0].x)
+    wok(d == d, json::pretty(d))
+    let xs: [][]Option<int> = [[Some(3)]]
+    var e = dict::new()
+    e["a"] = xs
+    e["b"] = "z"
+    wok(e)
+}
+fn tuple_rapi() {
+    wok(json::pretty([(1, [3]), (2, [4])]))
+    wok(json::pretty({"a": (1, 2)}))
+}
+"#),
 ];

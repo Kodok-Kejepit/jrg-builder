@@ -28,6 +28,7 @@ impl Codegen {
         if let Some(r) = self.coba_builtin_arr(name, args, span) { return Some(r); }
         if let Some(r) = self.coba_builtin_dict(name, args, expected, span) { return Some(r); }
         if let Some(r) = self.coba_builtin_jawa(name, args, span) { return Some(r); }
+        if let Some(r) = self.coba_builtin_ptr(name, args, span) { return Some(r); }
 
         Some(match name {
             super::uji::JALAN => self.uji_jalan(args, span),

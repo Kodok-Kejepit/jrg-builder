@@ -108,10 +108,12 @@ pub fn luruh(t: &JrgType) -> JrgType {
 
 /// Untuk array/dict yang isinya bertipe buram: bentuk ber-isi nilai bertag-nya.
 pub fn isi_buram(t: &JrgType) -> Option<JrgType> {
+    // Juga yang buramnya lebih dalam (`[[Some(1)]]`): dulu terlukis tanpa nomor tipe, jadi `json::` dan
+    // kawan-kawan harus lewat jembatan, yang tidak ada di kernel `--bebas`.
+    let dalam = |e: &JrgType| tag_untuk(e) == Some(TAG_BURAM) || isi_buram(e).is_some();
     match t {
-        JrgType::Slice(e) | JrgType::Array(e, _) if tag_untuk(e) == Some(TAG_BURAM) =>
-            Some(JrgType::Slice(Box::new(JrgType::Any))),
-        JrgType::Dict(e) if tag_untuk(e) == Some(TAG_BURAM) => Some(JrgType::Dict(Box::new(JrgType::Any))),
+        JrgType::Slice(e) | JrgType::Array(e, _) if dalam(e) => Some(JrgType::Slice(Box::new(JrgType::Any))),
+        JrgType::Dict(e) if dalam(e) => Some(JrgType::Dict(Box::new(JrgType::Any))),
         _ => None,
     }
 }
@@ -350,10 +352,15 @@ impl Codegen {
             return Ok(self.load_place(&p, tujuan));
         }
         // Array ber-isi tipe buram: dibuka sebagai array bertag, lalu tiap elemennya dibuka.
-        if let (Some(antara), JrgType::Slice(_)) = (isi_buram(tujuan), tujuan) {
+        if let (Some(antara), JrgType::Slice(e) | JrgType::Dict(e)) = (isi_buram(tujuan), tujuan) {
             let s = self.buka_any(v, &antara, span)?;
             let hasil = self.coerce(&s, tujuan);
             if hasil.ty == *tujuan { return Ok(hasil); }
+            // Buramnya lebih dalam (`[][]Option<int>`): tiap isi dibuka sendiri, sampai ke dalam.
+            let e = (**e).clone();
+            let r = if matches!(tujuan, JrgType::Slice(_)) { self.ubah_tiap_elemen(&s, &JrgType::Any, &e) }
+                else { self.ubah_tiap_nilai(&s, &JrgType::Any, &e) };
+            if let Some(r) = r { return Ok(r); }
         }
         if let Some(kata) = self.kata_kotak(tujuan) {
             return Ok(self.buka_agregat(v, tujuan, kata, None));

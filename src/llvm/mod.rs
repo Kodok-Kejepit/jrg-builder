@@ -46,6 +46,7 @@ pub mod codegen_hof;
 
 /// `jawa::`/`jawir::` — alokasi manual di atas registri berid.
 pub mod codegen_jawa;
+pub mod codegen_ptr;
 pub mod codegen_konversi;
 
 /// Menyimpulkan tipe return fungsi yang tidak beranotasi.

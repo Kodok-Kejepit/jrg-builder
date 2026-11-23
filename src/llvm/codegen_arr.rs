@@ -321,7 +321,9 @@ impl Codegen {
         self.emit(format!("store i64 0, ptr {}", idx));
         let kty = ke.llvm_ty();
         self.loop_koleksi(&ptr, &len, elem, |cg, nilai| {
-            let k = cg.coerce(&nilai, ke);
+            let k = if nilai.ty == JrgType::Any && *ke != JrgType::Any {
+                cg.buka_any(&nilai, ke, crate::lexer::Span { lo: crate::lexer::BytePos(0), hi: crate::lexer::BytePos(0), file_id: 0 })?
+            } else { cg.coerce(&nilai, ke) };
             if k.ty != *ke { return Err("elemen tidak bisa diubah".to_string()); }
             let i = cg.fresh("ktv.");
             cg.emit(format!("{} = load i64, ptr {}", i, idx));

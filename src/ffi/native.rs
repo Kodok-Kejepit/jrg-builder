@@ -574,26 +574,26 @@ fn marshal_arg(
         FfiType::Bool => match val {
             Value::Bool(b) => Ok(CArg::I(*b as i64)),
             Value::Int(n)  => Ok(CArg::I((*n != 0) as i64)),
-            other => Err(format!("butuh bool, dapat `{}`", other.type_name())),
+            other => Err(format!("butuh bool, dapat `{}`", crate::ruang_tipe::bersih(&other.type_name()))),
         },
         FfiType::Int { .. } => match val {
             Value::Int(n)  => Ok(CArg::I(*n as i64)),
             Value::Bool(b) => Ok(CArg::I(*b as i64)),
             Value::Rune(c) => Ok(CArg::I(*c as i64)),
-            other => Err(format!("butuh bilangan bulat, dapat `{}`", other.type_name())),
+            other => Err(format!("butuh bilangan bulat, dapat `{}`", crate::ruang_tipe::bersih(&other.type_name()))),
         },
         // f32 dan f64 sama-sama disimpan sebagai CArg::F(f64) di sini — nilai belum
         // di-narrow ke presisi f32 pada tahap ini.
         FfiType::F32 | FfiType::F64 => match val {
             Value::Float(f) => Ok(CArg::F(*f)),
             Value::Int(n)   => Ok(CArg::F(*n as f64)),
-            other => Err(format!("butuh float, dapat `{}`", other.type_name())),
+            other => Err(format!("butuh float, dapat `{}`", crate::ruang_tipe::bersih(&other.type_name()))),
         },
         FfiType::Ptr => match val {
             Value::Ptr(addr) => Ok(CArg::I(*addr as i64)),
             Value::Nil       => Ok(CArg::I(0)),
             Value::Int(n)    => Ok(CArg::I(*n as i64)),
-            other => Err(format!("butuh pointer (`ptr::` atau nil), dapat `{}`", other.type_name())),
+            other => Err(format!("butuh pointer (`ptr::` atau nil), dapat `{}`", crate::ruang_tipe::bersih(&other.type_name()))),
         },
         FfiType::CStr => match val {
             Value::Str(s) => {
@@ -606,7 +606,7 @@ fn marshal_arg(
                 Ok(CArg::I(ptr))
             }
             Value::Nil => Ok(CArg::I(0)),
-            other => Err(format!("butuh string, dapat `{}`", other.type_name())),
+            other => Err(format!("butuh string, dapat `{}`", crate::ruang_tipe::bersih(&other.type_name()))),
         },
         FfiType::Arr { bits, signed, float } => match val {
             Value::Array(isi) => {
@@ -634,7 +634,7 @@ fn marshal_arg(
                 Ok(CArg::I(ptr))
             }
             Value::Nil => Ok(CArg::I(0)),
-            other => Err(format!("butuh array, dapat `{}`", other.type_name())),
+            other => Err(format!("butuh array, dapat `{}`", crate::ruang_tipe::bersih(&other.type_name()))),
         },
         FfiType::Unit => Err("unit/void tidak valid sebagai tipe parameter".to_string()),
     }
@@ -647,7 +647,7 @@ fn elemen_ke_byte(v: &Value, bits: u8, signed: bool, float: bool) -> Result<[u8;
         let f = match v {
             Value::Float(f) => *f,
             Value::Int(n) => *n as f64,
-            other => return Err(format!("butuh angka, dapat `{}`", other.type_name())),
+            other => return Err(format!("butuh angka, dapat `{}`", crate::ruang_tipe::bersih(&other.type_name()))),
         };
         return Ok(if bits == 32 {
             let mut b = [0u8; 8];
@@ -661,7 +661,7 @@ fn elemen_ke_byte(v: &Value, bits: u8, signed: bool, float: bool) -> Result<[u8;
         Value::Int(n) => *n,
         Value::Bool(b) => *b as i128,
         Value::Rune(c) => *c as i128,
-        other => return Err(format!("butuh bilangan bulat, dapat `{}`", other.type_name())),
+        other => return Err(format!("butuh bilangan bulat, dapat `{}`", crate::ruang_tipe::bersih(&other.type_name()))),
     };
     let (min, maks): (i128, i128) = if signed {
         (-(1i128 << (bits - 1)), (1i128 << (bits - 1)) - 1)

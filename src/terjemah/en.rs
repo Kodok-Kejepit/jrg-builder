@@ -1484,6 +1484,8 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
      "arguments do not fit `{}` — got ({}), accepted forms: "),
     (": butuh Ptr, dapat `{}`",
      ": needs a Ptr, got `{}`"),
+    (": ini handle `jawa::`, bukan Ptr dari `ptr::new` — isinya dibaca lewat fungsi `jawa::`",
+     ": this is a `jawa::` handle, not a Ptr from `ptr::new` — its contents are read through the `jawa::` functions"),
     (": Ptr tidak valid (`id` {} bukan nomor alokasi)",
      ": invalid Ptr (`id` {} is not an allocation number)"),
     (": Ptr tidak valid (field `id` hilang)",

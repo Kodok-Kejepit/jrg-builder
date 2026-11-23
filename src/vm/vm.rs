@@ -25,9 +25,10 @@ pub(crate) fn vm_ptr_value(id: u64) -> VmValue {
 pub(crate) fn vm_ptr_id(value: &VmValue, context: &str) -> Result<u64, String> {
     // Kalimatnya milik `dok::ptr::ptr_id`: dict dan struct lain disebut TIPENYA.
     let (VmValue::Map(fields), Some("Ptr")) = (value, value.nama_struct()) else {
-        return Err(format!("{}: butuh Ptr, dapat `{}`", context, value.type_name_penuh()));
+        return Err(crate::dok::ptr::pesan_bukan_ptr(context, &value.type_name_penuh()));
     };
     let fields = fields.lock().unwrap_or_else(|p| p.into_inner());
+    if fields.get("kind").is_some() { return Err(crate::dok::ptr::pesan_handle_jawa(context)); }
     match fields.get("id") {
         Some(VmValue::Int(id)) => u64::try_from(*id)
             .map_err(|_| format!("{}: Ptr tidak valid (`id` {} bukan nomor alokasi)", context, id)),
@@ -932,7 +933,7 @@ pub(crate) fn vm_ptr_step(a: &[VmValue], fname: &str, delta: i128) -> Result<VmV
         VmValue::Int(n)   => VmValue::Int(n.checked_add(delta).ok_or_else(|| format!(
             "{}: {}", fname, crate::interpreter::pesan_luber("+", *n, delta)))?),
         VmValue::Float(f) => VmValue::Float(f + delta as f64),
-        lain => return Err(format!("{}: isi Ptr bukan angka (dapat `{}`)", fname, lain.type_name_penuh())),
+        lain => return Err(crate::dok::ptr::pesan_bukan_angka(fname, &lain.type_name_penuh())),
     };
     *g = baru.clone();
     Ok(baru)

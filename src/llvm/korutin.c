@@ -650,6 +650,8 @@ int jrg_masa_gagal(const char *s, int64_t n) {
     c->gagal = jrg_alloc(n > 0 ? n : 1, 1);
     memcpy(c->gagal, s, (size_t)n);
     c->gagal_n = n;
+    // Kunci dan sel `ptr::` dilepas SEBELUM pemanggilnya dibangunkan: ia bisa langsung memakainya lagi.
+    jrg_kunci_tinggal(k);
     char *nol = jrg_alloc(c->esize > 0 ? c->esize : 1, 8);
     memset(nol, 0, (size_t)(c->esize > 0 ? c->esize : 1));
     jrg_chan_send(c, nol, c->esize);
@@ -776,7 +778,8 @@ void *jrg_atom_baru(int64_t awal) {
 }
 
 // ── Mutex: kunci berpemilik; yang menunggu diparkir sampai kuncinya lepas ──
-typedef struct JrgKunci { JrgKo *pemilik; JrgKo *antre; int ditinggal; int dijaga; struct JrgKunci *next; } JrgKunci;
+// `ko`: korutin yang benar-benar mengunci (badan `tangkap` mengunci atas nama pemanggilnya, `pemilik`).
+typedef struct JrgKunci { JrgKo *pemilik; JrgKo *ko; JrgKo *antre; int ditinggal; int dijaga; struct JrgKunci *next; } JrgKunci;
 static JrgKunci *jrg_kunci_semua;
 
 void *jrg_kunci_baru(void) {
@@ -817,6 +820,7 @@ void jrg_kunci_kunci(JrgKunci *k, int32_t dijaga, const char *nama, int64_t nl) 
         jrg_ko_jadwal();
     }
     k->pemilik = jrg_ko_efektif();
+    k->ko = jrg_ko_kini;
     k->dijaga = dijaga;
 }
 
@@ -827,15 +831,116 @@ void jrg_kunci_lepas(JrgKunci *k, const char *nama, int64_t nl) {
     if (k->pemilik != jrg_ko_efektif()) jrg_kunci_panik(nama, nl, ": kunci ini dipegang goroutine lain — cuma yang mengunci "
         "yang boleh melepas");
     k->pemilik = 0;
+    k->ko = 0;
     jrg_kunci_bangun(k);
 }
 
 // Goroutine yang selesai sambil memegang kunci: yang dijaga dilepas, sisanya ditandai ditinggal.
+// Badan `tangkap` yang gagal di tengah `mutex::with_lock` melepas kunci pemanggilnya (dulu tertinggal terkunci).
+static void jrg_ptr_tinggal(JrgKo *ko);
 static void jrg_kunci_tinggal(JrgKo *ko) {
     for (JrgKunci *k = jrg_kunci_semua; k; k = k->next) {
-        if (k->pemilik != ko) continue;
+        if (!k->pemilik || (k->pemilik != ko && !(k->ko == ko && k->dijaga))) continue;
         k->pemilik = 0;
+        k->ko = 0;
         if (!k->dijaga) k->ditinggal = 1;
         jrg_kunci_bangun(k);
     }
+    jrg_ptr_tinggal(ko);
+}
+
+// ── ptr::: sel bersama; `ptr::update` memegangnya selama fungsinya jalan, yang lain menunggu ──
+typedef struct { JrgAny isi; JrgKo *pemilik, *ko, *antre; int32_t hidup; } JrgSelPtr;
+static JrgSelPtr **jrg_ptr_sel;
+static int64_t jrg_ptr_n, jrg_ptr_kap;
+
+int64_t jrg_ptr_baru(JrgAny *v) {
+    if (jrg_ptr_n == jrg_ptr_kap) {
+        int64_t kap = jrg_ptr_kap ? jrg_ptr_kap * 2 : 16;
+        JrgSelPtr **baru = jrg_alloc(kap * (int64_t)sizeof(JrgSelPtr *), 8);
+        if (jrg_ptr_n) memcpy(baru, jrg_ptr_sel, (size_t)jrg_ptr_n * sizeof(JrgSelPtr *));
+        jrg_ptr_sel = baru;
+        jrg_ptr_kap = kap;
+    }
+    JrgSelPtr *s = jrg_alloc((int64_t)sizeof(JrgSelPtr), 8);
+    memset(s, 0, sizeof *s);
+    s->isi = *v;
+    jrg_any_salin(&s->isi);
+    s->hidup = 1;
+    jrg_ptr_sel[jrg_ptr_n++] = s;
+    return jrg_ptr_n;
+}
+
+static JrgSelPtr *jrg_ptr_cari(int64_t id) { return id >= 1 && id <= jrg_ptr_n ? jrg_ptr_sel[id - 1] : 0; }
+
+// 0 siap; 1 null; 2 tidak valid (di-free); 3 sedang diperbarui `ptr::update` aktor ini. Urutannya acuan.
+int32_t jrg_ptr_buka(int64_t id) {
+    for (;;) {
+        if (id == 0) return 1;
+        JrgSelPtr *s = jrg_ptr_cari(id);
+        if (s && s->pemilik == jrg_ko_efektif()) return 3;
+        if (!s || !s->hidup) return 2;
+        if (!s->pemilik) return 0;
+        jrg_ko_kini->next = s->antre;
+        s->antre = jrg_ko_kini;
+        jrg_ko_jadwal();
+    }
+}
+
+void jrg_ptr_baca(int64_t id, JrgAny *keluar) {
+    *keluar = jrg_ptr_cari(id)->isi;
+    jrg_any_salin(keluar);
+}
+
+// Sel yang di-free di tengah `ptr::update` tetap ditulis, seperti acuan (selnya sudah di tangan).
+void jrg_ptr_tulis(int64_t id, JrgAny *v) {
+    JrgSelPtr *s = jrg_ptr_cari(id);
+    s->isi = *v;
+    jrg_any_salin(&s->isi);
+}
+
+void jrg_ptr_free(int64_t id) {
+    JrgSelPtr *s = jrg_ptr_cari(id);
+    if (s) s->hidup = 0;
+}
+
+void jrg_ptr_pegang(int64_t id) {
+    JrgSelPtr *s = jrg_ptr_cari(id);
+    s->pemilik = jrg_ko_efektif();
+    s->ko = jrg_ko_kini;
+}
+
+static void jrg_ptr_lepas_sel(JrgSelPtr *s) {
+    JrgKo *w = s->antre;
+    s->pemilik = 0;
+    s->ko = 0;
+    s->antre = 0;
+    while (w) { JrgKo *n = w->next; jrg_ko_antre(w); w = n; }
+}
+
+void jrg_ptr_lepas(int64_t id) { jrg_ptr_lepas_sel(jrg_ptr_cari(id)); }
+
+// `ptr::inc`/`dec` atas isi bulat atau pecahan; 4 bukan angka (`keluar` = isinya), 5 meluap (`keluar` = isinya).
+int32_t jrg_ptr_langkah(int64_t id, int64_t d, JrgAny *keluar) {
+    JrgSelPtr *s = jrg_ptr_cari(id);
+    *keluar = s->isi;
+    if (s->isi.tag == 2) {
+        int64_t h;
+        if (__builtin_add_overflow(s->isi.isi.i, d, &h)) return 5;
+        s->isi.isi.i = h;
+    } else if (s->isi.tag == 3) {
+        s->isi.isi.f += (double)d;
+    } else {
+        jrg_any_salin(keluar);
+        return 4;
+    }
+    *keluar = s->isi;
+    return 0;
+}
+
+// Pemegang yang mati (badan `tangkap` yang gagal di dalam fungsi `ptr::update`) melepas selnya.
+static void jrg_ptr_tinggal(JrgKo *ko) {
+    for (int64_t i = 0; i < jrg_ptr_n; i++)
+        if (jrg_ptr_sel[i]->pemilik && (jrg_ptr_sel[i]->ko == ko || jrg_ptr_sel[i]->pemilik == ko))
+            jrg_ptr_lepas_sel(jrg_ptr_sel[i]);
 }

@@ -752,6 +752,22 @@ impl Codegen {
                     },
                 }
             }
+            // `ptr::`: pegangannya struct native, isinya nilai bertag.
+            Expr::Call { func, args, .. }
+                if matches!(func.as_ref(), Expr::PathExpr { segments, .. }
+                    if matches!(tanpa_awalan_bawaan(segments), [a, _] if a == "ptr")) =>
+            {
+                let Expr::PathExpr { segments, .. } = func.as_ref() else { return None };
+                let [_, b] = tanpa_awalan_bawaan(segments) else { return None };
+                Some(match (b.as_str(), args.len()) {
+                    ("new", 0 | 1) | ("null", 0) => JrgType::Struct(super::codegen_ptr::LABEL_PTR.into()),
+                    ("get" | "deref" | "inc" | "dec", 1) | ("update", 2) => JrgType::Any,
+                    ("is_null", 1) => JrgType::Bool,
+                    ("addr", 1) => JrgType::I64,
+                    ("set", 2) | ("free", 1) => JrgType::Unit,
+                    _ => return None,
+                })
+            }
             // `fmt::sprint(..)`, `str::to_string(..)` dan `str::join(..)` selalu menjawab teks.
             Expr::Call { func, .. }
                 if matches!(func.as_ref(), Expr::PathExpr { segments, .. }

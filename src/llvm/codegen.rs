@@ -907,6 +907,8 @@ impl Codegen {
                 self.types.register_struct(StructLayout { name: s.name.clone(), fields });
             }
         }
+        // Pegangan `ptr::` dikenal sejak awal: penyimpul tipe kembalian membacanya.
+        let _ = self.tipe_ptr_sel();
 
         let mut enums: Vec<EnumDecl> = self.tables.enums.values().cloned().collect();
         enums.sort_by(|a, b| a.name.cmp(&b.name));

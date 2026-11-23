@@ -234,7 +234,7 @@ impl Codegen {
     /// Turunkan argumen fungsi sebuah HOF, dengan tipe parameternya sudah
     /// diketahui tapi tipe hasilnya belum.
     /// `Err` di dalam berarti kalimat acuan yang diucapkan saat fungsinya dipanggil.
-    fn turunkan_fungsi_arg(&mut self, e: &Expr, ptys: &[JrgType], span: Span)
+    pub(crate) fn turunkan_fungsi_arg(&mut self, e: &Expr, ptys: &[JrgType], span: Span)
         -> Result<Result<Val, String>, String>
     {
         // `is_move` DIBACA, bukan dibuang lewat `..`.

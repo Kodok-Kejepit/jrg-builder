@@ -22,14 +22,27 @@ fn make_ptr(id: u64) -> Value {
     Value::Struct { name: "Ptr".to_string(), fields: fields.into() }
 }
 
+/// Kalimat untuk yang bukan pegangan `ptr::`; satu untuk tiga mesin.
+pub fn pesan_bukan_ptr(fname: &str, tipe: &str) -> String { format!("{}: butuh Ptr, dapat `{}`", fname, tipe) }
+/// Handle `jawa::` juga struct `Ptr` (berfield `kind`); dulu dibaca sebagai pointer bernomor sama.
+pub fn pesan_handle_jawa(fname: &str) -> String {
+    format!("{}: ini handle `jawa::`, bukan Ptr dari `ptr::new` — isinya dibaca lewat fungsi `jawa::`", fname)
+}
+pub fn pesan_bukan_angka(fname: &str, tipe: &str) -> String { format!("{}: isi Ptr bukan angka (dapat `{}`)", fname, tipe) }
+pub fn pesan_sibuk(fname: &str) -> String {
+    format!("{}: pointer ini sedang diperbarui `ptr::update` — fungsi pembaruannya \
+        sudah menerima nilai lamanya sebagai argumen, pakai itu", fname)
+}
+
 fn ptr_id(v: &Value, fname: &str) -> Result<u64, String> {
     match v {
+        Value::Struct { name, fields } if name == "Ptr" && fields.get("kind").is_some() => Err(pesan_handle_jawa(fname)),
         Value::Struct { name, fields } if name == "Ptr" => match fields.get("id") {
             Some(Value::Int(n)) => u64::try_from(*n)
                 .map_err(|_| format!("{}: Ptr tidak valid (`id` {} bukan nomor alokasi)", fname, n)),
             _ => Err(format!("{}: Ptr tidak valid (field `id` hilang)", fname)),
         },
-        other => Err(format!("{}: butuh Ptr, dapat `{}`", fname, other.type_name())),
+        other => Err(pesan_bukan_ptr(fname, &other.type_name())),
     }
 }
 
@@ -102,8 +115,7 @@ impl Drop for PenandaSibuk {
 pub fn periksa_sibuk(id: u64, fname: &str) -> Result<(), String> {
     let a = aktor_kini();
     if sibuk().lock().unwrap_or_else(|p| p.into_inner()).iter().any(|x| *x == (id, a)) {
-        return Err(format!("{}: pointer ini sedang diperbarui `ptr::update` — fungsi pembaruannya \
-            sudah menerima nilai lamanya sebagai argumen, pakai itu", fname));
+        return Err(pesan_sibuk(fname));
     }
     Ok(())
 }
@@ -187,7 +199,7 @@ fn ptr_step(args: &[Value], fname: &str, delta: i128) -> Result<Value, String> {
                 Value::Int(n) => Value::Int(n.checked_add(delta).ok_or_else(|| format!(
                     "{}: {}", fname, crate::interpreter::pesan_luber("+", *n, delta)))?),
                 Value::Float(f) => Value::Float(f + delta as f64),
-                other => return Err(format!("{}: isi Ptr bukan angka (dapat `{}`)", fname, other.type_name())),
+                other => return Err(pesan_bukan_angka(fname, &other.type_name())),
             };
             *guard = new_val.clone();
             Ok(new_val)

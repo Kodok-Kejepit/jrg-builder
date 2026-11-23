@@ -203,7 +203,14 @@ impl Codegen {
             self.emit(format!("{} = load i32, ptr {}", w, slot));
             self.emit(format!("{} = icmp ne i32 {}, {}", c, w, kata));
             let kotak = v.clone();
+            let ty_sel = self.tipe_ptr_sel();
+            let kata_sel = self.kata_buram(&ty_sel);
+            let kind_hilang = format!("{}: handle tidak valid (field `kind` hilang)", nama);
             self.gagal_bila(&c, |cg| {
+                // `Ptr` milik `ptr::` (sel native) ditolak khusus, seperti acuan.
+                let cs = cg.fresh("jwt.");
+                cg.emit(format!("{} = icmp eq i32 {}, {}", cs, w, kata_sel));
+                cg.gagal_bila(&cs, |cg| cg.panik(&kind_hilang));
                 // `Ptr` milik `ptr::` (titipan jembatan, bukan struct buram pengguna) ditolak khusus.
                 if let Ok(t) = cg.typeof_any(&kotak) {
                     let (tp, tl) = cg.split_str(&t);
@@ -222,6 +229,10 @@ impl Codegen {
             });
             let buka = self.buka_any(v, &ptr, span)?;
             return self.id_handle(&buka, nama, span);
+        }
+        if v.ty == JrgType::Struct(super::codegen_ptr::LABEL_PTR.into()) {
+            self.panik_statis(&format!("{}: handle tidak valid (field `kind` hilang)", nama));
+            return Ok("0".into());
         }
         if v.ty != ptr {
             self.panik_statis(&crate::interpreter::builtin::heap::pesan_bukan_ptr(nama, &v.ty.nama_typeof()));

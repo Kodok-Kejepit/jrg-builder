@@ -121,6 +121,19 @@ impl Codegen {
                 let e2 = (**e2).clone();
                 if let Some(r) = self.buka_tiap_elemen(v, &e2) { return r; }
             }
+            // Elemen agregat ber-isi buram (`[][]Option<int>`): tiap kotak dibuka sampai ke dalam.
+            if **e1 == JrgType::Any && !skalar && super::codegen_any::isi_buram(e2).is_some() {
+                let e2 = (**e2).clone();
+                if let Some(r) = self.ubah_tiap_elemen(v, &JrgType::Any, &e2) { return r; }
+            }
+        }
+        if let (JrgType::Dict(e1), JrgType::Dict(e2)) = (&v.ty, target) {
+            if **e1 == JrgType::Any && **e2 != JrgType::Any
+                && (super::codegen_any::tag_untuk(e2) == Some(super::codegen_any::TAG_BURAM)
+                    || super::codegen_any::isi_buram(e2).is_some()) {
+                let e2 = (**e2).clone();
+                if let Some(r) = self.ubah_tiap_nilai(v, &JrgType::Any, &e2) { return r; }
+            }
         }
         // `Option<nilai bertag>` (mis. `None` tanpa petunjuk) menuju `Option<T>`: isinya dibuka, tagnya diperiksa.
         if let (JrgType::Enum(a), JrgType::Enum(b)) = (&v.ty, target) {
