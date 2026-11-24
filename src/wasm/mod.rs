@@ -257,6 +257,8 @@ pub fn kompilasi(ir: &str, keluar: &Path, verbose: bool) -> Result<PathBuf, Stri
     // Stack bayangan 8 MiB seperti stack utama native (bawaan wasm-ld 64 KiB: larik `[2000]int` lokal sudah meluap).
     taut.args(["-m", "wasm32", "--gc-sections", "-z", "stack-size=8388608"]).arg(format!("-L{}", lib.display())).arg(lib.join("crt1-command.o"))
         .arg(&prog_o).arg(&c_o).arg(&runtime).arg("-lc").arg(&alat.builtins).arg("-o").arg(&taut_wasm);
+    // Builtin jembatan dari goroutine pindah ke stack besar milik jembatan (`korutin_wasm.c`).
+    if jembatan { taut.arg("--wrap=jrg_jembatan_panggil"); }
     let hasil = jalankan_alat(&mut taut, "penaut wasm").and_then(|_| {
         // Asyncify: korutin dibuka dan digulung ulang sampai `__main_void`, yang karena itu tidak diinstrumentasi.
         // `JRG_WASM_NAMA=1`: nama fungsi ikut di .wasm (jejak trap node terbaca) dan IR-nya disimpan, untuk menyelidiki.
@@ -269,9 +271,24 @@ pub fn kompilasi(ir: &str, keluar: &Path, verbose: bool) -> Result<PathBuf, Stri
         }
         let daftar = dir.join("tanpa-asyncify.txt");
         std::fs::write(&daftar, buang.join("\n")).map_err(|e| format!("gagal menulis {}: {}", daftar.display(), crate::host::galat_io(&e)))?;
+        let asy = dir.join("asyncify.wasm");
         jalankan_alat(Command::new(&alat.wasm_opt).arg(&taut_wasm).arg("--asyncify")
             .arg(format!("--pass-arg=asyncify-removelist@@{}", daftar.display())).arg("-O2")
-            .args(nama.then_some("-g")).arg("-o").arg(keluar), "wasm-opt (Asyncify)")
+            .arg("-g").arg("-o").arg(&asy), "wasm-opt (Asyncify)")?;
+        // Batas stack tiap korutin (`korutin_wasm.c`) SESUDAH Asyncify, supaya impor penangannya tidak membuat tiap
+        // fungsi dianggap bisa berganti korutin. Nama wajib ada (`-g`), atau `__stack_pointer` tak ditemukan dan
+        // pass-nya diam. binaryen 133 salah memberi tipe panggilan penangan, jadi tanpa validasi lalu divalidasi.
+        let cek = dir.join("cek.wasm");
+        jalankan_alat(Command::new(&alat.wasm_opt).arg(&asy).arg("--no-validation").arg("--stack-check")
+            .arg(format!("--pass-arg=stack-check-handler@{PENANGAN_LUAP}")).arg("-g").arg("-o").arg(&cek),
+            "wasm-opt (batas stack)")?;
+        jalankan_alat(Command::new(&alat.wasm_opt).arg(&cek).args(nama.then_some("-g")).arg("-o").arg(keluar),
+            "wasm-opt (validasi batas stack)")?;
+        let isi = std::fs::read(keluar).map_err(|e| format!("gagal membaca {}: {}", keluar.display(), crate::host::galat_io(&e)))?;
+        if !isi.windows(18).any(|w| w == b"__set_stack_limits") {
+            return Err("wasm-opt tidak memasang batas stack korutin (`__set_stack_limits` tidak ada)".into());
+        }
+        Ok(())
     });
     if std::env::var_os("JRG_WASM_NAMA").is_some_and(|v| v == "1") { let _ = std::fs::copy(&ll, keluar.with_extension("ll")); }
     let _ = std::fs::remove_dir_all(&dir);
@@ -289,8 +306,12 @@ pub fn pemuat_untuk(wasm: &Path) -> PathBuf {
     PathBuf::from(n)
 }
 
-/// Pemuat node: WASI bawaan node, argumen sesudah nama berkas wasm, kode keluar dari `proc_exit`. Stack V8 bawaan
-/// (±1 MiB) menolak rekursi yang jalan di native, jadi `jalankan` memberi `--stack-size` (jauh di bawah stack OS).
+/// Penangan luapan stack korutin yang diimpor `wasm-opt --stack-check` dari modul `env` (pemuat menyediakannya).
+const PENANGAN_LUAP: &str = "jrg_stack_luap";
+
+/// Pemuat node: WASI bawaan node, kode keluar dari `proc_exit`; `jalankan` memberi `--stack-size` (stack V8 bawaan
+/// ±1 MiB). `jrg.batas_stack`/`env.jrg_stack_luap`: batas stack korutin (`korutin_wasm.c`), dibuka penuh sebelum
+/// `_start`, karena global batas `--stack-check` mulai 0 dan tanpa itu setiap fungsi terbaca meluap.
 const PEMUAT_NODE: &str = r#"// Dibuat jrgc --emit-wasm. Pakai: node --stack-size=3000 <program>.wasm.mjs [argumen...]
 import fs from 'node:fs';
 import process from 'node:process';
@@ -300,8 +321,20 @@ const wasm = fileURLToPath(import.meta.url).replace(/\.mjs$/, '');
 const wasi = new WASI({ version: 'preview1', args: [wasm, ...process.argv.slice(2)], env: process.env,
   preopens: { '/': '/' }, returnOnExit: true });
 const mod = await WebAssembly.compile(fs.readFileSync(wasm));
-const inst = await WebAssembly.instantiate(mod, { wasi_snapshot_preview1: wasi.wasiImport });
-process.exitCode = wasi.start(inst);
+let ex;
+const inst = await WebAssembly.instantiate(mod, { wasi_snapshot_preview1: wasi.wasiImport,
+  jrg: { batas_stack: (atas, bawah) => ex.__set_stack_limits(atas, bawah) },
+  env: { jrg_stack_luap: () => { ex.__set_stack_limits(0xffffffff, 0); ex.jrg_wasm_stack_habis(); } } });
+ex = inst.exports;
+ex.__set_stack_limits(0xffffffff, 0);
+let kode;
+try { kode = wasi.start(inst); } catch (e) {
+  // Stack V8 habis lebih dulu: dilaporkan lewat jalur yang sama dengan stack bayangan yang habis.
+  if (!(e instanceof RangeError)) throw e;
+  kode = 1;
+  try { ex.__set_stack_limits(0xffffffff, 0); ex.jrg_wasm_stack_habis(); } catch (k) { if (typeof k !== 'symbol') throw e; }
+}
+process.exitCode = kode;
 "#;
 
 /// Menjalankan `wasm` lewat node; kode keluarnya kode keluar program.

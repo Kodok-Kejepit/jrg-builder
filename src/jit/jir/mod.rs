@@ -82,6 +82,10 @@ pub struct Keadaan {
     pub maya: Vec<Maya>,
 }
 
+/// Isi native paling banyak per bayangan: `turun::wujud` menulisnya ke slot 8 × ini byte, dan `wujud_varian`
+/// membaca sebanyak payload/field-nya (AGI-20261119-34: dulu slot 64 byte, payload 9+ terbaca melewatinya).
+pub(crate) const MAKS_MUATAN: usize = 16;
+
 /// Varian di posisi `pos` yang isi stack VM-nya mungkin basi (bayangan varian, JIR-3b): penanda `tag` (indeks
 /// `TabelVarian` di `tabel`), payload `muatan` (bit `pecahan` = pecahan), basi kalau bit penandanya ada di `basi`.
 #[derive(Clone, Debug, PartialEq)]

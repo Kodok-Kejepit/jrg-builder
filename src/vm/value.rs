@@ -401,6 +401,31 @@ pub fn isi_tuple(t: &Arc<Mutex<Vec<VmValue>>>) -> Vec<VmValue> {
     t.lock().unwrap_or_else(|p| p.into_inner()).clone()
 }
 
+/// Isi dua penyimpanan untuk pembanding (`==`, urutan, `arr::sort`). Kunci tidak dipegang selama isi agregat
+/// dibandingkan, karena isi itu bisa berbagi penyimpanan dengan yang sedang dikunci. Dua kunci diambil urut alamat,
+/// jadi `a == b` dan `b == a` di dua thread tidak saling menunggu (AGI-20261119-35).
+pub(crate) fn dengan_dua<T: Clone, R>(a: &Mutex<T>, b: &Mutex<T>, skalar: impl Fn(&T) -> bool,
+    f: impl FnOnce(&T, &T) -> R) -> R {
+    fn kunci<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> { m.lock().unwrap_or_else(|p| p.into_inner()) }
+    if std::ptr::eq(a, b) {
+        let g = kunci(a);
+        if skalar(&g) { return f(&g, &g); }
+        let s = g.clone();
+        drop(g);
+        return f(&s, &s);
+    }
+    let (ga, gb) = if (a as *const Mutex<T>) < (b as *const Mutex<T>) { let x = kunci(a); (x, kunci(b)) }
+        else { let y = kunci(b); (kunci(a), y) };
+    if skalar(&ga) && skalar(&gb) { return f(&ga, &gb); }
+    let (sa, sb) = (ga.clone(), gb.clone());
+    drop((ga, gb));
+    f(&sa, &sb)
+}
+
+/// Larik tanpa isi yang bisa beralias: aman dibandingkan sambil dikunci.
+pub(crate) fn larik_skalar(v: &Vec<VmValue>) -> bool { v.iter().all(|e| !e.bisa_beralias()) }
+fn peta_skalar(p: &IsiPeta) -> bool { p.values().all(|e| !e.bisa_beralias()) }
+
 impl VmValue {
     /// Salinan yang benar-benar TERPISAH dari aslinya.
     pub fn deep_copy(&self) -> VmValue {
@@ -830,17 +855,10 @@ impl VmValue {
             // dua jendela berbeda yang kebetulan menampilkan hal yang sama
             // tetap dua jendela. Aturan yang sama dengan interpreter.
             (VmValue::Canvas(a), VmValue::Canvas(b)) => Arc::ptr_eq(a, b),
-            (VmValue::Array(a), VmValue::Array(b))  => {
-                // Penyimpanan yang SAMA dikunci sekali lalu dibandingkan dengan dirinya: siapa
-                // pemilik penyimpanannya tidak boleh terlihat — `[NaN] == [NaN]` itu `false`.
-                if Arc::ptr_eq(a, b) {
-                    let g = a.lock().unwrap();
-                    return semua_vm_eq(g.iter(), g.iter());
-                }
-                let a = a.lock().unwrap();
-                let b = b.lock().unwrap();
-                a.len() == b.len() && semua_vm_eq(a.iter(), b.iter())?
-            }
+            // Penyimpanan yang SAMA tetap dibandingkan isinya: siapa pemiliknya tidak boleh terlihat —
+            // `[NaN] == [NaN]` itu `false`.
+            (VmValue::Array(a), VmValue::Array(b))  => dengan_dua(a, b, larik_skalar,
+                |a, b| Ok::<_, String>(a.len() == b.len() && semua_vm_eq(a.iter(), b.iter())?))?,
             (VmValue::Tuple(a), VmValue::Tuple(b))  => {
                 let (a, b) = (isi_tuple(a), isi_tuple(b));
                 a.len() == b.len() && semua_vm_eq(a.iter(), b.iter())?
@@ -851,9 +869,10 @@ impl VmValue {
                     if let Label::Enum { payload: Some(p), .. } = &a.label {
                         if !p.vm_eq(p)? { return Ok(false); }
                     }
-                    let g = a.lock().unwrap();
-                    for v in g.values() { if !v.vm_eq(v)? { return Ok(false); } }
-                    return Ok(true);
+                    return dengan_dua(&a.isi, &b.isi, peta_skalar, |g, _| {
+                        for v in g.values() { if !v.vm_eq(v)? { return Ok(false); } }
+                        Ok(true)
+                    });
                 }
                 let label_sama = match (&a.label, &b.label) {
                     (Label::Dict, Label::Dict) => true,
@@ -867,24 +886,24 @@ impl VmValue {
                     _ => false,
                 };
                 if !label_sama { return Ok(false); }
-                let ga = a.lock().unwrap();
-                let gb = b.lock().unwrap();
-                if ga.len() != gb.len() { return Ok(false); }
-                let mut sama = true;
-                for (k, v) in ga.iter() {
-                    match gb.get(k) {
-                        Some(other) if v.vm_eq(other)? => {}
-                        _ => { sama = false; break; }
+                dengan_dua(&a.isi, &b.isi, peta_skalar, |ga, gb| {
+                    if ga.len() != gb.len() { return Ok::<_, String>(false); }
+                    for (k, v) in ga.iter() {
+                        match gb.get(k) {
+                            Some(other) if v.vm_eq(other)? => {}
+                            _ => return Ok(false),
+                        }
                     }
-                }
-                sama
+                    Ok(true)
+                })?
             }
             (VmValue::Channel(a), VmValue::Channel(b)) => a.sama(b),
             (VmValue::Sinkron(a), VmValue::Sinkron(b)) => a.sama(b),
             (VmValue::Asing(a), VmValue::Asing(b)) => a.sama(b),
             // Membandingkan binding = membandingkan nilai yang disimpannya.
-            (VmValue::Cell(a), _) => a.lock().unwrap_or_else(|p| p.into_inner()).vm_eq(rhs)?,
-            (_, VmValue::Cell(b)) => self.vm_eq(&b.lock().unwrap_or_else(|p| p.into_inner()))?,
+            // Isinya diambil dulu: kunci sel tidak dipegang selama sisi lain (bisa sel yang sama) dibandingkan.
+            (VmValue::Cell(a), _) => { let v = a.lock().unwrap_or_else(|p| p.into_inner()).clone(); v.vm_eq(rhs)? }
+            (_, VmValue::Cell(b)) => { let v = b.lock().unwrap_or_else(|p| p.into_inner()).clone(); self.vm_eq(&v)? }
             _ => false,
         })
     }
@@ -909,18 +928,7 @@ impl VmValue {
             (VmValue::Float(a), VmValue::Int(b))   => a.partial_cmp(&(*b as f64)),
             (VmValue::Str(a),   VmValue::Str(b))   => Some(a.as_str().cmp(b.as_str())),
             (VmValue::Rune(a),  VmValue::Rune(b))  => Some(a.cmp(b)),
-            (VmValue::Array(x), VmValue::Array(y)) => {
-                // Penyimpanan yang sama dikunci SEKALI: mengunci Mutex yang sama dua kali
-                // menggantung selamanya.
-                if Arc::ptr_eq(x, y) {
-                    let g = x.lock().unwrap_or_else(|p| p.into_inner());
-                    banding_leksikografis(&g, &g)?
-                } else {
-                    let (xa, ya) = (x.lock().unwrap_or_else(|p| p.into_inner()),
-                                    y.lock().unwrap_or_else(|p| p.into_inner()));
-                    banding_leksikografis(&xa, &ya)?
-                }
-            }
+            (VmValue::Array(x), VmValue::Array(y)) => dengan_dua(x, y, larik_skalar, |xa, ya| banding_leksikografis(xa, ya))?,
             (VmValue::Tuple(x), VmValue::Tuple(y)) => banding_leksikografis(&isi_tuple(x), &isi_tuple(y))?,
             _ => return Err(crate::interpreter::pesan_banding(
                 self.type_name_penuh().as_str(), rhs.type_name_penuh().as_str())),

@@ -11,7 +11,14 @@ impl Codegen {
     /// Channel baru ber-elemen `ety`, kapasitas dari `cap` (tanpa `cap`: 0, serah-terima langsung).
     fn chan_baru(&mut self, ety: JrgType, cap: Option<&Expr>) -> Result<Val, String> {
         let cap_v = match cap {
-            Some(e) => { let v = self.codegen_expr(e, Some(&JrgType::I64))?; self.coerce_longgar(&v, &JrgType::I64) }
+            Some(e) => {
+                let v = self.codegen_expr(e, Some(&JrgType::I64))?;
+                // Kapasitas bukan bilangan bulat gagal SAAT JALAN dengan kalimat acuan (`kapasitas_chan`), bukan saat kompilasi.
+                if !v.ty.is_int() && v.ty != JrgType::Any {
+                    self.panik_statis(&crate::interpreter::pesan_kapasitas_chan(None, &v.ty.nama_typeof()));
+                    Val { text: "0".into(), ty: JrgType::I64 }
+                } else { self.coerce_longgar(&v, &JrgType::I64) }
+            }
             None => Val { text: "0".into(), ty: JrgType::I64 },
         };
         self.ensure_extern("declare ptr @jrg_chan_new(i64, i64)", "jrg_chan_new");

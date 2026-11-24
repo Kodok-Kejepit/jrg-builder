@@ -460,7 +460,8 @@ pub(crate) fn catat_metode_pemakai(file: &ParsedFile) {
 
 pub(crate) fn pasang_param(mut f: VmFunction, fd: &FnDecl) -> VmFunction {
     f.params = fd.params.iter().map(param_name).collect();
-    f.arity_min = fd.params.iter().filter(|p| p.default.is_none()).count() as u8;
+    // Muat: tidak lebih dari `arity`, yang sudah diperiksa `arity_u8` pemanggil.
+    f.arity_min = fd.params.iter().filter(|p| p.default.is_none()).count().min(f.arity as usize) as u8;
     f.variadic = fd.params.last().map_or(false, |p| p.is_variadic);
     // Parameter pengumpul tidak pernah wajib: tanpa argumen sisa ia berisi
     // array kosong, bukan "tidak dapat argumen".
@@ -726,7 +727,7 @@ impl Compiler {
             if let Item::Fn(fd) = item {
                 let fn_chunk = Compiler::compile_fn(fd)?;
                 let global_name = nama_global(namespace, &fd.name);
-                let fn_val   = pasang_param(VmFunction::new(&fd.name, fd.params.len() as u8, fn_chunk), fd);
+                let fn_val   = pasang_param(VmFunction::new(&fd.name, arity_u8(fd.params.len())?, fn_chunk), fd);
                 let ci = c.chunk.add_constant(VmValue::Function(std::sync::Arc::new(fn_val)));
                 let ni = c.chunk.add_name(&global_name);
                 c.chunk.emit_arg(OpCode::Const,      ci);
@@ -823,7 +824,7 @@ impl Compiler {
                         // "dari dalam tipe apa akses ini terjadi" harus
                         // ikut terkompilasi bersama badan methodnya.
                         let fn_chunk = Compiler::compile_fn_milik(fd, Some(type_name.clone()))?;
-                        let arity    = fd.params.len() as u8;
+                        let arity    = arity_u8(fd.params.len())?;
                         let fn_val   = pasang_param(VmFunction::new(&fn_name, arity, fn_chunk), fd);
                         let ci = c.chunk.add_constant(VmValue::Function(std::sync::Arc::new(fn_val)));
                         let ni = c.chunk.add_name(&fn_name);
@@ -877,7 +878,7 @@ impl Compiler {
                         // karena di situlah methodnya sekarang hidup — dan
                         // aturan visibilitas memang mengizinkan turunan.
                         let fn_chunk = Compiler::compile_fn_milik(fd, Some(child_name.clone()))?;
-                        let fn_val = pasang_param(VmFunction::new(&fn_name, fd.params.len() as u8, fn_chunk), fd);
+                        let fn_val = pasang_param(VmFunction::new(&fn_name, arity_u8(fd.params.len())?, fn_chunk), fd);
                         let ci = c.chunk.add_constant(VmValue::Function(std::sync::Arc::new(fn_val)));
                         let ni = c.chunk.add_name(&fn_name);
                         c.chunk.emit_arg(OpCode::Const, ci);
@@ -941,7 +942,7 @@ impl Compiler {
                         hasil
                     }
                 }?;
-                let fn_val = pasang_param(VmFunction::new(&fn_name, fd.params.len() as u8, fn_chunk), fd);
+                let fn_val = pasang_param(VmFunction::new(&fn_name, arity_u8(fd.params.len())?, fn_chunk), fd);
                 let ci = c.chunk.add_constant(VmValue::Function(std::sync::Arc::new(fn_val)));
                 let ni = c.chunk.add_name(&fn_name);
                 c.chunk.emit_arg(OpCode::Const, ci);
@@ -1094,7 +1095,7 @@ impl Compiler {
     /// Seperti `compile_fn`, tapi tahu ia sedang mengompilasi method milik tipe
     /// apa.
     pub fn compile_fn_milik(fd: &FnDecl, tipe_self: Option<String>) -> CR<Chunk> {
-        let mut c = Compiler::new(&fd.name, fd.params.len() as u8);
+        let mut c = Compiler::new(&fd.name, arity_u8(fd.params.len())?);
         c.chunk.tipe_self = tipe_self;
         c.scope_depth = 1;
 
@@ -1231,7 +1232,7 @@ impl Compiler {
         }
         // Pass 2: baru kompilasi badannya, dengan peta yang sudah lengkap.
         for (fd, unik) in bersarang.iter().zip(dipasang) {
-            let mut c = Compiler::new(&fd.name, fd.params.len() as u8);
+            let mut c = Compiler::new(&fd.name, arity_u8(fd.params.len())?);
             c.scope_depth = 1;
             c.saudara = self.saudara.clone();
             for p in &fd.params {
@@ -1239,7 +1240,7 @@ impl Compiler {
                 c.locals.push(Local { name: param_name(p), depth: 1, slot });
             }
             Compiler::isi_badan_fn(&mut c, fd)?;
-            let fn_val = pasang_param(VmFunction::new(&fd.name, fd.params.len() as u8, c.chunk), fd);
+            let fn_val = pasang_param(VmFunction::new(&fd.name, arity_u8(fd.params.len())?, c.chunk), fd);
             let ci = self.chunk.add_constant(VmValue::function(fn_val));
             self.chunk.emit_arg(OpCode::Const, ci);
             let ni = self.chunk.add_name(&unik);
@@ -1553,6 +1554,15 @@ impl Compiler {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
+
+/// Jumlah parameter sebagai `u8` milik `VmFunction`; di atas 255 DITOLAK, dulu terpotong diam-diam
+/// sehingga `p0` berbagi slot dengan lokal pertama (AGI-20261119-36).
+pub(crate) fn arity_u8(n: usize) -> CR<u8> {
+    u8::try_from(n).map_err(|_| CompileError::new(format!(
+        "fungsi ini punya {} parameter, Bytecode VM menampung paling banyak 255 — kumpulkan sisanya lewat `sisa...` atau sebuah struct",
+        n,
+    )))
+}
 
 pub(crate) fn param_name(p: &FnParam) -> String {
     pat_name(&p.pattern)

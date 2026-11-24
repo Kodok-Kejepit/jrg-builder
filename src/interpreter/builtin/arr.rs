@@ -47,15 +47,9 @@ impl Interpreter {
                 // `make_chan(int)`.
                 let kapasitas = match args.first() {
                     None => 0,
-                    Some(Value::Int(n)) if *n >= 0 => {
-                        crate::interpreter::cek_batas_elemen("Chan::new", *n)
-                            .map_err(|e| Signal::RuntimeError(RuntimeError::new(e)))?;
-                        *n as usize
-                    }
-                    Some(Value::Int(n)) => return runtime_err!("{}",
-                        crate::interpreter::pesan_kapasitas_chan(Some(*n), "int")),
-                    Some(v) => return runtime_err!("{}",
-                        crate::interpreter::pesan_kapasitas_chan(None, &v.type_name())),
+                    Some(v) => crate::interpreter::kapasitas_chan(
+                        if let Value::Int(n) = v { Some(*n) } else { None }, &v.type_name(), true)
+                        .map_err(|e| Signal::RuntimeError(RuntimeError::new(e)))?,
                 };
                 Ok(Value::Channel(crate::interpreter::value::channel_new(kapasitas)))
             }

@@ -227,6 +227,7 @@ local function kirim_baris(s)
   proto_out:flush()
 end
 
+local buka
 local function fungsi_jrg(n)
   return function(...)
     local args = table.pack(...)
@@ -244,12 +245,13 @@ local function fungsi_jrg(n)
         nomor, tostring(jawab.seq)), 0)
     end
     if not jawab.ok then error(jawab.error or "callback JRG gagal", 0) end
-    return jawab.value
+    -- Fungsi di HASIL callback ikut jadi fungsi Lua (AGI-20261120-25 butir 4); dulu sampai sebagai tabel penanda.
+    return buka(jawab.value)
   end
 end
 
 -- Penanda `{"__jrgfn__": n}` dari jrgc ditukar jadi fungsi Lua, di kedalaman mana pun.
-local function buka(v)
+buka = function(v)
   if type(v) ~= "table" then return v end
   if v.__jrgfn__ ~= nil and v.__kunci__ == KUNCI then
     local jumlah = 0

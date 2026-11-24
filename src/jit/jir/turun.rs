@@ -382,8 +382,10 @@ impl Penurun<'_, '_> {
 
     /// `lambat::wujud_varian` atas bayangan `m` (posisinya digeser `geser`).
     fn wujud(&mut self, m: &Maya, geser: usize) {
-        let s = *self.slot_wujud.get_or_insert_with(|| self.b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, 64, 3)));
-        for (k, n) in m.muatan.iter().enumerate().take(8) {
+        let lebar = (super::MAKS_MUATAN * 8) as u32;
+        let s = *self.slot_wujud.get_or_insert_with(|| self.b.create_sized_stack_slot(StackSlotData::new(StackSlotKind::ExplicitSlot, lebar, 3)));
+        assert!(m.muatan.len() <= super::MAKS_MUATAN, "bayangan melewati MAKS_MUATAN");
+        for (k, n) in m.muatan.iter().enumerate() {
             let v = self.bit(*n);
             self.b.ins().stack_store(self.ptr, v, s, (k * 8) as i32);
         }

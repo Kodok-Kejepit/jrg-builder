@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use super::{Akhir, Arg, Banding, Biner, Blok, Inst, Jaga, Jenis, Nilai, Pb, Pembangun, Tipe, Uji};
-use crate::jit::jir::Maya;
+use crate::jit::jir::{Maya, MAKS_MUATAN};
 use crate::jit::lambat::SitusBangun;
 use crate::vm::value::{Label, NamaVarian, VmValue};
 
@@ -96,7 +96,7 @@ impl Pembangun<'_> {
     /// `basi` = varian itu tidak ditulis ke stack VM (bayangannya harus lengkap).
     pub(super) fn lahir_varian(&mut self, b: Blok, pos: usize, nama: &'static NamaVarian, payload: Option<usize>,
         muatan: Vec<(Jenis, Nilai)>, konst: usize, basi: bool) -> bool {
-        if !self.bayang_aktif { return false; }
+        if !self.bayang_aktif || muatan.len() > MAKS_MUATAN { return false; }
         let apung = muatan.iter().enumerate().filter(|(_, m)| m.0 == Jenis::Pecahan).fold(0u64, |a, (k, _)| a | 1 << k);
         let Some(i) = self.tag_varian(nama, payload, konst, apung) else { return false };
         let tag = self.konst_i(b, i as i64);
@@ -644,6 +644,7 @@ impl Pembangun<'_> {
 
     /// Posisi `pos` kini struct baru `situs` berisi `muatan` (angka native, urut bentuknya): belum dibangun (`basi`).
     pub(super) fn lahir_struktur(&mut self, b: Blok, pos: usize, situs: &'static SitusBangun, muatan: Vec<(Jenis, Nilai)>) -> bool {
+        if muatan.len() > MAKS_MUATAN { return false; }
         let apung = muatan.iter().enumerate().filter(|(_, m)| m.0 == Jenis::Pecahan).fold(0u64, |a, (k, _)| a | 1 << k);
         let Some(i) = self.tag_struktur(situs, muatan.len(), apung) else { return false };
         let tag = self.konst_i(b, i as i64);

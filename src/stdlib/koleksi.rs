@@ -85,19 +85,10 @@ pub fn cmp_vm(a: &VmValue, b: &VmValue) -> Option<std::cmp::Ordering> {
             };
             f(a).partial_cmp(&f(b))
         }
-        (VmValue::Array(x), VmValue::Array(y)) => {
-            // Penyimpanan yang sama: `Equal` tanpa mengunci. Mengunci Mutex yang
-            // sama dua kali menggantung selamanya.
-            if std::sync::Arc::ptr_eq(x, y) {
-                // Dikunci sekali lalu dibandingkan dengan dirinya: array ber-NaN tidak
-                // "sama" dengan dirinya sendiri, siapa pun pemilik penyimpanannya.
-                let g = x.lock().unwrap_or_else(|p| p.into_inner());
-                return urut_leksikografis(&g, &g);
-            }
-            let (xa, ya) = (x.lock().unwrap_or_else(|p| p.into_inner()),
-                            y.lock().unwrap_or_else(|p| p.into_inner()));
-            urut_leksikografis(&xa, &ya)
-        }
+        // Penyimpanan yang sama tetap dibandingkan isinya: array ber-NaN tidak "sama" dengan dirinya sendiri.
+        // Kunci lewat `dengan_dua` (AGI-20261119-35).
+        (VmValue::Array(x), VmValue::Array(y)) =>
+            crate::vm::value::dengan_dua(x, y, crate::vm::value::larik_skalar, |xa, ya| urut_leksikografis(xa, ya)),
         (VmValue::Tuple(x), VmValue::Tuple(y)) => urut_leksikografis(
             &crate::vm::value::isi_tuple(x), &crate::vm::value::isi_tuple(y)),
         _ => None,

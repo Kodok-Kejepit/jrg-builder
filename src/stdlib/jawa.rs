@@ -312,16 +312,26 @@ pub fn register(vm: &mut Vm) {
     // ── pembebasan ──────────────────────────────────────────────────────
     vm.def("jawir::free", |a| {
         let (id, _) = pegangan(a.get(0), "jawir::free")?;
-        let mut reg = registri().lock().unwrap_or_else(|p| p.into_inner());
-        match reg.get_mut(&id) {
-            None => Err(format!("jawir::free: pointer tidak dikenal (id {})", id)),
-            Some(al) if !al.hidup => Err(acuan::PESAN_DOUBLE_FREE.to_string()),
-            Some(al) => {
-                al.hidup = false;
-                TOTAL_FREE.fetch_add(1, Ordering::Relaxed);
-                Ok(VmValue::Unit)
+        let lama = {
+            let mut reg = registri().lock().unwrap_or_else(|p| p.into_inner());
+            match reg.get_mut(&id) {
+                None => return Err(format!("jawir::free: pointer tidak dikenal (id {})", id)),
+                Some(al) if !al.hidup => return Err(acuan::PESAN_DOUBLE_FREE.to_string()),
+                Some(al) => {
+                    al.hidup = false;
+                    // Isinya benar-benar dilepas (AGI-20261119-31); jenisnya tetap untuk pesan
+                    // use-after-free. Dijatuhkan sesudah registri dibuka.
+                    match &mut al.isi {
+                        Isi::Tunggal(v) => Isi::Tunggal(std::mem::replace(v, VmValue::Nil)),
+                        Isi::Larik(v) => Isi::Larik(std::mem::take(v)),
+                        Isi::Bufer(b) => Isi::Bufer(std::mem::take(b)),
+                    }
+                }
             }
-        }
+        };
+        TOTAL_FREE.fetch_add(1, Ordering::Relaxed);
+        drop(lama);
+        Ok(VmValue::Unit)
     });
 }
 

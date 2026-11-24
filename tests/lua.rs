@@ -77,3 +77,18 @@ Result::Err(lua::eval:1: sengaja)\n";
     assert!(galat.contains("dari lua"), "print Lua hilang:\n{}", galat);
     assert!(!keluar.contains("dari lua"), "print Lua bocor ke stdout:\n{}", keluar);
 }
+
+#[test]
+fn lua_hasil_callback_boleh_fungsi() {
+    // AGI-20261120-25 butir 4: closure sebagai HASIL callback dulu ditolak dengan kalimat `eval`/`exec`.
+    if !ada_lua() { eprintln!("lewati: `lua` tidak ada"); return; }
+    let (keluar, galat) = jalankan(r##"
+package main
+fn pembuat(n) { return |x| x + n }
+pub fn main() {
+    lua::exec("function pakai(buat) local f = buat(10); return f(5) end")
+    wok(lua::call("pakai", pembuat))
+}
+"##, &[]);
+    assert!(keluar.contains("Result::Ok(15)"), "keluaran:\n{}\nstderr:\n{}", keluar, galat);
+}

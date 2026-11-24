@@ -1,5 +1,15 @@
 // jaga_stack.c — penjaga stack untuk biner hasil `--emit-llvm`. Nol biaya per panggilan:
 // stack yang habis ditangkap SEKALI lewat sinyal di stack cadangan, lalu dilaporkan.
+// Kalimatnya di luar `#if`: WebAssembly (`korutin_wasm.c`, tanpa sinyal) melaporkan stack habis dengan kalimat yang sama.
+#if defined(__unix__) || defined(__APPLE__) || defined(__wasi__)
+static const char JRG_PESAN_STACK[] =
+    "rekursi terlalu dalam — stack program habis sebelum rekursinya berhenti.\n"
+    "  bantuan: pastikan ada kondisi berhenti (base case) yang PASTI tercapai, "
+    "dan tiap panggilan rekursif bergerak mendekatinya\n"
+    "  catatan: kalau memang butuh kedalaman sebesar ini, ubah jadi perulangan "
+    "(`while`/`for`), atau perbesar stack (`ulimit -s`)";
+#endif
+
 #if defined(__unix__) || defined(__APPLE__)
 #include <signal.h>
 #include <stdint.h>
@@ -13,13 +23,6 @@ int jrg_ko_selamatkan(void (*fn)(void));
 
 static char jrg_stack_cadangan[64 * 1024];
 static uintptr_t jrg_stack_atas, jrg_stack_bawah;
-
-static const char JRG_PESAN_STACK[] =
-    "rekursi terlalu dalam — stack program habis sebelum rekursinya berhenti.\n"
-    "  bantuan: pastikan ada kondisi berhenti (base case) yang PASTI tercapai, "
-    "dan tiap panggilan rekursif bergerak mendekatinya\n"
-    "  catatan: kalau memang butuh kedalaman sebesar ini, ubah jadi perulangan "
-    "(`while`/`for`), atau perbesar stack (`ulimit -s`)";
 
 static void jrg_lapor_stack(void) {
     jrg_situs = 0;  // stack habis di pembuka fungsi: situs panggilan terakhir bukan tempatnya

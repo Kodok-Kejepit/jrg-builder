@@ -498,15 +498,8 @@ impl Vm {
             // Kapasitas yang bukan `int` DITOLAK, tidak dijatuhkan jadi 0.
             let cap = match a.get(0) {
                 None => 0,
-                Some(Int(n)) if *n >= 0 => {
-                    // Kapasitas menentukan besar buffer yang dialokasi, jadi
-                    // batasnya diperiksa sebelum alokasinya — tanpa ini
-                    // `Chan::new(1e18)` mematikan proses dengan `capacity overflow`.
-                    crate::interpreter::cek_batas_elemen("Chan::new", *n)?;
-                    *n as usize
-                }
-                Some(Int(n)) => return Err(crate::interpreter::pesan_kapasitas_chan(Some(*n), "int")),
-                Some(v) => return Err(crate::interpreter::pesan_kapasitas_chan(None, &v.type_name_penuh())),
+                Some(v) => crate::interpreter::kapasitas_chan(
+                    if let Int(n) = v { Some(*n) } else { None }, &v.type_name_penuh(), true)?,
             };
             Ok(Channel(VmChannel::new(cap)))
         });

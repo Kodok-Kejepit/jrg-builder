@@ -4656,3 +4656,127 @@ fn jir_struct_bayangan_sama_dengan_vm() {
         assert_eq!((v.sukses, &v.stdout, &v.stderr), (j.sukses, &j.stdout, &j.stderr), "{env:?}");
     }
 }
+
+#[test]
+fn spawn_di_closure_menangkap_upvalue() {
+    // AGI-20261120-18 bagian 2: `spawn` di closure dulu kehilangan tangkapan closure-nya di `--vm`/`--jit`.
+    let src = "fn main() {\n  let x = 42\n  let ch = Chan::new(2)\n  let f = || {\n    spawn {\n      ch <- x\n    }\n  }\n  f()\n  let g = || { let y = x + 1\n    spawn |ch, y| { ch <- y } }\n  g()\n  wok(<-ch + <-ch)\n}\n";
+    for x in [&["--vm"][..], &["--jit"][..]] {
+        let h = jalankan(src, x, &[]);
+        assert!(h.sukses && h.stdout == "85", "{x:?}: {:?} {}", h.stdout, h.stderr);
+    }
+    sama_dengan_interpreter(src);
+}
+
+#[test]
+fn pola_or_tidak_meledak() {
+    // AGI-20261120-18 bagian 1: `1|2` yang tidak mengikat nama dulu ikut dikalikan (2^N alternatif).
+    let satu = "1 | 2, ".repeat(20);
+    let src = format!("fn main() {{\n  let t = ({}Some(7))\n  match t {{\n    ({}Some(x) | Ok(x)) => wok(x),\n    _ => wok(0),\n  }}\n}}\n", "1, ".repeat(20), satu);
+    let h = jalankan(&src, &["--vm"], &[]);
+    assert!(h.sukses && h.stdout == "7", "{:?} {}", h.stdout, h.stderr);
+    sama_dengan_interpreter(&src);
+    // Yang benar-benar mengikat dibatasi, dengan kalimat yang menyebut sebabnya.
+    let ikat: Vec<String> = (0..13).map(|i| format!("Some(a{i}) | Ok(a{i})")).collect();
+    let isi: Vec<String> = (0..13).map(|_| "Some(1)".to_string()).collect();
+    let src = format!("fn main() {{\n  match ({}) {{\n    ({}) => wok(a0),\n    _ => wok(0),\n  }}\n}}\n", isi.join(", "), ikat.join(", "));
+    let h = jalankan(&src, &["--vm"], &[("JRG_BAHASA", "id")]);
+    assert!(!h.sukses && h.stderr.contains("4096 alternatif"), "{:?} {}", h.stdout, h.stderr);
+}
+
+#[test]
+fn deklarasi_ganda_reverse_teks_dan_make_chan() {
+    // AGI-20261119-53: nilai `:=` sebelumnya tidak dihitung temp; `s = s.reverse()` atas teks; kapasitas `make_chan`.
+    let src = "fn main() {\n  a, b := \"A\", (match \"B\" { \"B\" => \"b\", \"A\" => \"bocor\", _ => \"x\" })\n  e, f := 111, (match (222, 333) { (x, y) => x + y, _ => -1 })\n  wok(a, b, e, f)\n  var s = \"halo\"\n  s = s.reverse()\n  wok(s)\n  wok(make_chan(int, 3).cap())\n}\n";
+    for x in [&["--vm"][..], &["--jit"][..]] {
+        let h = jalankan(src, x, &[]);
+        assert!(h.sukses && h.stdout == "A b 111 555\nolah\n3", "{x:?}: {:?} {}", h.stdout, h.stderr);
+    }
+    sama_dengan_interpreter(src);
+    for cap in ["-3", "2.5"] {
+        let src = format!("fn main() {{\n  wok(1)\n  let c = make_chan(int, {cap})\n  wok(c.cap())\n}}\n");
+        let i = jalankan(&src, &[], &[]);
+        assert!(!i.sukses && i.stderr.contains("kapasitas"), "{}", i.stderr);
+        let v = jalankan(&src, &["--vm"], &[]);
+        assert_eq!((i.sukses, &i.stdout, &i.stderr), (v.sukses, &v.stdout, &v.stderr));
+    }
+}
+
+#[test]
+fn parameter_di_atas_255_ditolak_vm() {
+    // AGI-20261119-36: `as u8` memotong 256 jadi 0, `f()` lolos dan `p0` berbagi slot dengan lokal.
+    let p: Vec<String> = (0..256).map(|i| format!("p{i}")).collect();
+    let src = format!("fn f({}) {{\n  let x = 777\n  return p0\n}}\nfn main() {{\n  wok(f())\n}}\n", p.join(", "));
+    let h = jalankan(&src, &["--vm"], &[("JRG_BAHASA", "id")]);
+    assert!(!h.sukses && h.stderr.contains("256 parameter") && !h.stdout.contains("777"), "{:?} {}", h.stdout, h.stderr);
+}
+
+/// Varian bertuple `n` elemen (yang terakhir pecahan) dan struct `n` field dibangun di loop panas lalu dibaca utuh.
+fn bayangan_besar(n: usize) -> String {
+    let tipe: Vec<&str> = (0..n).map(|k| if k + 1 == n { "float" } else { "int" }).collect();
+    let isi: Vec<String> = (0..n).map(|k| if k + 1 == n { "3.5".to_string() } else { format!("{}", k * 11 + 1) }).collect();
+    let field: Vec<String> = (0..n.min(16)).map(|k| format!("f{k}: int")).collect();
+    let fisi: Vec<String> = (0..n.min(16)).map(|k| format!("f{k}: k + {k}")).collect();
+    format!("enum E {{ T(({})), K }}\nstruct S {{ {} }}\nfn buat(k: int) -> E {{\n  if k < 0 {{ return E::K }}\n  return E::T(({}))\n}}\nfn st(k: int) -> S {{ return S {{ {} }} }}\nfn main() {{\n  var r = E::K\n  var s = st(0)\n  for _, i in range(40) {{ r = buat(i)\n    s = st(i) }}\n  match r {{\n    E::T(t) => wok(t),\n    _ => wok(\"tidak\"),\n  }}\n  wok(typeof(r), s)\n}}\n",
+        tipe.join(", "), field.join(", "), isi.join(", "), fisi.join(", "))
+}
+
+#[test]
+fn bayangan_payload_besar_tidak_membaca_lewat_slot() {
+    // AGI-20261119-34: slot wujud 64 byte (8 isi) dibaca sebanyak payload/field-nya; bit 63 = penanda tuple.
+    for n in [9, 12, 16, 17, 64, 65] {
+        sama_dengan_interpreter(&bayangan_besar(n));
+    }
+}
+
+#[test]
+fn tembolok_pola_memeriksa_panjang_payload() {
+    // AGI-20261119-14: kunci tembolok `SitusPola` cuma nama varian + ada payload; panjang tuple lain dijawab dari tembolok.
+    let src = "fn cek(x) {\n  match x {\n    Option::Some(a, b) => return a + b,\n    _ => return -1,\n  }\n}\nfn main() {\n  var i = 0\n  while i < 200 {\n    let _ = cek(Option::Some((1, 2)))\n    i = i + 1\n  }\n  wok(tangkap(|| cek(Option::Some((10, 20, 30)))).is_err())\n  wok(tangkap(|| cek(Option::Some(99))).is_err())\n  wok(cek(Option::Some((4, 5))))\n}\n";
+    let h = jalankan(src, &["--jit"], &[]);
+    assert!(h.sukses && h.stdout == "true\ntrue\n9", "{:?} {}", h.stdout, h.stderr);
+    sama_dengan_interpreter(src);
+}
+
+#[test]
+fn deopt_di_sisipan_bertingkat() {
+    // AGI-20261119-46: `leaf` disisipkan ke `mid`, `mid` ke `outer`; deopt di `leaf` dulu melompati bingkai `mid`.
+    let src = "fn leaf(x: int, y: int, f: float) -> int {\n  let z = y + 1\n  if f > 0.0 { return z + x }\n  return 0\n}\nfn mid(a: int, b: int, f: float) -> int {\n  return leaf(a, b, f) + 555555\n}\nfn outer(a: int, b: int, f: float) -> int {\n  return mid(a, b, f) + 1000000\n}\nfn main() {\n  var i = 0\n  while i < 300 { let _ = outer(10, 2, 1.5)\n    i = i + 1 }\n  wok(outer(10, 9223372036854775807, 1.5))\n  wok(outer(1, 2, -1.0))\n}\n";
+    let h = jalankan(src, &["--jit"], &[]);
+    assert!(h.sukses && h.stdout == "9223372036856331373\n1555555", "{:?} {}", h.stdout, h.stderr);
+    sama_dengan_interpreter(src);
+}
+
+#[test]
+fn pembanding_tidak_menggantung_atas_penyimpanan_bersama() {
+    // AGI-20261119-35: `==`/`<`/`arr::sort` memegang kunci dua sisi selama elemen dibandingkan. `b = [a]` berbagi
+    // penyimpanan dengan `a`, jadi `a` dikunci dua kali di satu thread; `a == b` dan `b == a` di dua goroutine AB–BA.
+    let kasus = [
+        "fn main() {\n  let inner = [1]\n  let a = [inner]\n  let b = [a]\n  wok(a == b, b == b, a != b)\n}\n",
+        "fn main() {\n  let inner = [1]\n  var a = dict {}\n  a[\"k\"] = inner\n  var b = dict {}\n  b[\"k\"] = a\n  wok(a == b, b == b)\n}\n",
+        "fn main() {\n  let inner = [1]\n  let a = [inner]\n  let b = [a]\n  wok(1)\n  wok(a < b)\n}\n",
+        "fn main() {\n  let inner = [1]\n  let a = [inner]\n  let b = [a]\n  wok(1)\n  wok(arr::sort([a, b]))\n}\n",
+        "fn main() {\n  let a = [[1], [2]]\n  let b = [a[0], a[1], [3]]\n  wok(a < b, arr::sort([b, a]), arr::max([a, b]) == b)\n}\n",
+        "fn main() {\n  let a = arr::fill(1, 500)\n  let b = arr::fill(1, 500)\n  let done = Chan::new(2)\n  go { var i = 0; while i < 500 { let _ = (a == b); i += 1 }; done.send(1) }\n  go { var i = 0; while i < 500 { let _ = (b == a); i += 1 }; done.send(2) }\n  wok(done.recv() + done.recv())\n}\n",
+    ];
+    for src in kasus {
+        let dir = bersama::dir_unik("jrg-jit-kunci");
+        std::fs::create_dir_all(&dir).expect("bikin dir sementara");
+        let file = dir.join("uji.jrg");
+        std::fs::write(&file, src).expect("tulis sumber");
+        let jalan = |x: &[&str]| {
+            let o = Command::new("timeout").arg("60").arg(jrgc()).arg(&file).args(x).env("JRG_SOPAN", "1")
+                .stdin(std::process::Stdio::null()).output().expect("jalankan jrgc");
+            (o.status.code(), String::from_utf8_lossy(&o.stdout).into_owned(),
+                String::from_utf8_lossy(&o.stderr).replace(&file.display().to_string(), "<uji>"))
+        };
+        let acuan = jalan(&[]);
+        assert_ne!(acuan.0, Some(124), "interpreter menggantung:\n{src}");
+        for x in [&["--vm"][..], &["--jit"][..]] {
+            let h = jalan(x);
+            assert_ne!(h.0, Some(124), "{x:?} menggantung (kebuntuan kunci):\n{src}");
+            assert_eq!(h, acuan, "{x:?} beda dengan interpreter:\n{src}");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}

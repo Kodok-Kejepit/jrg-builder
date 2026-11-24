@@ -43,8 +43,28 @@ pub(crate) fn ada_or_pengikat(p: &Pattern) -> bool {
     }
 }
 
-/// Uraikan `|` (di kedalaman mana pun) jadi alternatif tanpa `|`, urut sumber.
+/// Batas alternatif hasil uraian `|` pengikat; di atasnya kompilasi ditolak (AGI-20261120-18).
+pub(crate) const MAKS_ALTERNATIF: u128 = 4096;
+
+/// Banyaknya alternatif yang dihasilkan `uraikan_or(p)`, jenuh — dihitung tanpa menguraikan.
+pub(crate) fn jumlah_alternatif(p: &Pattern) -> u128 {
+    if !pattern_binds_name(p) { return 1; }
+    let kali = |it: &mut dyn Iterator<Item = &Pattern>| it.fold(1u128, |a, x| a.saturating_mul(jumlah_alternatif(x)));
+    match p {
+        Pattern::Or { pats, .. } => pats.iter().fold(0u128, |a, x| a.saturating_add(jumlah_alternatif(x))),
+        Pattern::Binding { inner, .. } | Pattern::Ref { inner, .. } => jumlah_alternatif(inner),
+        Pattern::Enum { inner: Some(i), .. } => jumlah_alternatif(i),
+        Pattern::Tuple { elems, .. } => kali(&mut elems.iter()),
+        Pattern::Struct { fields, .. } => kali(&mut fields.iter().map(|f| &f.pat)),
+        Pattern::Array { before, after, .. } => kali(&mut before.iter().chain(after)),
+        _ => 1,
+    }
+}
+
+/// Uraikan `|` pengikat (di kedalaman mana pun) jadi alternatif, urut sumber. Bagian yang tidak
+/// mengikat nama dibiarkan utuh — `1|2` diuji di tempat, tidak ikut dikalikan.
 pub(crate) fn uraikan_or(p: &Pattern) -> Vec<Pattern> {
+    if !pattern_binds_name(p) { return vec![p.clone()]; }
     fn hasil_kali(bagian: Vec<Vec<Pattern>>) -> Vec<Vec<Pattern>> {
         let mut acc: Vec<Vec<Pattern>> = vec![Vec::new()];
         for pilihan in bagian {
@@ -321,6 +341,13 @@ impl Compiler {
                 || (arm.patterns.len() > 1 && arm.patterns.iter().any(pattern_binds_name));
             let (skip_arm_j, bindings) = if alternatif_pengikat {
                 let sumber = PatternSource::Local(sc_slot);
+                let n = arm.patterns.iter().fold(0u128, |a, p| a.saturating_add(jumlah_alternatif(p)));
+                if n > MAKS_ALTERNATIF {
+                    return Err(CompileError::new(format!(
+                        "pola `|` yang mengikat nama di lengan ini terurai jadi lebih dari {} alternatif; pecah lengannya, atau ikat namanya di luar `|`",
+                        MAKS_ALTERNATIF,
+                    )));
+                }
                 let alts: Vec<Pattern> = arm.patterns.iter().flat_map(uraikan_or).collect();
                 let mut awal = Vec::new();
                 ikatan_pola(&alts[0], &sumber, &mut awal);

@@ -78,7 +78,11 @@ impl Compiler {
 
             // name, name2 := expr, expr2
             Stmt::ShortDecl(sd) => {
-                for v in &sd.values { self.compile_value_expr(v)?; }
+                // Nilai sebelumnya sudah di stack: hitung sebagai temp, atau slot lokal berikutnya
+                // (`match`, pola) menimpa mereka (AGI-20261119-53).
+                for (i, v) in sd.values.iter().enumerate() {
+                    self.dgn_temp(i, |c| c.compile_value_expr(v))?;
+                }
                 // Jika lebih banyak names dari values, pad dengan Nil
                 for _ in sd.values.len()..sd.names.len() {
                     self.chunk.emit(OpCode::Nil);
@@ -411,7 +415,8 @@ impl Compiler {
             // spawn { body } — jalankan block sebagai goroutine OS thread
             // ── Spawn goroutine ──────────────────────────────────────
             Stmt::Spawn(ss) => {
-                let captures: Vec<(String, usize)> = if let Some(params) = &ss.params {
+                // Sumber tangkapan: `Ok(slot)` lokal, `Err(i)` upvalue closure pembungkus (AGI-20261120-18).
+                let captures: Vec<(String, Result<usize, usize>)> = if let Some(params) = &ss.params {
                     let mut captures = Vec::with_capacity(params.len());
                     for param in params {
                         let name = param_name(param);
@@ -420,12 +425,15 @@ impl Compiler {
                                 "parameter capture spawn harus identifier",
                             ));
                         }
-                        let slot = self.resolve_local(&name).ok_or_else(|| {
-                            CompileError::new(format!(
-                                "spawn tidak bisa menangkap local `{}` yang belum didefinisikan",
-                                name,
-                            ))
-                        })?;
+                        let slot = match self.resolve_local(&name) {
+                            Some(slot) => Ok(slot),
+                            None => Err(self.resolve_upval(&name).ok_or_else(|| {
+                                CompileError::new(format!(
+                                    "spawn tidak bisa menangkap local `{}` yang belum didefinisikan",
+                                    name,
+                                ))
+                            })?),
+                        };
                         captures.push((name, slot));
                     }
                     captures
@@ -434,7 +442,14 @@ impl Compiler {
                         .iter()
                         .enumerate()
                         .filter(|(slot, local)| self.resolve_local(&local.name) == Some(*slot))
-                        .map(|(slot, local)| (local.name.clone(), slot))
+                        .map(|(slot, local)| (local.name.clone(), Ok(slot)))
+                        .chain(
+                            self.upvals
+                                .iter()
+                                .enumerate()
+                                .filter(|(_, u)| self.resolve_local(&u.name).is_none())
+                                .map(|(i, u)| (u.name.clone(), Err(i))),
+                        )
                         .collect()
                 };
                 let arity = u8::try_from(captures.len()).map_err(|_| {
@@ -453,8 +468,11 @@ impl Compiler {
                 let fn_val = VmFunction::new("<goroutine>", arity, c.chunk);
                 let ci = self.chunk.add_constant(VmValue::Function(std::sync::Arc::new(fn_val)));
                 self.chunk.emit_arg(OpCode::Const, ci);
-                for (_, slot) in &captures {
-                    self.chunk.emit_arg(OpCode::LoadLocal, *slot as u32);
+                for (_, sumber) in &captures {
+                    match sumber {
+                        Ok(slot) => { self.chunk.emit_arg(OpCode::LoadLocal, *slot as u32); }
+                        Err(ui) => { self.chunk.emit_arg(OpCode::LoadUpval, *ui as u32); }
+                    }
                 }
                 // Galat `Spawn` (thread tak bisa dibuat, misalnya di peramban) menunjuk pernyataan `spawn`-nya.
                 let lama = self.chunk.masuk_span(ss.span);

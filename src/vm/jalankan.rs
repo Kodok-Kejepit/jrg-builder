@@ -251,10 +251,15 @@ impl Vm {
                     let sasaran = self.pop(sp)?;
                     let VmValue::Array(a) = sasaran else {
                         if bentuk_method {
-                            // Kalimat pintu method yang sama dengan `x.push(1)` biasa.
+                            // Bukan array (`s = s.reverse()` atas teks, handle asing): pemanggilan
+                            // method biasa, lewat pintu method yang sama (AGI-20261119-53).
                             let nama = &nama_arr_ubah(arg)["arr::".len()..];
-                            // Konteksnya PEMANGGILAN method, jadi pintu method.
-                            self.get_field_pintu(&sasaran, nama, sp, true)?;
+                            let f = self.get_method(&sasaran, nama, sp)?;
+                            let mut argumen = vec![sasaran];
+                            argumen.extend(tambahan);
+                            let r = self.call_value_immediate(f, argumen)?;
+                            self.push(r);
+                            continue;
                         }
                         return Err(VmError::at(
                             crate::interpreter::pesan_arg_harus_array(
@@ -1196,10 +1201,11 @@ impl Vm {
 
                 OpCode::ChanMake => {
                     // stack top = capacity (Int)
-                    let cap = match self.pop(sp)? {
-                        VmValue::Int(n) => n.max(0) as usize,
-                        _ => 0,
-                    };
+                    // Aturan `Chan::new`: negatif, bukan bulat dan kebesaran ditolak (AGI-20261119-53).
+                    let v = self.pop(sp)?;
+                    let cap = crate::interpreter::kapasitas_chan(
+                        if let VmValue::Int(n) = &v { Some(*n) } else { None }, &v.type_name_penuh(), false)
+                        .map_err(|e| VmError::at(e, sp))?;
                     self.push(VmValue::Channel(VmChannel::new(cap)));
                 }
                 OpCode::ChanSend => {

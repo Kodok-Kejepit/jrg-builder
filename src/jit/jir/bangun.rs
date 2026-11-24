@@ -672,6 +672,8 @@ impl Pembangun<'_> {
                         _ => (None, Vec::new()),
                     };
                     if let Some(jumlah) = jumlah {
+                        // Payload di atas `MAKS_MUATAN` tanpa isi native: dibangun VM, tidak berbayangan.
+                        let muatan = if muatan.len() > super::MAKS_MUATAN { Vec::new() } else { muatan };
                         let apung = muatan.iter().enumerate().filter(|(_, m)| m.0 == Jenis::Pecahan).fold(0u64, |a, (k, _)| a | 1 << k);
                         let basi = self.bayang_aktif && muatan.len() == jumlah && self.tag_varian(nama, Some(jumlah), 0, apung).is_some();
                         varian = Some((nama, jumlah, muatan, basi, tuple.is_some() && jumlah > 1));
@@ -680,7 +682,7 @@ impl Pembangun<'_> {
                 // Struct baru dari angka native semua: tidak dibangun (basi), field-nya dibaca dari bayangannya.
                 let mut struktur: Option<(&'static SitusBangun, Vec<(Jenis, Nilai)>)> = None;
                 if let SitusBangun::Struktur(_, bentuk) | SitusBangun::StrukturUlang(_, bentuk) = situs {
-                    if ins.op == OpCode::BuildStruct && self.bayang_aktif && n >= 1 && bentuk.nama.len() == n {
+                    if ins.op == OpCode::BuildStruct && self.bayang_aktif && (1..=super::MAKS_MUATAN).contains(&n) && bentuk.nama.len() == n {
                         let muatan: Option<Vec<(Jenis, Nilai)>> = (0..n).map(|i| match (s[t - n + i], isi[t - n + i]) {
                             (j @ (Jenis::Bulat | Jenis::Pecahan), Some(v)) => Some((j, v)),
                             _ => None,
@@ -1375,13 +1377,19 @@ impl Pembangun<'_> {
         self.maks_sisip = self.maks_sisip.max(geser + c.maks);
         let nv = |v: Nilai| Nilai(v.0 + dasar_n);
         let nb = |x: Blok| Blok(x.0 + dasar_b);
-        let keadaan = |k: &Keadaan| -> Keadaan {
+        // Seluruh rantai callee dipetakan (AGI-20261119-46): nilai lewat `nv`, `geser` bingkai yang sudah disisipkan
+        // callee ditambah `geser` (mutlak dari dasar unit), dan ujungnya (bingkai callee) mendapat induk pemanggil.
+        fn petakan(k: &Keadaan, nv: &dyn Fn(Nilai) -> Nilai, fid: u32, geser: usize, induk: &Box<Keadaan>) -> Keadaan {
             let mut x = k.clone();
             x.isi = k.isi.iter().map(|v| v.map(nv)).collect();
             x.maya = k.maya.iter().map(|m| super::Maya { tag: nv(m.tag), muatan: m.muatan.iter().map(|v| nv(*v)).collect(), ..m.clone() }).collect();
-            if x.induk.is_none() { x.fid = Some(fid); x.geser = geser; x.induk = Some(induk.clone()); }
+            match &k.induk {
+                None => { x.fid = Some(fid); x.geser = geser; x.induk = Some(induk.clone()); }
+                Some(i) => { x.geser += geser; x.induk = Some(Box::new(petakan(i, nv, fid, geser, induk))); }
+            }
             x
-        };
+        }
+        let keadaan = |k: &Keadaan| -> Keadaan { petakan(k, &nv, fid, geser, &induk) };
         let jaga = |j: &Jaga| Jaga { keadaan: keadaan(&j.keadaan), spek: j.spek, puncak_vm: j.puncak_vm };
         let jo = |j: &Option<Jaga>| j.as_ref().map(jaga);
         let lanjut = Blok(dasar_b + c.blok.len() as u32);

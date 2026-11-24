@@ -534,7 +534,7 @@ impl Compiler {
                     if let UpvalSrc::ParentLocal(slot) = u.src { self.slot_tertangkap.insert(slot as usize); }
                 }
 
-                let arity = params.len() as u8;
+                let arity = crate::vm::compiler::arity_u8(params.len())?;
                 let mut c = Compiler::new("<closure>", arity);
                 // `fn` bersarang di fungsi penciptanya terlihat juga dari closure, seperti interpreter (AGI-20261120-03).
                 c.saudara = self.saudara.clone();
@@ -558,7 +558,7 @@ impl Compiler {
                 let mut fn_val = VmFunction::closure("<closure>", arity, c.chunk, srcs, *is_move);
                 // Nama parameternya ikut disimpan.
                 fn_val.params = pnames.clone();
-                fn_val.arity_min = params.iter().filter(|p| p.default.is_none()).count() as u8;
+                fn_val.arity_min = crate::vm::compiler::arity_u8(params.iter().filter(|p| p.default.is_none()).count())?;
                 fn_val.variadic = params.last().map_or(false, |p| p.is_variadic);
                 let ci = self.chunk.add_constant(VmValue::Function(std::sync::Arc::new(fn_val)));
                 if kosong {

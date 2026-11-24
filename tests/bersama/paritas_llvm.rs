@@ -6020,4 +6020,15 @@ fn main() {
     wok(Kotak::ambil(k), k.ambil())
 }
 "#),
+    ("make_chan dan Chan::new berkapasitas negatif atau pecahan: kalimat kapasitas_chan saat jalan", r#"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", typeof(v)), Result::Err(g) => wok("err", g.pesan) } }
+fn main() {
+    let n = -3
+    coba(|| make_chan(int, n))
+    let x = 2.5
+    coba(|| make_chan(int, x))
+    coba(|| Chan::new(n))
+    coba(|| make_chan(int, 2))
+}
+"#),
 ];

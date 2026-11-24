@@ -541,8 +541,11 @@ impl Interpreter {
             Expr::MakeChan { cap, .. } => {
                 let capacity = match cap {
                     Some(e) => {
+                        // Aturan `Chan::new` (AGI-20261119-53): dulu kalimatnya menyebut "index".
                         let cv = self.eval_expr(e, env)?;
-                        self.to_usize(&cv)?
+                        crate::interpreter::kapasitas_chan(
+                            if let Value::Int(n) = &cv { Some(*n) } else { None }, &cv.type_name(), false)
+                            .map_err(|e| Signal::RuntimeError(RuntimeError::new(e)))?
                     }
                     None => 0,
                 };

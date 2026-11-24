@@ -988,6 +988,9 @@ pub struct SitusPola {
     /// Pola berkualifikasi (`E::V`): alamat nama internnya. Nilai enum dengan alamat lain pasti tidak cocok —
     /// galat jumlah sub-pola cuma mungkin kalau tipe DAN varian sama (`cocok_enum`). 0 = tanpa kualifikasi.
     nama: usize,
+    /// Jumlah sub-pola kalau 2 ke atas, selain itu 0: hasil `Ok(true)` yang ditembolok cuma berlaku untuk payload
+    /// tuple sepanjang ini — panjang lain galat (AGI-20261119-14; dulu dijawab dari tembolok).
+    jumlah: usize,
     // Delapan: situs `CekEnum` melihat semua varian enum-nya, bukan cuma yang dicocokkannya.
     tembolok: [std::sync::atomic::AtomicUsize; 8],
 }
@@ -995,14 +998,18 @@ pub struct SitusPola {
 impl SitusPola {
     /// Hidup selama kode yang memakainya (kode JIT tidak pernah dibebaskan).
     pub fn bocor(desc: &VmValue) -> &'static SitusPola {
-        let nama = match desc {
-            VmValue::Tuple(d) => match &d.lock().unwrap_or_else(|p| p.into_inner())[..] {
-                [VmValue::Str(t), VmValue::Str(v), ..] => crate::vm::value::NamaVarian::intern(t, v) as *const _ as usize,
-                _ => 0,
-            },
-            _ => 0,
+        let (nama, jumlah) = match desc {
+            VmValue::Tuple(d) => {
+                let d = d.lock().unwrap_or_else(|p| p.into_inner());
+                let nama = match &d[..] {
+                    [VmValue::Str(t), VmValue::Str(v), ..] => crate::vm::value::NamaVarian::intern(t, v) as *const _ as usize,
+                    _ => 0,
+                };
+                (nama, match d.get(3) { Some(VmValue::Int(n)) if *n >= 2 => *n as usize, _ => 0 })
+            }
+            _ => (0, 0),
         };
-        Box::leak(Box::new(SitusPola { desc, nama, tembolok: Default::default() }))
+        Box::leak(Box::new(SitusPola { desc, nama, jumlah, tembolok: Default::default() }))
     }
 
     /// Pola berkualifikasi atas enum yang alamat namanya lain: pasti tidak cocok (`cocok` memeriksa hal yang
@@ -1020,6 +1027,12 @@ impl SitusPola {
         crate::vm::cocok_enum_bagian(unsafe { &*self.desc }, &nama.tipe, &nama.varian, payload.map(|n| move || n))
     }
 
+    /// Payload `v` tuple sepanjang `jumlah` sub-pola situs ini.
+    #[inline]
+    fn panjang_sama(&self, v: &VmValue) -> bool {
+        matches!(v.bagian_enum(), Some((_, _, Some(VmValue::Tuple(t)))) if t.lock().unwrap_or_else(|p| p.into_inner()).len() == self.jumlah)
+    }
+
     #[inline(always)]
     fn cocok(&self, v: &VmValue) -> Result<bool, String> {
         use std::sync::atomic::Ordering::{Acquire, Relaxed, Release};
@@ -1035,7 +1048,10 @@ impl SitusPola {
             if self.nama != 0 && k & !2 != self.nama { return Ok(false); }
             for e in &self.tembolok {
                 let isi = e.load(Acquire);
-                if isi & !1 == k { return Ok(isi & 1 == 1); }
+                if isi & !1 == k {
+                    if isi & 1 == 0 || self.jumlah == 0 || self.panjang_sama(v) { return Ok(isi & 1 == 1); }
+                    break;
+                }
             }
         }
         let hasil = crate::vm::cocok_enum(v, unsafe { &*self.desc })?;
@@ -1293,11 +1309,12 @@ impl SitusField {
         let p = Arc::as_ptr(bentuk) as *mut crate::vm::peta::Bentuk;
         if self.bentuk.load(Acquire) == p { return nilai.get(self.indeks.load(Relaxed)); }
         let i = bentuk.posisi(nama)?;
+        // Di bawah `PASANG`: indeks dua bentuk yang dipasang serentak tidak bercampur (AGI-20261119-14).
         if self.bentuk.load(Relaxed).is_null() {
-            self.indeks.store(i, Relaxed);
-            let kuat = Arc::into_raw(bentuk.clone()) as *mut crate::vm::peta::Bentuk;
-            if self.bentuk.compare_exchange(std::ptr::null_mut(), kuat, Release, Relaxed).is_err() {
-                unsafe { drop(Arc::from_raw(kuat)) }
+            let _g = PASANG.lock().unwrap_or_else(|p| p.into_inner());
+            if self.bentuk.load(Relaxed).is_null() {
+                self.indeks.store(i, Relaxed);
+                self.bentuk.store(Arc::into_raw(bentuk.clone()) as *mut crate::vm::peta::Bentuk, Release);
             }
         }
         nilai.get(i)
@@ -1412,14 +1429,13 @@ impl SitusBanyak {
         let p = Arc::as_ptr(bentuk) as *mut crate::vm::peta::Bentuk;
         if self.bentuk.load(Acquire) != p {
             if !self.bentuk.load(Relaxed).is_null() { return None; }
-            for (s, i) in self.situs.iter().zip(self.indeks.iter()) {
-                i.store(bentuk.posisi(unsafe { &*s.nama }.as_str())?, Relaxed);
-            }
-            let kuat = Arc::into_raw(bentuk.clone()) as *mut crate::vm::peta::Bentuk;
-            if self.bentuk.compare_exchange(std::ptr::null_mut(), kuat, Release, Relaxed).is_err() {
-                unsafe { drop(Arc::from_raw(kuat)) }
-                return None;
-            }
+            // Satu pemasang sekaligus (`PASANG`), indeks dihitung dulu: bentuk lain tidak menimpanya (AGI-20261119-14).
+            let indeks: Option<Vec<usize>> = self.situs.iter().map(|s| bentuk.posisi(unsafe { &*s.nama }.as_str())).collect();
+            let indeks = indeks?;
+            let _g = PASANG.lock().unwrap_or_else(|p| p.into_inner());
+            if !self.bentuk.load(Relaxed).is_null() { return None; }
+            for (i, x) in self.indeks.iter().zip(indeks) { i.store(x, Relaxed); }
+            self.bentuk.store(Arc::into_raw(bentuk.clone()) as *mut crate::vm::peta::Bentuk, Release);
         }
         let mut bit = 0i64;
         if self.pecahan {

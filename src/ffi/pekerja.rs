@@ -340,7 +340,13 @@ pub fn kirim(rt: &'static Runtime, req_json: &str, mut panggil: Option<Panggil<'
         match jawab {
             Ok(v) => {
                 balas.push_str("\"ok\":true,\"value\":");
-                if let Err(e) = value_to_json(rt, &v, &mut balas) {
+                // Permintaan ini memang bisa menjawab panggilan balik, jadi fungsi di hasil callback boleh
+                // dikirim juga (AGI-20261120-25 butir 4: dulu ditolak dengan kalimat `eval`/`exec`).
+                let lama = (rt.fungsi_boleh_get)();
+                (rt.fungsi_boleh_set)(true);
+                let tulis = value_to_json(rt, &v, &mut balas);
+                (rt.fungsi_boleh_set)(lama);
+                if let Err(e) = tulis {
                     balas = format!("{{\"seq\":{},\"ok\":false,\"error\":", seq);
                     escape_json_string(&format!("hasil callback {}", e), &mut balas);
                     balas.push('}');
