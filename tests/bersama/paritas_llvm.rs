@@ -6046,4 +6046,19 @@ fn main() {
     wok(d, json::stringify(d))
 }
 "#),
+    ("dict pemakai berpenanda struct tetap dict lewat jembatan; struct/enum/tuple tetap menyeberang (AGI-20261120-10)", r#"
+struct Titik { pub x: int, pub y: int }
+struct Garis { pub a: Titik, pub b: Titik }
+enum Bentuk { Kosong, Dua(int, string), Rek { s: int } }
+fn main() {
+    let palsu = json::parse("{\"\\u0001struct\": \"Titik\", \"x\": 1, \"y\": 2}")
+    let d = dok::json_encode(palsu)
+    wok(d)
+    let k = dok::json_decode(dok::json_encode(Titik { x: 3, y: 4 }))
+    wok(k)
+    wok(dok::json_encode(Garis { a: Titik { x: 1, y: 2 }, b: Titik { x: 5, y: 6 } }))
+    wok(dok::json_encode([Bentuk::Kosong, Bentuk::Dua(1, "a"), Bentuk::Rek { s: 3 }]))
+    wok(dok::json_encode((1, "t")))
+}
+"#),
 ];

@@ -47,6 +47,8 @@ const KATA_DICT: i32 = 7 | 1 << 8;
 const TAG_TITIPAN: i32 = 9;
 /// Nilai fungsi milik program: penunjuk ke `{ %JrgFn, adaptor }` (`llvm::codegen_jembatan`).
 const TAG_FUNGSI: i32 = 11;
+/// Dict buatan kompilator yang membawa penanda di bawah; dict bertag 7 biasa tidak pernah dibaca penandanya.
+const TAG_BERTANDA: i32 = 12;
 /// Penanda struct dan tuple milik program, sama dengan `llvm::codegen_jembatan::TANDA_*`.
 const TANDA_STRUCT: &str = "\u{1}struct";
 const TANDA_TUPLE: &str = "\u{1}tuple";
@@ -80,10 +82,12 @@ const SARANG_DALAM: usize = 1000;
 
 enum Rakit { Arr(Vec<VmValue>, *const KotakAny, usize, usize), Map(Peta, *const u8, usize, usize, String) }
 #[derive(Default)]
-struct Peta { m: HashMap<String, VmValue>, nama_struct: Option<String>, nama_enum: Option<String>, varian: Option<String>, tuple: bool }
+struct Peta { m: HashMap<String, VmValue>, nama_struct: Option<String>, nama_enum: Option<String>, varian: Option<String>, tuple: bool, bertanda: bool }
 
 impl Peta {
     fn isi(&mut self, nama: String, nilai: VmValue) {
+        // Penanda cuma sah di dict bertag 12; dict pemakai (`json::parse`) berkunci sama tetap dict (AGI-20261120-10).
+        if !self.bertanda { self.m.insert(nama, nilai); return; }
         if nama == TANDA_STRUCT {
             if let VmValue::Str(t) = &nilai { self.nama_struct = Some(t.to_string()); return; }
         }
@@ -128,10 +132,12 @@ unsafe fn turun(a: &KotakAny, k: &Kait, tumpuk: &mut Vec<Rakit>, simpan: &mut Ve
             tumpuk.push(Rakit::Arr(Vec::with_capacity(s.b as usize), s.a as *const KotakAny, s.b as usize, 0));
             return Ok(None);
         }
-        7 => {
-            let mut s = *a;
-            if a.tag != KATA_DICT { (k.any_ubah)(a, KATA_DICT, &mut s, pola.as_ptr(), pola.len() as i64); }
-            tumpuk.push(Rakit::Map(Peta::default(), s.a as *const u8, s.b as usize, 0, String::new()));
+        7 | TAG_BERTANDA => {
+            let bertanda = a.tag & 255 == TAG_BERTANDA;
+            let asli = KotakAny { tag: (a.tag & !255) | 7, ..*a };
+            let mut s = asli;
+            if asli.tag != KATA_DICT { (k.any_ubah)(&asli, KATA_DICT, &mut s, pola.as_ptr(), pola.len() as i64); }
+            tumpuk.push(Rakit::Map(Peta { bertanda, ..Peta::default() }, s.a as *const u8, s.b as usize, 0, String::new()));
             return Ok(None);
         }
         TAG_TITIPAN => (*(a.a as *const VmValue)).clone(),

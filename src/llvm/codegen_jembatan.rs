@@ -9,6 +9,8 @@ use super::types::*;
 
 /// Kunci penanda di dict yang membawa struct milik program menyeberang (tidak bisa ditulis di JRG).
 pub const TANDA_STRUCT: &str = "\u{1}struct";
+/// Tag kotak dict bertanda (lihat `tandai_dict`), sama dengan `TAG_BERTANDA` di `jembatan/src/lib.rs`.
+pub const TAG_DICT_BERTANDA: i32 = 12;
 /// Penanda tuple milik program yang menyeberang sebagai dict berkunci `0`, `1`, ….
 pub const TANDA_TUPLE: &str = "\u{1}tuple";
 /// Penanda enum milik program: nama tipe, nama varian, dan muatannya (bentuk muatan VM).
@@ -115,7 +117,10 @@ impl Codegen {
                 let tempat = self.spill_to_place(&v);
                 let e = self.lokal_sementara(tempat, v.ty.clone(), span);
                 let ex = self.struct_ke_dict(&e, &v.ty, span);
-                self.codegen_expr(&ex, None)?
+                // Struct di field-nya menyeberang sebagai kotak buram, dirakit lewat kait `@jemb.buram.N`.
+                self.pakai_jemb_buram = true;
+                let d = self.codegen_expr(&ex, None)?;
+                self.tandai_dict(&d, span)?
             } else { v };
             let v = super::codegen_any::samakan_dict(&v);
             // Nilai fungsi: menyeberang sebagai kotak fungsi (handler `dok::serve` dititipkan jembatan ke thread biner).
@@ -356,11 +361,35 @@ impl Codegen {
         let pasang = |k: Expr, v: Expr| Expr::Array { elems: vec![k, v], span };
         let mut isi = vec![pasang(teks(TANDA_STRUCT), teks(&crate::ruang_tipe::bersih(super::generik::dasar(nama))))];
         for (f, ft) in &layout.fields {
+            let _ = ft;
             let akses = Expr::Field { obj: Box::new(e.clone()), field: f.clone(), span };
-            isi.push(pasang(teks(f), self.struct_ke_dict(&akses, ft, span)));
+            isi.push(pasang(teks(f), akses));
         }
         Expr::Call { func: Box::new(Expr::PathExpr { segments: vec![String::new(), "dict".into(), "from_pairs".into()], span }),
                      args: vec![Expr::Array { elems: isi, span }], span }
+    }
+
+    /// Dict buatan kompilator yang membawa penanda (`TANDA_*`) dikotak bertag 12: jembatan cuma membaca penanda di
+    /// kotak bertag itu, jadi dict pemakai berkunci `"\u{1}struct"` tetap dict (AGI-20261120-10).
+    pub(crate) fn tandai_dict(&mut self, d: &Val, span: Span) -> Result<Val, String> {
+        let d = super::codegen_any::samakan_dict(d);
+        let k = self.kotak_any(&d, span)?;
+        let slot = self.spill_to_place(&k);
+        let (tp, w, a, b) = (self.fresh("jbt."), self.fresh("jbt."), self.fresh("jbt."), self.fresh("jbt."));
+        self.emit(format!("{} = getelementptr %JrgAny, ptr {}, i32 0, i32 0", tp, slot));
+        self.emit(format!("{} = load i32, ptr {}", w, tp));
+        self.emit(format!("{} = and i32 {}, -256", a, w));
+        self.emit(format!("{} = or i32 {}, {}", b, a, TAG_DICT_BERTANDA));
+        self.emit(format!("store i32 {}, ptr {}", b, tp));
+        Ok(self.load_place(&slot, &JrgType::Any))
+    }
+
+    /// `tandai_dict` atas literal dict, sebagai ekspresi yang bisa disisipkan di literal lain.
+    fn dict_bertanda(&mut self, ex: Expr, span: Span) -> Result<Expr, String> {
+        let d = self.codegen_expr(&ex, None)?;
+        let k = self.tandai_dict(&d, span)?;
+        let tempat = self.spill_to_place(&k);
+        Ok(self.lokal_sementara(tempat, JrgType::Any, span))
     }
 
     /// Badan `@jemb.buram.N(ptr) -> %JrgAny`: struct buram ke-N sebagai dict bertanda.
@@ -388,8 +417,7 @@ impl Codegen {
                 _ => self.struct_ke_dict(&e, &t, nol),
             };
             let d = self.codegen_expr(&ex, None)?;
-            let d = super::codegen_any::samakan_dict(&d);
-            self.kotak_any(&d, nol)?
+            self.tandai_dict(&d, nol)?
         } else if let JrgType::Enum(en) = &t {
             self.enum_ke_jembatan(en, &t, nol)?
         } else {
@@ -445,18 +473,17 @@ impl Codegen {
                 EnumPayload::Tuple(_) => {
                     let mut d = vec![pasang(teks(TANDA_TUPLE), teks(""))];
                     for (i, x) in nilai.into_iter().enumerate() { d.push(pasang(teks(&i.to_string()), x)); }
-                    Some(dari_pasangan(d))
+                    Some(self.dict_bertanda(dari_pasangan(d), nol)?)
                 }
                 EnumPayload::Struct(fs) => {
                     let mut d = vec![pasang(teks(TANDA_STRUCT), teks(&v.name))];
                     for ((f, _), x) in fs.iter().zip(nilai) { d.push(pasang(teks(f), x)); }
-                    Some(dari_pasangan(d))
+                    Some(self.dict_bertanda(dari_pasangan(d), nol)?)
                 }
             };
             if let Some(m) = muatan { isi.push(pasang(teks(TANDA_ISI), m)); }
             let d = self.codegen_expr(&dari_pasangan(isi), None)?;
-            let d = super::codegen_any::samakan_dict(&d);
-            let k = self.kotak_any(&d, nol)?;
+            let k = self.tandai_dict(&d, nol)?;
             self.emit(format!("store %JrgAny {}, ptr {}", k.text, hasil));
             if !self.is_terminated() { self.terminate(format!("br label %{}", usai)); }
         }

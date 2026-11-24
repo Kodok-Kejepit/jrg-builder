@@ -283,11 +283,9 @@ impl Codegen {
                             if self.tables.find_method(&n, item).is_some_and(|d| d.span == decl.span) {
                                 return self.call_method_impl(&n, &decl, &optr, &oty, &args[1..], span);
                             }
-                            return Err(crate::llvm::galat::tandai(span, format!(
-                                "`{}` atas `{}`, yang menimpa method itu, belum didukung backend `--emit-llvm` — memanggil \
-                                 versi induknya butuh salinan method per tipe penerima; ini celah backend, bukan salah \
-                                 programmu\nbantuan: jalankan tanpa `--emit-llvm`", qualified,
-                                crate::ruang_tipe::bersih(&oty.display_name()))));
+                            // Turunan MENIMPA method ini: versi induknya, sebagai salinan untuk tipe penerima ini
+                            // (`$pada` di simbolnya, `pancarkan_panggilan_metode_ar`).
+                            return self.call_method_impl(ns, &decl, &optr, &oty, &args[1..], span);
                         }
                     }
                     if !cocok {
@@ -1334,6 +1332,12 @@ impl Codegen {
         } else {
             let tys: Vec<JrgType> = final_args.iter().map(|(t, _)| t.clone()).collect();
             mangle_fn(&dasar, &tys)
+        };
+        // Method induk atas penerima turunan yang menimpanya (UFCS `Induk::m(anak)`): salinan per tipe penerima.
+        let mangled = match self_ty {
+            JrgType::Struct(n) if n != self_ty_name && super::generik::dasar(n) != super::generik::dasar(self_ty_name) =>
+                format!("{}$pada{}", mangled, self_ty.mangle_frag()),
+            _ => mangled,
         };
         // Varian ber-`self` MILIK punya simbolnya sendiri: badannya tidak menyalin penerima.
         let mangled = if milik { format!("{}{}", mangled, super::codegen_tumbuh::AKHIRAN_MILIK) } else { mangled };
