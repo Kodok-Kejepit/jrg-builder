@@ -740,6 +740,8 @@ impl Codegen {
 
     pub fn tipe_param(&mut self, p: &FnParam, idx: usize, subst: &TypeSubst) -> Result<JrgType, String> {
         let nama = pattern_simple_name(&p.pattern).unwrap_or_else(|| "_".to_string());
+        // Parameter beranotasi struct induk yang menerima struct turunan: tipe argumennya (`call_named_function`).
+        if let Some(t) = subst.get(&format!("$turunan{}", idx)) { return Ok(t.clone()); }
 
         // Parameter tanpa anotasi: tipenya disimpulkan dari situs PEMANGGILAN dan
         // dititipkan di substitusi.

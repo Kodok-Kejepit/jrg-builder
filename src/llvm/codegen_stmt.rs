@@ -163,6 +163,8 @@ impl Codegen {
             .and_then(|n| self.sumber_bagi_nilai(&l.init, &v.ty).map(|b| (n, b)));
         // Nama baru = pemilik baru. Lihat `ambil_milik`.
         let v = if bagi.is_some() { v } else { self.ambil_milik(&l.init, v)? };
+        // Anotasi struct induk atas nilai struct turunan tidak memotongnya: acuan menyimpan nilai aslinya (AGI-20261120-22).
+        let expected = expected.filter(|t| !self.turunan_dari(&v.ty, t));
         let final_ty = expected.unwrap_or(v.ty.clone());
         // Span dipersempit ke INISIALISASINYA sebelum koersi.
         let lama = self.masuk_span(l.init.span());
@@ -216,6 +218,7 @@ impl Codegen {
         };
         // `var x = nil` tanpa anotasi: yang nanti mengisinya bertipe lain, jadi tempatnya
         // nilai bertag (lapis B). Dulu tempatnya bertipe `nil` dan pengisian pertama ditolak.
+        let expected = expected.filter(|t| !self.turunan_dari(&val.ty, t));
         let nil_polos = v.ty.is_none() && expected.is_none() && val.ty == JrgType::Nil;
         let final_ty = if nil_polos { JrgType::Any } else { expected.unwrap_or(val.ty.clone()) };
         // Sama seperti `codegen_let`: tunjuk inisialisasinya, bukan seluruh
@@ -965,5 +968,15 @@ impl Codegen {
 
     pub fn pop_loop(&mut self) {
         self.loop_stack.pop();
+    }
+
+    /// `nilai` struct turunan dari struct `anotasi` (`struct Anak: Induk`)? Anotasi tidak ditegakkan acuan, jadi
+    /// nilai seperti itu tetap bertipe aslinya, bukan dipotong ke induknya.
+    pub(crate) fn turunan_dari(&self, nilai: &JrgType, anotasi: &JrgType) -> bool {
+        match (nilai, anotasi) {
+            (JrgType::Struct(y), JrgType::Struct(x)) if y != x =>
+                self.tables.silsilah(y).iter().skip(1).any(|t| t == super::generik::dasar(x)),
+            _ => false,
+        }
     }
 }

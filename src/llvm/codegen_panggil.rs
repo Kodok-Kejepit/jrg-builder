@@ -272,6 +272,24 @@ impl Codegen {
                     let (optr, oty) = self.get_place(penerima)?;
                     let cocok = matches!(&oty,
                         JrgType::Struct(n) | JrgType::Enum(n) if n.as_str() == ns);
+                    // Instans generik (`Kotak$i64`) dan struct turunan yang tidak menimpa method ini: badannya sama
+                    // dengan `x.m()` (AGI-20261120-22).
+                    if let (false, JrgType::Struct(n) | JrgType::Enum(n)) = (cocok, &oty) {
+                        let n = n.clone();
+                        if super::generik::dasar(&n) == ns {
+                            return self.call_method_impl(&n, &decl, &optr, &oty, &args[1..], span);
+                        }
+                        if self.turunan_dari(&oty, &JrgType::Struct(ns.to_string())) {
+                            if self.tables.find_method(&n, item).is_some_and(|d| d.span == decl.span) {
+                                return self.call_method_impl(&n, &decl, &optr, &oty, &args[1..], span);
+                            }
+                            return Err(crate::llvm::galat::tandai(span, format!(
+                                "`{}` atas `{}`, yang menimpa method itu, belum didukung backend `--emit-llvm` — memanggil \
+                                 versi induknya butuh salinan method per tipe penerima; ini celah backend, bukan salah \
+                                 programmu\nbantuan: jalankan tanpa `--emit-llvm`", qualified,
+                                crate::ruang_tipe::bersih(&oty.display_name()))));
+                        }
+                    }
                     if !cocok {
                         return Err(crate::llvm::galat::tandai(span,
                             crate::interpreter::pesan_penerima_salah(
@@ -673,6 +691,12 @@ impl Codegen {
             let bebas: Vec<String> = generik.iter().filter(|g| !subst.contains_key(*g)).cloned().collect();
             if Self::menyebut_param(&p.ty, &bebas) { continue; }
             if let Ok(t) = self.resolve_type_with_subst(&p.ty, &subst) {
+                // Struct turunan ke parameter bertipe induknya: fungsinya diturunkan untuk tipe aslinya (AGI-20261120-22).
+                if let Some(at) = self.peek_expr_type(&args[i]).filter(|at| self.turunan_dari(at, &t)) {
+                    subst.insert(format!("$turunan{}", i), at.clone());
+                    concrete_tys[i] = Some(at);
+                    continue;
+                }
                 concrete_tys[i] = Some(t);
             }
         }

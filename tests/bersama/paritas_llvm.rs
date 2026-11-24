@@ -5996,4 +5996,28 @@ fn main() {
     wok(s)
 }
 "#),
+    ("struct turunan ke anotasi/parameter induk tetap tipe aslinya; UFCS atas turunan dan instans generik (AGI-20261120-22)", r#"
+struct Induk { pub x: int }
+struct Anak: Induk { pub y: int }
+impl Induk {
+    pub fn sapa(self) -> string { "induk " + str(self.x) }
+    pub fn nilai(self) -> int { self.x }
+}
+impl Anak {
+    pub fn sapa(self) -> string { "anak " + str(self.y) }
+}
+fn proses(p: Induk) -> string { p.sapa() + " " + str(p.x) }
+struct Kotak<T> { pub isi: T }
+impl<T> Kotak<T> {
+    pub fn ambil(self) -> T { self.isi }
+}
+fn main() {
+    let a = Anak { x: 5, y: 7 }
+    let p: Induk = a
+    wok(p.sapa(), proses(a), proses(Induk { x: 1 }))
+    wok(Induk::nilai(a), Anak::sapa(a))
+    let k = Kotak { isi: 3 }
+    wok(Kotak::ambil(k), k.ambil())
+}
+"#),
 ];

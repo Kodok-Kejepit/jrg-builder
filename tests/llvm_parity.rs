@@ -924,6 +924,10 @@ const BELUM_DIDUKUNG_LLVM: &[(&str, &str, &str)] = &[
     ("jawa::set: rune disimpan sebagai bilangan",
      "package main\npub fn main() { let p = jawa::alloc(1)\n jawa::set(p, 'a')\n wok(jawa::get(p)) }",
      "cuma menyimpan bilangan bulat, diberi `rune`"),
+    // UFCS versi induk atas turunan yang menimpa method itu: butuh salinan method per tipe penerima.
+    ("UFCS versi induk atas struct turunan yang menimpa methodnya",
+     "struct Induk { pub x: int }\nstruct Anak: Induk { pub y: int }\nimpl Induk { pub fn sapa(self) -> string { \"i\" } }\nimpl Anak { pub fn sapa(self) -> string { \"a\" } }\nfn main() { let a = Anak { x: 1, y: 2 }\n wok(Induk::sapa(a)) }\n",
+     "yang menimpa method itu, belum didukung backend `--emit-llvm`"),
     // Fase UMUM: struct di dalam nilai bertag dibuka sebagai struct LAIN — gagal saat jalan,
     // menyebut kedua tipenya (acuan mengganti tipe variabelnya).
     ("nilai bertag: struct dibuka sebagai struct lain",

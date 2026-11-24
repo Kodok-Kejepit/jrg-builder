@@ -1484,6 +1484,8 @@ pub(crate) static TABEL: &[(&str, &str)] = &[
      "arguments do not fit `{}` — got ({}), accepted forms: "),
     (": butuh Ptr, dapat `{}`",
      ": needs a Ptr, got `{}`"),
+    ("`{}` atas `{}`, yang menimpa method itu, belum didukung backend `--emit-llvm` — memanggil versi induknya butuh salinan method per tipe penerima; ini celah backend, bukan salah programmu",
+     "`{}` on `{}`, which overrides that method, is not supported by the `--emit-llvm` backend yet — calling the parent version needs a copy of the method per receiver type; this is a backend gap, not a mistake in your program"),
     (": ini handle `jawa::`, bukan Ptr dari `ptr::new` — isinya dibaca lewat fungsi `jawa::`",
      ": this is a `jawa::` handle, not a Ptr from `ptr::new` — its contents are read through the `jawa::` functions"),
     (": Ptr tidak valid (`id` {} bukan nomor alokasi)",
