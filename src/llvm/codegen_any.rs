@@ -110,7 +110,9 @@ pub fn luruh(t: &JrgType) -> JrgType {
 pub fn isi_buram(t: &JrgType) -> Option<JrgType> {
     // Juga yang buramnya lebih dalam (`[[Some(1)]]`): dulu terlukis tanpa nomor tipe, jadi `json::` dan
     // kawan-kawan harus lewat jembatan, yang tidak ada di kernel `--bebas`.
-    let dalam = |e: &JrgType| tag_untuk(e) == Some(TAG_BURAM) || isi_buram(e).is_some();
+    // Isi yang deskriptornya tidak muat 24 bit (lebih dari 6 lapis, AGI-20261120-20) juga dikotak per elemen.
+    let dalam = |e: &JrgType| tag_untuk(e) == Some(TAG_BURAM) || isi_buram(e).is_some()
+        || lukis(&luruh(e)).is_some_and(|(_, n)| n > 24);
     match t {
         JrgType::Slice(e) | JrgType::Array(e, _) if dalam(e) => Some(JrgType::Slice(Box::new(JrgType::Any))),
         JrgType::Dict(e) if dalam(e) => Some(JrgType::Dict(Box::new(JrgType::Any))),

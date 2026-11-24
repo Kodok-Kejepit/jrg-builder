@@ -6031,4 +6031,19 @@ fn main() {
     coba(|| make_chan(int, 2))
 }
 "#),
+    ("nilai bertag bersarang lebih dari 6 lapis: tampil, ==, dibuka kembali, json (AGI-20261120-20)", r#"
+fn main() {
+    var x = nil
+    x = [[[[[[[1]]]]]]]
+    wok(x, str(x), x == x, x == [[[[[[[2]]]]]]])
+    var y = nil
+    y = [[[[[[[[["a", "b"]]]]]]]]]
+    wok(y, len(y))
+    let z: [][][][][][][]int = x
+    wok(z[0][0][0][0][0][0][0])
+    var d = nil
+    d = {"a": [[[[[[{"k": 1}]]]]]]}
+    wok(d, json::stringify(d))
+}
+"#),
 ];
