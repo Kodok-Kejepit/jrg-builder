@@ -6061,4 +6061,21 @@ fn main() {
     wok(dok::json_encode((1, "t")))
 }
 "#),
+    ("UFCS versi induk atas turunan yang menimpa method itu: salinan per tipe penerima, self tetap turunannya (AGI-20261120-22)", r#"
+struct Induk { pub x: int }
+struct Anak: Induk { pub y: int }
+impl Induk {
+    pub fn sapa(self) -> string { "induk " + str(self.x) + " " + self.nama() }
+    pub fn nama(self) -> string { "I" }
+}
+impl Anak {
+    pub fn sapa(self) -> string { "anak " + str(self.y) }
+    pub fn nama(self) -> string { "A" }
+}
+fn main() {
+    let a = Anak { x: 1, y: 2 }
+    let i = Induk { x: 9 }
+    wok(Induk::sapa(a), Anak::sapa(a), a.sapa(), Induk::sapa(i), i.sapa())
+}
+"#),
 ];
