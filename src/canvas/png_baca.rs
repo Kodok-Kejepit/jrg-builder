@@ -1,5 +1,9 @@
 // src/canvas/png_baca.rs — canvas/png_baca.rs — pembaca PNG, tanpa dependensi.
 
+use alloc::format;
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
 use super::png::paeth;
 use crate::kompres::{adler32, crc32, inflate};
 
@@ -64,8 +68,8 @@ pub fn baca(data: &[u8]) -> Result<(usize, usize, Vec<u32>), String> {
                 }
                 // Angkanya datang dari berkas, jadi dibatasi SEBELUM dipakai mengalokasi, dengan batas yang sama dengan
                 // `Canvas::new` (`MAKS_ELEMEN`): dulu 4× lebih longgar, PNG berpalet 1-bit 8 KB meminta 256 MB (AGI-20261119-11).
-                if (lebar as i128).saturating_mul(tinggi as i128) > crate::interpreter::MAKS_ELEMEN {
-                    return Err(format!("PNG {}x{} terlalu besar (paling banyak {} piksel)", lebar, tinggi, crate::interpreter::MAKS_ELEMEN));
+                if (lebar as i128).saturating_mul(tinggi as i128) > super::inti::MAKS_ELEMEN {
+                    return Err(format!("PNG {}x{} terlalu besar (paling banyak {} piksel)", lebar, tinggi, super::inti::MAKS_ELEMEN));
                 }
             }
             j if j == &b"PLTE"[..] => {
@@ -228,7 +232,7 @@ pub fn baca(data: &[u8]) -> Result<(usize, usize, Vec<u32>), String> {
             };
             piksel[y * lebar + x] = warna;
         }
-        std::mem::swap(&mut baris_atas, &mut baris);
+        core::mem::swap(&mut baris_atas, &mut baris);
     }
 
     Ok((lebar, tinggi, piksel))

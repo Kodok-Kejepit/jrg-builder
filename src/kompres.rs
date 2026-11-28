@@ -1,26 +1,34 @@
 // src/kompres.rs — DEFLATE (mampat dan bongkar), CRC32 dan Adler-32, tanpa dependensi.
 // Satu definisi untuk PNG (`canvas::png`, `canvas::png_baca`), `zip::` dan `crypto::crc32`.
+// SALINAN PERSISNYA di `runtime/src/kompres.rs` (runtime LLVM, `no_std`, untuk `Canvas::`), dijaga tes.
+use alloc::format;
+use alloc::string::{String, ToString};
+use alloc::vec;
+use alloc::vec::Vec;
 
 // ─── CRC32 (PNG) dan Adler-32 (zlib) ────────────────────────────────────
 
-fn tabel_crc() -> &'static [u32; 256] {
-    static T: std::sync::OnceLock<[u32; 256]> = std::sync::OnceLock::new();
-    T.get_or_init(|| {
-        let mut t = [0u32; 256];
-        for n in 0..256u32 {
-            let mut c = n;
-            for _ in 0..8 {
-                c = if c & 1 != 0 { 0xEDB8_8320 ^ (c >> 1) } else { c >> 1 };
-            }
-            t[n as usize] = c;
+const fn buat_tabel_crc() -> [u32; 256] {
+    let mut t = [0u32; 256];
+    let mut n = 0;
+    while n < 256 {
+        let mut c = n as u32;
+        let mut k = 0;
+        while k < 8 {
+            c = if c & 1 != 0 { 0xEDB8_8320 ^ (c >> 1) } else { c >> 1 };
+            k += 1;
         }
-        t
-    })
+        t[n] = c;
+        n += 1;
+    }
+    t
 }
+
+static TABEL_CRC: [u32; 256] = buat_tabel_crc();
 
 /// CRC32 (PNG, ZIP, `crypto::crc32`) — satu tabel untuk semuanya.
 pub fn crc32(data: &[u8]) -> u32 {
-    let t = tabel_crc();
+    let t = &TABEL_CRC;
     let mut c = 0xFFFF_FFFFu32;
     for &b in data {
         c = t[((c ^ b as u32) & 0xFF) as usize] ^ (c >> 8);

@@ -5605,6 +5605,53 @@ fn main() {
     wok(c.get_pixel(1, 1))
 }
 "#),
+    ("kanvas native tanpa jembatan: ukuran, warna, MousePos, update, kalimat argumen, blit, ekspor, tampilan pegangan", r#"
+fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }
+fn main() {
+    let c = Canvas::new(8, 6, "Uji Kanvas")
+    wok(c.width(), c.height(), c.is_open(), c.frame())
+    wok(typeof(c))
+    wok(c)
+    c.clear(0x102030)
+    c.fill_rect(1, 1, 3, 2, Warna { r: 200, g: 10, b: 30 })
+    wok(c.get_pixel(2, 2))
+    wok(canvas::get_pixel(c, 0, 0))
+    c.draw_line(0, 5, 7, 0, 0xFFFFFF)
+    c.fill_poly([[0, 0], [4, 0], [2, 3]], 0x80FF00FF)
+    c.line_aa(0.5, 0.5, 7.5, 5.5, 0x40FFFF00)
+    wok(c.get_pixel(2, 1), c.get_pixel(5, 3))
+    wok(c.update(), c.frame())
+    wok(c.key_pressed("space"), c.key_held("Left"))
+    wok(c.get_mouse_pos())
+    wok(c.jumlah_sentuhan(), canvas::nama_tombol("esc"))
+    coba(|| c.key_pressed("Spase"))
+    coba(|| c.fill_rect(0, 0, 1, 1, "merah"))
+    coba(|| c.fill_rect(0, 0, 1, 1, Warna { r: 300, g: 0, b: 0 }))
+    coba(|| c.draw_rect(0, 0, 1, 1e40, 0xFFFFFF))
+    coba(|| c.pop())
+    coba(|| c.sentuhan(0))
+    coba(|| c.fill_poly([[0, 0], [1]], 0xFFFFFF))
+    coba(|| c.get_mouse_button(5))
+    coba(|| c.draw_text_scaled(0, 0, "a", 0, 0xFFFFFF))
+    coba(|| Canvas::new(0, 2))
+    coba(|| Canvas::new(2, 2, "x", "layar"))
+    coba(|| c.save_png("/tidak/ada/x.png"))
+    coba(|| c.save_png(""))
+    let d = Canvas::new(2, 2)
+    d.clear(0x00FF00)
+    c.blit(d, 5, 3)
+    wok(c.get_pixel(6, 4))
+    c.blit(c, 0, 0)
+    c.draw_text(0, 0, [1, 2], 0xFFFFFF)
+    wok(c.save_ppm("/dev/null"), c.save_bmp("/dev/null"))
+    let campur = [c, 5]
+    wok(typeof(campur[0]))
+    c.set_title(42)
+    wok(c)
+    c.close()
+    wok(c.is_open(), c.update())
+}
+"#),
     ("fn bersarang terlihat dari closure dan go, indeks penugasan dihitung kiri ke kanan (AGI-20261120-03)", r#"
 package main
 fn coba(f) { match tangkap(f) { Result::Ok(v) => wok("ok", v), Result::Err(g) => wok("err", g.pesan) } }

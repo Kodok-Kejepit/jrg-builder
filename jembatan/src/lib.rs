@@ -614,3 +614,106 @@ impl Drop for JagaWasi {
     fn drop(&mut self) { unsafe { jrg_wasm_di_jembatan -= 1 }; }
 }
 
+
+// ─── Penyaji `Canvas::` untuk biner LLVM ──────────────────────────────────
+// Menggambar ada di runtime (`runtime/src/canvas/`, tanpa jembatan); yang dipinjam dari `jrgc` cuma tampilannya
+// (`canvas::Penyaji`: jendela `"tab"`, peramban `"web"`), lewat simbol lemah di `primitif.c`.
+
+/// Masukan satu bingkai untuk runtime; teks dan larik hidup sampai panggilan berikutnya atas penyaji yang sama.
+#[repr(C)]
+pub struct SajiC {
+    ditekan_p: *const u8, ditekan_l: i64,
+    ditahan_p: *const u8, ditahan_l: i64,
+    ada_tetikus: i32, x: f32, y: f32,
+    ada_tombol: i32, tombol: [u8; 3],
+    ada_jari: i32, jari_p: *const f32, jari_n: i64,
+    galat_p: *const u8, galat_l: i64,
+}
+
+struct PenyajiLlvm {
+    saji: jrgc::canvas::Penyaji,
+    teks: [String; 3],
+    jari: Vec<f32>,
+}
+
+static PENYAJI: std::sync::Mutex<Vec<PenyajiLlvm>> = std::sync::Mutex::new(Vec::new());
+
+fn penyaji<T>(id: i64, f: impl FnOnce(&mut PenyajiLlvm) -> T) -> Option<T> {
+    let mut d = PENYAJI.lock().unwrap_or_else(|p| p.into_inner());
+    d.get_mut((id as usize).wrapping_sub(1)).map(f)
+}
+
+/// Buka mode `"tab"`/`"web"` di penyaji `*id` (0 = buat baru); 0 berhasil, 1 gagal dengan kalimat di `galat_*`.
+/// # Safety
+/// Penunjuk teks sah sepanjang `*_l`, `id`/`galat_*` boleh ditulis.
+#[no_mangle]
+pub unsafe extern "C" fn jrg_kanvas_saji_buka(id: *mut i64, mp: *const u8, ml: i64, jp: *const u8, jl: i64, lebar: i64,
+                                             tinggi: i64, galat_p: *mut *const u8, galat_l: *mut i64) -> i32 {
+    let teks = |p: *const u8, l: i64| if l <= 0 { "" } else { std::str::from_utf8(std::slice::from_raw_parts(p, l as usize)).unwrap_or("") };
+    if *id == 0 {
+        let mut d = PENYAJI.lock().unwrap_or_else(|p| p.into_inner());
+        d.push(PenyajiLlvm { saji: Default::default(), teks: Default::default(), jari: Vec::new() });
+        *id = d.len() as i64;
+    }
+    let (mode, judul) = (teks(mp, ml), teks(jp, jl));
+    let r = penyaji(*id, |p| match p.saji.buka(mode, judul, lebar as usize, tinggi as usize) {
+        Ok(()) => 0,
+        Err(e) => {
+            p.teks[2] = e;
+            *galat_p = p.teks[2].as_ptr();
+            *galat_l = p.teks[2].len() as i64;
+            1
+        }
+    });
+    r.unwrap_or(1)
+}
+
+/// Satu bingkai: 0 tanpa tampilan, 1 tertutup, 2 ada masukan, 3 galat (`out.galat_*`).
+/// # Safety
+/// `piksel` sah sebanyak `n`, `out` boleh ditulis.
+#[no_mangle]
+pub unsafe extern "C" fn jrg_kanvas_saji(id: i64, piksel: *const u32, n: i64, out: *mut SajiC) -> i32 {
+    use jrgc::canvas::layan::Sajian;
+    let px = if n <= 0 { &[][..] } else { std::slice::from_raw_parts(piksel, n as usize) };
+    let o = &mut *out;
+    penyaji(id, |p| match p.saji.sajikan(px) {
+        Ok(Sajian::Tanpa) => 0,
+        Ok(Sajian::Tertutup) => 1,
+        Ok(Sajian::Masukan(m)) => {
+            p.teks[0] = m.ditekan.join("\n");
+            p.teks[1] = m.ditahan.into_iter().collect::<Vec<_>>().join("\n");
+            (o.ditekan_p, o.ditekan_l) = (p.teks[0].as_ptr(), p.teks[0].len() as i64);
+            (o.ditahan_p, o.ditahan_l) = (p.teks[1].as_ptr(), p.teks[1].len() as i64);
+            o.ada_tetikus = m.tetikus.is_some() as i32;
+            (o.x, o.y) = m.tetikus.unwrap_or((0.0, 0.0));
+            o.ada_tombol = m.tombol.is_some() as i32;
+            o.tombol = m.tombol.unwrap_or([false; 3]).map(|b| b as u8);
+            o.ada_jari = m.jari.is_some() as i32;
+            p.jari = m.jari.unwrap_or_default().into_iter().flat_map(|(x, y)| [x, y]).collect();
+            (o.jari_p, o.jari_n) = (p.jari.as_ptr(), (p.jari.len() / 2) as i64);
+            2
+        }
+        Err(e) => {
+            p.teks[2] = e;
+            (o.galat_p, o.galat_l) = (p.teks[2].as_ptr(), p.teks[2].len() as i64);
+            3
+        }
+    }).unwrap_or(0)
+}
+
+/// # Safety
+/// Penunjuk teks sah sepanjang `l`.
+#[no_mangle]
+pub unsafe extern "C" fn jrg_kanvas_saji_judul(id: i64, p: *const u8, l: i64) {
+    let t = if l <= 0 { "" } else { std::str::from_utf8(std::slice::from_raw_parts(p, l as usize)).unwrap_or("") };
+    penyaji(id, |s| s.saji.judul(t));
+}
+
+#[no_mangle]
+pub extern "C" fn jrg_kanvas_saji_tutup(id: i64) { penyaji(id, |s| s.saji.tutup()); }
+
+/// `canvas::punya_jendela` (bit 0) dan `canvas::layar_sentuh` (bit 1) menurut `jrgc`.
+#[no_mangle]
+pub extern "C" fn jrg_kanvas_saji_layar() -> i32 {
+    jrgc::canvas::punya_jendela() as i32 | (jrgc::canvas::layar_sentuh() as i32) << 1
+}

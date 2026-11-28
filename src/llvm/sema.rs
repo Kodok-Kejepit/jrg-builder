@@ -384,7 +384,9 @@ fn resolve_named(nt: &NamedType, ctx: &TypeResolveCtx) -> Result<JrgType, String
         "str" | "string" | "String" => Ok(JrgType::Str),
         // Handle milik `jrgc` (lewat jembatan) dan nama `typeof` yang tidak punya tata letak di sini:
         // nilainya bertag, tipenya dibawa saat jalan.
-        "Canvas" | "canvas" | "tuple" | "function" | "closure" | "native_fn" => Ok(JrgType::Any),
+        // Pegangan `Canvas::` native (`codegen_kanvas`).
+        "Canvas" | "canvas" => Ok(JrgType::Struct(super::codegen_kanvas::LABEL_KANVAS.to_string())),
+        "tuple" | "function" | "closure" | "native_fn" => Ok(JrgType::Any),
         // Tidak bisa ditulis pemakai (`$`): parameter konstruktor generik sebagai nilai.
         "$campur" => Ok(JrgType::Any),
         // Handle dan rekaman `jrgc` yang sampai lewat jembatan (`req: DokRequest`), kecuali program

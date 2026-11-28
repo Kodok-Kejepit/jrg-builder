@@ -11,7 +11,9 @@ fn runtime() -> &'static str {
         let mut s = String::new();
         for isi in [include_str!("../../runtime/src/lib.rs"), include_str!("../../runtime/src/json_inti.rs"),
                     include_str!("../../runtime/src/kutip_inti.rs"), include_str!("primitif.c"),
-                    include_str!("korutin.c"), include_str!("jaga_stack.c"), include_str!("korutin_wasm.c")] {
+                    include_str!("korutin.c"), include_str!("jaga_stack.c"), include_str!("korutin_wasm.c"),
+                    include_str!("../../runtime/src/canvas/mod.rs"), include_str!("../../runtime/src/canvas/layan.rs"),
+                    include_str!("../../runtime/src/canvas/png_baca.rs"), include_str!("../../runtime/src/kompres.rs")] {
             literal(isi, &mut s);
         }
         s

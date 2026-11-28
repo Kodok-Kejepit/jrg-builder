@@ -1015,6 +1015,68 @@ static void jrg_os_teks(JrgStr *out, const char *p, int64_t n) {
     out->len = n;
 }
 
+/* Penyaji `Canvas::` milik jembatan (`jrg_kanvas_saji_*`, jendela `"tab"`/peramban `"web"` dari `jrgc`): LEMAH,
+   karena kernel `--bebas` dan program tanpa mode tampilan tidak menautkan jembatan. -1 = penyaji tidak ada. */
+extern int32_t jrg_kanvas_saji_buka(int64_t *, const char *, int64_t, const char *, int64_t, int64_t, int64_t,
+                                    const char **, int64_t *) __attribute__((weak));
+extern int32_t jrg_kanvas_saji(int64_t, const uint32_t *, int64_t, void *) __attribute__((weak));
+extern void jrg_kanvas_saji_judul(int64_t, const char *, int64_t) __attribute__((weak));
+extern void jrg_kanvas_saji_tutup(int64_t) __attribute__((weak));
+extern int32_t jrg_kanvas_saji_layar(void) __attribute__((weak));
+
+int32_t jrg_kanvas_lemah_buka(int64_t *id, const char *mp, int64_t ml, const char *jp, int64_t jl, int64_t w, int64_t h,
+                              const char **gp, int64_t *gl) {
+    return jrg_kanvas_saji_buka ? jrg_kanvas_saji_buka(id, mp, ml, jp, jl, w, h, gp, gl) : -1;
+}
+int32_t jrg_kanvas_lemah_saji(int64_t id, const uint32_t *p, int64_t n, void *out) {
+    return jrg_kanvas_saji ? jrg_kanvas_saji(id, p, n, out) : 0;
+}
+void jrg_kanvas_lemah_judul(int64_t id, const char *p, int64_t l) { if (jrg_kanvas_saji_judul) jrg_kanvas_saji_judul(id, p, l); }
+void jrg_kanvas_lemah_tutup(int64_t id) { if (jrg_kanvas_saji_tutup) jrg_kanvas_saji_tutup(id); }
+int32_t jrg_kanvas_lemah_layar(void) { return jrg_kanvas_saji_layar ? jrg_kanvas_saji_layar() : 0; }
+
+/* Padanan `host::galat_io` untuk errno `n`: satu definisi untuk lapis (`_galat_os`) dan `Canvas::` di runtime Rust. */
+static const char *jrg_galat_os_tetap(int64_t n) {
+    switch (n) {
+        case 100000: return "isinya bukan teks UTF-8 yang sah";
+        case 100002: return "isinya lebih dari 256 MiB, batas satu bacaan utuh (berkas raksasa atau perangkat tanpa ujung seperti /dev/zero tidak dibaca ke memori)";
+        case 100001: return "teksnya memuat karakter NUL, yang tidak bisa diserahkan ke sistem operasi";
+        case 2: return "berkas atau direktorinya tidak ada";
+        case 13: case 1: return "tidak diizinkan (izin aksesnya kurang)";
+        case 17: return "sudah ada";
+        case 21: return "itu direktori, bukan berkas";
+        case 20: return "itu bukan direktori";
+        case 39: return "direktorinya tidak kosong";
+        case 30: return "sistem berkasnya cuma bisa dibaca";
+        case 28: return "penyimpanannya penuh";
+        case 27: return "berkasnya terlalu besar";
+        case 36: return "nama berkasnya tidak sah";
+        case 16: return "sedang dipakai";
+        case 18: return "asal dan tujuannya di perangkat berbeda";
+        case 12: return "memorinya habis";
+        case 32: return "pipanya sudah putus";
+        default: return 0;
+    }
+}
+
+void jrg_galat_os(int64_t n, JrgStr *out) {
+    const char *s = jrg_galat_os_tetap(n);
+    if (s) { jrg_os_teks(out, s, (int64_t)strlen(s)); return; }
+    static const char awal[] = "ditolak sistem operasi (galat nomor ";
+    char digit[24];
+    int k = 0, neg = n < 0;
+    uint64_t u = neg ? (uint64_t)0 - (uint64_t)n : (uint64_t)n;
+    do { digit[k++] = (char)('0' + u % 10); u /= 10; } while (u);
+    int64_t pa = (int64_t)sizeof awal - 1, total = pa + neg + k + 1;
+    char *buf = jrg_alloc(total, 1);
+    memcpy(buf, awal, (size_t)pa);
+    int64_t j = pa;
+    if (neg) buf[j++] = '-';
+    while (k) buf[j++] = digit[--k];
+    buf[j] = ')';
+    jrg_os_teks(out, buf, total);
+}
+
 static int64_t jrg_os_tulis(const char *jalur, const char *isi, int64_t n, int bendera) {
     int fd = open(jalur, O_WRONLY | O_CREAT | bendera, 0666);
     if (fd < 0) return -errno;
@@ -1192,6 +1254,12 @@ int64_t jrg_os(int32_t op, const char *ap, int64_t an, const char *bp, int64_t b
             const char *s = strerror((int)i);
             jrg_os_teks(out, s, (int64_t)strlen(s));
             return 0;
+        }
+        case 32: jrg_galat_os(i, out); return 0;   // kalimat `host::galat_io` untuk errno `i`
+        case 33: {  // mikrodetik jam monoton (`host::monoton`, jam bingkai `Canvas::`)
+            struct timespec ts;
+            clock_gettime(CLOCK_MONOTONIC, &ts);
+            return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
         }
         case 17: {  // folder kerja
             char *buf = jrg_alloc(4096, 1);

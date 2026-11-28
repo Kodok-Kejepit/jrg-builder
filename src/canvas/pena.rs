@@ -1,5 +1,8 @@
 // src/canvas/pena.rs — satu pintu piksel untuk primitif dasar kanvas.
 
+use alloc::vec::Vec;
+#[allow(unused_imports)]
+use super::matek::*;
 use super::lanjut::{Keadaan, Kuas, Transformasi};
 use super::{Colour, Framebuffer, FONT_5X7, FONT_CHAR_W};
 
@@ -121,7 +124,7 @@ impl<'a> Pena<'a> {
                 if r <= 0 { self.plot(cxi, cyi, col); return; }
                 // Jari-jari raksasa: dulu O(r) langkah tanpa batas; kini segmen yang dipotong ke kanvas.
                 if r as i64 > self.batas_langkah() {
-                    let t = Kuas::elips_titik(cx + e, cy + f, r as f32, r as f32, 0.0, std::f32::consts::TAU);
+                    let t = Kuas::elips_titik(cx + e, cy + f, r as f32, r as f32, 0.0, core::f32::consts::TAU);
                     for w in t.windows(2) {
                         self.garis_bulat(w[0].0.floor() as i32, w[0].1.floor() as i32, w[1].0.floor() as i32, w[1].1.floor() as i32, col);
                     }
@@ -139,7 +142,7 @@ impl<'a> Pena<'a> {
             }
             Ragam::Umum => {
                 let rr = r.max(0) as f32;
-                let t = Kuas::elips_titik(cx + 0.5, cy + 0.5, rr, rr, 0.0, std::f32::consts::TAU);
+                let t = Kuas::elips_titik(cx + 0.5, cy + 0.5, rr, rr, 0.0, core::f32::consts::TAU);
                 self.kuas().garis_poligon(&t, col, true);
             }
         }
@@ -179,7 +182,7 @@ impl<'a> Pena<'a> {
             }
             Ragam::Umum => {
                 let rr = r.max(0) as f32 + 0.5;
-                let t = Kuas::elips_titik(cx + 0.5, cy + 0.5, rr, rr, 0.0, std::f32::consts::TAU);
+                let t = Kuas::elips_titik(cx + 0.5, cy + 0.5, rr, rr, 0.0, core::f32::consts::TAU);
                 self.kuas().poligon(&t, col);
             }
         }
@@ -222,7 +225,7 @@ impl<'a> Pena<'a> {
                     let mut xa = ax as f32 + (cx - ax) as f32 * alfa;
                     let mut xb = if kedua { bx as f32 + (cx - bx) as f32 * beta }
                                  else { ax as f32 + (bx - ax) as f32 * beta };
-                    if xa > xb { std::mem::swap(&mut xa, &mut xb); }
+                    if xa > xb { core::mem::swap(&mut xa, &mut xb); }
                     for x in (xa as i64).max(-1)..=(xb as i64).min(wfb) { self.plot(x as i32, y as i32, col); }
                 }
             }

@@ -975,6 +975,11 @@ impl Codegen {
             self.emit(format!("store {} {}, ptr {}", oty.llvm_ty(), salinan.text, slot));
             (slot, oty)
         } else { (optr, oty) };
+        // Pegangan `Canvas::`: method-nya milik `canvas::layan` di runtime (`codegen_kanvas`).
+        if oty == self.tipe_kanvas() {
+            let penerima = self.load_place(&optr, &oty);
+            return self.metode_kanvas(&penerima, method, args, span);
+        }
         // Channel: method-nya adalah `chan::nama` dengan penerimanya di depan.
         if let JrgType::Chan(_) = &oty {
             let mut semua = Vec::with_capacity(args.len() + 1);

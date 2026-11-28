@@ -627,27 +627,9 @@ pub fn time_format(ms: int = time_now_ms(), pola: string = "%Y-%m-%d %H:%M:%S") 
 }
 
 
-// Padanan `host::galat_io` untuk nomor errno Linux; kalimatnya harus sama persis.
+// Padanan `host::galat_io` untuk nomor errno Linux; tabelnya `jrg_galat_os` di `primitif.c` (juga dipakai `Canvas::`).
 fn _galat_os(kode: int) -> string {
-    let n = 0 - kode
-    if n == 100000 { return "isinya bukan teks UTF-8 yang sah" }
-    if n == 100002 { return "isinya lebih dari 256 MiB, batas satu bacaan utuh (berkas raksasa atau perangkat tanpa ujung seperti /dev/zero tidak dibaca ke memori)" }
-    if n == 100001 { return "teksnya memuat karakter NUL, yang tidak bisa diserahkan ke sistem operasi" }
-    if n == 2 { return "berkas atau direktorinya tidak ada" }
-    if n == 13 || n == 1 { return "tidak diizinkan (izin aksesnya kurang)" }
-    if n == 17 { return "sudah ada" }
-    if n == 21 { return "itu direktori, bukan berkas" }
-    if n == 20 { return "itu bukan direktori" }
-    if n == 39 { return "direktorinya tidak kosong" }
-    if n == 30 { return "sistem berkasnya cuma bisa dibaca" }
-    if n == 28 { return "penyimpanannya penuh" }
-    if n == 27 { return "berkasnya terlalu besar" }
-    if n == 36 { return "nama berkasnya tidak sah" }
-    if n == 16 { return "sedang dipakai" }
-    if n == 18 { return "asal dan tujuannya di perangkat berbeda" }
-    if n == 12 { return "memorinya habis" }
-    if n == 32 { return "pipanya sudah putus" }
-    return "ditolak sistem operasi (galat nomor " + str(n) + ")"
+    return lapis::os(32, "", "", 0 - kode).1
 }
 
 // Durasi seperti `{}` milik Rust menulisnya: pecahan bulat tanpa `.0`.

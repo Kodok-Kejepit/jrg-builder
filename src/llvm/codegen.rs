@@ -914,6 +914,7 @@ impl Codegen {
         }
         // Pegangan `ptr::` dikenal sejak awal: penyimpul tipe kembalian membacanya.
         let _ = self.tipe_ptr_sel();
+        let _ = self.tipe_kanvas();
 
         let mut enums: Vec<EnumDecl> = self.tables.enums.values().cloned().collect();
         enums.sort_by(|a, b| a.name.cmp(&b.name));

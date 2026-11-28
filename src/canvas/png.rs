@@ -1,5 +1,7 @@
 // src/canvas/png.rs — canvas/png.rs — ekspor PNG; DEFLATE dan CRC-nya di `crate::kompres`.
 
+use alloc::vec;
+use alloc::vec::Vec;
 use crate::kompres::{adler32, crc32, deflate};
 
 fn zlib(data: &[u8]) -> Vec<u8> {
@@ -64,7 +66,7 @@ pub fn susun(lebar: usize, tinggi: usize, piksel: &[u32]) -> Vec<u8> {
         let terbaik = (0..5).min_by_key(|&f| skor[f]).unwrap_or(0);
         mentah.push(terbaik as u8);
         mentah.extend_from_slice(&calon[terbaik]);
-        std::mem::swap(&mut sebelum, &mut kini);
+        core::mem::swap(&mut sebelum, &mut kini);
     }
 
     let mut out = Vec::new();

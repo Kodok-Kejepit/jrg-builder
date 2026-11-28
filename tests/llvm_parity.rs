@@ -1877,6 +1877,19 @@ fn salinan_json_inti_di_runtime_identik() {
         "runtime/src/kripto_inti.rs berbeda dari src/kripto_inti.rs — salin ulang: cp src/kripto_inti.rs runtime/src/");
     assert!(include_str!("../src/stdlib/regex_inti.rs") == include_str!("../runtime/src/regex_inti.rs"),
         "runtime/src/regex_inti.rs berbeda dari src/stdlib/regex_inti.rs — salin ulang: cp src/stdlib/regex_inti.rs runtime/src/");
+    // `Canvas::` tanpa jembatan: gambar dan kalimat galatnya satu definisi untuk empat mesin.
+    for (asli, salinan, isi_asli, isi_salinan) in [
+        ("src/kompres.rs", "runtime/src/kompres.rs", include_str!("../src/kompres.rs"), include_str!("../runtime/src/kompres.rs")),
+        ("src/saran_inti.rs", "runtime/src/saran_inti.rs", include_str!("../src/saran_inti.rs"), include_str!("../runtime/src/saran_inti.rs")),
+        ("src/canvas/inti.rs", "runtime/src/canvas/inti.rs", include_str!("../src/canvas/inti.rs"), include_str!("../runtime/src/canvas/inti.rs")),
+        ("src/canvas/layan.rs", "runtime/src/canvas/layan.rs", include_str!("../src/canvas/layan.rs"), include_str!("../runtime/src/canvas/layan.rs")),
+        ("src/canvas/lanjut.rs", "runtime/src/canvas/lanjut.rs", include_str!("../src/canvas/lanjut.rs"), include_str!("../runtime/src/canvas/lanjut.rs")),
+        ("src/canvas/pena.rs", "runtime/src/canvas/pena.rs", include_str!("../src/canvas/pena.rs"), include_str!("../runtime/src/canvas/pena.rs")),
+        ("src/canvas/png.rs", "runtime/src/canvas/png.rs", include_str!("../src/canvas/png.rs"), include_str!("../runtime/src/canvas/png.rs")),
+        ("src/canvas/png_baca.rs", "runtime/src/canvas/png_baca.rs", include_str!("../src/canvas/png_baca.rs"), include_str!("../runtime/src/canvas/png_baca.rs")),
+    ] {
+        assert!(isi_asli == isi_salinan, "{} berbeda dari {} — salin ulang: cp {} {}", salinan, asli, asli, salinan);
+    }
 }
 
 #[test]

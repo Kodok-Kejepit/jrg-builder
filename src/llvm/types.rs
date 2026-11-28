@@ -230,6 +230,7 @@ impl JrgType {
             // dijawab acuannya.
             JrgType::DictCampur(_) => "dict".into(),
             JrgType::Tuple(_) => "tuple".into(),
+            JrgType::Struct(n) if n == super::codegen_kanvas::LABEL_KANVAS => "canvas".into(),
             JrgType::Struct(n) => format!("struct:{}", crate::ruang_tipe::bersih(super::generik::dasar(n))),
             // Nama SUMBERNYA, bukan nama termangel: `Option<int>` di backend ini bernama
             // `Option$i64`, tapi `typeof` menjawab sesuatu yang dibaca program — dan …

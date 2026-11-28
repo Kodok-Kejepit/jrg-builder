@@ -1,5 +1,9 @@
 // src/canvas/lanjut.rs — canvas/lanjut.rs — lapisan gambar tingkat lanjut.
 
+use alloc::vec;
+use alloc::vec::Vec;
+#[allow(unused_imports)]
+use super::matek::*;
 use super::{Colour, Framebuffer};
 
 // ─── Transformasi ────────────────────────────────────────────────────────
@@ -127,7 +131,7 @@ impl<'a> Kuas<'a> {
         }
         let curam = (y1 - y0).abs() > (x1 - x0).abs();
         let (mut x0, mut y0, mut x1, mut y1) = if curam { (y0, x0, y1, x1) } else { (x0, y0, x1, y1) };
-        if x0 > x1 { std::mem::swap(&mut x0, &mut x1); std::mem::swap(&mut y0, &mut y1); }
+        if x0 > x1 { core::mem::swap(&mut x0, &mut x1); core::mem::swap(&mut y0, &mut y1); }
         let dx = x1 - x0;
         let dy = y1 - y0;
         let gradien = if dx.abs() < 1e-6 { 1.0 } else { dy / dx };
@@ -200,7 +204,7 @@ impl<'a> Kuas<'a> {
                 let mut k = 0;
                 while k + 1 < potong.len() {
                     let (mut xa, mut xb) = (potong[k], potong[k + 1]);
-                    if xb < xa { std::mem::swap(&mut xa, &mut xb); }
+                    if xb < xa { core::mem::swap(&mut xa, &mut xb); }
                     let ia = xa.floor().max(0.0) as i32;
                     let ib = xb.ceil().min(lebar as f32) as i32;
                     for px in ia..ib {
@@ -244,7 +248,7 @@ impl<'a> Kuas<'a> {
         let n = ((r * 0.8) as usize).clamp(12, 512);
         let rentang = akhir - mulai;
         // Dijepit: sudut finite raksasa (`1e30`) dulu membuat `collect` panik "capacity overflow" (AGI-20261119-09).
-        let n = ((n as f32 * (rentang.abs() / std::f32::consts::TAU)).ceil() as usize).clamp(3, 8192);
+        let n = ((n as f32 * (rentang.abs() / core::f32::consts::TAU)).ceil() as usize).clamp(3, 8192);
         (0..=n).map(|i| {
             let t = mulai + rentang * i as f32 / n as f32;
             (cx + rx * t.cos(), cy + ry * t.sin())
@@ -324,13 +328,13 @@ pub fn kotak_bulat_titik(x: f32, y: f32, w: f32, h: f32, r: f32) -> Vec<(f32, f3
     let seg = ((r * 0.8) as usize).clamp(4, 64);
     let sudut = [
         (x + w - r, y + h - r, 0.0f32),
-        (x + r,     y + h - r, std::f32::consts::FRAC_PI_2),
-        (x + r,     y + r,     std::f32::consts::PI),
-        (x + w - r, y + r,     std::f32::consts::PI * 1.5),
+        (x + r,     y + h - r, core::f32::consts::FRAC_PI_2),
+        (x + r,     y + r,     core::f32::consts::PI),
+        (x + w - r, y + r,     core::f32::consts::PI * 1.5),
     ];
     for (cx, cy, mulai) in sudut {
         for i in 0..=seg {
-            let a = mulai + std::f32::consts::FRAC_PI_2 * i as f32 / seg as f32;
+            let a = mulai + core::f32::consts::FRAC_PI_2 * i as f32 / seg as f32;
             t.push((cx + r * a.cos(), cy + r * a.sin()));
         }
     }

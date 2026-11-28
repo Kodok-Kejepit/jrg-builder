@@ -303,7 +303,7 @@ print('OK %dx%d png=%d bmp=%d' % (w, h, len(d), len(b)))
 
 /// Kanvas harus menghasilkan gambar yang IDENTIK di dua backend.
 #[test]
-fn kanvas_menggambar_identik_di_dua_backend() {
+fn kanvas_menggambar_identik_di_tiga_mesin() {
     let r = Ruang::baru();
     let a = r.0.join("interp.bmp");
     let b = r.0.join("vm.bmp");
@@ -336,29 +336,31 @@ pub fn main() {{
 }}
 "#)).expect("tulis sumber");
 
-    for (vm, keluar) in [(false, &a), (true, &b)] {
+    // Mesin ketiga: biner `--emit-llvm`, yang menggambar lewat salinan runtime dari kode yang sama (tanpa jembatan).
+    let l = r.0.join("llvm.bmp");
+    for (bendera, keluar) in [(None, &a), (Some("--vm"), &b), (Some("--emit-llvm"), &l)] {
         let mut c = Command::new(jrgc());
         c.arg(&sumber).arg("--sopan").env("KELUAR", keluar);
-        if vm { c.arg("--vm"); }
+        if let Some(f) = bendera { c.arg(f); }
         let out = c.output().expect("jalankan jrgc");
         assert!(
             out.status.success(),
             "gagal di backend {}:\n{}{}",
-            if vm { "vm" } else { "interp" },
+            bendera.unwrap_or("interp"),
             String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr)
         );
     }
-    let (ia, ib) = (
-        std::fs::read(&a).expect("baca hasil interpreter"),
-        std::fs::read(&b).expect("baca hasil vm"),
-    );
-    assert_eq!(ia.len(), ib.len(), "ukuran gambar beda antar-backend");
-    let beda = ia.iter().zip(ib.iter()).filter(|(p, q)| p != q).count();
-    assert_eq!(
-        beda, 0,
-        "{} byte berbeda antara gambar interpreter dan VM, padahal keduanya \
-         memakai jalur gambar yang sama", beda
-    );
+    let ia = std::fs::read(&a).expect("baca hasil interpreter");
+    for (nama, berkas) in [("vm", &b), ("llvm", &l)] {
+        let ib = std::fs::read(berkas).expect("baca hasil mesin lain");
+        assert_eq!(ia.len(), ib.len(), "ukuran gambar beda antara interpreter dan {}", nama);
+        let beda = ia.iter().zip(ib.iter()).filter(|(p, q)| p != q).count();
+        assert_eq!(
+            beda, 0,
+            "{} byte berbeda antara gambar interpreter dan {}, padahal semuanya \
+             memakai jalur gambar yang sama", beda, nama
+        );
+    }
 }
 
 /// Pembaca PNG, diuji terhadap berkas dari PERKAKAS LAIN.

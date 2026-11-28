@@ -12,6 +12,7 @@ pub mod kutip_inti;
 pub mod kripto_inti;
 pub mod kripto_cepat;
 pub mod kompres;
+pub mod saran_inti;
 pub mod diag;
 pub mod host;
 pub mod pipa;

@@ -29,6 +29,7 @@ impl Codegen {
         if let Some(r) = self.coba_builtin_dict(name, args, expected, span) { return Some(r); }
         if let Some(r) = self.coba_builtin_jawa(name, args, span) { return Some(r); }
         if let Some(r) = self.coba_builtin_ptr(name, args, span) { return Some(r); }
+        if let Some(r) = self.coba_builtin_kanvas(name, args, span) { return Some(r); }
 
         Some(match name {
             super::uji::JALAN => self.uji_jalan(args, span),
@@ -262,6 +263,7 @@ impl Codegen {
         if self.punya_hook_tampil(&v.ty) {
             return self.panggil_hook_tampil(v);
         }
+        if matches!(&v.ty, JrgType::Struct(n) if n == super::codegen_kanvas::LABEL_KANVAS) { return self.tampil_kanvas(v); }
         if self.lewat_bantu(&v.ty) { return Ok(self.tampil_lewat_bantu(v)); }
         match &v.ty {
             JrgType::Str => Ok(v.clone()),

@@ -39,7 +39,7 @@ pub(crate) fn mengandung_buram(t: &JrgType) -> bool {
 /// Namespace yang dilayani jembatan. `fs` di sini cuma mengisi celah: penurun aslinya (lewat C)
 /// dicoba lebih dulu. `jawa::`/`jawir::` TIDAK: registry-nya milik runtime biner ini, bukan `jrgc`.
 const NS_JEMBATAN: &[&str] = &["dok", "crypto", "re", "regex", "http", "ptr", "proses", "term", "wokwok", "suara",
-    "canvas", "Canvas", "fs", "py", "js", "php", "lua", "zip", "xml", "jwt", "gzip", "tar", "url", "toml", "semver"];
+    "fs", "py", "js", "php", "lua", "zip", "xml", "jwt", "gzip", "tar", "url", "toml", "semver"];
 
 /// Apakah builtin namespace `ns` dilayani jembatan (hasilnya nilai bertag)?
 pub(crate) fn ns_jembatan(ns: &str) -> bool { NS_JEMBATAN.contains(&ns) }

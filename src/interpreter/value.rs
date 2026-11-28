@@ -367,7 +367,7 @@ impl fmt::Display for Value {
 // Result<T, E> / Option<T> construction helpers
 
 /// `str * n` — aturan pengulangan string, satu definisi untuk semua backend.
-pub const MAKS_ELEMEN: i128 = 16 * 1024 * 1024;
+pub const MAKS_ELEMEN: i128 = crate::canvas::inti::MAKS_ELEMEN;
 
 /// Periksa sebuah permintaan alokasi SEBELUM alokasinya terjadi.
 pub fn cek_batas_elemen(nama: &str, n: i128) -> Result<(), String> {

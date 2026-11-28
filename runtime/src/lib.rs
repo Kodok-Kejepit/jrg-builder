@@ -2635,6 +2635,12 @@ pub extern "C" fn jrg_acak63() -> i64 {
 }
 
 // ── `json::` untuk backend LLVM: pengurai/penyandi bersama atas nilai bertag ──
+// `Canvas::` tanpa jembatan: `kompres.rs`, `saran_inti.rs` dan `canvas/` selain `mod.rs`/`matek.rs` SALINAN PERSIS milik `jrgc`.
+#[allow(dead_code)]
+mod kompres;
+#[allow(dead_code)]
+mod saran_inti;
+mod canvas;
 // `json_inti.rs` di sini SALINAN PERSIS `src/json_inti.rs` (dijaga tes di `tests/llvm_parity.rs`).
 mod json_inti;
 // `kutip_inti.rs` juga SALINAN PERSIS `src/kutip_inti.rs`.
@@ -2808,7 +2814,7 @@ mod terjemah_inti;
 mod bahasa;
 
 #[cfg(not(test))]
-mod json_llvm {
+pub(crate) mod json_llvm {
     use super::json_inti::{self, Json};
     use super::{borrow_str, emit_string, jrg_alloc, jrg_panic};
     use alloc::format;
@@ -2818,10 +2824,10 @@ mod json_llvm {
     /// `%JrgAny`: tag (8 bit bawah) + lukisan isi (24 bit atas), lalu dua kata muatan.
     #[repr(C)]
     #[derive(Clone, Copy)]
-    pub struct KotakAny { tag: i32, sela: i32, a: u64, b: u64 }
+    pub struct KotakAny { pub(crate) tag: i32, pub(crate) sela: i32, pub(crate) a: u64, pub(crate) b: u64 }
 
     #[repr(C)]
-    struct Dua { ptr: *mut u8, len: i64 }
+    pub(crate) struct Dua { pub(crate) ptr: *mut u8, pub(crate) len: i64 }
 
     extern "C" {
         fn jrg_dict_tempat(d: *mut Dua, langkah: i64, jajar: i64, kp: *const u8, kl: i64) -> *mut u8;
@@ -2829,13 +2835,13 @@ mod json_llvm {
         fn jrg_any_ubah(a: *const KotakAny, kata: i32, hasil: *mut KotakAny, pola: *const u8, pl: i64);
     }
 
-    const LANGKAH: i64 = 40;                 // pasangan `{kunci 16 bita, nilai bertag 24 bita}`
-    const KATA_ARRAY: i32 = 6 | 1 << 8;      // array ber-elemen bertag
-    const KATA_DICT: i32 = 7 | 1 << 8;       // dict bernilai bertag
+    pub(crate) const LANGKAH: i64 = 40;                 // pasangan `{kunci 16 bita, nilai bertag 24 bita}`
+    pub(crate) const KATA_ARRAY: i32 = 6 | 1 << 8;      // array ber-elemen bertag
+    pub(crate) const KATA_DICT: i32 = 7 | 1 << 8;       // dict bernilai bertag
 
-    fn gagal(pesan: String) -> ! { jrg_panic(pesan.as_ptr(), pesan.len() as i64) }
+    pub(crate) fn gagal(pesan: String) -> ! { jrg_panic(pesan.as_ptr(), pesan.len() as i64) }
 
-    fn bocorkan(s: String) -> (u64, u64) {
+    pub(crate) fn bocorkan(s: String) -> (u64, u64) {
         let (mut p, mut n) = (core::ptr::null(), 0i64);
         unsafe { emit_string(s, &mut p, &mut n) };
         (p as u64, n as u64)
@@ -2876,7 +2882,7 @@ mod json_llvm {
     }
 
     /// Isi kotak sebagai array/dict ber-elemen bertag; isi yang tak terlukis gagal menyebut tipenya.
-    unsafe fn seragamkan(a: &KotakAny, kata: i32) -> KotakAny {
+    pub(crate) unsafe fn seragamkan(a: &KotakAny, kata: i32) -> KotakAny {
         if a.tag == kata { return *a; }
         let pola = "nilai bertipe `\u{1}` tidak punya padanan JSON di backend `--emit-llvm`";
         let mut hasil = KotakAny { tag: 0, sela: 0, a: 0, b: 0 };
@@ -2887,7 +2893,7 @@ mod json_llvm {
     enum Bingkai { Arr(Vec<Json>, *const KotakAny, usize, usize), Obj(Vec<(String, Json)>, *mut u8, usize, usize, String) }
 
     /// Kait codegen (`@jrg_buram_ke_json`): nilai buram milik program (struct/enum/tuple) jadi kotak berbentuk JSON.
-    type KaitBuram = Option<unsafe extern "C" fn(*const KotakAny, *mut KotakAny)>;
+    pub(crate) type KaitBuram = Option<unsafe extern "C" fn(*const KotakAny, *mut KotakAny)>;
 
     /// Daun langsung jadi `Json`; array/dict mendorong bingkainya dan menjawab `None`.
     unsafe fn turun(a: &KotakAny, tumpuk: &mut Vec<Bingkai>, kait: KaitBuram) -> Option<Json> {
